@@ -299,30 +299,35 @@ public class BluetoothLeService extends Service {
             return false;
         }
 
-        // Previously connected device.  Try to reconnect.
-        if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress)
-                && mBluetoothGatt != null) {
-            Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
-            if (mBluetoothGatt.connect()) {
-                mConnectionState = STATE_CONNECTING;
-                return true;
-            } else {
+        try {
+            // Previously connected device.  Try to reconnect.
+            if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress)
+                    && mBluetoothGatt != null) {
+                Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
+                if (mBluetoothGatt.connect()) {
+                    mConnectionState = STATE_CONNECTING;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+            if (device == null) {
+                Log.w(TAG, "Device not found.  Unable to connect.");
                 return false;
             }
-        }
-
-        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-        if (device == null) {
-            Log.w(TAG, "Device not found.  Unable to connect.");
+            // We want to directly connect to the device, so we are setting the autoConnect
+            // parameter to false.
+            mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
+            Log.d(TAG, "Trying to create a new connection.");
+            mBluetoothDeviceAddress = address;
+            mConnectionState = STATE_CONNECTING;
+            return true;
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException in connect: " + e.getMessage());
             return false;
         }
-        // We want to directly connect to the device, so we are setting the autoConnect
-        // parameter to false.
-        mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
-        Log.d(TAG, "Trying to create a new connection.");
-        mBluetoothDeviceAddress = address;
-        mConnectionState = STATE_CONNECTING;
-        return true;
     }
 
     /**
@@ -336,7 +341,11 @@ public class BluetoothLeService extends Service {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
         }
-        mBluetoothGatt.disconnect();
+        try {
+            mBluetoothGatt.disconnect();
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException in disconnect: " + e.getMessage());
+        }
     }
 
     /**
@@ -347,7 +356,11 @@ public class BluetoothLeService extends Service {
         if (mBluetoothGatt == null) {
             return;
         }
-        mBluetoothGatt.close();
+        try {
+            mBluetoothGatt.close();
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException in close: " + e.getMessage());
+        }
         mBluetoothGatt = null;
     }
 

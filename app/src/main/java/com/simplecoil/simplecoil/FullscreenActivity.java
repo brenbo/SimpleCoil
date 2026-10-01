@@ -47,6 +47,7 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -79,6 +80,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -1635,8 +1637,19 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_LOCATION_PERMISSIONS:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission Granted
+                boolean allGranted = true;
+                if (grantResults.length > 0) {
+                    for (int result : grantResults) {
+                        if (result != PackageManager.PERMISSION_GRANTED) {
+                            allGranted = false;
+                            break;
+                        }
+                    }
+                } else {
+                    allGranted = false;
+                }
+                if (allGranted) {
+                    // Permissions Granted
                     connectWeapon();
                 } else {
                     // Permission Denied
@@ -1708,15 +1721,27 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             finish();
         }
 
-        // Coarse location permissions are required to use Bluetooth on 6.0+ devices
-        // We go ahead and ask for fine permission in case we do a GPS enabled network game
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int hasLocationPermission = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-            if (hasLocationPermission != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        REQUEST_CODE_LOCATION_PERMISSIONS);
-                return;
+        // Request Bluetooth & Location permissions dynamically based on Android version
+        List<String> permissionsToRequest = new ArrayList<>();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.BLUETOOTH_SCAN);
             }
+            if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.BLUETOOTH_CONNECT);
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+        }
+
+        if (!permissionsToRequest.isEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toArray(new String[0]), REQUEST_CODE_LOCATION_PERMISSIONS);
+            return;
         }
 
         // Request to turn on Bluetooth if it's not turned on
@@ -1729,15 +1754,16 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         }
         if (!bluetoothAdapter.isEnabled()) {
             Log.d(TAG, "Bluetooth is off");
-            Intent intentBtEnabled = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            // The REQUEST_ENABLE_BT constant passed to startActivityForResult() is a locally defined integer (which must be greater than 0), that the system passes back to you in your onActivityResult()
-            // implementation as the requestCode parameter.
-            startActivityForResult(intentBtEnabled, REQUEST_ENABLE_BT);
+            try {
+                Intent intentBtEnabled = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(intentBtEnabled, REQUEST_ENABLE_BT);
+            } catch (SecurityException e) {
+                Log.e(TAG, "SecurityException enabling bluetooth: " + e.getMessage());
+            }
             return;
         }
 
-        // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
-        // BluetoothAdapter through BluetoothManager.
+        // Initializes a Bluetooth adapter.
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         if (bluetoothManager == null) {
@@ -1745,9 +1771,18 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             return;
         }
 
-        mBluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
-        Log.d(TAG, "starting to scan");
-        mBluetoothLeScanner.startScan(mLeScanCallback);
+        try {
+            mBluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+            if (mBluetoothLeScanner != null) {
+                Log.d(TAG, "starting to scan");
+                mBluetoothLeScanner.startScan(mLeScanCallback);
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException starting BLE scan: " + e.getMessage());
+            Toast.makeText(this, R.string.error_location_permission_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         mConnectButton.setEnabled(false);
         mReconnectButton.setEnabled(false);
         mDedicatedServerButton.setEnabled(false);
@@ -1775,8 +1810,13 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 if (!mConnected) {
                     Log.d(TAG, "Failed to find a weapon before timeout");
                     mScanning = false;
-                    if (mBluetoothLeScanner != null)
-                        mBluetoothLeScanner.stopScan(mLeScanCallback);
+                    if (mBluetoothLeScanner != null) {
+                        try {
+                            mBluetoothLeScanner.stopScan(mLeScanCallback);
+                        } catch (SecurityException e) {
+                            Log.e(TAG, "SecurityException stopping BLE scan: " + e.getMessage());
+                        }
+                    }
                     handleDisconnect();
                 }
             }
