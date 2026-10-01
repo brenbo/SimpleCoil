@@ -25,6 +25,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -79,7 +81,7 @@ public class TcpClient extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        registerReceiver(mGPSUpdateReceiver, new IntentFilter(NetMsg.NETMSG_GPSLOCUPDATE));
+        ContextCompat.registerReceiver(this, mGPSUpdateReceiver, new IntentFilter(NetMsg.NETMSG_GPSLOCUPDATE), ContextCompat.RECEIVER_EXPORTED);
     }
 
     @Override

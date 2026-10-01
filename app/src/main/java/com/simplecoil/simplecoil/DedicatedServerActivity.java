@@ -33,6 +33,12 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -51,9 +57,6 @@ import android.widget.RadioButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.concurrent.TimeUnit;
 
@@ -91,6 +94,14 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
     private ServiceConnection mUDPServiceConnection = null;
     private UDPListenerService mUDPListenerService = null;
 
+    private void startServiceSafely(Intent intent) {
+        try {
+            startService(intent);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not start service directly: " + e.getMessage());
+        }
+    }
+
     private void setupUDPServiceConnection() {
         mUDPServiceConnection = new ServiceConnection() {
 
@@ -106,7 +117,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             }
         };
         Intent udpServiceIntent = new Intent(getBaseContext(), UDPListenerService.class);
-        startService(udpServiceIntent);
+        startServiceSafely(udpServiceIntent);
         bindService(udpServiceIntent, mUDPServiceConnection, BIND_AUTO_CREATE);
     }
 
@@ -129,7 +140,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             }
         };
         Intent serviceIntent = new Intent(getBaseContext(), TcpServer.class);
-        startService(serviceIntent);
+        startServiceSafely(serviceIntent);
         bindService(serviceIntent, mTcpServerServiceConnection, BIND_AUTO_CREATE);
     }
 
@@ -263,7 +274,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(mServerUpdateReceiver, makeServerUpdateIntentFilter());
+        ContextCompat.registerReceiver(this, mServerUpdateReceiver, makeServerUpdateIntentFilter(), ContextCompat.RECEIVER_EXPORTED);
         setupUDPServiceConnection();
         setupTcpServerServiceConnection();
     }

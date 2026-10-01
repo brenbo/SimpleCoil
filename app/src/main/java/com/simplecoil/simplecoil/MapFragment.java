@@ -34,6 +34,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.core.content.ContextCompat;
+
 import com.mousebird.maply.ComponentObject;
 import com.mousebird.maply.GlobeMapFragment;
 import com.mousebird.maply.MapController;
@@ -226,7 +228,9 @@ public class MapFragment extends GlobeMapFragment {
         IntentFilter filter = new IntentFilter(NetMsg.NETMSG_GPSDATAUPDATE);
         filter.addAction(NetMsg.NETMSG_LISTPLAYERS);
         filter.addAction(NetMsg.NETMSG_GPSSETTING);
-        getActivity().registerReceiver(mGPSDataReceiver, filter);
+        if (getActivity() != null) {
+            ContextCompat.registerReceiver(getActivity(), mGPSDataReceiver, filter, ContextCompat.RECEIVER_EXPORTED);
+        }
     }
 
     @Override

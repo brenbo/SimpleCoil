@@ -46,6 +46,13 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -67,13 +74,6 @@ import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -335,6 +335,14 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private ServiceConnection mUDPServiceConnection = null;
     private UDPListenerService mUDPListenerService = null;
 
+    private void startServiceSafely(Intent intent) {
+        try {
+            startService(intent);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not start service directly: " + e.getMessage());
+        }
+    }
+
     private void setupUDPServiceConnection() {
         mUDPServiceConnection = new ServiceConnection() {
 
@@ -354,7 +362,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             }
         };
         Intent udpServiceIntent = new Intent(getBaseContext(), UDPListenerService.class);
-        startService(udpServiceIntent);
+        startServiceSafely(udpServiceIntent);
         bindService(udpServiceIntent, mUDPServiceConnection, BIND_AUTO_CREATE);
     }
 
@@ -378,7 +386,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             }
         };
         Intent serviceIntent = new Intent(getBaseContext(), TcpClient.class);
-        startService(serviceIntent);
+        startServiceSafely(serviceIntent);
         bindService(serviceIntent, mTcpClientServiceConnection, BIND_AUTO_CREATE);
     }
 
@@ -396,7 +404,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             }
         };
         Intent serviceIntent = new Intent(getBaseContext(), TcpServer.class);
-        startService(serviceIntent);
+        startServiceSafely(serviceIntent);
         bindService(serviceIntent, mTcpServerServiceConnection, BIND_AUTO_CREATE);
     }
 
@@ -1522,14 +1530,14 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        ContextCompat.registerReceiver(this, mGattUpdateReceiver, makeGattUpdateIntentFilter(), ContextCompat.RECEIVER_EXPORTED);
         if (mBluetoothLeService != null && mDeviceAddress != null && !mDeviceAddress.isEmpty()) {
             final boolean result = mBluetoothLeService.connect(mDeviceAddress);
             Log.d(TAG, "Connect request result=" + result);
         }
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        registerReceiver(mBluetoothReceiver, filter);
-        registerReceiver(mUDPUpdateReceiver, makeUDPUpdateIntentFilter());
+        ContextCompat.registerReceiver(this, mBluetoothReceiver, filter, ContextCompat.RECEIVER_EXPORTED);
+        ContextCompat.registerReceiver(this, mUDPUpdateReceiver, makeUDPUpdateIntentFilter(), ContextCompat.RECEIVER_EXPORTED);
         setupUDPServiceConnection();
         setupTcpClientServiceConnection();
         setupTcpServerServiceConnection();
