@@ -12,6 +12,7 @@
     <string name="connect_status_scanning">Scanning&#8230;</string>
     <string name="connect_status_connecting">Connecting&#8230;</string>
     <string name="connect_status_communicating">Communicating&#8230;</string>
+    <string name="scan_qr_prompt">Scan Weapon QR Code</string>
 
     <string name="team_label">TEAM</string>
     <string name="team_number_label">TEAM %1$d</string>

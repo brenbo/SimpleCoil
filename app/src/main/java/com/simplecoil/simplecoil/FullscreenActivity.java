@@ -49,6 +49,9 @@ import android.os.Vibrator;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -213,6 +216,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private static byte mBlasterType = BLASTER_TYPE_PISTOL;
 
     final private int REQUEST_CODE_LOCATION_PERMISSIONS = 1022;
+    final private int REQUEST_CODE_CAMERA_PERMISSION = 1024;
 
     private static final byte COMMAND_ID_INCREMENT = (byte) 0x10;
     private static byte mCommandID = (byte) 0x00;
@@ -444,15 +448,13 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         if (mQRConnectButton != null) {
             mQRConnectButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
-                    try {
-                        Intent intent = new Intent("com.google.zxing.client.android.SCAN");
-                        intent.putExtra("SCAN_MODE", "QR_CODE_MODE"); // "PRODUCT_MODE for bar codes
-                        startActivityForResult(intent, REQUEST_QR_SCAN);
-                    } catch (Exception e) {
-                        Uri marketUri = Uri.parse("market://details?id=com.google.zxing.client.android");
-                        Intent marketIntent = new Intent(Intent.ACTION_VIEW,marketUri);
-                        startActivity(marketIntent);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_CAMERA_PERMISSION);
+                            return;
+                        }
                     }
+                    startQRScan();
                 }
             }));
         }
@@ -1663,6 +1665,20 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         }
     };
 
+    private void startQRScan() {
+        try {
+            IntentIntegrator integrator = new IntentIntegrator(FullscreenActivity.this);
+            integrator.setPrompt(getString(R.string.scan_qr_prompt));
+            integrator.setOrientationLocked(false);
+            integrator.setBeepEnabled(true);
+            integrator.setCaptureActivity(com.journeyapps.barcodescanner.CaptureActivity.class);
+            integrator.initiateScan();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to launch built-in QR scanner: " + e.getMessage());
+            Toast.makeText(this, "Could not launch QR scanner", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
@@ -1685,6 +1701,13 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     // Permission Denied
                     Toast.makeText(this, getString(R.string.error_location_permission_required), Toast.LENGTH_SHORT)
                             .show();
+                }
+                break;
+            case REQUEST_CODE_CAMERA_PERMISSION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startQRScan();
+                } else {
+                    Toast.makeText(this, "Camera permission is required to scan QR codes", Toast.LENGTH_SHORT).show();
                 }
                 break;
             default:
@@ -1712,7 +1735,14 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.e(TAG, "onActivityResult " + requestCode);
-        if (requestCode == REQUEST_QR_SCAN) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (result != null && result.getContents() != null) {
+            mDeviceAddress = result.getContents();
+            if (mDeviceAddress != null && !mDeviceAddress.isEmpty()) {
+                Log.d(TAG, "Got QR Code: " + mDeviceAddress);
+                connectWeapon();
+            }
+        } else if (requestCode == REQUEST_QR_SCAN) {
 
             if (resultCode == RESULT_OK) {
                 mDeviceAddress = data.getStringExtra("SCAN_RESULT");
