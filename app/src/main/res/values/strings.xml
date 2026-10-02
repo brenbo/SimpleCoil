@@ -15,7 +15,8 @@
 
     <string name="team_label">TEAM</string>
     <string name="team_number_label">TEAM %1$d</string>
-    <string name="no_team">No Team</string>
+    <string name="no_team">Auto Sort</string>
+    <string name="auto_sort_team">Auto Sort</string>
 
     <string name="eliminations_count_label">ELIMINATIONS</string>
     <string name="lives_count_label">LIVES</string>

@@ -297,6 +297,8 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     public static final String PREF_NAME = "SimpleCoil";
     private static final String PREF_PLAYER_NAME = "PlayerName";
     private static final String PREF_PLAYER_ID = "PlayerID";
+    private static final String PREF_SELECTED_PLAYER_ID = "SelectedPlayerID";
+    private byte mSelectedPlayerID = 0;
     private static final String PREF_FIRING_MODE = "FiringMode";
     private static final String PREF_SHOT_MODE = "ShotMode";
     private static final String PREF_RECOIL_ENABLED = "RecoilEnabled";
@@ -478,10 +480,18 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 public void onClick(View v) {
                     if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE)
                         return;
-                    if (Globals.getInstance().mPlayerID > (byte)1)
-                        Globals.getInstance().mPlayerID--;
-                    else
-                        Globals.getInstance().mPlayerID = Globals.MAX_PLAYER_ID;
+                    if (mUseNetwork) {
+                        if (Globals.getInstance().mPlayerID > (byte)0)
+                            Globals.getInstance().mPlayerID--;
+                        else
+                            Globals.getInstance().mPlayerID = Globals.MAX_PLAYER_ID;
+                    } else {
+                        if (Globals.getInstance().mPlayerID > (byte)1)
+                            Globals.getInstance().mPlayerID--;
+                        else
+                            Globals.getInstance().mPlayerID = Globals.MAX_PLAYER_ID;
+                    }
+                    mSelectedPlayerID = Globals.getInstance().mPlayerID;
                     setTeam();
                 }
             }));
@@ -493,10 +503,18 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 public void onClick(View v) {
                     if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE)
                         return;
-                    if (Globals.getInstance().mPlayerID < Globals.MAX_PLAYER_ID)
-                        Globals.getInstance().mPlayerID++;
-                    else
-                        Globals.getInstance().mPlayerID = (byte)0x01;
+                    if (mUseNetwork) {
+                        if (Globals.getInstance().mPlayerID < Globals.MAX_PLAYER_ID)
+                            Globals.getInstance().mPlayerID++;
+                        else
+                            Globals.getInstance().mPlayerID = (byte)0x00;
+                    } else {
+                        if (Globals.getInstance().mPlayerID < Globals.MAX_PLAYER_ID)
+                            Globals.getInstance().mPlayerID++;
+                        else
+                            Globals.getInstance().mPlayerID = (byte)0x01;
+                    }
+                    mSelectedPlayerID = Globals.getInstance().mPlayerID;
                     setTeam();
                 }
             }));
@@ -506,8 +524,8 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             mStartGameButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
                     if (Globals.getInstance().mPlayerID == 0) {
-                        Toast.makeText(getApplicationContext(), getString(R.string.error_select_team), Toast.LENGTH_SHORT).show();
-                        return;
+                        Globals.getInstance().mPlayerID = 1;
+                        setTeam();
                     }
                     if (mUseNetwork) {
                         if (Globals.getPlayerCount() <= 1) {
@@ -596,7 +614,12 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         sharedPreferences = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         Globals.getInstance().mPlayerName = sharedPreferences.getString(PREF_PLAYER_NAME, "Player");
         Globals.getInstance().mCurrentFiringMode = sharedPreferences.getInt(PREF_FIRING_MODE, Globals.FIRING_MODE_OUTDOOR_NO_CONE);
-        Globals.getInstance().mPlayerID = (byte) sharedPreferences.getInt(PREF_PLAYER_ID, 0);
+        mSelectedPlayerID = (byte) sharedPreferences.getInt(PREF_SELECTED_PLAYER_ID, 0);
+        if (mUseNetwork) {
+            Globals.getInstance().mPlayerID = mSelectedPlayerID;
+        } else {
+            Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
+        }
         getFiringMode();
         mRecoilEnabled = sharedPreferences.getBoolean(PREF_RECOIL_ENABLED, true);
         mCurrentShotMode = sharedPreferences.getInt(PREF_SHOT_MODE, Globals.SHOT_MODE_SINGLE);
@@ -650,6 +673,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         mUseNetworkingButton.setText(R.string.network_menu_button);
                         displayAllNetworkingOptions(true);
                         setNetworkMenu(NETWORK_TYPE_ENABLED);
+                        Globals.getInstance().mPlayerID = mSelectedPlayerID;
                     }
                     mNetworkPopup.show();
                     setTeam();
@@ -743,29 +767,24 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 displayAllNetworkingOptions(false);
                 mUseNetwork = false;
                 mUseNetworkingButton.setText(R.string.use_network_button);
+                if (Globals.getInstance().mPlayerID == 0) {
+                    Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
+                }
                 setTeam();
                 return true;
             case R.id.join_item:
-                if (Globals.getInstance().mPlayerID == 0) {
-                    Toast.makeText(getApplicationContext(), getString(R.string.error_select_team), Toast.LENGTH_SHORT).show();
-                    return true;
-                }
                 mReady = true;
                 setReady();
                 mUDPListenerService.joinServer();
                 setNetworkMenu(NETWORK_TYPE_JOINING);
                 return true;
             case R.id.join_ip_item:
-                if (Globals.getInstance().mPlayerID == 0) {
-                    Toast.makeText(getApplicationContext(), getString(R.string.error_select_team), Toast.LENGTH_SHORT).show();
-                    return true;
-                }
                 requestServerIP();
                 return true;
             case R.id.create_server_item:
                 if (Globals.getInstance().mPlayerID == 0) {
-                    Toast.makeText(getApplicationContext(), getString(R.string.error_select_team), Toast.LENGTH_SHORT).show();
-                    return true;
+                    Globals.getInstance().mPlayerID = 1;
+                    setTeam();
                 }
                 mTcpServer.startTcpServer();
                 mUDPListenerService.createServer();
@@ -790,11 +809,15 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 mUDPListenerService.cancelServer();
                 mTcpServer.sendTCPMessageAll(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_SERVERCANCEL);
                 mTcpServer.stopTcpServer();
+                Globals.getInstance().mPlayerID = mSelectedPlayerID;
+                setTeam();
                 setNetworkMenu(NETWORK_TYPE_ENABLED);
                 return true;
             case R.id.leave_item:
                 mReady = false;
                 setReady();
+                Globals.getInstance().mPlayerID = mSelectedPlayerID;
+                setTeam();
                 setNetworkMenu(NETWORK_TYPE_ENABLED);
                 return true;
             case R.id.firing_mode_outdoor_no_cone_item:
@@ -1270,63 +1293,70 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
        having previously set a team does not seem to work. We do a reload cycle before starting the
        game each time to ensure that the player starts on the right team and with full ammo. */
     private void setTeam() {
-        if (!TEST_NETWORK) {
-            if (mBluetoothLeService == null)
-                return;
-            Log.d(TAG, "setting player ID to " + Globals.getInstance().mPlayerID);
-            if (Globals.getInstance().mPlayerID < 1 || Globals.getInstance().mPlayerID > Globals.MAX_PLAYER_ID) {
-                Log.e(TAG, "Invalid player ID!");
-                return;
+        if (!TEST_NETWORK && mBluetoothLeService != null && mCommandCharacteristic != null) {
+            if (Globals.getInstance().mPlayerID >= 1 && Globals.getInstance().mPlayerID <= Globals.MAX_PLAYER_ID) {
+                Log.d(TAG, "setting player ID to " + Globals.getInstance().mPlayerID);
+                byte[] command = new byte[20];
+                command[0] = mCommandID;
+                mCommandID += COMMAND_ID_INCREMENT;
+                command[2] = (byte) 0x80;
+                command[4] = Globals.getInstance().mPlayerID;
+                mCommandCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                mCommandCharacteristic.setValue(command);
+                mBluetoothLeService.writeCharacteristic(mCommandCharacteristic);
             }
-            if (mCommandCharacteristic == null) {
-                Log.e(TAG, "No command characteristic available");
-                return;
-            }
-            byte[] command = new byte[20];
-            command[0] = mCommandID;
-            mCommandID += COMMAND_ID_INCREMENT;
-            command[2] = (byte) 0x80;
-            command[4] = Globals.getInstance().mPlayerID;
-            mCommandCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-            mCommandCharacteristic.setValue(command);
-            mBluetoothLeService.writeCharacteristic(mCommandCharacteristic);
         }
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt(PREF_PLAYER_ID, (int) Globals.getInstance().mPlayerID);
-        editor.putInt(PREF_GAME_MODE, Globals.getInstance().mGameMode);
-        editor.apply();
+        if (sharedPreferences != null) {
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt(PREF_PLAYER_ID, (int) Globals.getInstance().mPlayerID);
+            editor.putInt(PREF_GAME_MODE, Globals.getInstance().mGameMode);
+            editor.apply();
+        }
         displayCurrentTeam();
     }
 
     private void displayCurrentTeam() {
-        if (Globals.getInstance().mPlayerID == 0) {
-            mTeamTV.setText(R.string.no_team);
-        } else if (mUseNetwork && Globals.getInstance().mGameMode != Globals.GAME_MODE_FFA) {
-            mNetworkTeam = 1;
-            int x = ((Globals.MAX_PLAYER_ID + 1) / 2);
-            if (Globals.getInstance().mGameMode == Globals.GAME_MODE_2TEAMS) {
-                if (Globals.getInstance().mPlayerID > x)
-                    mNetworkTeam = 2;
-            } else {
-                x = ((Globals.MAX_PLAYER_ID + 1) / 4);
-                if (Globals.getInstance().mPlayerID > 3 * x)
-                    mNetworkTeam = 4;
-                else if (Globals.getInstance().mPlayerID > 2 * x)
-                    mNetworkTeam = 3;
-                else if (Globals.getInstance().mPlayerID > x)
-                    mNetworkTeam = 2;
-            }
-            int player = (Globals.getInstance().mPlayerID - (byte)(x * (mNetworkTeam - 1)));
-            mTeamLabelTV.setText(getString(R.string.team_number_label, mNetworkTeam));
-            mTeamTV.setText(getString(R.string.network_team, player));
-            mTeamScoreLabelTV.setVisibility(View.VISIBLE);
-            mTeamScoreTV.setVisibility(View.VISIBLE);
-        } else {
+        if (mUseNetwork && Globals.getInstance().mPlayerID == 0) {
             mTeamLabelTV.setText(R.string.team_label);
-            String teamStr = "" + Globals.getInstance().mPlayerID;
-            mTeamTV.setText(teamStr);
+            mTeamTV.setText(R.string.auto_sort_team);
             mTeamScoreLabelTV.setVisibility(View.INVISIBLE);
             mTeamScoreTV.setVisibility(View.INVISIBLE);
+        } else {
+            if (!mUseNetwork && Globals.getInstance().mPlayerID == 0) {
+                Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
+            }
+            if (Globals.getInstance().mGameMode != Globals.GAME_MODE_FFA) {
+                mNetworkTeam = 1;
+                int x = ((Globals.MAX_PLAYER_ID + 1) / 2);
+                if (Globals.getInstance().mGameMode == Globals.GAME_MODE_2TEAMS) {
+                    if (Globals.getInstance().mPlayerID > x)
+                        mNetworkTeam = 2;
+                } else {
+                    x = ((Globals.MAX_PLAYER_ID + 1) / 4);
+                    if (Globals.getInstance().mPlayerID > 3 * x)
+                        mNetworkTeam = 4;
+                    else if (Globals.getInstance().mPlayerID > 2 * x)
+                        mNetworkTeam = 3;
+                    else if (Globals.getInstance().mPlayerID > x)
+                        mNetworkTeam = 2;
+                }
+                int player = (Globals.getInstance().mPlayerID - (byte)(x * (mNetworkTeam - 1)));
+                mTeamLabelTV.setText(getString(R.string.team_number_label, mNetworkTeam));
+                mTeamTV.setText(getString(R.string.network_team, player));
+                if (mUseNetwork) {
+                    mTeamScoreLabelTV.setVisibility(View.VISIBLE);
+                    mTeamScoreTV.setVisibility(View.VISIBLE);
+                } else {
+                    mTeamScoreLabelTV.setVisibility(View.INVISIBLE);
+                    mTeamScoreTV.setVisibility(View.INVISIBLE);
+                }
+            } else {
+                mTeamLabelTV.setText(R.string.team_label);
+                String teamStr = "" + Globals.getInstance().mPlayerID;
+                mTeamTV.setText(teamStr);
+                mTeamScoreLabelTV.setVisibility(View.INVISIBLE);
+                mTeamScoreTV.setVisibility(View.INVISIBLE);
+            }
         }
     }
 
@@ -2639,8 +2669,17 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     mReady = false;
                     setReady(false);
                 }
+                Globals.getInstance().mPlayerID = mSelectedPlayerID;
+                setTeam();
                 Toast.makeText(getApplicationContext(), getString(R.string.error_server_cancel), Toast.LENGTH_SHORT).show();
             } else if (NetMsg.NETMSG_SERVERREPLY.equals(action)) {
+                if (intent.hasExtra(UDPListenerService.INTENT_PLAYERID)) {
+                    byte assignedID = intent.getByteExtra(UDPListenerService.INTENT_PLAYERID, (byte) 0);
+                    if (assignedID != 0) {
+                        Globals.getInstance().mPlayerID = assignedID;
+                        setTeam();
+                    }
+                }
                 mTcpClient.startTcpClient();
             } else if (NetMsg.NETMSG_NETWORKCONNECTED.equals(action)) {
                 mNetworkStatusIV.setImageResource(R.drawable.ic_network_connected_24dp);

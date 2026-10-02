@@ -980,6 +980,13 @@ public class TcpServer extends Service {
                 e.printStackTrace();
                 return;
             }
+            if (id == 0) {
+                id = Globals.findAutoSortPlayerID();
+                if (id == 0) {
+                    client.close();
+                    return;
+                }
+            }
             for (Map.Entry<Integer, ClientData> entry : mClientData.entrySet()) {
                 if (entry.getValue().mPlayerID == id) {
                     if (rejoin) {

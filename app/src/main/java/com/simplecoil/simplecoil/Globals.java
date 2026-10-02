@@ -153,6 +153,65 @@ public class Globals {
         return team;
     }
 
+    public static byte findAutoSortPlayerID() {
+        int gameMode = getInstance().mGameMode;
+        int maxPlayers = MAX_PLAYER_ID;
+
+        getmTeamIPMapSemaphore();
+        Map<Byte, InetAddress> teamMap = getInstance().mTeamIPMap;
+
+        if (gameMode == GAME_MODE_FFA) {
+            for (byte i = 1; i <= maxPlayers; i++) {
+                if (i != getInstance().mPlayerID && teamMap.get(i) == null) {
+                    getInstance().mTeamIPMapSemaphore.release();
+                    return i;
+                }
+            }
+        } else {
+            int numTeams = (gameMode == GAME_MODE_4TEAMS) ? 4 : 2;
+            int playersPerTeam = maxPlayers / numTeams;
+            int[] teamCounts = new int[numTeams + 1];
+
+            for (byte i = 1; i <= maxPlayers; i++) {
+                if (i == getInstance().mPlayerID || teamMap.get(i) != null) {
+                    int team = getInstance().calcNetworkTeam(i);
+                    if (team >= 1 && team <= numTeams) {
+                        teamCounts[team]++;
+                    }
+                }
+            }
+
+            int minCount = Integer.MAX_VALUE;
+            int bestTeam = 1;
+            for (int t = 1; t <= numTeams; t++) {
+                if (teamCounts[t] < minCount) {
+                    minCount = teamCounts[t];
+                    bestTeam = t;
+                }
+            }
+
+            int startID = (bestTeam - 1) * playersPerTeam + 1;
+            int endID = bestTeam * playersPerTeam;
+            for (int i = startID; i <= endID; i++) {
+                byte testID = (byte) i;
+                if (testID != getInstance().mPlayerID && teamMap.get(testID) == null) {
+                    getInstance().mTeamIPMapSemaphore.release();
+                    return testID;
+                }
+            }
+
+            for (byte i = 1; i <= maxPlayers; i++) {
+                if (i != getInstance().mPlayerID && teamMap.get(i) == null) {
+                    getInstance().mTeamIPMapSemaphore.release();
+                    return i;
+                }
+            }
+        }
+
+        getInstance().mTeamIPMapSemaphore.release();
+        return 0;
+    }
+
     public String getPlayerName(Byte playerID) {
         getmTeamPlayerNameSemaphore();
         String ret = getInstance().mTeamPlayerNameMap.get(playerID);

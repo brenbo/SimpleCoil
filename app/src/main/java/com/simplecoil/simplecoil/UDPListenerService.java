@@ -158,6 +158,13 @@ public class UDPListenerService extends Service {
                 }
                 message = message.substring(2);
                 Byte team = (byte) (int) Integer.parseInt(message);
+                if (team == 0) {
+                    team = Globals.findAutoSortPlayerID();
+                    if (team == 0) {
+                        sendUDPMessage(NetMsg.MESSAGE_PREFIX + NetMsg.NETMSG_FAILEDTOJOIN, ip, LISTEN_PORT);
+                        return;
+                    }
+                }
                 Globals.getmTeamIPMapSemaphore();
                 if (team == Globals.getInstance().mPlayerID || (Globals.getInstance().mTeamIPMap.get(team) != null && !Globals.getInstance().mTeamIPMap.get(team).equals(ip))) {
                     Globals.getInstance().mTeamIPMapSemaphore.release();
@@ -170,11 +177,20 @@ public class UDPListenerService extends Service {
                     Globals.getInstance().mIPTeamMap.put(ip, team);
                     Globals.getInstance().mIPTeamMapSemaphore.release();
                     Log.d(TAG, "player " + team + " found at " + ip.toString());
-                    sendUDPMessage(NetMsg.MESSAGE_PREFIX + NetMsg.NETMSG_SERVERREPLY, ip, LISTEN_PORT);
+                    sendUDPMessage(NetMsg.MESSAGE_PREFIX + NetMsg.NETMSG_SERVERREPLY + team, ip, LISTEN_PORT);
                 }
             } else if (message.startsWith(NetMsg.NETMSG_SERVERREPLY)) {
                 Globals.getInstance().mServerIP = ip;
                 intent = new Intent(NetMsg.NETMSG_SERVERREPLY);
+                String assignedIDStr = message.substring(NetMsg.NETMSG_SERVERREPLY.length());
+                if (!assignedIDStr.isEmpty()) {
+                    try {
+                        byte assignedID = (byte) Integer.parseInt(assignedIDStr);
+                        intent.putExtra(INTENT_PLAYERID, assignedID);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             } else if (message.startsWith(NetMsg.NETMSG_LEAVE)) {
                 // This is a player left message
                 Globals.getmIPTeamMapSemaphore();
