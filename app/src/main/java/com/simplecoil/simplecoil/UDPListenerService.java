@@ -51,7 +51,7 @@ public class UDPListenerService extends Service {
 
     private static final Integer LISTEN_PORT = 17500;
     private static final Integer LISTEN_TIMEOUT_MS = 1000;
-    private static final int RECEIVE_BUFFER_SIZE = 500; // May need to increase if player count is above 16
+    private static final int RECEIVE_BUFFER_SIZE = 2048; // Updated for 32 players
 
     DatagramSocket mSocket;
 

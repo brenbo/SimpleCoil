@@ -29,7 +29,7 @@ public class Globals {
 
     /* Highest player ID allowed in the GUI, absolute max is 0x3F or 63. Player ID 0 can technically
     be used but would require code changes to the hit detection if you really need 64 players. */
-    public static final byte MAX_PLAYER_ID = (byte) 0x10;
+    public static final byte MAX_PLAYER_ID = (byte) 0x20;
 
     public static final byte RELOAD_COUNT = (byte) 30; // Number of shots you get after a reload, max 255
     public volatile byte mFullReload = RELOAD_COUNT;
