@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,6 +54,16 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
         TextView playerNameTV = rowView.findViewById(R.id.player_name_tv);
         TextView playerPointsTV = rowView.findViewById(R.id.player_points_tv);
         TextView playerEliminatedTV = rowView.findViewById(R.id.player_eliminated_tv);
+
+        if (position >= 1 && position <= Globals.MAX_PLAYER_ID && position == Globals.getInstance().mPlayerID) {
+            playerNameTV.setTextColor(Color.parseColor("#FF8C00"));
+        } else {
+            if (isClient) {
+                playerNameTV.setTextColor(Color.BLACK);
+            } else {
+                playerNameTV.setTextColor(Color.WHITE);
+            }
+        }
         if (position == 0) {
             playerIDTV.setText(R.string.player_list_id_label);
             playerNameTV.setText(R.string.player_list_name_label);
