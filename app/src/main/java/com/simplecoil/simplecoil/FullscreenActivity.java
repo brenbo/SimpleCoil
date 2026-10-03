@@ -44,6 +44,7 @@ import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import androidx.annotation.NonNull;
@@ -76,6 +77,7 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
+import android.widget.AdapterView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -342,6 +344,28 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     // Code to manage Service lifecycle.
     private ServiceConnection mUDPServiceConnection = null;
     private UDPListenerService mUDPListenerService = null;
+    private boolean mAutoScanStarted = false;
+    private int mNetworkMenuType = NETWORK_TYPE_ENABLED;
+    private volatile boolean mShowPlayerDataDialog = false;
+
+    private void autoStartServerScan() {
+        if (!mAutoScanStarted && mUDPListenerService != null && !mIsServer) {
+            ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo mWifi = (connManager != null) ? connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI) : null;
+            if (mWifi == null || !mWifi.isConnected()) {
+                Log.d(TAG, "autoStartServerScan: Wi-Fi not connected, skipping auto-scan");
+                return;
+            }
+            mAutoScanStarted = true;
+            Log.d(TAG, "autoStartServerScan: starting automatic server discovery on launch");
+            mUseNetwork = true;
+            Globals.getInstance().mPlayerID = mSelectedPlayerID;
+            displayAllNetworkingOptions(true);
+            setNetworkMenu(NETWORK_TYPE_JOINING);
+            setTeam();
+            mUDPListenerService.joinServer();
+        }
+    }
 
     private void startServiceSafely(Intent intent) {
         try {
@@ -357,6 +381,9 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             @Override
             public void onServiceConnected(ComponentName componentName, IBinder service) {
                 mUDPListenerService = ((UDPListenerService.LocalBinder) service).getService();
+                if (mCommunicating) {
+                    autoStartServerScan();
+                }
             }
 
             @Override
@@ -617,11 +644,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         Globals.getInstance().mPlayerName = sharedPreferences.getString(PREF_PLAYER_NAME, "Player");
         Globals.getInstance().mCurrentFiringMode = sharedPreferences.getInt(PREF_FIRING_MODE, Globals.FIRING_MODE_OUTDOOR_NO_CONE);
         mSelectedPlayerID = (byte) sharedPreferences.getInt(PREF_SELECTED_PLAYER_ID, 0);
-        if (mUseNetwork) {
-            Globals.getInstance().mPlayerID = mSelectedPlayerID;
-        } else {
-            Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
-        }
+        Globals.getInstance().mPlayerID = mSelectedPlayerID;
         getFiringMode();
         mRecoilEnabled = sharedPreferences.getBoolean(PREF_RECOIL_ENABLED, true);
         mCurrentShotMode = sharedPreferences.getInt(PREF_SHOT_MODE, Globals.SHOT_MODE_SINGLE);
@@ -659,7 +682,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             mUseNetworkingButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
                     ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-                    NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+                    NetworkInfo mWifi = (connManager != null) ? connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI) : null;
                     if (mWifi == null || !mWifi.isConnected()) {
                         Toast.makeText(getApplicationContext(), getString(R.string.error_no_wifi), Toast.LENGTH_SHORT).show();
                         mUseNetwork = false;
@@ -668,14 +691,17 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     if (mNetworkPopup == null) {
                         mNetworkPopup = new PopupMenu(FullscreenActivity.this, v);
                         mNetworkPopup.setOnMenuItemClickListener(FullscreenActivity.this);
-                        setNetworkMenu(NETWORK_TYPE_ENABLED);
                     }
                     if (!mUseNetwork) {
                         mUseNetwork = true;
-                        mUseNetworkingButton.setText(R.string.network_menu_button);
                         displayAllNetworkingOptions(true);
-                        setNetworkMenu(NETWORK_TYPE_ENABLED);
                         Globals.getInstance().mPlayerID = mSelectedPlayerID;
+                        setNetworkMenu(NETWORK_TYPE_JOINING);
+                        if (mUDPListenerService != null) {
+                            mUDPListenerService.joinServer();
+                        }
+                    } else {
+                        setNetworkMenu(mNetworkMenuType);
                     }
                     mNetworkPopup.show();
                     setTeam();
@@ -706,6 +732,18 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         mPlayerNameTV = findViewById(R.id.player_name_label_tv);
         if (mPlayerNameTV != null)
             mPlayerNameTV.setText(Globals.getInstance().mPlayerName);
+        Button shuffleTeamsButton = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsButton != null) {
+            shuffleTeamsButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mIsServer && mTcpServer != null) {
+                        mTcpServer.rebalanceAllPlayers(true);
+                        Toast.makeText(getApplicationContext(), "Teams Sorted & Randomized!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
         displayAllNetworkingOptions(false);
         mUseNetworkingButton.setVisibility(View.VISIBLE);
         setGameLimit();
@@ -713,16 +751,25 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         if (mPlayerDataButton != null) {
             mPlayerDataButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
-                    if (mUseNetwork && mTcpClient != null && mTcpClient.isDedicatedServer()) {
-                        mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_PLAYERDATAREQUEST);
-                        // Disable the button for 1 second to prevent spamming the server
-                        mPlayerDataButton.setEnabled(false);
-                        new Handler().postDelayed(new Runnable(){
-                            public void run(){
-                                mPlayerDataButton.setEnabled(true);
+                    mShowPlayerDataDialog = true;
+                    if (mUseNetwork) {
+                        if (mIsServer && mTcpServer != null) {
+                            String json = mTcpServer.getPlayerDataJson();
+                            if (json != null && !json.isEmpty()) {
+                                displayPlayerData(json);
+                            } else {
+                                mTcpServer.sendPlayerData(TcpServer.SEND_ALL);
                             }
-                        }, 1000);
+                        } else if (mTcpClient != null) {
+                            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_PLAYERDATAREQUEST);
+                        }
                     }
+                    mPlayerDataButton.setEnabled(false);
+                    new Handler().postDelayed(new Runnable(){
+                        public void run(){
+                            mPlayerDataButton.setEnabled(true);
+                        }
+                    }, 1000);
                 }
             }));
         }
@@ -736,6 +783,23 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private static final int NETWORK_TYPE_SERVING = 4;
 
     private void setNetworkMenu(int networkMenuType) {
+        mNetworkMenuType = networkMenuType;
+        if (mUseNetworkingButton != null) {
+            switch (networkMenuType) {
+                case NETWORK_TYPE_ENABLED:
+                    mUseNetworkingButton.setText(R.string.network_menu_button);
+                    break;
+                case NETWORK_TYPE_JOINING:
+                    mUseNetworkingButton.setText("SEARCHING FOR SERVER...");
+                    break;
+                case NETWORK_TYPE_JOINED:
+                    mUseNetworkingButton.setText("CONNECTED (LEAVE)");
+                    break;
+                case NETWORK_TYPE_SERVING:
+                    mUseNetworkingButton.setText("HOSTING SERVER");
+                    break;
+            }
+        }
         if (mNetworkPopup == null)
             return;
         mNetworkPopup.getMenu().close();
@@ -751,13 +815,18 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 return;
             case NETWORK_TYPE_JOINING:
                 mNetworkPopup.getMenu().add(0, R.id.please_wait_item, 1, R.string.please_wait);
+                mNetworkPopup.getMenu().add(0, R.id.disable_network_item, 70, R.string.no_network_button);
                 return;
             case NETWORK_TYPE_JOINED:
                 mNetworkPopup.getMenu().add(0, R.id.leave_item, 1, R.string.not_ready_button);
                 mNetworkPopup.getMenu().add(0, R.id.player_name_item, 50, getString(R.string.player_name_button, Globals.getInstance().mPlayerName));
+                mNetworkPopup.getMenu().add(0, R.id.disable_network_item, 70, R.string.no_network_button);
                 return;
             case NETWORK_TYPE_SERVING:
                 mNetworkPopup.getMenu().add(0, R.id.cancel_server_item, 1, R.string.cancel_server_button);
+                mNetworkPopup.getMenu().add(0, R.id.player_name_item, 50, getString(R.string.player_name_button, Globals.getInstance().mPlayerName));
+                mNetworkPopup.getMenu().add(0, R.id.game_mode_item, 60, R.string.game_mode_toggle_button);
+                mNetworkPopup.getMenu().add(0, R.id.shuffle_teams_item, 65, R.string.shuffle_teams_button);
                 return;
         }
     }
@@ -775,12 +844,16 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 setTeam();
                 return true;
             case R.id.join_item:
+                if (mNetworkMenuType == NETWORK_TYPE_JOINED)
+                    return true;
                 mReady = true;
                 setReady();
                 mUDPListenerService.joinServer();
                 setNetworkMenu(NETWORK_TYPE_JOINING);
                 return true;
             case R.id.join_ip_item:
+                if (mNetworkMenuType == NETWORK_TYPE_JOINED)
+                    return true;
                 requestServerIP();
                 return true;
             case R.id.create_server_item:
@@ -852,20 +925,35 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     editor.apply();
                 }
                 return true;
+            case R.id.shuffle_teams_item:
+                if (mIsServer && mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(true);
+                    Toast.makeText(getApplicationContext(), "Teams Sorted & Randomized!", Toast.LENGTH_SHORT).show();
+                }
+                return true;
             case R.id.game_mode_2teams_item:
                 Globals.getInstance().mGameMode = Globals.GAME_MODE_2TEAMS;
                 mGameModeTV.setText(R.string.game_mode_2teams);
                 setTeam();
+                if (mIsServer && mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
                 return true;
             case R.id.game_mode_4teams_item:
                 Globals.getInstance().mGameMode = Globals.GAME_MODE_4TEAMS;
                 mGameModeTV.setText(R.string.game_mode_4teams);
                 setTeam();
+                if (mIsServer && mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
                 return true;
             case R.id.game_mode_ffa_item:
                 Globals.getInstance().mGameMode = Globals.GAME_MODE_FFA;
                 mGameModeTV.setText(R.string.game_mode_ffa);
                 setTeam();
+                if (mIsServer && mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
                 return true;
             default:
                 return false;
@@ -1113,6 +1201,10 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private void setReady() { setReady(true); }
 
     private void setReady(boolean sendPlayerLeft) {
+        Button shuffleTeamsBtn = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsBtn != null) {
+            shuffleTeamsBtn.setVisibility(mIsServer ? View.VISIBLE : View.GONE);
+        }
         if (mReady) {
             if (mUseNetwork) {
                 mServerIPTV.setVisibility(View.VISIBLE);
@@ -1195,6 +1287,11 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         mTeamPlusButton.setVisibility(View.INVISIBLE);
         mGameLimitButton.setVisibility(View.GONE);
         mPlayerSettingsButton.setVisibility(View.GONE);
+        Button shuffleTeamsBtn = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsBtn != null) {
+            shuffleTeamsBtn.setEnabled(false);
+            shuffleTeamsBtn.setVisibility(View.GONE);
+        }
         if (mUseNetwork) {
             displayInGameNetworkingOptions();
             mEndNetworkGameButton.setVisibility(View.VISIBLE);
@@ -1286,6 +1383,11 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         mUseNetworkingButton.setVisibility(View.VISIBLE);
         mFiringModeButton.setVisibility(View.VISIBLE);
         mGameLimitButton.setVisibility(View.VISIBLE);
+        Button shuffleTeamsBtn = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsBtn != null) {
+            shuffleTeamsBtn.setEnabled(true);
+            shuffleTeamsBtn.setVisibility(mIsServer ? View.VISIBLE : View.GONE);
+        }
         setNetworkMenu(NETWORK_TYPE_ENABLED);
     }
 
@@ -1318,7 +1420,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     }
 
     private void displayCurrentTeam() {
-        if (mUseNetwork && Globals.getInstance().mPlayerID == 0) {
+        if ((mUseNetwork || mSelectedPlayerID == 0) && Globals.getInstance().mPlayerID == 0) {
             mTeamLabelTV.setText(R.string.team_label);
             mTeamTV.setText(R.string.auto_sort_team);
             mTeamScoreLabelTV.setVisibility(View.INVISIBLE);
@@ -2125,6 +2227,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     setTeam();
                 if (!mRecoilEnabled)
                     setRecoil(mRecoilEnabled);
+                autoStartServerScan();
             }
             if (trigger_counter != mLastTriggerCount) {
                 mLastTriggerCount = trigger_counter;
@@ -2172,8 +2275,17 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             }
             if (power_counter != mLastPowerButtonCount) {
                 mLastPowerButtonCount = power_counter;
-                mRecoilEnabled = !mRecoilEnabled;
-                setRecoil(mRecoilEnabled);
+                int recoilMode = Globals.getInstance().mServerRecoilSetting;
+                if (recoilMode == Globals.RECOIL_SETTING_ENABLED) {
+                    setRecoil(true);
+                    Toast.makeText(getApplicationContext(), "Recoil is forced ENABLED by server", Toast.LENGTH_SHORT).show();
+                } else if (recoilMode == Globals.RECOIL_SETTING_DISABLED) {
+                    setRecoil(false);
+                    Toast.makeText(getApplicationContext(), "Recoil is forced DISABLED by server", Toast.LENGTH_SHORT).show();
+                } else {
+                    mRecoilEnabled = !mRecoilEnabled;
+                    setRecoil(mRecoilEnabled);
+                }
             }
             byte battery_level = data[RECOIL_OFFSET_BATTERY_LEVEL];
             mBatteryQueue.add(battery_level);
@@ -2600,9 +2712,12 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     }
                     setTeam();
                     if (!mIsServer && Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+                        mReady = true;
+                        setReady();
                         setGameLimit();
                         setNetworkMenu(NETWORK_TYPE_JOINED);
-                        String ip = Globals.getInstance().mServerIP.toString();
+                        mStartGameButton.setVisibility(View.GONE);
+                        String ip = Globals.getInstance().mServerIP != null ? Globals.getInstance().mServerIP.toString() : "";
                         if (ip.startsWith("/")) ip = ip.substring(1);
                         mServerIPTV.setText(getString(R.string.server_status_connected_to, ip));
                         mServerIPTV.setVisibility(View.VISIBLE);
@@ -2644,15 +2759,19 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                 startGame();
                             }
                         }
-                        if (Globals.getInstance().mOnlyServerSettings) {
-                            mFiringModeButton.setVisibility(View.GONE);
-                            mStartGameButton.setVisibility(View.GONE);
-                            mPlayerSettingsButton.setVisibility(View.GONE);
-                        } else {
-                            mFiringModeButton.setVisibility(View.VISIBLE);
-                            mStartGameButton.setVisibility(View.VISIBLE);
-                            mPlayerSettingsButton.setVisibility(View.VISIBLE);
-                        }
+                    }
+                    if (Globals.getInstance().mOnlyServerSettings) {
+                        mFiringModeButton.setVisibility(View.GONE);
+                        mStartGameButton.setVisibility(View.GONE);
+                        mPlayerSettingsButton.setVisibility(View.GONE);
+                    } else if (!mIsServer && Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+                        mFiringModeButton.setVisibility(View.VISIBLE);
+                        mStartGameButton.setVisibility(View.GONE);
+                        mPlayerSettingsButton.setVisibility(View.VISIBLE);
+                    } else if (mIsServer && Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+                        mFiringModeButton.setVisibility(View.VISIBLE);
+                        mStartGameButton.setVisibility(View.VISIBLE);
+                        mPlayerSettingsButton.setVisibility(View.VISIBLE);
                     }
                 }
             } else if (NetMsg.NETMSG_PLAYERDATAUPDATE.equals(action)) {
@@ -2679,9 +2798,22 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 mReady = false;
                 setReady();
             } else if (NetMsg.NETMSG_FAILEDTOJOIN.equals(action)) {
-                Toast.makeText(getApplicationContext(), getString(R.string.error_join), Toast.LENGTH_SHORT).show();
-                mReady = false;
-                setReady();
+                Log.d(TAG, "NETMSG_FAILEDTOJOIN received. mUseNetwork=" + mUseNetwork + ", mNetworkMenuType=" + mNetworkMenuType);
+                if (mUseNetwork && !mIsServer && (mNetworkMenuType == NETWORK_TYPE_JOINING || mNetworkMenuType == NETWORK_TYPE_ENABLED)) {
+                    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mUseNetwork && !mIsServer && (mNetworkMenuType == NETWORK_TYPE_JOINING || mNetworkMenuType == NETWORK_TYPE_ENABLED) && mUDPListenerService != null) {
+                                Log.d(TAG, "Auto-retrying server scan...");
+                                mUDPListenerService.joinServer();
+                            }
+                        }
+                    }, 3000);
+                } else {
+                    Toast.makeText(getApplicationContext(), getString(R.string.error_join), Toast.LENGTH_SHORT).show();
+                    mReady = false;
+                    setReady();
+                }
             } else if (NetMsg.NETMSG_SERVERCREATED.equals(action)) {
                 mReady = true;
                 mIsServer = true;
@@ -2710,9 +2842,15 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         setTeam();
                     }
                 }
+                mReady = true;
+                setReady();
                 mTcpClient.startTcpClient();
+                setNetworkMenu(NETWORK_TYPE_JOINED);
             } else if (NetMsg.NETMSG_NETWORKCONNECTED.equals(action)) {
                 mNetworkStatusIV.setImageResource(R.drawable.ic_network_connected_24dp);
+                if (!mIsServer) {
+                    setNetworkMenu(NETWORK_TYPE_JOINED);
+                }
             } else if (NetMsg.NETMSG_NETWORKDISCONNECTED.equals(action)) {
                 mNetworkStatusIV.setImageResource(R.drawable.ic_network_disconnected_24dp);
             } else if (NetMsg.NETMSG_PLAYERSETTINGSUPDATE.equals(action)) {
@@ -2832,25 +2970,40 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 }
                 final PlayerDisplayDataListAdapter playerDisplayListAdapter = new PlayerDisplayDataListAdapter(FullscreenActivity.this, playerDisplayData, true);
 
-                runOnUiThread(new Runnable() {
+                if (mShowPlayerDataDialog) {
+                    mShowPlayerDataDialog = false;
+                    runOnUiThread(new Runnable() {
 
-                    @Override
-                    public void run() {
-                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(FullscreenActivity.this);
-                        alertDialog.setNegativeButton(R.string.ok,
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog,int id) {
-                                        dialog.cancel();
+                        @Override
+                        public void run() {
+                            AlertDialog.Builder alertDialog = new AlertDialog.Builder(FullscreenActivity.this);
+                            alertDialog.setNegativeButton(R.string.ok,
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog,int id) {
+                                            dialog.cancel();
+                                        }
+                                    });
+                            LayoutInflater inflater = getLayoutInflater();
+                            View view = inflater.inflate(R.layout.player_data_dialog, null);
+                            alertDialog.setView(view);
+                            ListView listView = view.findViewById(R.id.player_list);
+                            listView.setAdapter(playerDisplayListAdapter);
+                            if (mIsServer) {
+                                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                    @Override
+                                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                        if (position == 0 || position > Globals.MAX_PLAYER_ID)
+                                            return;
+                                        PlayerSettingsAlertDialog dialog = new PlayerSettingsAlertDialog(FullscreenActivity.this);
+                                        dialog.setServer((byte) position, mTcpServer);
+                                        dialog.show();
                                     }
                                 });
-                        LayoutInflater inflater = getLayoutInflater();
-                        View view = inflater.inflate(R.layout.player_data_dialog, null);
-                        alertDialog.setView(view);
-                        ListView listView = view.findViewById(R.id.player_list);
-                        listView.setAdapter(playerDisplayListAdapter);
-                        alertDialog.show();
-                    }
-                });
+                            }
+                            alertDialog.show();
+                        }
+                    });
+                }
             }
         }).start();
     }
@@ -2859,6 +3012,15 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         mHealthLabelTV.setText(getString(R.string.health_label, Globals.getInstance().mFullHealth));
         mShotsRemainingLabelTV.setText(getString(R.string.shots_remaining_label, Globals.getInstance().mFullReload, (Globals.getInstance().mDamage * -1)));
         setGameLimit();
+
+        int recoilMode = Globals.getInstance().mServerRecoilSetting;
+        if (recoilMode == Globals.RECOIL_SETTING_ENABLED) {
+            setRecoil(true);
+        } else if (recoilMode == Globals.RECOIL_SETTING_DISABLED) {
+            setRecoil(false);
+        } else {
+            setRecoil(mRecoilEnabled);
+        }
         switch (mCurrentShotMode) {
             case Globals.SHOT_MODE_SINGLE:
                 if (!Globals.getInstance().mAllowSingleShotMode) {

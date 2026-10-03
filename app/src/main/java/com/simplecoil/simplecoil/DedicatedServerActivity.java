@@ -259,6 +259,18 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         mPlayerDisplayListAdapter = new PlayerDisplayDataListAdapter(DedicatedServerActivity.this, mPlayerDisplayData, false);
         mPlayerDisplayList = findViewById(R.id.player_list);
         mPlayerDisplayList.setAdapter(mPlayerDisplayListAdapter);
+        Button shuffleTeamsButton = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsButton != null) {
+            shuffleTeamsButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mTcpServer != null) {
+                        mTcpServer.rebalanceAllPlayers(true);
+                        Toast.makeText(DedicatedServerActivity.this, "Teams Sorted & Randomized!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
         mPlayerDisplayList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -312,6 +324,9 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
                 mGameModeButton.setText(R.string.game_mode_2teams);
                 savePreference(FullscreenActivity.PREF_GAME_MODE, Globals.getInstance().mGameMode);
                 setGPSMode(Globals.getInstance().mGPSMode);
+                if (mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
                 getPlayerDisplayData();
                 return true;
             case R.id.game_mode_4teams_item:
@@ -319,6 +334,9 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
                 mGameModeButton.setText(R.string.game_mode_4teams);
                 savePreference(FullscreenActivity.PREF_GAME_MODE, Globals.getInstance().mGameMode);
                 setGPSMode(Globals.getInstance().mGPSMode);
+                if (mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
                 getPlayerDisplayData();
                 return true;
             case R.id.game_mode_ffa_item:
@@ -326,6 +344,9 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
                 mGameModeButton.setText(R.string.game_mode_ffa);
                 savePreference(FullscreenActivity.PREF_GAME_MODE, Globals.getInstance().mGameMode);
                 setGPSMode(Globals.getInstance().mGPSMode);
+                if (mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
                 getPlayerDisplayData();
                 return true;
             case R.id.gps_mode_disabled:
@@ -494,6 +515,8 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         mGameModeButton.setEnabled(false);
         mGameLimitButton.setEnabled(false);
         mGPSModeButton.setEnabled(false);
+        Button shuffleTeamsBtn = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsBtn != null) shuffleTeamsBtn.setEnabled(false);
         mGameStatusTV.setText(R.string.dedicated_game_running);
         mUDPListenerService.allowJoin(mAllowJoinSwitch.isChecked());
         mEndGameButton.setEnabled(true);
@@ -520,6 +543,8 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         mGameModeButton.setEnabled(true);
         mGameLimitButton.setEnabled(true);
         mGPSModeButton.setEnabled(true);
+        Button shuffleTeamsBtn = findViewById(R.id.shuffle_teams_button);
+        if (shuffleTeamsBtn != null) shuffleTeamsBtn.setEnabled(true);
         mGameStatusTV.setText(R.string.dedicated_game_waiting);
         mNetworkPlayerCountTV.setText(getString(R.string.network_player_count, 0));
         mUDPListenerService.allowJoin(true);

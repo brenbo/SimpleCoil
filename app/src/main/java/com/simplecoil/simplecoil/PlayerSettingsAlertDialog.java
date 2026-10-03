@@ -50,6 +50,10 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     private Button mResetButton = null;
     private Switch mApplyAllSwitch = null;
     private Switch mAllowPlayerSettingsSwitch = null;
+    private Button mSwitchTeamButton = null;
+    private int mSelectedTargetTeam = 0;
+    private Button mRecoilSettingButton = null;
+    private int mSelectedRecoilSetting = Globals.RECOIL_SETTING_DEFAULT;
 
     private boolean isServer = false;
     private byte mPlayerID = 0;
@@ -123,6 +127,35 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         Globals.getInstance().mPlayerSettingsSemaphore.release();
         mApplyAllSwitch.setChecked(false);
         mAllowPlayerSettingsSwitch.setChecked(Globals.getInstance().mAllowPlayerSettings);
+        if (mRecoilSettingButton != null) {
+            mRecoilSettingButton.setVisibility(View.VISIBLE);
+            mSelectedRecoilSetting = playerSettings.recoilSetting;
+            updateRecoilSettingButtonText(mSelectedRecoilSetting);
+        }
+        if (mSwitchTeamButton != null) {
+            if (Globals.getInstance().mGameMode == Globals.GAME_MODE_FFA) {
+                mSwitchTeamButton.setVisibility(View.GONE);
+            } else {
+                mSwitchTeamButton.setVisibility(View.VISIBLE);
+                mSwitchTeamButton.setText(R.string.switch_team_button);
+                mSelectedTargetTeam = 0;
+            }
+        }
+    }
+
+    private void updateRecoilSettingButtonText(int mode) {
+        if (mRecoilSettingButton == null) return;
+        switch (mode) {
+            case Globals.RECOIL_SETTING_ENABLED:
+                mRecoilSettingButton.setText(R.string.player_settings_recoil_enabled);
+                break;
+            case Globals.RECOIL_SETTING_DISABLED:
+                mRecoilSettingButton.setText(R.string.player_settings_recoil_disabled);
+                break;
+            default:
+                mRecoilSettingButton.setText(R.string.player_settings_recoil_default);
+                break;
+        }
     }
 
     public void setLocal(TcpClient tcpClient) {
@@ -131,6 +164,12 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     }
 
     private void getLocalSettings() {
+        if (mRecoilSettingButton != null) {
+            mRecoilSettingButton.setVisibility(View.GONE);
+        }
+        if (mSwitchTeamButton != null) {
+            mSwitchTeamButton.setVisibility(View.GONE);
+        }
         mHealthET.setText("" + Globals.getInstance().mFullHealth);
         mReloadShotsET.setText("" + Globals.getInstance().mFullReload);
         mReloadTimeET.setText("" + Globals.getInstance().mReloadTime);
@@ -196,6 +235,55 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         });
         mAllowPlayerSettingsSwitch = view.findViewById(R.id.allow_player_settings_switch);
         mApplyAllSwitch = view.findViewById(R.id.apply_to_all_switch);
+        mRecoilSettingButton = view.findViewById(R.id.recoil_setting_button);
+        if (mRecoilSettingButton != null) {
+            mRecoilSettingButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    PopupMenu popup = new PopupMenu(getContext(), v);
+                    popup.getMenu().add(0, Globals.RECOIL_SETTING_DEFAULT, 10, R.string.player_settings_recoil_default);
+                    popup.getMenu().add(0, Globals.RECOIL_SETTING_ENABLED, 20, R.string.player_settings_recoil_enabled);
+                    popup.getMenu().add(0, Globals.RECOIL_SETTING_DISABLED, 30, R.string.player_settings_recoil_disabled);
+                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            mSelectedRecoilSetting = item.getItemId();
+                            updateRecoilSettingButtonText(mSelectedRecoilSetting);
+                            return true;
+                        }
+                    });
+                    popup.show();
+                }
+            });
+        }
+        mSwitchTeamButton = view.findViewById(R.id.switch_team_button);
+        if (mSwitchTeamButton != null) {
+            mSwitchTeamButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    PopupMenu popup = new PopupMenu(getContext(), view);
+                    int currentTeam = Globals.getInstance().calcNetworkTeam(mPlayerID);
+                    int gameMode = Globals.getInstance().mGameMode;
+                    int totalTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
+
+                    for (int team = 1; team <= totalTeams; team++) {
+                        if (team != currentTeam) {
+                            popup.getMenu().add(0, team, team * 10, mContext.getString(R.string.team_number_label, team));
+                        }
+                    }
+
+                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            mSelectedTargetTeam = item.getItemId();
+                            mSwitchTeamButton.setText(mContext.getString(R.string.team_number_label, mSelectedTargetTeam));
+                            return true;
+                        }
+                    });
+                    popup.show();
+                }
+            });
+        }
         setButton(DialogInterface.BUTTON_POSITIVE, mContext.getString(R.string.ok),
                 new OnClickListener() {
                     @Override
@@ -270,6 +358,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                             playerSettings.allowShotModeSingle = mShotModeSingle.isChecked();
                             playerSettings.allowShotModeBurst3 = mShotModeBurst3.isChecked();
                             playerSettings.allowShotModeAuto = mShotModeAuto.isChecked();
+                            playerSettings.recoilSetting = mSelectedRecoilSetting;
                             if (mFiringModeButton.getText().equals(getContext().getString(R.string.firing_mode_outdoor_no_cone)))
                                 playerSettings.firingMode = Globals.FIRING_MODE_OUTDOOR_NO_CONE;
                             else if (mFiringModeButton.getText().equals(getContext().getString(R.string.firing_mode_outdoor_with_cone)))
@@ -277,6 +366,14 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                             else
                                 playerSettings.firingMode = Globals.FIRING_MODE_INDOOR_NO_CONE;
                             Globals.getInstance().mPlayerSettingsSemaphore.release();
+                            if (mSelectedTargetTeam != 0 && isServer) {
+                                byte newPlayerID = Globals.findOpenPlayerIDOnTeam(mSelectedTargetTeam);
+                                if (newPlayerID == 0) {
+                                    Toast.makeText(getContext(), mContext.getString(R.string.error_team_full, mSelectedTargetTeam), Toast.LENGTH_SHORT).show();
+                                } else if (mTcpServer != null) {
+                                    mTcpServer.switchPlayerTeam(mPlayerID, newPlayerID);
+                                }
+                            }
                             if (mTcpServer != null) {
                                 mTcpServer.sendPlayerSettings(mPlayerID, mApplyAllSwitch.isChecked(), mAllowPlayerSettingsSwitch.isChecked());
                             }

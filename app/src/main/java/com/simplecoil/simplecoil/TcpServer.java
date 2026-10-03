@@ -37,8 +37,11 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
@@ -102,6 +105,7 @@ public class TcpServer extends Service {
     public static final String JSON_SHOT_MODE_BURST3 = "shotmodeburst3";
     public static final String JSON_SHOT_MODE_AUTO = "shotmodeauto";
     public static final String JSON_FIRING_MODE = "firingmode";
+    public static final String JSON_RECOIL_SETTING = "recoilsetting";
     public static final String JSON_ALLOWPLAYERSETTINGS = "allowplayersettings";
 
     private static volatile boolean keepListening = false;
@@ -285,6 +289,208 @@ public class TcpServer extends Service {
         sendThread.start();
     }
 
+    public void switchPlayerTeam(final byte oldPlayerID, final byte newPlayerID) {
+        Log.d(TAG, "switchPlayerTeam: moving player " + oldPlayerID + " to new ID " + newPlayerID);
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mClientDataSemaphore.acquire();
+                    ClientData client = mClientData.get((int) oldPlayerID);
+                    if (client == null) {
+                        for (Map.Entry<Integer, ClientData> entry : mClientData.entrySet()) {
+                            if (entry.getValue().mPlayerID == oldPlayerID) {
+                                client = entry.getValue();
+                                break;
+                            }
+                        }
+                    }
+                    if (client != null) {
+                        mClientData.remove(client.clientID);
+                        client.clientID = (int) newPlayerID;
+                        client.mPlayerID = newPlayerID;
+                        client.mNetworkTeam = Globals.getInstance().calcNetworkTeam(newPlayerID);
+                        mClientData.put((int) newPlayerID, client);
+                        client.sendTCPMessage(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_SERVERREPLY + newPlayerID);
+                    }
+                    mClientDataSemaphore.release();
+
+                    Globals.getmTeamIPMapSemaphore();
+                    InetAddress ip = Globals.getInstance().mTeamIPMap.get(oldPlayerID);
+                    if (ip != null) {
+                        Globals.getInstance().mTeamIPMap.remove(oldPlayerID);
+                        Globals.getInstance().mTeamIPMap.put(newPlayerID, ip);
+                    }
+                    Globals.getInstance().mTeamIPMapSemaphore.release();
+
+                    Globals.getmIPTeamMapSemaphore();
+                    if (ip != null) {
+                        Globals.getInstance().mIPTeamMap.put(ip, newPlayerID);
+                    }
+                    Globals.getInstance().mIPTeamMapSemaphore.release();
+
+                    Globals.getmTeamPlayerNameSemaphore();
+                    String name = Globals.getInstance().mTeamPlayerNameMap.get(oldPlayerID);
+                    if (name != null) {
+                        Globals.getInstance().mTeamPlayerNameMap.remove(oldPlayerID);
+                        Globals.getInstance().mTeamPlayerNameMap.put(newPlayerID, name);
+                    }
+                    Globals.getInstance().mTeamPlayerNameSemaphore.release();
+
+                    Globals.getmPlayerSettingsSemaphore();
+                    Globals.PlayerSettings settings = Globals.getInstance().mPlayerSettings.get(oldPlayerID);
+                    if (settings != null) {
+                        Globals.getInstance().mPlayerSettings.remove(oldPlayerID);
+                        Globals.getInstance().mPlayerSettings.put(newPlayerID, settings);
+                    }
+                    Globals.getInstance().mPlayerSettingsSemaphore.release();
+
+                    if (oldPlayerID == Globals.getInstance().mPlayerID) {
+                        Globals.getInstance().mPlayerID = newPlayerID;
+                    }
+
+                    sendPlayerData(SEND_ALL);
+                    sendAllGameInfo(SEND_ALL);
+                    sendBroadcast(new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+    }
+
+    public void rebalanceAllPlayers(final boolean randomize) {
+        if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
+            Log.w(TAG, "rebalanceAllPlayers: Game is running, skipping team rebalance!");
+            return;
+        }
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mClientDataSemaphore.acquire();
+                    int gameMode = Globals.getInstance().mGameMode;
+                    List<ClientData> clients = new ArrayList<>(mClientData.values());
+                    if (randomize) {
+                        Collections.shuffle(clients);
+                    }
+
+                    Map<Integer, ClientData> newClientMap = new HashMap<>();
+                    Map<Byte, InetAddress> newTeamIPMap = new HashMap<>();
+                    Map<InetAddress, Byte> newIPTeamMap = new HashMap<>();
+                    Map<Byte, String> newNameMap = new HashMap<>();
+                    Map<Byte, Globals.PlayerSettings> newSettingsMap = new HashMap<>();
+
+                    int maxPlayers = Globals.MAX_PLAYER_ID;
+
+                    if (gameMode == Globals.GAME_MODE_FFA) {
+                        byte nextID = 1;
+                        if (!mIsDedicated && Globals.getInstance().mPlayerID != 0) {
+                            byte oldHostID = Globals.getInstance().mPlayerID;
+                            byte newHostID = nextID++;
+                            Globals.getInstance().mPlayerID = newHostID;
+                            String hostName = Globals.getInstance().mTeamPlayerNameMap.get(oldHostID);
+                            if (hostName != null) newNameMap.put(newHostID, hostName);
+                        }
+                        for (ClientData client : clients) {
+                            byte oldID = client.mPlayerID;
+                            byte newID = nextID++;
+                            client.clientID = (int) newID;
+                            client.mPlayerID = newID;
+                            client.mNetworkTeam = newID;
+                            newClientMap.put((int) newID, client);
+
+                            InetAddress ip = Globals.getInstance().mTeamIPMap.get(oldID);
+                            if (ip != null) {
+                                newTeamIPMap.put(newID, ip);
+                                newIPTeamMap.put(ip, newID);
+                            }
+                            String name = Globals.getInstance().mTeamPlayerNameMap.get(oldID);
+                            if (name != null) newNameMap.put(newID, name);
+                            Globals.PlayerSettings set = Globals.getInstance().mPlayerSettings.get(oldID);
+                            if (set != null) newSettingsMap.put(newID, set);
+
+                            client.sendTCPMessage(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_SERVERREPLY + newID);
+                        }
+                    } else {
+                        int numTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
+                        int playersPerTeam = maxPlayers / numTeams;
+                        int[] teamPointers = new int[numTeams + 1];
+                        for (int t = 1; t <= numTeams; t++) {
+                            teamPointers[t] = (t - 1) * playersPerTeam + 1;
+                        }
+
+                        int currentTeamAssign = 1;
+
+                        if (!mIsDedicated && Globals.getInstance().mPlayerID != 0) {
+                            byte oldHostID = Globals.getInstance().mPlayerID;
+                            int hostTeam = currentTeamAssign;
+                            byte newHostID = (byte) teamPointers[hostTeam];
+                            teamPointers[hostTeam]++;
+                            Globals.getInstance().mPlayerID = newHostID;
+                            String hostName = Globals.getInstance().mTeamPlayerNameMap.get(oldHostID);
+                            if (hostName != null) newNameMap.put(newHostID, hostName);
+                            currentTeamAssign = (currentTeamAssign % numTeams) + 1;
+                        }
+
+                        for (ClientData client : clients) {
+                            byte oldID = client.mPlayerID;
+                            int targetTeam = currentTeamAssign;
+                            byte newID = (byte) teamPointers[targetTeam];
+                            teamPointers[targetTeam]++;
+
+                            client.clientID = (int) newID;
+                            client.mPlayerID = newID;
+                            client.mNetworkTeam = targetTeam;
+                            newClientMap.put((int) newID, client);
+
+                            InetAddress ip = Globals.getInstance().mTeamIPMap.get(oldID);
+                            if (ip != null) {
+                                newTeamIPMap.put(newID, ip);
+                                newIPTeamMap.put(ip, newID);
+                            }
+                            String name = Globals.getInstance().mTeamPlayerNameMap.get(oldID);
+                            if (name != null) newNameMap.put(newID, name);
+                            Globals.PlayerSettings set = Globals.getInstance().mPlayerSettings.get(oldID);
+                            if (set != null) newSettingsMap.put(newID, set);
+
+                            client.sendTCPMessage(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_SERVERREPLY + newID);
+                            currentTeamAssign = (currentTeamAssign % numTeams) + 1;
+                        }
+                    }
+
+                    mClientData = newClientMap;
+                    mClientDataSemaphore.release();
+
+                    Globals.getmTeamIPMapSemaphore();
+                    Globals.getInstance().mTeamIPMap = newTeamIPMap;
+                    Globals.getInstance().mTeamIPMapSemaphore.release();
+
+                    Globals.getmIPTeamMapSemaphore();
+                    Globals.getInstance().mIPTeamMap = newIPTeamMap;
+                    Globals.getInstance().mIPTeamMapSemaphore.release();
+
+                    Globals.getmTeamPlayerNameSemaphore();
+                    Globals.getInstance().mTeamPlayerNameMap = newNameMap;
+                    Globals.getInstance().mTeamPlayerNameSemaphore.release();
+
+                    Globals.getmPlayerSettingsSemaphore();
+                    Globals.getInstance().mPlayerSettings = newSettingsMap;
+                    Globals.getInstance().mPlayerSettingsSemaphore.release();
+
+                    sendPlayerData(SEND_ALL);
+                    sendAllGameInfo(SEND_ALL);
+                    sendBroadcast(new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    mClientDataSemaphore.release();
+                }
+            }
+        });
+        thread.start();
+    }
+
     public void sendAllGameInfo(final int id) {
         if (mClientData == null || mClientData.size() == 0 || Globals.getInstance().mTeamIPMap == null || Globals.getInstance().mTeamIPMap.size() == 0)
             return;
@@ -438,6 +644,44 @@ public class TcpServer extends Service {
         }, GPS_UPDATE_INTERVAL);
     }
 
+    public String getPlayerDataJson() {
+        try {
+            JSONArray players = new JSONArray();
+            if (Globals.getInstance().mTeamIPMap != null) {
+                for (Map.Entry<Byte, InetAddress> entry : Globals.getInstance().mTeamIPMap.entrySet()) {
+                    JSONObject player = new JSONObject();
+                    player.put(JSON_PLAYERNAME, Globals.getInstance().getPlayerName(entry.getKey()));
+                    player.put(JSON_PLAYERID, entry.getKey());
+                    player.put(JSON_PLAYERIP, entry.getValue().toString());
+                    ScoreData scoreData = getScore(entry.getKey());
+                    if (scoreData != null) {
+                        player.put(JSON_PLAYERPOINTS, scoreData.points);
+                        player.put(JSON_PLAYERELIMINATED, scoreData.eliminated);
+                    } else {
+                        player.put(JSON_PLAYERPOINTS, 0);
+                        player.put(JSON_PLAYERELIMINATED, 0);
+                    }
+                    players.put(player);
+                }
+            }
+            if (!mIsDedicated) {
+                JSONObject player = new JSONObject();
+                player.put(JSON_PLAYERNAME, Globals.getInstance().mPlayerName);
+                player.put(JSON_PLAYERID, Globals.getInstance().mPlayerID);
+                player.put(JSON_PLAYERIP, Globals.getIPAddressStr());
+                player.put(JSON_PLAYERPOINTS, 0);
+                player.put(JSON_PLAYERELIMINATED, 0);
+                players.put(player);
+            }
+            JSONObject game = new JSONObject();
+            game.put(JSON_PLAYERDATA, players);
+            return game.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
     public void sendPlayerData(int playerID) {
         if (mClientData == null || mClientData.size() == 0 || Globals.getInstance().mTeamIPMap == null || Globals.getInstance().mTeamIPMap.size() == 0)
             return;
@@ -449,8 +693,22 @@ public class TcpServer extends Service {
                 player.put(JSON_PLAYERID, entry.getKey());
                 player.put(JSON_PLAYERIP, entry.getValue());
                 ScoreData scoreData = getScore(entry.getKey());
-                player.put(JSON_PLAYERPOINTS, scoreData.points);
-                player.put(JSON_PLAYERELIMINATED, scoreData.eliminated);
+                if (scoreData != null) {
+                    player.put(JSON_PLAYERPOINTS, scoreData.points);
+                    player.put(JSON_PLAYERELIMINATED, scoreData.eliminated);
+                } else {
+                    player.put(JSON_PLAYERPOINTS, 0);
+                    player.put(JSON_PLAYERELIMINATED, 0);
+                }
+                players.put(player);
+            }
+            if (!mIsDedicated) {
+                JSONObject player = new JSONObject();
+                player.put(JSON_PLAYERNAME, Globals.getInstance().mPlayerName);
+                player.put(JSON_PLAYERID, Globals.getInstance().mPlayerID);
+                player.put(JSON_PLAYERIP, Globals.getIPAddressStr());
+                player.put(JSON_PLAYERPOINTS, 0);
+                player.put(JSON_PLAYERELIMINATED, 0);
                 players.put(player);
             }
             JSONObject game = new JSONObject();
@@ -459,11 +717,13 @@ public class TcpServer extends Service {
             if (playerID != SEND_ALL)
                 sendTCPMessageID(message, (byte)playerID, false);
             else {
-                // Using sendTCPMessageAll here does not work because the server ends before the messages get sent, mostly due to semaphore locking
                 for (Map.Entry<Integer, ClientData> entry : mClientData.entrySet()) {
                     entry.getValue().sendTCPMessage(message);
                 }
             }
+            Intent broadcastIntent = new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE);
+            broadcastIntent.putExtra(NetMsg.INTENT_PLAYERDATA, game.toString());
+            sendBroadcast(broadcastIntent);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -493,6 +753,7 @@ public class TcpServer extends Service {
                         playerSettings.allowShotModeSingle = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeSingle;
                         playerSettings.allowShotModeBurst3 = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeBurst3;
                         playerSettings.allowShotModeAuto = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeAuto;
+                        playerSettings.recoilSetting = Globals.getInstance().mPlayerSettings.get((byte)playerID).recoilSetting;
                     }
                 }
             }
@@ -516,6 +777,7 @@ public class TcpServer extends Service {
                 player.put(JSON_SHOT_MODE_BURST3, entry.getValue().allowShotModeBurst3);
                 player.put(JSON_SHOT_MODE_AUTO, entry.getValue().allowShotModeAuto);
                 player.put(JSON_FIRING_MODE, entry.getValue().firingMode);
+                player.put(JSON_RECOIL_SETTING, entry.getValue().recoilSetting);
                 players.put(player);
             }
             Globals.getInstance().mPlayerSettingsSemaphore.release();
@@ -538,6 +800,10 @@ public class TcpServer extends Service {
             game.put(JSON_ALLOWPLAYERSETTINGS, allowPlayerSettings);
             Globals.getInstance().mAllowPlayerSettings = allowPlayerSettings;
             game.put(JSON_PLAYERSETTINGS, players);
+            Globals.PlayerSettings hostSettings = Globals.getInstance().mPlayerSettings.get(Globals.getInstance().mPlayerID);
+            if (hostSettings != null) {
+                Globals.getInstance().mServerRecoilSetting = hostSettings.recoilSetting;
+            }
             String message = TCPMESSAGE_PREFIX + TCPPREFIX_JSON + game.toString();
             sendTCPMessageAll(message);
         } catch (JSONException e) {
@@ -942,6 +1208,9 @@ public class TcpServer extends Service {
                     settings.allowShotModeBurst3 = player.getBoolean(JSON_SHOT_MODE_BURST3);
                     settings.allowShotModeSingle = player.getBoolean(JSON_SHOT_MODE_SINGLE);
                     settings.firingMode = player.getInt(JSON_FIRING_MODE);
+                    if (player.has(JSON_RECOIL_SETTING)) {
+                        settings.recoilSetting = player.getInt(JSON_RECOIL_SETTING);
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

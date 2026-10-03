@@ -199,6 +199,18 @@ public class TcpClient extends Service {
                                     Intent intent = new Intent(NetMsg.NETMSG_ELIMINATED);
                                     intent.putExtra(UDPListenerService.INTENT_PLAYERID, id);
                                     sendBroadcast(intent);
+                                } else if (message.startsWith(NetMsg.NETMSG_SERVERREPLY)) {
+                                    Intent intent = new Intent(NetMsg.NETMSG_SERVERREPLY);
+                                    String assignedIDStr = message.substring(NetMsg.NETMSG_SERVERREPLY.length());
+                                    if (!assignedIDStr.isEmpty()) {
+                                        try {
+                                            byte assignedID = (byte) Integer.parseInt(assignedIDStr);
+                                            intent.putExtra(UDPListenerService.INTENT_PLAYERID, assignedID);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    sendBroadcast(intent);
                                 } else if (message.equals(NetMsg.NETMSG_TEAMELIMINATED)) {
                                     sendBroadcast(new Intent(NetMsg.NETMSG_TEAMELIMINATED));
                                 } else if (message.equals(NetMsg.NETMSG_ENDGAME)) {
@@ -444,6 +456,9 @@ public class TcpClient extends Service {
                     playerSettings.allowShotModeBurst3 = setting.getBoolean(TcpServer.JSON_SHOT_MODE_BURST3);
                     playerSettings.allowShotModeAuto = setting.getBoolean(TcpServer.JSON_SHOT_MODE_AUTO);
                     playerSettings.firingMode = setting.getInt(TcpServer.JSON_FIRING_MODE);
+                    if (setting.has(TcpServer.JSON_RECOIL_SETTING)) {
+                        playerSettings.recoilSetting = setting.getInt(TcpServer.JSON_RECOIL_SETTING);
+                    }
                     if (playerID == Globals.getInstance().mPlayerID) {
                         Globals.getInstance().mFullHealth = playerSettings.health;
                         Globals.getInstance().mFullReload = playerSettings.shots;
@@ -457,6 +472,7 @@ public class TcpClient extends Service {
                         Globals.getInstance().mAllowBurst3ShotMode = playerSettings.allowShotModeBurst3;
                         Globals.getInstance().mAllowAutoShotMode = playerSettings.allowShotModeAuto;
                         Globals.getInstance().mCurrentFiringMode = playerSettings.firingMode;
+                        Globals.getInstance().mServerRecoilSetting = playerSettings.recoilSetting;
                     }
                 }
                 Globals.getInstance().mPlayerSettingsSemaphore.release();

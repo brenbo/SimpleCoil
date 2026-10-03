@@ -13,11 +13,20 @@
     <string name="connect_status_connecting">Connecting&#8230;</string>
     <string name="connect_status_communicating">Communicating&#8230;</string>
     <string name="scan_qr_prompt">Scan Weapon QR Code</string>
+    <string name="network_searching_status">SEARCHING FOR SERVER...</string>
+    <string name="network_connected_status">CONNECTED (LEAVE)</string>
+    <string name="network_hosting_status">HOSTING SERVER</string>
 
     <string name="team_label">TEAM</string>
     <string name="team_number_label">TEAM %1$d</string>
     <string name="no_team">Auto Sort</string>
     <string name="auto_sort_team">Auto Sort</string>
+    <string name="switch_team_button">Switch Team</string>
+    <string name="shuffle_teams_button">Sort Teams</string>
+    <string name="error_team_full">Team %1$d is full</string>
+    <string name="player_settings_recoil_default">Recoil: Let Player Choose</string>
+    <string name="player_settings_recoil_enabled">Recoil: Force Enabled</string>
+    <string name="player_settings_recoil_disabled">Recoil: Force Disabled</string>
 
     <string name="eliminations_count_label">ELIMINATIONS</string>
     <string name="lives_count_label">LIVES</string>

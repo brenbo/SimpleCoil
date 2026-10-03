@@ -212,6 +212,32 @@ public class Globals {
         return 0;
     }
 
+    public static byte findOpenPlayerIDOnTeam(int targetTeam) {
+        int gameMode = getInstance().mGameMode;
+        int maxPlayers = MAX_PLAYER_ID;
+        int numTeams = (gameMode == GAME_MODE_4TEAMS) ? 4 : 2;
+        if (targetTeam < 1 || targetTeam > numTeams)
+            return 0;
+
+        int playersPerTeam = maxPlayers / numTeams;
+        int startID = (targetTeam - 1) * playersPerTeam + 1;
+        int endID = targetTeam * playersPerTeam;
+
+        getmTeamIPMapSemaphore();
+        Map<Byte, InetAddress> teamMap = getInstance().mTeamIPMap;
+
+        for (int i = startID; i <= endID; i++) {
+            byte testID = (byte) i;
+            if (testID != getInstance().mPlayerID && teamMap.get(testID) == null) {
+                getInstance().mTeamIPMapSemaphore.release();
+                return testID;
+            }
+        }
+
+        getInstance().mTeamIPMapSemaphore.release();
+        return 0; // Target team is full
+    }
+
     public String getPlayerName(Byte playerID) {
         getmTeamPlayerNameSemaphore();
         String ret = getInstance().mTeamPlayerNameMap.get(playerID);
@@ -350,6 +376,11 @@ public class Globals {
             getInstance().mGrenadePairingsSemaphore.release();
     }
 
+    public static final int RECOIL_SETTING_DEFAULT = 0; // Let Player Choose
+    public static final int RECOIL_SETTING_ENABLED = 1; // Force Enabled
+    public static final int RECOIL_SETTING_DISABLED = 2; // Force Disabled
+    public volatile int mServerRecoilSetting = RECOIL_SETTING_DEFAULT;
+
     public static class PlayerSettings {
         int health = Globals.MAX_HEALTH;
         byte shots = Globals.RELOAD_COUNT;
@@ -363,5 +394,6 @@ public class Globals {
         boolean allowShotModeBurst3 = true;
         boolean allowShotModeAuto = true;
         int firingMode = FIRING_MODE_OUTDOOR_NO_CONE;
+        int recoilSetting = RECOIL_SETTING_DEFAULT;
     }
 }

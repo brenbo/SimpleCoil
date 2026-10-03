@@ -181,6 +181,7 @@ public class UDPListenerService extends Service {
                 }
             } else if (message.startsWith(NetMsg.NETMSG_SERVERREPLY)) {
                 Globals.getInstance().mServerIP = ip;
+                mScanRunning = false;
                 intent = new Intent(NetMsg.NETMSG_SERVERREPLY);
                 String assignedIDStr = message.substring(NetMsg.NETMSG_SERVERREPLY.length());
                 if (!assignedIDStr.isEmpty()) {
@@ -368,6 +369,10 @@ public class UDPListenerService extends Service {
     }
 
     public void joinServer(InetAddress serverIP, Integer port) {
+        if (mScanRunning) {
+            Log.d(TAG, "joinServer: scan already running, skipping duplicate join request");
+            return;
+        }
         if (!doneListening) {
             Log.e(TAG, "Listening is still in progress");
             sendFailedJoin();
