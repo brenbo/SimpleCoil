@@ -105,7 +105,7 @@ public class Globals {
     public Semaphore mPlayerSettingsSemaphore;
     public Semaphore mGrenadePairingsSemaphore;
     public volatile boolean mUseGPS = false;
-    public volatile boolean mOnlyServerSettings = false;
+    public volatile boolean mOnlyServerSettings = true;
 
     public volatile long mServerGameTimeRemaining = 0; // in seconds
 

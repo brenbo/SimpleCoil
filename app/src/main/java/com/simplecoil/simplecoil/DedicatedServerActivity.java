@@ -246,6 +246,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             }
         }));
         mOnlyServerSettingsSwitch = findViewById(R.id.only_server_settings_switch);
+        mOnlyServerSettingsSwitch.setChecked(Globals.getInstance().mOnlyServerSettings);
         mOnlyServerSettingsSwitch.setOnClickListener((new View.OnClickListener() {
             public void onClick(View v) {
                 Globals.getInstance().mOnlyServerSettings = mOnlyServerSettingsSwitch.isChecked();
