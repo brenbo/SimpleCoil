@@ -187,6 +187,7 @@ public class UDPListenerService extends Service {
                 if (!assignedIDStr.isEmpty()) {
                     try {
                         byte assignedID = (byte) Integer.parseInt(assignedIDStr);
+                        Globals.getInstance().mPlayerID = assignedID;
                         intent.putExtra(INTENT_PLAYERID, assignedID);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -579,6 +580,14 @@ public class UDPListenerService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
         return super.onUnbind(intent);
+    }
+
+    @Override
+    public void sendBroadcast(Intent intent) {
+        if (intent != null && intent.getPackage() == null) {
+            intent.setPackage(getPackageName());
+        }
+        super.sendBroadcast(intent);
     }
 
     private final IBinder mBinder = new LocalBinder();

@@ -55,15 +55,6 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
         TextView playerPointsTV = rowView.findViewById(R.id.player_points_tv);
         TextView playerEliminatedTV = rowView.findViewById(R.id.player_eliminated_tv);
 
-        if (position >= 1 && position <= Globals.MAX_PLAYER_ID && position == Globals.getInstance().mPlayerID) {
-            playerNameTV.setTextColor(Color.parseColor("#FF8C00"));
-        } else {
-            if (isClient) {
-                playerNameTV.setTextColor(Color.BLACK);
-            } else {
-                playerNameTV.setTextColor(Color.WHITE);
-            }
-        }
         if (position == 0) {
             playerIDTV.setText(R.string.player_list_id_label);
             playerNameTV.setText(R.string.player_list_name_label);
@@ -73,63 +64,97 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
             else
                 playerEliminatedTV.setText(R.string.player_list_eliminated_label);
             return rowView;
-        } else if (position > Globals.MAX_PLAYER_ID) {
-            if (data[position] != null && data[position].playerName != null)
-                playerIDTV.setText(data[position].playerName);
+        } else if (position == 1) {
+            int teamTotalsIndex = Globals.MAX_PLAYER_ID + 1;
+            if (data != null && data.length > teamTotalsIndex && data[teamTotalsIndex] != null && data[teamTotalsIndex].playerName != null) {
+                playerIDTV.setText(data[teamTotalsIndex].playerName);
+            } else {
+                playerIDTV.setText("");
+            }
+            playerNameTV.setText("");
+            playerPointsTV.setText("");
+            playerEliminatedTV.setText("");
+            ImageView kickPlayerIV = rowView.findViewById(R.id.kick_player_iv);
+            if (kickPlayerIV != null) {
+                kickPlayerIV.setVisibility(View.GONE);
+            }
+            if (!isClient) {
+                ImageView networkStatus = rowView.findViewById(R.id.network_status_iv);
+                if (networkStatus != null) {
+                    networkStatus.setVisibility(View.GONE);
+                }
+            }
             return rowView;
         }
+
+        int playerID = position - 1;
+
+        if (playerID == Globals.getInstance().mPlayerID) {
+            playerNameTV.setTextColor(Color.parseColor("#FF8C00"));
+        } else {
+            if (isClient) {
+                playerNameTV.setTextColor(Color.BLACK);
+            } else {
+                playerNameTV.setTextColor(Color.WHITE);
+            }
+        }
+
         switch (Globals.getInstance().mGameMode) {
             case Globals.GAME_MODE_FFA:
-                playerIDTV.setText("" + position);
+                playerIDTV.setText("" + playerID);
                 break;
             case Globals.GAME_MODE_2TEAMS:
-                if (position > Globals.MAX_PLAYER_ID / 2)
-                    playerIDTV.setText("2-" + (position - (Globals.MAX_PLAYER_ID / 2)));
+                if (playerID > Globals.MAX_PLAYER_ID / 2)
+                    playerIDTV.setText("2-" + (playerID - (Globals.MAX_PLAYER_ID / 2)));
                 else
-                    playerIDTV.setText("1-" + position);
+                    playerIDTV.setText("1-" + playerID);
                 break;
             case Globals.GAME_MODE_4TEAMS:
                 int playersPerTeam = Globals.MAX_PLAYER_ID / 4;
-                if (position > playersPerTeam * 3)
-                    playerIDTV.setText("4-" + (position - (playersPerTeam * 3)));
-                else if (position > playersPerTeam * 2)
-                    playerIDTV.setText("3-" + (position - (playersPerTeam * 2)));
-                else if (position > playersPerTeam)
-                    playerIDTV.setText("2-" + (position - playersPerTeam));
+                if (playerID > playersPerTeam * 3)
+                    playerIDTV.setText("4-" + (playerID - (playersPerTeam * 3)));
+                else if (playerID > playersPerTeam * 2)
+                    playerIDTV.setText("3-" + (playerID - (playersPerTeam * 2)));
+                else if (playerID > playersPerTeam)
+                    playerIDTV.setText("2-" + (playerID - playersPerTeam));
                 else
-                    playerIDTV.setText("1-" + position);
+                    playerIDTV.setText("1-" + playerID);
                 break;
         }
-        if (data[position] == null) {
+        if (data == null || playerID >= data.length || data[playerID] == null) {
             playerNameTV.setText(R.string.player_name_not_connected);
             playerPointsTV.setText("");
             playerEliminatedTV.setText("");
             if (!isClient) {
                 ImageView networkStatus = rowView.findViewById(R.id.network_status_iv);
-                networkStatus.setVisibility(View.GONE);
+                if (networkStatus != null) networkStatus.setVisibility(View.GONE);
             }
+            ImageView kickPlayerIV = rowView.findViewById(R.id.kick_player_iv);
+            if (kickPlayerIV != null) kickPlayerIV.setVisibility(View.GONE);
             return rowView;
         }
-        playerNameTV.setText(data[position].playerName);
-        playerPointsTV.setText("" + data[position].points);
-        if (data[position].overrideLives) {
-            if (data[position].lives != 0)
-                playerEliminatedTV.setText("" + (data[position].lives - data[position].eliminated));
+        playerNameTV.setText(data[playerID].playerName);
+        playerPointsTV.setText("" + data[playerID].points);
+        if (data[playerID].overrideLives) {
+            if (data[playerID].lives != 0)
+                playerEliminatedTV.setText("" + (data[playerID].lives - data[playerID].eliminated));
             else
-                playerEliminatedTV.setText("" + data[position].eliminated);
+                playerEliminatedTV.setText("" + data[playerID].eliminated);
         } else {
             if ((Globals.getInstance().mGameLimit & Globals.GAME_LIMIT_LIVES) != 0)
-                playerEliminatedTV.setText("" + (Globals.getInstance().mLivesLimit - data[position].eliminated));
+                playerEliminatedTV.setText("" + (Globals.getInstance().mLivesLimit - data[playerID].eliminated));
             else
-                playerEliminatedTV.setText("" + data[position].eliminated);
+                playerEliminatedTV.setText("" + data[playerID].eliminated);
         }
         if (!isClient) {
             ImageView networkStatus = rowView.findViewById(R.id.network_status_iv);
-            networkStatus.setVisibility(View.VISIBLE);
-            if (data[position].isConnected)
-                networkStatus.setImageResource(R.drawable.ic_network_connected_24dp);
-            else
-                networkStatus.setImageResource(R.drawable.ic_network_disconnected_24dp);
+            if (networkStatus != null) {
+                networkStatus.setVisibility(View.VISIBLE);
+                if (data[playerID].isConnected)
+                    networkStatus.setImageResource(R.drawable.ic_network_connected_24dp);
+                else
+                    networkStatus.setImageResource(R.drawable.ic_network_disconnected_24dp);
+            }
         }
 
         ImageView kickPlayerIV = rowView.findViewById(R.id.kick_player_iv);
@@ -137,9 +162,9 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
         boolean isServerAdmin = (!isClient || isAdmin);
 
         if (kickPlayerIV != null) {
-            if (isServerAdmin && position >= 1 && position <= Globals.MAX_PLAYER_ID && data[position] != null && position != Globals.getInstance().mPlayerID) {
+            if (isServerAdmin && playerID >= 1 && playerID <= Globals.MAX_PLAYER_ID && data[playerID] != null && playerID != Globals.getInstance().mPlayerID) {
                 kickPlayerIV.setVisibility(View.VISIBLE);
-                final byte targetID = (byte) position;
+                final byte targetID = (byte) playerID;
                 kickPlayerIV.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {

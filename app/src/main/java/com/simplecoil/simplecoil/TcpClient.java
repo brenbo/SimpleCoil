@@ -90,6 +90,14 @@ public class TcpClient extends Service {
         unregisterReceiver(mGPSUpdateReceiver);
     }
 
+    @Override
+    public void sendBroadcast(Intent intent) {
+        if (intent != null && intent.getPackage() == null) {
+            intent.setPackage(getPackageName());
+        }
+        super.sendBroadcast(intent);
+    }
+
     public void sendTCPMessage(final String message) {
         sendTCPMessage(message, false);
     }
@@ -205,6 +213,7 @@ public class TcpClient extends Service {
                                     if (!assignedIDStr.isEmpty()) {
                                         try {
                                             byte assignedID = (byte) Integer.parseInt(assignedIDStr);
+                                            Globals.getInstance().mPlayerID = assignedID;
                                             intent.putExtra(UDPListenerService.INTENT_PLAYERID, assignedID);
                                         } catch (Exception e) {
                                             e.printStackTrace();

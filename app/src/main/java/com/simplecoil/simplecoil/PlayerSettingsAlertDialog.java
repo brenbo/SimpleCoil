@@ -352,7 +352,9 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                             if (mTcpClient != null) {
                                 mTcpClient.sendPlayerSettings();
                             }
-                            mContext.sendBroadcast(new Intent(NetMsg.NETMSG_PLAYERSETTINGSUPDATE));
+                            Intent intentSettings = new Intent(NetMsg.NETMSG_PLAYERSETTINGSUPDATE);
+                            intentSettings.setPackage(mContext.getPackageName());
+                            mContext.sendBroadcast(intentSettings);
                         } else {
                             Globals.getmPlayerSettingsSemaphore();
                             Globals.PlayerSettings playerSettings = Globals.getInstance().mPlayerSettings.get(mPlayerID);
@@ -409,7 +411,9 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                             if (mTcpServer != null) {
                                 mTcpServer.sendPlayerSettings(mPlayerID, mApplyAllSwitch.isChecked(), mAllowPlayerSettingsSwitch.isChecked());
                             }
-                            mContext.sendBroadcast(new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE));
+                            Intent intentData = new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE);
+                            intentData.setPackage(mContext.getPackageName());
+                            mContext.sendBroadcast(intentData);
                         }
                         dismiss();
                     }

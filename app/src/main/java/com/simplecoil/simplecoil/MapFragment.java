@@ -74,9 +74,10 @@ public class MapFragment extends GlobeMapFragment {
         mLongitude = location.getLongitude();
         mLatitude = location.getLatitude();
         Intent intent = new Intent(NetMsg.NETMSG_GPSLOCUPDATE);
+        if (getActivity() == null) return;
+        intent.setPackage(getActivity().getPackageName());
         intent.putExtra(NetMsg.INTENT_LATITUDE, mLatitude);
         intent.putExtra(NetMsg.INTENT_LONGITUDE, mLongitude);
-        if (getActivity() == null) return;
         getActivity().sendBroadcast(intent);
     }
 

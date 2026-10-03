@@ -133,7 +133,7 @@
     <string name="gps_mode_teammate">GPS Teammates Only</string>
     <string name="gps_mode_all">GPS All Enabled</string>
     <string name="player_name_not_connected">{Not Connected}</string>
-    <string name="scoreboard_button">Scoreboard</string>
+    <string name="scoreboard_button">Scores</string>
 
     <string name="player_list_id_label">ID</string>
     <string name="player_list_name_label">Name</string>

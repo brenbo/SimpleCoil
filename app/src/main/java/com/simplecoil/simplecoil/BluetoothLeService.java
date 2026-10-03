@@ -239,6 +239,14 @@ public class BluetoothLeService extends Service {
     }
 
     @Override
+    public void sendBroadcast(Intent intent) {
+        if (intent != null && intent.getPackage() == null) {
+            intent.setPackage(getPackageName());
+        }
+        super.sendBroadcast(intent);
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
