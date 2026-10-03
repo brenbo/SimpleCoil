@@ -50,6 +50,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     private Button mResetButton = null;
     private Switch mApplyAllSwitch = null;
     private Switch mAllowPlayerSettingsSwitch = null;
+    private Switch mAdminSwitch = null;
     private Button mSwitchTeamButton = null;
     private int mSelectedTargetTeam = 0;
     private Button mRecoilSettingButton = null;
@@ -128,6 +129,10 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         Globals.getInstance().mPlayerSettingsSemaphore.release();
         mApplyAllSwitch.setChecked(false);
         mAllowPlayerSettingsSwitch.setChecked(Globals.getInstance().mAllowPlayerSettings);
+        if (mAdminSwitch != null) {
+            mAdminSwitch.setVisibility(View.VISIBLE);
+            mAdminSwitch.setChecked(playerSettings.isAdmin);
+        }
         if (mKickPlayerButton != null) {
             mKickPlayerButton.setVisibility(View.VISIBLE);
         }
@@ -168,6 +173,9 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     }
 
     private void getLocalSettings() {
+        if (mAdminSwitch != null) {
+            mAdminSwitch.setVisibility(View.GONE);
+        }
         if (mKickPlayerButton != null) {
             mKickPlayerButton.setVisibility(View.GONE);
         }
@@ -242,6 +250,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         });
         mAllowPlayerSettingsSwitch = view.findViewById(R.id.allow_player_settings_switch);
         mApplyAllSwitch = view.findViewById(R.id.apply_to_all_switch);
+        mAdminSwitch = view.findViewById(R.id.admin_switch);
         mRecoilSettingButton = view.findViewById(R.id.recoil_setting_button);
         if (mRecoilSettingButton != null) {
             mRecoilSettingButton.setOnClickListener(new View.OnClickListener() {
@@ -379,6 +388,9 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                             playerSettings.allowShotModeBurst3 = mShotModeBurst3.isChecked();
                             playerSettings.allowShotModeAuto = mShotModeAuto.isChecked();
                             playerSettings.recoilSetting = mSelectedRecoilSetting;
+                            if (mAdminSwitch != null) {
+                                playerSettings.isAdmin = mAdminSwitch.isChecked();
+                            }
                             if (mFiringModeButton.getText().equals(getContext().getString(R.string.firing_mode_outdoor_no_cone)))
                                 playerSettings.firingMode = Globals.FIRING_MODE_OUTDOOR_NO_CONE;
                             else if (mFiringModeButton.getText().equals(getContext().getString(R.string.firing_mode_outdoor_with_cone)))

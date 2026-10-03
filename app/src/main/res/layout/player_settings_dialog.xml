@@ -257,5 +257,14 @@
             android:background="#FFFFFF"
             android:textColor="#000000" />
 
+        <Switch
+            android:id="@+id/admin_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="@string/player_settings_admin"
+            android:background="#FFFFFF"
+            android:textColor="#000000" />
+
     </LinearLayout>
 </ScrollView>

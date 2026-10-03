@@ -507,6 +507,13 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             mTcpServer.sendAllGameInfo(TcpServer.SEND_ALL);
     }
 
+    public void kickPlayerFromAdmin(byte playerID) {
+        if (mTcpServer != null) {
+            mTcpServer.kickPlayer(playerID);
+            Toast.makeText(this, "Player kicked", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void startGame() {
         if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE)
             mTcpServer.startGame();

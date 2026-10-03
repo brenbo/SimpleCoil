@@ -10,15 +10,16 @@
         <RelativeLayout
             android:id="@+id/connect_layout"
             android:layout_width="match_parent"
-            android:layout_height="30dp"
+            android:layout_height="44dp"
             android:visibility="visible"
             android:fitsSystemWindows="true">
 
                 <TextView
                     android:id="@+id/player_id_tv"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="44dp"
                     android:layout_marginStart="0dp"
+                    android:gravity="center_vertical"
                     android:background="#FFFFFF"
                     android:textColor="#000000"
                     android:textAppearance="@android:style/TextAppearance.Material.Small" />
@@ -26,8 +27,9 @@
                 <TextView
                     android:id="@+id/player_name_tv"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="44dp"
                     android:layout_marginStart="22dp"
+                    android:gravity="center_vertical"
                     android:background="#FFFFFF"
                     android:textColor="#000000"
                     android:textAppearance="@android:style/TextAppearance.Material.Small" />
@@ -35,8 +37,9 @@
                 <TextView
                     android:id="@+id/player_points_tv"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="44dp"
                     android:layout_marginStart="170dp"
+                    android:gravity="center_vertical"
                     android:background="#FFFFFF"
                     android:textColor="#000000"
                     android:textAppearance="@android:style/TextAppearance.Material.Small" />
@@ -44,10 +47,21 @@
                 <TextView
                     android:id="@+id/player_eliminated_tv"
                     android:layout_width="wrap_content"
-                    android:layout_height="30dp"
+                    android:layout_height="44dp"
                     android:layout_marginStart="240dp"
+                    android:gravity="center_vertical"
                     android:background="#FFFFFF"
                     android:textColor="#000000"
                     android:textAppearance="@android:style/TextAppearance.Material.Small" />
+
+                <ImageView
+                    android:id="@+id/kick_player_iv"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginEnd="8dp"
+                    android:layout_centerVertical="true"
+                    android:visibility="gone"
+                    app:srcCompat="@drawable/ic_skull_red" />
         </RelativeLayout>
 </FrameLayout>

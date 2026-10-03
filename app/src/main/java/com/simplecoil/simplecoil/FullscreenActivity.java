@@ -802,6 +802,15 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 }
             });
         }
+        Button adminControlsButton = findViewById(R.id.admin_controls_button);
+        if (adminControlsButton != null) {
+            adminControlsButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    showAdminControlsMenu(v);
+                }
+            });
+        }
         displayAllNetworkingOptions(false);
         mUseNetworkingButton.setVisibility(View.VISIBLE);
         setGameLimit();
@@ -833,6 +842,70 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         }
         loadFragment();
         updatePlayerSettings();
+    }
+
+    private void showAdminControlsMenu(View v) {
+        PopupMenu popup = new PopupMenu(FullscreenActivity.this, v);
+        if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+            popup.getMenu().add(0, 101, 10, R.string.start_game_button);
+        } else {
+            popup.getMenu().add(0, 102, 10, R.string.end_game_button);
+        }
+        popup.getMenu().add(0, 103, 20, R.string.game_mode_2teams);
+        popup.getMenu().add(0, 104, 30, R.string.game_mode_4teams);
+        popup.getMenu().add(0, 105, 40, R.string.game_mode_ffa);
+        if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+            popup.getMenu().add(0, 106, 50, R.string.shuffle_teams_button);
+        }
+
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case 101:
+                        if (mIsServer && mTcpServer != null) {
+                            mTcpServer.startGame();
+                        } else if (mTcpClient != null) {
+                            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ADMIN_STARTGAME);
+                        }
+                        return true;
+                    case 102:
+                        if (mIsServer && mTcpServer != null) {
+                            mTcpServer.endGame();
+                        } else if (mTcpClient != null) {
+                            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ADMIN_ENDGAME);
+                        }
+                        return true;
+                    case 103:
+                        changeAdminGameMode(Globals.GAME_MODE_2TEAMS);
+                        return true;
+                    case 104:
+                        changeAdminGameMode(Globals.GAME_MODE_4TEAMS);
+                        return true;
+                    case 105:
+                        changeAdminGameMode(Globals.GAME_MODE_FFA);
+                        return true;
+                    case 106:
+                        if (mIsServer && mTcpServer != null) {
+                            mTcpServer.rebalanceAllPlayers(true);
+                        } else if (mTcpClient != null) {
+                            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ADMIN_SORTTEAMS);
+                        }
+                        return true;
+                }
+                return false;
+            }
+        });
+        popup.show();
+    }
+
+    private void changeAdminGameMode(int mode) {
+        if (mIsServer && mTcpServer != null) {
+            Globals.getInstance().mGameMode = mode;
+            mTcpServer.rebalanceAllPlayers(false);
+        } else if (mTcpClient != null) {
+            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ADMIN_GAMEMODE + mode);
+        }
     }
 
     private static final int NETWORK_TYPE_ENABLED = 1;
@@ -1266,8 +1339,9 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private void setReady(boolean sendPlayerLeft) {
         Button shuffleTeamsBtn = findViewById(R.id.shuffle_teams_button);
         if (shuffleTeamsBtn != null) {
-            shuffleTeamsBtn.setVisibility(mIsServer ? View.VISIBLE : View.GONE);
+            shuffleTeamsBtn.setVisibility((mIsServer && Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) ? View.VISIBLE : View.GONE);
         }
+        updateAdminButtonVisibility();
         if (mReady) {
             if (mUseNetwork) {
                 mServerIPTV.setVisibility(View.VISIBLE);
@@ -2774,7 +2848,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         mGameModeTV.setText(R.string.game_mode_ffa);
                     }
                     setTeam();
-                    if (!mIsServer && Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+                    if (!mIsServer && mReady && mUseNetwork && Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
                         mReady = true;
                         setReady();
                         setGameLimit();
@@ -2885,15 +2959,19 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 mServerIPTV.setVisibility(View.VISIBLE);
                 setNetworkMenu(NETWORK_TYPE_SERVING);
             } else if (NetMsg.NETMSG_SERVERCANCEL.equals(action)) {
+                cancelServerSearchTimeout();
                 if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
                     endGame();
                 } else {
                     mReady = false;
                     setReady(false);
                 }
+                mUseNetwork = true;
+                setNetworkMenu(NETWORK_TYPE_ENABLED);
+                displayAllNetworkingOptions(true);
                 Globals.getInstance().mPlayerID = mSelectedPlayerID;
                 setTeam();
-                Toast.makeText(getApplicationContext(), getString(R.string.error_server_cancel), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), getString(R.string.kicked_by_server_toast), Toast.LENGTH_SHORT).show();
             } else if (NetMsg.NETMSG_SERVERREPLY.equals(action)) {
                 cancelServerSearchTimeout();
                 if (intent.hasExtra(UDPListenerService.INTENT_PLAYERID)) {
@@ -2910,7 +2988,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             } else if (NetMsg.NETMSG_NETWORKCONNECTED.equals(action)) {
                 cancelServerSearchTimeout();
                 mNetworkStatusIV.setImageResource(R.drawable.ic_network_connected_24dp);
-                if (!mIsServer) {
+                if (!mIsServer && mReady && mUseNetwork) {
                     setNetworkMenu(NETWORK_TYPE_JOINED);
                 }
             } else if (NetMsg.NETMSG_NETWORKDISCONNECTED.equals(action)) {
@@ -2975,6 +3053,16 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         if (Globals.getInstance().mGameMode != Globals.GAME_MODE_FFA) {
             mTeamScoreLabelTV.setVisibility(View.VISIBLE);
             mTeamScoreTV.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void kickPlayerFromAdmin(byte playerID) {
+        if (mIsServer && mTcpServer != null) {
+            mTcpServer.kickPlayer(playerID);
+            Toast.makeText(this, "Player kicked", Toast.LENGTH_SHORT).show();
+        } else if (mTcpClient != null) {
+            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ADMIN_KICK + playerID);
+            Toast.makeText(this, "Kick command sent", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -3070,10 +3158,20 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         }).start();
     }
 
+    private void updateAdminButtonVisibility() {
+        Button adminBtn = findViewById(R.id.admin_controls_button);
+        if (adminBtn != null) {
+            boolean showAdmin = (mIsServer || Globals.getInstance().mIsAdmin) && mUseNetwork && mReady;
+            adminBtn.setVisibility(showAdmin ? View.VISIBLE : View.GONE);
+            Log.d(TAG, "updateAdminButtonVisibility: mIsServer=" + mIsServer + ", mIsAdmin=" + Globals.getInstance().mIsAdmin + ", mUseNetwork=" + mUseNetwork + ", mReady=" + mReady + " -> show=" + showAdmin);
+        }
+    }
+
     private void updatePlayerSettings() {
         mHealthLabelTV.setText(getString(R.string.health_label, Globals.getInstance().mFullHealth));
         mShotsRemainingLabelTV.setText(getString(R.string.shots_remaining_label, Globals.getInstance().mFullReload, (Globals.getInstance().mDamage * -1)));
         setGameLimit();
+        updateAdminButtonVisibility();
 
         int recoilMode = Globals.getInstance().mServerRecoilSetting;
         if (recoilMode == Globals.RECOIL_SETTING_ENABLED) {

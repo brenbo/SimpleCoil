@@ -131,6 +131,29 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
             else
                 networkStatus.setImageResource(R.drawable.ic_network_disconnected_24dp);
         }
+
+        ImageView kickPlayerIV = rowView.findViewById(R.id.kick_player_iv);
+        boolean isAdmin = Globals.getInstance().mIsAdmin;
+        boolean isServerAdmin = (!isClient || isAdmin);
+
+        if (kickPlayerIV != null) {
+            if (isServerAdmin && position >= 1 && position <= Globals.MAX_PLAYER_ID && data[position] != null && position != Globals.getInstance().mPlayerID) {
+                kickPlayerIV.setVisibility(View.VISIBLE);
+                final byte targetID = (byte) position;
+                kickPlayerIV.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (context instanceof FullscreenActivity) {
+                            ((FullscreenActivity) context).kickPlayerFromAdmin(targetID);
+                        } else if (context instanceof DedicatedServerActivity) {
+                            ((DedicatedServerActivity) context).kickPlayerFromAdmin(targetID);
+                        }
+                    }
+                });
+            } else {
+                kickPlayerIV.setVisibility(View.GONE);
+            }
+        }
         return rowView;
     }
 }

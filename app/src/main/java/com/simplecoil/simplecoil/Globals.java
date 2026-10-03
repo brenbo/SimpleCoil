@@ -380,6 +380,7 @@ public class Globals {
     public static final int RECOIL_SETTING_ENABLED = 1; // Force Enabled
     public static final int RECOIL_SETTING_DISABLED = 2; // Force Disabled
     public volatile int mServerRecoilSetting = RECOIL_SETTING_DEFAULT;
+    public volatile boolean mIsAdmin = false;
 
     public static class PlayerSettings {
         int health = Globals.MAX_HEALTH;
@@ -395,5 +396,6 @@ public class Globals {
         boolean allowShotModeAuto = true;
         int firingMode = FIRING_MODE_OUTDOOR_NO_CONE;
         int recoilSetting = RECOIL_SETTING_DEFAULT;
+        boolean isAdmin = false;
     }
 }

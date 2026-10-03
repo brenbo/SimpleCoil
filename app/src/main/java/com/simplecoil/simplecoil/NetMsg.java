@@ -46,6 +46,11 @@ public class NetMsg {
     public static final String NETMSG_NETWORKCONNECTED = "NETWORKCONNECTED";
     public static final String NETMSG_NETWORKDISCONNECTED = "NETWORKDISCONNECTED";
     public static final String NETMSG_PLAYERSETTINGSUPDATE = "PLAYERSETTINGSUPDATE";
+    public static final String NETMSG_ADMIN_STARTGAME = "ADMIN_STARTGAME";
+    public static final String NETMSG_ADMIN_ENDGAME = "ADMIN_ENDGAME";
+    public static final String NETMSG_ADMIN_GAMEMODE = "ADMIN_GAMEMODE";
+    public static final String NETMSG_ADMIN_SORTTEAMS = "ADMIN_SORTTEAMS";
+    public static final String NETMSG_ADMIN_KICK = "ADMIN_KICK";
 
     // When players join a game in progress, the server can send the player updates on appropriate values.
     // These items are intent extras.

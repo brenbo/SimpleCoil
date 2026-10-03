@@ -108,6 +108,7 @@ public class TcpServer extends Service {
     public static final String JSON_SHOT_MODE_AUTO = "shotmodeauto";
     public static final String JSON_FIRING_MODE = "firingmode";
     public static final String JSON_RECOIL_SETTING = "recoilsetting";
+    public static final String JSON_IS_ADMIN = "isadmin";
     public static final String JSON_ALLOWPLAYERSETTINGS = "allowplayersettings";
 
     private static volatile boolean keepListening = false;
@@ -836,6 +837,7 @@ public class TcpServer extends Service {
                 player.put(JSON_SHOT_MODE_AUTO, entry.getValue().allowShotModeAuto);
                 player.put(JSON_FIRING_MODE, entry.getValue().firingMode);
                 player.put(JSON_RECOIL_SETTING, entry.getValue().recoilSetting);
+                player.put(JSON_IS_ADMIN, entry.getValue().isAdmin);
                 players.put(player);
             }
             Globals.getInstance().mPlayerSettingsSemaphore.release();
@@ -1111,6 +1113,42 @@ public class TcpServer extends Service {
                                             sendPlayerData(entry.getValue().mPlayerID);
                                         } else if (message.equals(NetMsg.NETMSG_STARTGAME)) {
                                             startGame();
+                                        } else if (message.equals(NetMsg.NETMSG_ADMIN_STARTGAME)) {
+                                            Globals.PlayerSettings ps = Globals.getInstance().mPlayerSettings.get((byte) entry.getValue().mPlayerID);
+                                            if (ps != null && ps.isAdmin) {
+                                                startGame();
+                                            }
+                                        } else if (message.equals(NetMsg.NETMSG_ADMIN_ENDGAME)) {
+                                            Globals.PlayerSettings ps = Globals.getInstance().mPlayerSettings.get((byte) entry.getValue().mPlayerID);
+                                            if (ps != null && ps.isAdmin) {
+                                                endGame();
+                                            }
+                                        } else if (message.equals(NetMsg.NETMSG_ADMIN_SORTTEAMS)) {
+                                            Globals.PlayerSettings ps = Globals.getInstance().mPlayerSettings.get((byte) entry.getValue().mPlayerID);
+                                            if (ps != null && ps.isAdmin) {
+                                                rebalanceAllPlayers(true);
+                                            }
+                                        } else if (message.startsWith(NetMsg.NETMSG_ADMIN_GAMEMODE)) {
+                                            Globals.PlayerSettings ps = Globals.getInstance().mPlayerSettings.get((byte) entry.getValue().mPlayerID);
+                                            if (ps != null && ps.isAdmin) {
+                                                try {
+                                                    int mode = Integer.parseInt(message.substring(NetMsg.NETMSG_ADMIN_GAMEMODE.length()));
+                                                    Globals.getInstance().mGameMode = mode;
+                                                    rebalanceAllPlayers(false);
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        } else if (message.startsWith(NetMsg.NETMSG_ADMIN_KICK)) {
+                                            Globals.PlayerSettings ps = Globals.getInstance().mPlayerSettings.get((byte) entry.getValue().mPlayerID);
+                                            if (ps != null && ps.isAdmin) {
+                                                try {
+                                                    byte targetID = (byte) Integer.parseInt(message.substring(NetMsg.NETMSG_ADMIN_KICK.length()));
+                                                    kickPlayer(targetID);
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
                                         } else if (message.equals(NetMsg.NETMSG_ENDGAME)) {
                                             if (Globals.getInstance().mOnlyServerSettings) {
                                                 // If server settings only is enabled, then we treat this as if the client is leaving rather than ending the game
@@ -1268,6 +1306,9 @@ public class TcpServer extends Service {
                     settings.firingMode = player.getInt(JSON_FIRING_MODE);
                     if (player.has(JSON_RECOIL_SETTING)) {
                         settings.recoilSetting = player.getInt(JSON_RECOIL_SETTING);
+                    }
+                    if (player.has(JSON_IS_ADMIN)) {
+                        settings.isAdmin = player.getBoolean(JSON_IS_ADMIN);
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();

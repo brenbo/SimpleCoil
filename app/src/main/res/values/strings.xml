@@ -29,6 +29,8 @@
     <string name="player_settings_recoil_disabled">Recoil: Force Disabled</string>
     <string name="kick_player_button">Kick Player</string>
     <string name="kicked_by_server_toast">You were kicked by the server</string>
+    <string name="player_settings_admin">Admin Player (Server Controls)</string>
+    <string name="admin_controls_button">Server Controls</string>
 
     <string name="eliminations_count_label">ELIMINATIONS</string>
     <string name="lives_count_label">LIVES</string>

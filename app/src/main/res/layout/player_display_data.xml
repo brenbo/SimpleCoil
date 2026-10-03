@@ -50,5 +50,13 @@
         android:layout_marginStart="310dp"
         android:visibility="gone"
         app:srcCompat="@drawable/ic_network_connected_24dp" />
+
+    <ImageView
+        android:id="@+id/kick_player_iv"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="340dp"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_skull_red" />
 </RelativeLayout>
 </FrameLayout>

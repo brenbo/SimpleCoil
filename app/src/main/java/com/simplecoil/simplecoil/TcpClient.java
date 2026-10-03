@@ -459,6 +459,9 @@ public class TcpClient extends Service {
                     if (setting.has(TcpServer.JSON_RECOIL_SETTING)) {
                         playerSettings.recoilSetting = setting.getInt(TcpServer.JSON_RECOIL_SETTING);
                     }
+                    if (setting.has(TcpServer.JSON_IS_ADMIN)) {
+                        playerSettings.isAdmin = setting.getBoolean(TcpServer.JSON_IS_ADMIN);
+                    }
                     if (playerID == Globals.getInstance().mPlayerID) {
                         Globals.getInstance().mFullHealth = playerSettings.health;
                         Globals.getInstance().mFullReload = playerSettings.shots;
@@ -473,6 +476,7 @@ public class TcpClient extends Service {
                         Globals.getInstance().mAllowAutoShotMode = playerSettings.allowShotModeAuto;
                         Globals.getInstance().mCurrentFiringMode = playerSettings.firingMode;
                         Globals.getInstance().mServerRecoilSetting = playerSettings.recoilSetting;
+                        Globals.getInstance().mIsAdmin = playerSettings.isAdmin;
                     }
                 }
                 Globals.getInstance().mPlayerSettingsSemaphore.release();
