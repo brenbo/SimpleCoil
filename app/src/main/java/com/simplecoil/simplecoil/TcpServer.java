@@ -40,9 +40,11 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
@@ -1286,6 +1288,10 @@ public class TcpServer extends Service {
                     return;
                 }
                 Globals.getmTeamPlayerNameSemaphore();
+                Set<String> usedNames = new HashSet<>(Globals.getInstance().mTeamPlayerNameMap.values());
+                if (playerName.isEmpty() || playerName.equalsIgnoreCase("Player") || ProfanityFilter.containsProfanity(playerName) || usedNames.contains(playerName)) {
+                    playerName = NameGenerator.getRandomUniqueName(usedNames);
+                }
                 Globals.getInstance().mTeamPlayerNameMap.put(client.mPlayerID, playerName);
                 Globals.getInstance().mTeamPlayerNameSemaphore.release();
 
@@ -1345,6 +1351,10 @@ public class TcpServer extends Service {
             Globals.getInstance().mIPTeamMap.put(inetAddress, client.mPlayerID);
             Globals.getInstance().mIPTeamMapSemaphore.release();
             Globals.getmTeamPlayerNameSemaphore();
+            Set<String> usedNames = new HashSet<>(Globals.getInstance().mTeamPlayerNameMap.values());
+            if (playerName.isEmpty() || playerName.equalsIgnoreCase("Player") || ProfanityFilter.containsProfanity(playerName) || usedNames.contains(playerName)) {
+                playerName = NameGenerator.getRandomUniqueName(usedNames);
+            }
             Globals.getInstance().mTeamPlayerNameMap.put(client.mPlayerID, playerName);
             Globals.getInstance().mTeamPlayerNameSemaphore.release();
 

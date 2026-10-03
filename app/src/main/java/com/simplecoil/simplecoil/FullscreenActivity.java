@@ -690,6 +690,16 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         sharedPreferences = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         Globals.getInstance().mPlayerName = sharedPreferences.getString(PREF_PLAYER_NAME, "Player");
+        if (Globals.getInstance().mPlayerName.isEmpty() ||
+            Globals.getInstance().mPlayerName.equalsIgnoreCase("Player") ||
+            ProfanityFilter.containsProfanity(Globals.getInstance().mPlayerName)) {
+
+            String randomName = NameGenerator.getRandomName();
+            Globals.getInstance().mPlayerName = randomName;
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString(PREF_PLAYER_NAME, randomName);
+            editor.apply();
+        }
         Globals.getInstance().mCurrentFiringMode = sharedPreferences.getInt(PREF_FIRING_MODE, Globals.FIRING_MODE_OUTDOOR_NO_CONE);
         mSelectedPlayerID = (byte) sharedPreferences.getInt(PREF_SELECTED_PLAYER_ID, 0);
         Globals.getInstance().mPlayerID = mSelectedPlayerID;
@@ -1034,11 +1044,18 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 .setPositiveButton(R.string.ok,
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog,int id) {
-                                Globals.getInstance().mPlayerName = playerNameET.getText().toString();
+                                String name = playerNameET.getText().toString().trim();
+                                if (name.isEmpty() || name.equalsIgnoreCase("Player") || ProfanityFilter.containsProfanity(name)) {
+                                    if (ProfanityFilter.containsProfanity(name)) {
+                                        Toast.makeText(getApplicationContext(), "Please choose an appropriate player name!", Toast.LENGTH_SHORT).show();
+                                    }
+                                    name = NameGenerator.getRandomName();
+                                }
+                                Globals.getInstance().mPlayerName = name;
                                 SharedPreferences.Editor editor = sharedPreferences.edit();
-                                editor.putString(PREF_PLAYER_NAME, Globals.getInstance().mPlayerName);
+                                editor.putString(PREF_PLAYER_NAME, name);
                                 editor.apply();
-                                mPlayerNameTV.setText(Globals.getInstance().mPlayerName);
+                                mPlayerNameTV.setText(name);
                                 if (mReady) {
                                     mTcpClient.sendPlayerNameChange();
                                 } else {
