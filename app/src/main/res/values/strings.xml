@@ -27,6 +27,8 @@
     <string name="player_settings_recoil_default">Recoil: Let Player Choose</string>
     <string name="player_settings_recoil_enabled">Recoil: Force Enabled</string>
     <string name="player_settings_recoil_disabled">Recoil: Force Disabled</string>
+    <string name="kick_player_button">Kick Player</string>
+    <string name="kicked_by_server_toast">You were kicked by the server</string>
 
     <string name="eliminations_count_label">ELIMINATIONS</string>
     <string name="lives_count_label">LIVES</string>
@@ -74,8 +76,8 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
 
-    <string name="server_status_serving_on">Serving on %1$s</string>
-    <string name="server_status_connected_to">Connected to %1$s</string>
+    <string name="server_status_serving_on">%1$s</string>
+    <string name="server_status_connected_to">%1$s</string>
     <string name="server_status_searching">Searching for server&#8230;</string>
 
     <string name="use_network_button">Enable Networking</string>

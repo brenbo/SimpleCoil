@@ -54,6 +54,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     private int mSelectedTargetTeam = 0;
     private Button mRecoilSettingButton = null;
     private int mSelectedRecoilSetting = Globals.RECOIL_SETTING_DEFAULT;
+    private Button mKickPlayerButton = null;
 
     private boolean isServer = false;
     private byte mPlayerID = 0;
@@ -127,6 +128,9 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         Globals.getInstance().mPlayerSettingsSemaphore.release();
         mApplyAllSwitch.setChecked(false);
         mAllowPlayerSettingsSwitch.setChecked(Globals.getInstance().mAllowPlayerSettings);
+        if (mKickPlayerButton != null) {
+            mKickPlayerButton.setVisibility(View.VISIBLE);
+        }
         if (mRecoilSettingButton != null) {
             mRecoilSettingButton.setVisibility(View.VISIBLE);
             mSelectedRecoilSetting = playerSettings.recoilSetting;
@@ -164,6 +168,9 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     }
 
     private void getLocalSettings() {
+        if (mKickPlayerButton != null) {
+            mKickPlayerButton.setVisibility(View.GONE);
+        }
         if (mRecoilSettingButton != null) {
             mRecoilSettingButton.setVisibility(View.GONE);
         }
@@ -281,6 +288,19 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                         }
                     });
                     popup.show();
+                }
+            });
+        }
+        mKickPlayerButton = view.findViewById(R.id.kick_player_button);
+        if (mKickPlayerButton != null) {
+            mKickPlayerButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (isServer && mTcpServer != null) {
+                        mTcpServer.kickPlayer(mPlayerID);
+                        Toast.makeText(getContext(), "Player kicked", Toast.LENGTH_SHORT).show();
+                        dismiss();
+                    }
                 }
             });
         }

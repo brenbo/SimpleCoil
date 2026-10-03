@@ -239,6 +239,15 @@
             android:visibility="gone"
             android:text="@string/switch_team_button" />
 
+        <Button
+            android:id="@+id/kick_player_button"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:visibility="gone"
+            android:text="@string/kick_player_button" />
+
         <Switch
             android:id="@+id/allow_player_settings_switch"
             android:layout_width="match_parent"

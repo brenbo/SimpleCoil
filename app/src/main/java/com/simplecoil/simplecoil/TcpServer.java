@@ -360,6 +360,62 @@ public class TcpServer extends Service {
         thread.start();
     }
 
+    public void kickPlayer(final byte playerID) {
+        Log.d(TAG, "kickPlayer: kicking player " + playerID);
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mClientDataSemaphore.acquire();
+                    ClientData client = mClientData.get((int) playerID);
+                    if (client == null) {
+                        for (Map.Entry<Integer, ClientData> entry : mClientData.entrySet()) {
+                            if (entry.getValue().mPlayerID == playerID) {
+                                client = entry.getValue();
+                                break;
+                            }
+                        }
+                    }
+                    if (client != null) {
+                        client.sendTCPMessage(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_SERVERCANCEL);
+                        mClientData.remove(client.clientID);
+                        client.close();
+                    }
+                    mClientDataSemaphore.release();
+
+                    Globals.getmTeamIPMapSemaphore();
+                    InetAddress ip = Globals.getInstance().mTeamIPMap.get(playerID);
+                    if (ip != null) {
+                        Globals.getInstance().mTeamIPMap.remove(playerID);
+                    }
+                    Globals.getInstance().mTeamIPMapSemaphore.release();
+
+                    Globals.getmIPTeamMapSemaphore();
+                    if (ip != null) {
+                        Globals.getInstance().mIPTeamMap.remove(ip);
+                    }
+                    Globals.getInstance().mIPTeamMapSemaphore.release();
+
+                    Globals.getmTeamPlayerNameSemaphore();
+                    Globals.getInstance().mTeamPlayerNameMap.remove(playerID);
+                    Globals.getInstance().mTeamPlayerNameSemaphore.release();
+
+                    Globals.getmPlayerSettingsSemaphore();
+                    Globals.getInstance().mPlayerSettings.remove(playerID);
+                    Globals.getInstance().mPlayerSettingsSemaphore.release();
+
+                    sendPlayerData(SEND_ALL);
+                    sendAllGameInfo(SEND_ALL);
+                    sendBroadcast(new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    mClientDataSemaphore.release();
+                }
+            }
+        });
+        thread.start();
+    }
+
     public void rebalanceAllPlayers(final boolean randomize) {
         if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
             Log.w(TAG, "rebalanceAllPlayers: Game is running, skipping team rebalance!");
