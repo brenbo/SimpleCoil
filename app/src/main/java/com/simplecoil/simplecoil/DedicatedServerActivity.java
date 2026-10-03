@@ -318,6 +318,14 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             unbindService(mTcpServerServiceConnection);
     }
 
+    @Override
+    public void sendBroadcast(Intent intent) {
+        if (intent != null && intent.getPackage() == null) {
+            intent.setPackage(getPackageName());
+        }
+        super.sendBroadcast(intent);
+    }
+
     private void savePreference(String prefName, int prefValue) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putInt(prefName, prefValue);
