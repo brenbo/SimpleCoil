@@ -303,12 +303,15 @@ public class Globals {
     }
 
     public static int getPlayerCount() {
+        return getPlayerCount(false);
+    }
+    public static int getPlayerCount(boolean isDedicated) {
         int ret = 1;
         getmTeamIPMapSemaphore();
         if (getInstance().mTeamIPMap != null)
             ret = getInstance().mTeamIPMap.size();
         getInstance().mTeamIPMapSemaphore.release();
-        return ret + 1; // All other players plus ourself
+        return ret + (isDedicated ? 0 : 1); // All other players plus ourself except for dedicated server
     }
 
     public static class GPSData {

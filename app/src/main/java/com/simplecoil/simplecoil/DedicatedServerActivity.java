@@ -205,8 +205,8 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         if (mStartGameButton != null) {
             mStartGameButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
-                    Log.d(TAG, "DedicatedServer UI: Start Game clicked. getPlayerCount=" + Globals.getPlayerCount());
-                    if (Globals.getPlayerCount() <= 1) {
+                    Log.d(TAG, "DedicatedServer UI: Start Game clicked. getPlayerCount=" + Globals.getPlayerCount(true));
+                    if (Globals.getPlayerCount(true) <= 1) {
                         Toast.makeText(getApplicationContext(), getString(R.string.not_enough_players_toast), Toast.LENGTH_SHORT).show();
                         mNetworkPlayerCountTV.setText(R.string.network_player_1count);
                         return;
@@ -563,7 +563,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
     private void endGame() {
         Log.d(TAG, "DedicatedServerActivity.endGame called. mGameState=" + Globals.getInstance().mGameState);
         Globals.getInstance().mGameState = Globals.GAME_STATE_NONE;
-        mNetworkPlayerCountTV.setText(getString(R.string.network_player_count, Globals.getPlayerCount()));
+        mNetworkPlayerCountTV.setText(getString(R.string.network_player_count, Globals.getPlayerCount(true)));
         mStartGameButton.setEnabled(true);
         mGameModeButton.setEnabled(true);
         mGameLimitButton.setEnabled(true);
@@ -597,8 +597,8 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             final String action = intent.getAction();
             Log.d(TAG, "mServerUpdateReceiver onReceive action=" + action);
             if (NetMsg.NETMSG_JOIN.equals(action) || NetMsg.NETMSG_LEAVE.equals(action)) {
-                mNetworkPlayerCountTV.setText(getString(R.string.network_player_count, Globals.getPlayerCount() - 1));
-                if (Globals.getInstance().mGameMode == Globals.GAME_MODE_FFA && Globals.getInstance().mGameState != Globals.GAME_STATE_NONE && NetMsg.NETMSG_LEAVE.equals(action) && Globals.getPlayerCount() <= 1)
+                mNetworkPlayerCountTV.setText(getString(R.string.network_player_count, Globals.getPlayerCount(true)));
+                if (Globals.getInstance().mGameMode == Globals.GAME_MODE_FFA && Globals.getInstance().mGameState != Globals.GAME_STATE_NONE && NetMsg.NETMSG_LEAVE.equals(action) && Globals.getPlayerCount(true) <= 1)
                     endGame(); // Everyone else is out so game is over - this only works in FFA because we don't keep track of who and how many people are on each team
                 getPlayerDisplayData();
             } else if (NetMsg.NETMSG_STARTGAME.equals(action)) {
