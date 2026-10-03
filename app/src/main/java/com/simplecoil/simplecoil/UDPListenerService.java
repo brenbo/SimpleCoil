@@ -601,5 +601,8 @@ public class UDPListenerService extends Service {
         }
     }
 
-    public void endScanning() { mScanRunning = false; }
+    public void endScanning() {
+        mScanRunning = false;
+        keepListening = false;
+    }
 }

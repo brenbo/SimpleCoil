@@ -348,6 +348,53 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private int mNetworkMenuType = NETWORK_TYPE_ENABLED;
     private volatile boolean mShowPlayerDataDialog = false;
 
+    private Handler mSearchTimeoutHandler = new Handler(Looper.getMainLooper());
+    private Runnable mSearchTimeoutRunnable = null;
+    private long mSearchStartTime = 0;
+    private static final long SEARCH_TIMEOUT_MS = 10000;
+
+    private void startServerSearchTimeout() {
+        cancelServerSearchTimeout();
+        mSearchStartTime = SystemClock.elapsedRealtime();
+        mSearchTimeoutRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (mNetworkMenuType == NETWORK_TYPE_JOINING) {
+                    Log.d(TAG, "Server search timed out after 10 seconds.");
+                    stopServerSearch(false);
+                    Toast.makeText(getApplicationContext(), "No server found", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+        mSearchTimeoutHandler.postDelayed(mSearchTimeoutRunnable, SEARCH_TIMEOUT_MS);
+    }
+
+    private void cancelServerSearchTimeout() {
+        if (mSearchTimeoutRunnable != null) {
+            mSearchTimeoutHandler.removeCallbacks(mSearchTimeoutRunnable);
+            mSearchTimeoutRunnable = null;
+        }
+    }
+
+    private void stopServerSearch(boolean disableNetwork) {
+        cancelServerSearchTimeout();
+        if (mUDPListenerService != null) {
+            mUDPListenerService.endScanning();
+        }
+        if (disableNetwork) {
+            displayAllNetworkingOptions(false);
+            mUseNetwork = false;
+            mUseNetworkingButton.setText(R.string.use_network_button);
+            if (Globals.getInstance().mPlayerID == 0) {
+                Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
+            }
+            setTeam();
+        } else {
+            setNetworkMenu(NETWORK_TYPE_ENABLED);
+            displayAllNetworkingOptions(true);
+        }
+    }
+
     private void autoStartServerScan() {
         if (!mAutoScanStarted && mUDPListenerService != null && !mIsServer) {
             ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -363,6 +410,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             displayAllNetworkingOptions(true);
             setNetworkMenu(NETWORK_TYPE_JOINING);
             setTeam();
+            startServerSearchTimeout();
             mUDPListenerService.joinServer();
         }
     }
@@ -814,7 +862,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 mNetworkPopup.getMenu().add(0, R.id.disable_network_item, 70, R.string.no_network_button);
                 return;
             case NETWORK_TYPE_JOINING:
-                mNetworkPopup.getMenu().add(0, R.id.please_wait_item, 1, R.string.please_wait);
+                mNetworkPopup.getMenu().add(0, R.id.stop_searching_item, 10, "Stop Searching");
                 mNetworkPopup.getMenu().add(0, R.id.disable_network_item, 70, R.string.no_network_button);
                 return;
             case NETWORK_TYPE_JOINED:
@@ -834,22 +882,20 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.stop_searching_item:
+                stopServerSearch(false);
+                return true;
             case R.id.disable_network_item:
-                displayAllNetworkingOptions(false);
-                mUseNetwork = false;
-                mUseNetworkingButton.setText(R.string.use_network_button);
-                if (Globals.getInstance().mPlayerID == 0) {
-                    Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
-                }
-                setTeam();
+                stopServerSearch(true);
                 return true;
             case R.id.join_item:
                 if (mNetworkMenuType == NETWORK_TYPE_JOINED)
                     return true;
                 mReady = true;
                 setReady();
-                mUDPListenerService.joinServer();
                 setNetworkMenu(NETWORK_TYPE_JOINING);
+                startServerSearchTimeout();
+                mUDPListenerService.joinServer();
                 return true;
             case R.id.join_ip_item:
                 if (mNetworkMenuType == NETWORK_TYPE_JOINED)
@@ -2799,22 +2845,19 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 setReady();
             } else if (NetMsg.NETMSG_FAILEDTOJOIN.equals(action)) {
                 Log.d(TAG, "NETMSG_FAILEDTOJOIN received. mUseNetwork=" + mUseNetwork + ", mNetworkMenuType=" + mNetworkMenuType);
-                if (mUseNetwork && !mIsServer && (mNetworkMenuType == NETWORK_TYPE_JOINING || mNetworkMenuType == NETWORK_TYPE_ENABLED)) {
+                if (mUseNetwork && !mIsServer && mNetworkMenuType == NETWORK_TYPE_JOINING) {
                     new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            if (mUseNetwork && !mIsServer && (mNetworkMenuType == NETWORK_TYPE_JOINING || mNetworkMenuType == NETWORK_TYPE_ENABLED) && mUDPListenerService != null) {
+                            if (mUseNetwork && !mIsServer && mNetworkMenuType == NETWORK_TYPE_JOINING && mUDPListenerService != null) {
                                 Log.d(TAG, "Auto-retrying server scan...");
                                 mUDPListenerService.joinServer();
                             }
                         }
-                    }, 3000);
-                } else {
-                    Toast.makeText(getApplicationContext(), getString(R.string.error_join), Toast.LENGTH_SHORT).show();
-                    mReady = false;
-                    setReady();
+                    }, 2000);
                 }
             } else if (NetMsg.NETMSG_SERVERCREATED.equals(action)) {
+                cancelServerSearchTimeout();
                 mReady = true;
                 mIsServer = true;
                 setReady();
@@ -2835,6 +2878,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 setTeam();
                 Toast.makeText(getApplicationContext(), getString(R.string.error_server_cancel), Toast.LENGTH_SHORT).show();
             } else if (NetMsg.NETMSG_SERVERREPLY.equals(action)) {
+                cancelServerSearchTimeout();
                 if (intent.hasExtra(UDPListenerService.INTENT_PLAYERID)) {
                     byte assignedID = intent.getByteExtra(UDPListenerService.INTENT_PLAYERID, (byte) 0);
                     if (assignedID != 0) {
@@ -2847,6 +2891,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 mTcpClient.startTcpClient();
                 setNetworkMenu(NETWORK_TYPE_JOINED);
             } else if (NetMsg.NETMSG_NETWORKCONNECTED.equals(action)) {
+                cancelServerSearchTimeout();
                 mNetworkStatusIV.setImageResource(R.drawable.ic_network_connected_24dp);
                 if (!mIsServer) {
                     setNetworkMenu(NETWORK_TYPE_JOINED);
