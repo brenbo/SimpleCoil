@@ -25,21 +25,73 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData> {
     private final Activity context;
     private PlayerDisplayData[] data = new PlayerDisplayData[Globals.MAX_PLAYER_ID];
     private boolean isClient;
+    private int[] connectedPlayerIDs = new int[0];
 
     public PlayerDisplayDataListAdapter(Activity context,
                                         PlayerDisplayData[] data, boolean isClient) {
-        super(context, R.layout.player_display_data, data);
+        super(context, R.layout.player_display_data, data != null ? data : new PlayerDisplayData[0]);
         this.context = context;
         this.data = data;
         this.isClient = isClient;
+        updateConnectedPlayers();
     }
 
     public void setData(PlayerDisplayData[] data) {
         this.data = data;
+        updateConnectedPlayers();
+        notifyDataSetChanged();
+    }
+
+    private void updateConnectedPlayers() {
+        ArrayList<Integer> list = new ArrayList<>();
+        if (data != null) {
+            for (int playerId = 1; playerId <= Globals.MAX_PLAYER_ID; playerId++) {
+                if (playerId < data.length && data[playerId] != null) {
+                    list.add(playerId);
+                }
+            }
+        }
+        connectedPlayerIDs = new int[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            connectedPlayerIDs[i] = list.get(i);
+        }
+    }
+
+    @Override
+    public int getCount() {
+        return 2 + connectedPlayerIDs.length;
+    }
+
+    @Override
+    public PlayerDisplayData getItem(int position) {
+        if (position == 0) {
+            return null; // Header
+        } else if (position == 1) {
+            int teamTotalsIndex = Globals.MAX_PLAYER_ID + 1;
+            if (data != null && data.length > teamTotalsIndex) {
+                return data[teamTotalsIndex];
+            }
+            return null;
+        } else if (position >= 2 && position - 2 < connectedPlayerIDs.length) {
+            int playerID = connectedPlayerIDs[position - 2];
+            if (data != null && playerID < data.length) {
+                return data[playerID];
+            }
+        }
+        return null;
+    }
+
+    public byte getPlayerID(int position) {
+        if (position >= 2 && position - 2 < connectedPlayerIDs.length) {
+            return (byte) connectedPlayerIDs[position - 2];
+        }
+        return -1;
     }
 
     @Override
@@ -87,16 +139,15 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
             return rowView;
         }
 
-        int playerID = position - 1;
+        int playerID = getPlayerID(position);
+        if (playerID < 0 || data == null || playerID >= data.length || data[playerID] == null) {
+            return rowView;
+        }
 
         if (playerID == Globals.getInstance().mPlayerID) {
             playerNameTV.setTextColor(Color.parseColor("#FF8C00"));
         } else {
-            if (isClient) {
-                playerNameTV.setTextColor(Color.BLACK);
-            } else {
-                playerNameTV.setTextColor(Color.WHITE);
-            }
+            playerNameTV.setTextColor(Color.WHITE);
         }
 
         switch (Globals.getInstance().mGameMode) {
@@ -121,18 +172,7 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
                     playerIDTV.setText("1-" + playerID);
                 break;
         }
-        if (data == null || playerID >= data.length || data[playerID] == null) {
-            playerNameTV.setText(R.string.player_name_not_connected);
-            playerPointsTV.setText("");
-            playerEliminatedTV.setText("");
-            if (!isClient) {
-                ImageView networkStatus = rowView.findViewById(R.id.network_status_iv);
-                if (networkStatus != null) networkStatus.setVisibility(View.GONE);
-            }
-            ImageView kickPlayerIV = rowView.findViewById(R.id.kick_player_iv);
-            if (kickPlayerIV != null) kickPlayerIV.setVisibility(View.GONE);
-            return rowView;
-        }
+
         playerNameTV.setText(data[playerID].playerName);
         playerPointsTV.setText("" + data[playerID].points);
         if (data[playerID].overrideLives) {

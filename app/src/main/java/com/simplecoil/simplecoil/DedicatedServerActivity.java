@@ -40,6 +40,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -160,7 +161,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         if (mGameModeButton != null) {
             mGameModeButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
-                    PopupMenu popup = new PopupMenu(DedicatedServerActivity.this, v);
+                    PopupMenu popup = new PopupMenu(new ContextThemeWrapper(DedicatedServerActivity.this, R.style.AppTheme_PopupOverlay), v);
                     MenuInflater inflater = popup.getMenuInflater();
                     inflater.inflate(R.menu.game_mode_menu, popup.getMenu());
                     popup.setOnMenuItemClickListener(DedicatedServerActivity.this);
@@ -182,7 +183,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         if (mGPSModeButton != null) {
             mGPSModeButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
-                    PopupMenu popup = new PopupMenu(DedicatedServerActivity.this, v);
+                    PopupMenu popup = new PopupMenu(new ContextThemeWrapper(DedicatedServerActivity.this, R.style.AppTheme_PopupOverlay), v);
                     MenuInflater inflater = popup.getMenuInflater();
                     inflater.inflate(R.menu.gps_mode_menu, popup.getMenu());
                     popup.setOnMenuItemClickListener(DedicatedServerActivity.this);
@@ -282,10 +283,11 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         mPlayerDisplayList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (position <= 1 || position > Globals.MAX_PLAYER_ID + 1)
+                byte playerID = mPlayerDisplayListAdapter.getPlayerID(position);
+                if (playerID <= 0)
                     return;
                 PlayerSettingsAlertDialog dialog = new PlayerSettingsAlertDialog(DedicatedServerActivity.this);
-                dialog.setServer((byte)(position - 1), mTcpServer);
+                dialog.setServer(playerID, mTcpServer);
                 dialog.show();
             }
         });

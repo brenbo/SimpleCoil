@@ -5,6 +5,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="#080808"
     android:padding="10dp" >
 
     <TextView
@@ -12,8 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/blaster_disconnected_dialog"
-        android:background="#FFFFFF"
-        android:textColor="#000000"
+        android:textColor="#FFFFFF"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
 </RelativeLayout>

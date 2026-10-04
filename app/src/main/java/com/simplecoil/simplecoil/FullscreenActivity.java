@@ -60,6 +60,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -676,7 +677,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         if (mFiringModeButton != null) {
             mFiringModeButton.setOnClickListener((new View.OnClickListener() {
                 public void onClick(View v) {
-                    PopupMenu popup = new PopupMenu(FullscreenActivity.this, v);
+                    PopupMenu popup = new PopupMenu(new ContextThemeWrapper(FullscreenActivity.this, R.style.AppTheme_PopupOverlay), v);
                     MenuInflater inflater = popup.getMenuInflater();
                     inflater.inflate(R.menu.firing_mode_menu, popup.getMenu());
                     popup.setOnMenuItemClickListener(FullscreenActivity.this);
@@ -748,7 +749,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         return;
                     }
                     if (mNetworkPopup == null) {
-                        mNetworkPopup = new PopupMenu(FullscreenActivity.this, v);
+                        mNetworkPopup = new PopupMenu(new ContextThemeWrapper(FullscreenActivity.this, R.style.AppTheme_PopupOverlay), v);
                         mNetworkPopup.setOnMenuItemClickListener(FullscreenActivity.this);
                     }
                     if (!mUseNetwork) {
@@ -847,7 +848,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
 
     private void showAdminControlsMenu(View v) {
         Log.d(TAG, "showAdminControlsMenu: current mGameState=" + Globals.getInstance().mGameState + ", mIsServer=" + mIsServer);
-        PopupMenu popup = new PopupMenu(FullscreenActivity.this, v);
+        PopupMenu popup = new PopupMenu(new ContextThemeWrapper(FullscreenActivity.this, R.style.AppTheme_PopupOverlay), v);
         if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
             popup.getMenu().add(0, 101, 10, R.string.start_game_button);
             popup.getMenu().add(0, 103, 20, R.string.game_mode_2teams);
@@ -1012,7 +1013,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 requestPlayerName();
                 return true;
             case R.id.game_mode_item:
-                PopupMenu popup = new PopupMenu(FullscreenActivity.this, mUseNetworkingButton);
+                PopupMenu popup = new PopupMenu(new ContextThemeWrapper(FullscreenActivity.this, R.style.AppTheme_PopupOverlay), mUseNetworkingButton);
                 MenuInflater inflater = popup.getMenuInflater();
                 inflater.inflate(R.menu.game_mode_menu, popup.getMenu());
                 popup.setOnMenuItemClickListener(FullscreenActivity.this);
@@ -3262,7 +3263,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         @Override
                         public void run() {
                             if (isFinishing() || isDestroyed()) return;
-                            AlertDialog.Builder alertDialog = new AlertDialog.Builder(FullscreenActivity.this);
+                            AlertDialog.Builder alertDialog = new AlertDialog.Builder(FullscreenActivity.this, R.style.Theme_AppCompat_DayNight_Dialog_Alert);
                             alertDialog.setNegativeButton(R.string.ok,
                                     new DialogInterface.OnClickListener() {
                                         public void onClick(DialogInterface dialog,int id) {
@@ -3278,10 +3279,11 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                 listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                     @Override
                                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                                        if (position <= 1 || position > Globals.MAX_PLAYER_ID + 1)
+                                        byte playerID = playerDisplayListAdapter.getPlayerID(position);
+                                        if (playerID <= 0)
                                             return;
                                         PlayerSettingsAlertDialog dialog = new PlayerSettingsAlertDialog(FullscreenActivity.this);
-                                        dialog.setServer((byte) (position - 1), mTcpServer);
+                                        dialog.setServer(playerID, mTcpServer);
                                         dialog.show();
                                     }
                                 });

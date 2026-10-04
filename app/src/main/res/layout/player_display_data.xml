@@ -12,6 +12,7 @@
     android:id="@+id/connect_layout"
     android:layout_width="match_parent"
     android:layout_height="30dp"
+    android:background="#080808"
     android:visibility="visible"
     android:fitsSystemWindows="true">
 

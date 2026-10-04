@@ -22,6 +22,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -66,7 +67,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     private Context mContext = null;
 
     public PlayerSettingsAlertDialog(Context context) {
-        super(context);
+        super(context, R.style.AppDialogTheme);
         mContext = context;
     }
 
@@ -222,7 +223,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         mFiringModeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                PopupMenu popup = new PopupMenu(getContext(), view);
+                PopupMenu popup = new PopupMenu(new ContextThemeWrapper(getContext(), R.style.AppTheme_PopupOverlay), view);
                 MenuInflater inflater = popup.getMenuInflater();
                 inflater.inflate(R.menu.firing_mode_menu, popup.getMenu());
                 popup.setOnMenuItemClickListener(PlayerSettingsAlertDialog.this);
@@ -256,7 +257,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
             mRecoilSettingButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    PopupMenu popup = new PopupMenu(getContext(), v);
+                    PopupMenu popup = new PopupMenu(new ContextThemeWrapper(getContext(), R.style.AppTheme_PopupOverlay), v);
                     popup.getMenu().add(0, Globals.RECOIL_SETTING_DEFAULT, 10, R.string.player_settings_recoil_default);
                     popup.getMenu().add(0, Globals.RECOIL_SETTING_ENABLED, 20, R.string.player_settings_recoil_enabled);
                     popup.getMenu().add(0, Globals.RECOIL_SETTING_DISABLED, 30, R.string.player_settings_recoil_disabled);
@@ -277,7 +278,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
             mSwitchTeamButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    PopupMenu popup = new PopupMenu(getContext(), view);
+                    PopupMenu popup = new PopupMenu(new ContextThemeWrapper(getContext(), R.style.AppTheme_PopupOverlay), view);
                     int currentTeam = Globals.getInstance().calcNetworkTeam(mPlayerID);
                     int gameMode = Globals.getInstance().mGameMode;
                     int totalTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
