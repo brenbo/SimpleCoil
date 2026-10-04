@@ -348,7 +348,22 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private boolean mAutoScanStarted = false;
     private int mNetworkMenuType = NETWORK_TYPE_ENABLED;
     private volatile boolean mShowPlayerDataDialog = false;
+    private AlertDialog mScoreboardDialog = null;
     private String mLastPlayerDataJson = null;
+
+    private void dismissScoreboardDialog() {
+        mShowPlayerDataDialog = false;
+        if (mScoreboardDialog != null) {
+            try {
+                if (mScoreboardDialog.isShowing()) {
+                    mScoreboardDialog.dismiss();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error dismissing scoreboard dialog", e);
+            }
+            mScoreboardDialog = null;
+        }
+    }
 
     private Handler mSearchTimeoutHandler = new Handler(Looper.getMainLooper());
     private Runnable mSearchTimeoutRunnable = null;
@@ -1387,6 +1402,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     }
 
     private void startGame() {
+        dismissScoreboardDialog();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
@@ -1891,6 +1907,7 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
 
     @Override
     protected void onDestroy() {
+        dismissScoreboardDialog();
         resetBluetoothServices();
         if (mUDPServiceConnection != null)
             try {unbindService(mUDPServiceConnection);} catch (Exception e) {/* nothing */}
@@ -3263,6 +3280,8 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         @Override
                         public void run() {
                             if (isFinishing() || isDestroyed()) return;
+                            if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) return;
+                            dismissScoreboardDialog();
                             AlertDialog.Builder alertDialog = new AlertDialog.Builder(FullscreenActivity.this, R.style.Theme_AppCompat_DayNight_Dialog_Alert);
                             alertDialog.setNegativeButton(R.string.ok,
                                     new DialogInterface.OnClickListener() {
@@ -3288,7 +3307,14 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                     }
                                 });
                             }
-                            alertDialog.show();
+                            mScoreboardDialog = alertDialog.create();
+                            mScoreboardDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                                @Override
+                                public void onDismiss(DialogInterface dialog) {
+                                    mScoreboardDialog = null;
+                                }
+                            });
+                            mScoreboardDialog.show();
                         }
                     });
                 }
