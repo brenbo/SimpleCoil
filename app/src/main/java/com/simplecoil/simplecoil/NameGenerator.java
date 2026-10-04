@@ -15,7 +15,7 @@ public class NameGenerator {
             "Cyborg", "Superboy", "Robin", "Mystique", "Rogue", "Beast",
             "Ant-Man", "Wasp", "Gamora", "Drax", "Nebula", "Loki", "Thanos",
             "Superman", "Wonder Woman", "Supergirl", "Batgirl", "Nightwing",
-            "Shazam", "Green Arrow", "Martian Manhunter", "Hawkman", "Hawkgirl",
+            "Shazam", "Green Arrow", "Beast Boy", "Raven", "Starfire",
             "Bucky Barnes", "Falcon", "Vision", "Scarlet Witch", "Quicksilver",
             "Moon Knight", "Ghost Rider", "Blade", "Silver Surfer", "Nova"
     };
