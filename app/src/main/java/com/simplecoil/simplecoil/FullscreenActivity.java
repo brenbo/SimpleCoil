@@ -3280,7 +3280,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         @Override
                         public void run() {
                             if (isFinishing() || isDestroyed()) return;
-                            if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) return;
                             dismissScoreboardDialog();
                             AlertDialog.Builder alertDialog = new AlertDialog.Builder(FullscreenActivity.this, R.style.Theme_AppCompat_DayNight_Dialog_Alert);
                             alertDialog.setNegativeButton(R.string.ok,
