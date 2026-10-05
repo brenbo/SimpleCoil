@@ -543,6 +543,14 @@ public class TcpClient extends Service {
                     Globals.getInstance().mScoreLimit = limits.getInt(TcpServer.JSON_SCORELIMIT);
                 }
                 Globals.getInstance().mGameMode = game.getInt(TcpServer.JSON_GAMEMODE);
+                if (game.has(TcpServer.JSON_TEAMSIZES)) {
+                    JSONArray teamSizesArr = game.getJSONArray(TcpServer.JSON_TEAMSIZES);
+                    int[] sizes = new int[teamSizesArr.length()];
+                    for (int i = 0; i < teamSizesArr.length(); i++) {
+                        sizes[i] = teamSizesArr.getInt(i);
+                    }
+                    Globals.getInstance().mTeamSizes = sizes;
+                }
                 Globals.getInstance().mUseGPS = game.has(TcpServer.JSON_USEGPS);
                 if (Globals.getInstance().mUseGPS) {
                     Globals.getInstance().mGPSMode = game.getInt(TcpServer.JSON_USEGPS);

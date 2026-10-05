@@ -51,6 +51,7 @@ public class NetMsg {
     public static final String NETMSG_ADMIN_GAMEMODE = "ADMIN_GAMEMODE";
     public static final String NETMSG_ADMIN_SORTTEAMS = "ADMIN_SORTTEAMS";
     public static final String NETMSG_ADMIN_KICK = "ADMIN_KICK";
+    public static final String NETMSG_ADMIN_TEAMSIZES = "ADMIN_TEAMSIZES";
 
     // When players join a game in progress, the server can send the player updates on appropriate values.
     // These items are intent extras.

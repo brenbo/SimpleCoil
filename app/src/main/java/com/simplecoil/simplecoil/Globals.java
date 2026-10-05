@@ -110,6 +110,48 @@ public class Globals {
     public volatile long mServerGameTimeRemaining = 0; // in seconds
 
     public volatile InetAddress mServerIP = null;
+    public volatile int[] mTeamSizes = new int[]{16, 16};
+
+    public void resetDefaultTeamSizes() {
+        if (mGameMode == GAME_MODE_4TEAMS) {
+            mTeamSizes = new int[]{8, 8, 8, 8};
+        } else {
+            mTeamSizes = new int[]{16, 16};
+        }
+    }
+
+    public int[] getTeamSizes() {
+        int expectedTeams = (mGameMode == GAME_MODE_4TEAMS) ? 4 : 2;
+        if (mTeamSizes == null || mTeamSizes.length != expectedTeams) {
+            resetDefaultTeamSizes();
+        } else {
+            int sum = 0;
+            for (int size : mTeamSizes) {
+                sum += size;
+            }
+            if (sum != MAX_PLAYER_ID) {
+                resetDefaultTeamSizes();
+            }
+        }
+        return mTeamSizes;
+    }
+
+    public int getTeamStartID(int team) {
+        int numTeams = (mGameMode == GAME_MODE_4TEAMS) ? 4 : 2;
+        int[] sizes = getTeamSizes();
+        int startID = 1;
+        for (int t = 1; t < team && t <= numTeams; t++) {
+            startID += sizes[t - 1];
+        }
+        return startID;
+    }
+
+    public int getTeamEndID(int team) {
+        int numTeams = (mGameMode == GAME_MODE_4TEAMS) ? 4 : 2;
+        int[] sizes = getTeamSizes();
+        if (team < 1 || team > numTeams) return MAX_PLAYER_ID;
+        return getTeamStartID(team) + sizes[team - 1] - 1;
+    }
 
     protected Globals(){}
 
@@ -133,24 +175,20 @@ public class Globals {
     }
 
     public int calcNetworkTeam(byte player_id) {
-        int team = 1;
-        if (player_id > MAX_PLAYER_ID)
+        if (player_id < 1 || player_id > MAX_PLAYER_ID)
             return INVALID_PLAYER_ID;
-        if (mGameMode == GAME_MODE_2TEAMS) {
-            final int x = ((MAX_PLAYER_ID + 1) / 2);
-            if (player_id > x)
-                team = 2;
-        } else if (mGameMode == GAME_MODE_4TEAMS){
-            final int x = ((MAX_PLAYER_ID + 1) / 4);
-            if (player_id > 3 * x)
-                team = 4;
-            else if (player_id > 2 * x)
-                team = 3;
-            else if (player_id > x)
-                team = 2;
-        } else if (mGameMode == GAME_MODE_FFA)
+        if (mGameMode == GAME_MODE_FFA)
             return player_id;
-        return team;
+        int numTeams = (mGameMode == GAME_MODE_4TEAMS) ? 4 : 2;
+        int[] sizes = getTeamSizes();
+        int currentCumulative = 0;
+        for (int t = 0; t < numTeams; t++) {
+            currentCumulative += sizes[t];
+            if (player_id <= currentCumulative) {
+                return t + 1;
+            }
+        }
+        return numTeams;
     }
 
     public static byte findAutoSortPlayerID() {
@@ -169,7 +207,9 @@ public class Globals {
             }
         } else {
             int numTeams = (gameMode == GAME_MODE_4TEAMS) ? 4 : 2;
-            int playersPerTeam = maxPlayers / numTeams;
+            if (getInstance().mTeamSizes == null || getInstance().mTeamSizes.length < numTeams) {
+                getInstance().resetDefaultTeamSizes();
+            }
             int[] teamCounts = new int[numTeams + 1];
 
             for (byte i = 1; i <= maxPlayers; i++) {
@@ -181,22 +221,28 @@ public class Globals {
                 }
             }
 
-            int minCount = Integer.MAX_VALUE;
-            int bestTeam = 1;
+            double minRatio = Double.MAX_VALUE;
+            int bestTeam = -1;
             for (int t = 1; t <= numTeams; t++) {
-                if (teamCounts[t] < minCount) {
-                    minCount = teamCounts[t];
-                    bestTeam = t;
+                int capacity = getInstance().mTeamSizes[t - 1];
+                if (teamCounts[t] < capacity) {
+                    double fillRatio = (double) teamCounts[t] / capacity;
+                    if (fillRatio < minRatio) {
+                        minRatio = fillRatio;
+                        bestTeam = t;
+                    }
                 }
             }
 
-            int startID = (bestTeam - 1) * playersPerTeam + 1;
-            int endID = bestTeam * playersPerTeam;
-            for (int i = startID; i <= endID; i++) {
-                byte testID = (byte) i;
-                if (testID != getInstance().mPlayerID && teamMap.get(testID) == null) {
-                    getInstance().mTeamIPMapSemaphore.release();
-                    return testID;
+            if (bestTeam != -1) {
+                int startID = getInstance().getTeamStartID(bestTeam);
+                int endID = getInstance().getTeamEndID(bestTeam);
+                for (int i = startID; i <= endID; i++) {
+                    byte testID = (byte) i;
+                    if (testID != getInstance().mPlayerID && teamMap.get(testID) == null) {
+                        getInstance().mTeamIPMapSemaphore.release();
+                        return testID;
+                    }
                 }
             }
 
@@ -214,14 +260,12 @@ public class Globals {
 
     public static byte findOpenPlayerIDOnTeam(int targetTeam) {
         int gameMode = getInstance().mGameMode;
-        int maxPlayers = MAX_PLAYER_ID;
         int numTeams = (gameMode == GAME_MODE_4TEAMS) ? 4 : 2;
         if (targetTeam < 1 || targetTeam > numTeams)
             return 0;
 
-        int playersPerTeam = maxPlayers / numTeams;
-        int startID = (targetTeam - 1) * playersPerTeam + 1;
-        int endID = targetTeam * playersPerTeam;
+        int startID = getInstance().getTeamStartID(targetTeam);
+        int endID = getInstance().getTeamEndID(targetTeam);
 
         getmTeamIPMapSemaphore();
         Map<Byte, InetAddress> teamMap = getInstance().mTeamIPMap;

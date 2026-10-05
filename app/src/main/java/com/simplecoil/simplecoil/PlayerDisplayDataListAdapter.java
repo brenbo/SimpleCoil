@@ -24,14 +24,28 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
 public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData> {
+
+    public static class DisplayRow {
+        public static final int TYPE_COLUMN_HEADER = 0;
+        public static final int TYPE_TEAM_TOTALS = 1;
+        public static final int TYPE_TEAM_HEADER = 2;
+        public static final int TYPE_PLAYER = 3;
+
+        public int type;
+        public int teamNumber;  // 1-based team index, or 0 for FFA
+        public byte playerID;
+        public int indexInTeam; // 1-based index within team
+    }
+
     private final Activity context;
     private PlayerDisplayData[] data = new PlayerDisplayData[Globals.MAX_PLAYER_ID];
     private boolean isClient;
-    private int[] connectedPlayerIDs = new int[0];
+    private ArrayList<DisplayRow> displayRows = new ArrayList<>();
 
     public PlayerDisplayDataListAdapter(Activity context,
                                         PlayerDisplayData[] data, boolean isClient) {
@@ -39,75 +53,178 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
         this.context = context;
         this.data = data;
         this.isClient = isClient;
-        updateConnectedPlayers();
+        updateDisplayRows();
     }
 
     public void setData(PlayerDisplayData[] data) {
         this.data = data;
-        updateConnectedPlayers();
+        updateDisplayRows();
         notifyDataSetChanged();
     }
 
-    private void updateConnectedPlayers() {
-        ArrayList<Integer> list = new ArrayList<>();
-        if (data != null) {
-            for (int playerId = 1; playerId <= Globals.MAX_PLAYER_ID; playerId++) {
-                if (playerId < data.length && data[playerId] != null) {
-                    list.add(playerId);
+    private void updateDisplayRows() {
+        displayRows.clear();
+
+        // 1. Column header row
+        DisplayRow colHeader = new DisplayRow();
+        colHeader.type = DisplayRow.TYPE_COLUMN_HEADER;
+        displayRows.add(colHeader);
+
+        // 2. Team totals row
+        DisplayRow teamTotals = new DisplayRow();
+        teamTotals.type = DisplayRow.TYPE_TEAM_TOTALS;
+        displayRows.add(teamTotals);
+
+        int gameMode = Globals.getInstance().mGameMode;
+
+        if (gameMode == Globals.GAME_MODE_FFA) {
+            DisplayRow teamHeader = new DisplayRow();
+            teamHeader.type = DisplayRow.TYPE_TEAM_HEADER;
+            teamHeader.teamNumber = 0;
+            displayRows.add(teamHeader);
+
+            for (int pId = 1; pId <= Globals.MAX_PLAYER_ID; pId++) {
+                if (data != null && pId < data.length && data[pId] != null) {
+                    DisplayRow pRow = new DisplayRow();
+                    pRow.type = DisplayRow.TYPE_PLAYER;
+                    pRow.playerID = (byte) pId;
+                    pRow.teamNumber = 0;
+                    pRow.indexInTeam = pId;
+                    displayRows.add(pRow);
                 }
             }
-        }
-        connectedPlayerIDs = new int[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            connectedPlayerIDs[i] = list.get(i);
+        } else {
+            int numTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
+            for (int t = 1; t <= numTeams; t++) {
+                DisplayRow tHeader = new DisplayRow();
+                tHeader.type = DisplayRow.TYPE_TEAM_HEADER;
+                tHeader.teamNumber = t;
+                displayRows.add(tHeader);
+
+                int startID = Globals.getInstance().getTeamStartID(t);
+                int endID = Globals.getInstance().getTeamEndID(t);
+                int indexInTeam = 1;
+                for (int pId = startID; pId <= endID; pId++) {
+                    if (data != null && pId < data.length && data[pId] != null) {
+                        DisplayRow pRow = new DisplayRow();
+                        pRow.type = DisplayRow.TYPE_PLAYER;
+                        pRow.playerID = (byte) pId;
+                        pRow.teamNumber = t;
+                        pRow.indexInTeam = indexInTeam;
+                        displayRows.add(pRow);
+                    }
+                    indexInTeam++;
+                }
+            }
         }
     }
 
     @Override
     public int getCount() {
-        return 2 + connectedPlayerIDs.length;
+        return displayRows.size();
     }
 
     @Override
     public PlayerDisplayData getItem(int position) {
-        if (position == 0) {
-            return null; // Header
-        } else if (position == 1) {
-            int teamTotalsIndex = Globals.MAX_PLAYER_ID + 1;
-            if (data != null && data.length > teamTotalsIndex) {
-                return data[teamTotalsIndex];
-            }
-            return null;
-        } else if (position >= 2 && position - 2 < connectedPlayerIDs.length) {
-            int playerID = connectedPlayerIDs[position - 2];
-            if (data != null && playerID < data.length) {
-                return data[playerID];
+        if (position >= 0 && position < displayRows.size()) {
+            DisplayRow row = displayRows.get(position);
+            if (row.type == DisplayRow.TYPE_PLAYER && data != null && row.playerID < data.length) {
+                return data[row.playerID];
+            } else if (row.type == DisplayRow.TYPE_TEAM_TOTALS) {
+                int teamTotalsIndex = Globals.MAX_PLAYER_ID + 1;
+                if (data != null && data.length > teamTotalsIndex) {
+                    return data[teamTotalsIndex];
+                }
             }
         }
         return null;
     }
 
+    public DisplayRow getDisplayRow(int position) {
+        if (position >= 0 && position < displayRows.size()) {
+            return displayRows.get(position);
+        }
+        return null;
+    }
+
     public byte getPlayerID(int position) {
-        if (position >= 2 && position - 2 < connectedPlayerIDs.length) {
-            return (byte) connectedPlayerIDs[position - 2];
+        DisplayRow row = getDisplayRow(position);
+        if (row != null && row.type == DisplayRow.TYPE_PLAYER) {
+            return row.playerID;
         }
         return -1;
     }
 
     @Override
     public View getView(int position, View view, ViewGroup parent) {
+        DisplayRow row = getDisplayRow(position);
+        if (row == null) {
+            return new View(context);
+        }
+
         LayoutInflater inflater = context.getLayoutInflater();
+
+        if (row.type == DisplayRow.TYPE_TEAM_HEADER) {
+            View headerView = inflater.inflate(R.layout.player_display_team_header, null, true);
+            TextView titleTV = headerView.findViewById(R.id.team_header_title_tv);
+            TextView actionTV = headerView.findViewById(R.id.team_header_action_tv);
+
+            boolean isAdmin = Globals.getInstance().mIsAdmin;
+            boolean canEdit = (!isClient || isAdmin);
+
+            int gameMode = Globals.getInstance().mGameMode;
+            if (gameMode == Globals.GAME_MODE_FFA) {
+                titleTV.setText("PLAYERS");
+                actionTV.setVisibility(View.GONE);
+            } else {
+                int[] sizes = Globals.getInstance().getTeamSizes();
+                int capacity = 16;
+                if (sizes != null && (row.teamNumber - 1) < sizes.length) {
+                    capacity = sizes[row.teamNumber - 1];
+                }
+                titleTV.setText("TEAM " + row.teamNumber + " (Limit: " + capacity + ")");
+                if (canEdit) {
+                    actionTV.setVisibility(View.VISIBLE);
+                    actionTV.setText("Tap to edit ratio");
+                } else {
+                    actionTV.setVisibility(View.GONE);
+                }
+            }
+
+            if (canEdit) {
+                headerView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
+                            Toast.makeText(context, "Cannot edit team ratios while a game is in progress", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (context instanceof DedicatedServerActivity) {
+                            ((DedicatedServerActivity) context).showTeamRatioDialog();
+                        } else if (context instanceof FullscreenActivity) {
+                            ((FullscreenActivity) context).showTeamRatioDialog();
+                        }
+                    }
+                });
+            } else {
+                headerView.setOnClickListener(null);
+            }
+
+            return headerView;
+        }
+
         View rowView;
         if (isClient)
             rowView = inflater.inflate(R.layout.player_display_data_client, null, true);
         else
             rowView = inflater.inflate(R.layout.player_display_data, null, true);
+
         TextView playerIDTV = rowView.findViewById(R.id.player_id_tv);
         TextView playerNameTV = rowView.findViewById(R.id.player_name_tv);
         TextView playerPointsTV = rowView.findViewById(R.id.player_points_tv);
         TextView playerEliminatedTV = rowView.findViewById(R.id.player_eliminated_tv);
 
-        if (position == 0) {
+        if (row.type == DisplayRow.TYPE_COLUMN_HEADER) {
             playerIDTV.setText(R.string.player_list_id_label);
             playerNameTV.setText(R.string.player_list_name_label);
             playerPointsTV.setText(R.string.player_list_points_label);
@@ -116,7 +233,7 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
             else
                 playerEliminatedTV.setText(R.string.player_list_eliminated_label);
             return rowView;
-        } else if (position == 1) {
+        } else if (row.type == DisplayRow.TYPE_TEAM_TOTALS) {
             int teamTotalsIndex = Globals.MAX_PLAYER_ID + 1;
             if (data != null && data.length > teamTotalsIndex && data[teamTotalsIndex] != null && data[teamTotalsIndex].playerName != null) {
                 playerIDTV.setText(data[teamTotalsIndex].playerName);
@@ -139,7 +256,7 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
             return rowView;
         }
 
-        int playerID = getPlayerID(position);
+        int playerID = row.playerID;
         if (playerID < 0 || data == null || playerID >= data.length || data[playerID] == null) {
             return rowView;
         }
@@ -155,21 +272,8 @@ public class PlayerDisplayDataListAdapter extends ArrayAdapter<PlayerDisplayData
                 playerIDTV.setText("" + playerID);
                 break;
             case Globals.GAME_MODE_2TEAMS:
-                if (playerID > Globals.MAX_PLAYER_ID / 2)
-                    playerIDTV.setText("2-" + (playerID - (Globals.MAX_PLAYER_ID / 2)));
-                else
-                    playerIDTV.setText("1-" + playerID);
-                break;
             case Globals.GAME_MODE_4TEAMS:
-                int playersPerTeam = Globals.MAX_PLAYER_ID / 4;
-                if (playerID > playersPerTeam * 3)
-                    playerIDTV.setText("4-" + (playerID - (playersPerTeam * 3)));
-                else if (playerID > playersPerTeam * 2)
-                    playerIDTV.setText("3-" + (playerID - (playersPerTeam * 2)));
-                else if (playerID > playersPerTeam)
-                    playerIDTV.setText("2-" + (playerID - playersPerTeam));
-                else
-                    playerIDTV.setText("1-" + playerID);
+                playerIDTV.setText(row.teamNumber + "-" + row.indexInTeam);
                 break;
         }
 

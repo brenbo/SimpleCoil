@@ -73,6 +73,7 @@ import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -1639,28 +1640,16 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 Globals.getInstance().mPlayerID = (mSelectedPlayerID != 0) ? mSelectedPlayerID : 1;
             }
             if (Globals.getInstance().mGameMode != Globals.GAME_MODE_FFA) {
-                mNetworkTeam = 1;
-                int x = ((Globals.MAX_PLAYER_ID + 1) / 2);
-                if (Globals.getInstance().mGameMode == Globals.GAME_MODE_2TEAMS) {
-                    if (Globals.getInstance().mPlayerID > x)
-                        mNetworkTeam = 2;
-                } else {
-                    x = ((Globals.MAX_PLAYER_ID + 1) / 4);
-                    if (Globals.getInstance().mPlayerID > 3 * x)
-                        mNetworkTeam = 4;
-                    else if (Globals.getInstance().mPlayerID > 2 * x)
-                        mNetworkTeam = 3;
-                    else if (Globals.getInstance().mPlayerID > x)
-                        mNetworkTeam = 2;
-                }
-                int player = (Globals.getInstance().mPlayerID - (byte)(x * (mNetworkTeam - 1)));
+                mNetworkTeam = Globals.getInstance().calcNetworkTeam(Globals.getInstance().mPlayerID);
+                int startID = Globals.getInstance().getTeamStartID(mNetworkTeam);
+                int player = Globals.getInstance().mPlayerID - startID + 1;
                 mTeamLabelTV.setText(getString(R.string.team_number_label, mNetworkTeam));
                 if (mUseNetwork && mTcpClient != null && mTcpClient.isDedicatedServer()) {
                     String playerName = Globals.getInstance().mPlayerName;
                     if (playerName == null || playerName.isEmpty()) {
                         playerName = getString(R.string.network_team, player);
                     } else {
-                        playerName = playerName + " " + player;
+                        playerName = playerName + " (" + mNetworkTeam + "-" + player + ")";
                     }
                     mTeamTV.setText(playerName);
                 } else {
@@ -2955,12 +2944,9 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     mTeamScoreTV.setText(score);
                     if (!mTcpClient.isDedicatedServer()) {
                         // Send a message to all teammates about the score increase
-                        int teamSize = ((Globals.MAX_PLAYER_ID + 1) / 2);
-                        if (Globals.getInstance().mGameMode == Globals.GAME_MODE_4TEAMS) {
-                            teamSize = ((Globals.MAX_PLAYER_ID + 1) / 4);
-                        }
-                        int startPoint = (teamSize * mNetworkTeam) - teamSize + 1;
-                        for (int x = startPoint; x < startPoint + teamSize; x++) {
+                        int startPoint = Globals.getInstance().getTeamStartID(mNetworkTeam);
+                        int endPoint = Globals.getInstance().getTeamEndID(mNetworkTeam);
+                        for (int x = startPoint; x <= endPoint; x++) {
                             if (x != Globals.getInstance().mPlayerID) { // don't send a message to ourselves
                                 mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_TEAMELIMINATED, (byte) x);
                             }
@@ -3216,6 +3202,120 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
         }
     }
 
+    public void showTeamRatioDialog() {
+        if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
+            Toast.makeText(this, "Cannot edit team ratios while a game is in progress", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!mIsServer && !Globals.getInstance().mIsAdmin) {
+            Toast.makeText(this, "Only server admins can edit team ratios", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int gameMode = Globals.getInstance().mGameMode;
+        if (gameMode == Globals.GAME_MODE_FFA) {
+            Toast.makeText(this, "Team ratios are not applicable in Free For All mode", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        LayoutInflater li = LayoutInflater.from(this);
+        View view = li.inflate(R.layout.team_ratio_dialog, null);
+
+        final int numTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
+        final LinearLayout team3Layout = view.findViewById(R.id.team3_layout);
+        final LinearLayout team4Layout = view.findViewById(R.id.team4_layout);
+
+        final EditText team1ET = view.findViewById(R.id.team1_ratio_et);
+        final EditText team2ET = view.findViewById(R.id.team2_ratio_et);
+        final EditText team3ET = view.findViewById(R.id.team3_ratio_et);
+        final EditText team4ET = view.findViewById(R.id.team4_ratio_et);
+
+        int[] currentSizes = Globals.getInstance().getTeamSizes();
+
+        team1ET.setText(String.valueOf(currentSizes[0]));
+        team2ET.setText(String.valueOf(currentSizes[1]));
+
+        if (numTeams == 4) {
+            team3Layout.setVisibility(View.VISIBLE);
+            team4Layout.setVisibility(View.VISIBLE);
+            team3ET.setText(String.valueOf(currentSizes[2]));
+            team4ET.setText(String.valueOf(currentSizes[3]));
+        } else {
+            team3Layout.setVisibility(View.GONE);
+            team4Layout.setVisibility(View.GONE);
+        }
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this, R.style.Theme_AppCompat_DayNight_Dialog_Alert);
+        alertDialogBuilder.setView(view);
+        alertDialogBuilder.setTitle("Configure Team Sizes");
+
+        alertDialogBuilder
+                .setCancelable(false)
+                .setPositiveButton(R.string.ok, null)
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        final AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText[] editTexts = new EditText[]{team1ET, team2ET, team3ET, team4ET};
+                int[] newSizes = new int[numTeams];
+                boolean invalidInput = false;
+                int totalEnteredSum = 0;
+
+                for (int i = 0; i < numTeams; i++) {
+                    String text = editTexts[i].getText().toString().trim();
+                    if (text.isEmpty()) {
+                        invalidInput = true;
+                        break;
+                    }
+                    try {
+                        int val = Integer.parseInt(text);
+                        if (val <= 0) {
+                            invalidInput = true;
+                            break;
+                        }
+                        newSizes[i] = val;
+                        totalEnteredSum += val;
+                    } catch (NumberFormatException e) {
+                        invalidInput = true;
+                        break;
+                    }
+                }
+
+                if (invalidInput) {
+                    Toast.makeText(FullscreenActivity.this, "Team limits must be at least 1 player slot", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (totalEnteredSum != Globals.MAX_PLAYER_ID) {
+                    Toast.makeText(FullscreenActivity.this, "Total player slots across all teams must equal " + Globals.MAX_PLAYER_ID + " (current sum: " + totalEnteredSum + ")", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                Globals.getInstance().mTeamSizes = newSizes;
+                if (mIsServer && mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                } else if (mTcpClient != null) {
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < newSizes.length; i++) {
+                        if (i > 0) sb.append(",");
+                        sb.append(newSizes[i]);
+                    }
+                    mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ADMIN_TEAMSIZES + sb.toString());
+                }
+                alertDialog.dismiss();
+            }
+        });
+    }
+
     private void displayPlayerData(final String message) {
         if (message == null || message.isEmpty())
             return;
@@ -3297,6 +3397,11 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                 listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                     @Override
                                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                        PlayerDisplayDataListAdapter.DisplayRow row = playerDisplayListAdapter.getDisplayRow(position);
+                                        if (row != null && row.type == PlayerDisplayDataListAdapter.DisplayRow.TYPE_TEAM_HEADER && row.teamNumber > 0) {
+                                            showTeamRatioDialog();
+                                            return;
+                                        }
                                         byte playerID = playerDisplayListAdapter.getPlayerID(position);
                                         if (playerID <= 0)
                                             return;

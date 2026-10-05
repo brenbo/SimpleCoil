@@ -40,6 +40,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import android.util.Log;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
@@ -283,6 +285,13 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         mPlayerDisplayList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if (mPlayerDisplayListAdapter != null) {
+                    PlayerDisplayDataListAdapter.DisplayRow row = mPlayerDisplayListAdapter.getDisplayRow(position);
+                    if (row != null && row.type == PlayerDisplayDataListAdapter.DisplayRow.TYPE_TEAM_HEADER && row.teamNumber > 0) {
+                        showTeamRatioDialog();
+                        return;
+                    }
+                }
                 byte playerID = mPlayerDisplayListAdapter.getPlayerID(position);
                 if (playerID <= 0)
                     return;
@@ -339,6 +348,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         switch (item.getItemId()) {
             case R.id.game_mode_2teams_item:
                 Globals.getInstance().mGameMode = Globals.GAME_MODE_2TEAMS;
+                Globals.getInstance().resetDefaultTeamSizes();
                 mGameModeButton.setText(R.string.game_mode_2teams);
                 savePreference(FullscreenActivity.PREF_GAME_MODE, Globals.getInstance().mGameMode);
                 setGPSMode(Globals.getInstance().mGPSMode);
@@ -349,6 +359,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
                 return true;
             case R.id.game_mode_4teams_item:
                 Globals.getInstance().mGameMode = Globals.GAME_MODE_4TEAMS;
+                Globals.getInstance().resetDefaultTeamSizes();
                 mGameModeButton.setText(R.string.game_mode_4teams);
                 savePreference(FullscreenActivity.PREF_GAME_MODE, Globals.getInstance().mGameMode);
                 setGPSMode(Globals.getInstance().mGPSMode);
@@ -359,6 +370,7 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
                 return true;
             case R.id.game_mode_ffa_item:
                 Globals.getInstance().mGameMode = Globals.GAME_MODE_FFA;
+                Globals.getInstance().resetDefaultTeamSizes();
                 mGameModeButton.setText(R.string.game_mode_ffa);
                 savePreference(FullscreenActivity.PREF_GAME_MODE, Globals.getInstance().mGameMode);
                 setGPSMode(Globals.getInstance().mGPSMode);
@@ -530,6 +542,109 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
             mTcpServer.kickPlayer(playerID);
             Toast.makeText(this, "Player kicked", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void showTeamRatioDialog() {
+        if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
+            Toast.makeText(this, "Cannot edit team ratios while a game is in progress", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int gameMode = Globals.getInstance().mGameMode;
+        if (gameMode == Globals.GAME_MODE_FFA) {
+            Toast.makeText(this, "Team ratios are not applicable in Free For All mode", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        LayoutInflater li = LayoutInflater.from(this);
+        View view = li.inflate(R.layout.team_ratio_dialog, null);
+
+        final int numTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
+        final LinearLayout team3Layout = view.findViewById(R.id.team3_layout);
+        final LinearLayout team4Layout = view.findViewById(R.id.team4_layout);
+
+        final EditText team1ET = view.findViewById(R.id.team1_ratio_et);
+        final EditText team2ET = view.findViewById(R.id.team2_ratio_et);
+        final EditText team3ET = view.findViewById(R.id.team3_ratio_et);
+        final EditText team4ET = view.findViewById(R.id.team4_ratio_et);
+
+        int[] currentSizes = Globals.getInstance().getTeamSizes();
+
+        team1ET.setText(String.valueOf(currentSizes[0]));
+        team2ET.setText(String.valueOf(currentSizes[1]));
+
+        if (numTeams == 4) {
+            team3Layout.setVisibility(View.VISIBLE);
+            team4Layout.setVisibility(View.VISIBLE);
+            team3ET.setText(String.valueOf(currentSizes[2]));
+            team4ET.setText(String.valueOf(currentSizes[3]));
+        } else {
+            team3Layout.setVisibility(View.GONE);
+            team4Layout.setVisibility(View.GONE);
+        }
+
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this, R.style.Theme_AppCompat_DayNight_Dialog_Alert);
+        alertDialogBuilder.setView(view);
+        alertDialogBuilder.setTitle("Configure Team Sizes");
+
+        alertDialogBuilder
+                .setCancelable(false)
+                .setPositiveButton(R.string.ok, null)
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        final AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText[] editTexts = new EditText[]{team1ET, team2ET, team3ET, team4ET};
+                int[] newSizes = new int[numTeams];
+                boolean invalidInput = false;
+                int totalEnteredSum = 0;
+
+                for (int i = 0; i < numTeams; i++) {
+                    String text = editTexts[i].getText().toString().trim();
+                    if (text.isEmpty()) {
+                        invalidInput = true;
+                        break;
+                    }
+                    try {
+                        int val = Integer.parseInt(text);
+                        if (val <= 0) {
+                            invalidInput = true;
+                            break;
+                        }
+                        newSizes[i] = val;
+                        totalEnteredSum += val;
+                    } catch (NumberFormatException e) {
+                        invalidInput = true;
+                        break;
+                    }
+                }
+
+                if (invalidInput) {
+                    Toast.makeText(DedicatedServerActivity.this, "Team limits must be at least 1 player slot", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (totalEnteredSum != Globals.MAX_PLAYER_ID) {
+                    Toast.makeText(DedicatedServerActivity.this, "Total player slots across all teams must equal " + Globals.MAX_PLAYER_ID + " (current sum: " + totalEnteredSum + ")", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                Globals.getInstance().mTeamSizes = newSizes;
+                if (mTcpServer != null) {
+                    mTcpServer.rebalanceAllPlayers(false);
+                }
+                getPlayerDisplayData();
+                alertDialog.dismiss();
+            }
+        });
     }
 
     private void startGame() {

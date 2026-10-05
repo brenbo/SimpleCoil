@@ -75,6 +75,7 @@ public class TcpServer extends Service {
     public static final String JSON_LIVESLIMIT = "liveslimit";
     public static final String JSON_SCORELIMIT = "scorelimit";
     public static final String JSON_GAMEMODE = "gamemode";
+    public static final String JSON_TEAMSIZES = "teamsizes";
     public static final String JSON_REJOIN = "rejoin";
     public static final String JSON_DEDICATED = "dedicatedserver";
     public static final String JSON_USEGPS = "usegps";
@@ -472,6 +473,28 @@ public class TcpServer extends Service {
         thread.start();
     }
 
+    private int findBestTeamForRebalance(int numTeams, int[] teamPointers, int[] teamLimits, int[] teamCounts) {
+        double minRatio = Double.MAX_VALUE;
+        int bestTeam = -1;
+        int[] sizes = Globals.getInstance().mTeamSizes;
+        if (sizes == null || sizes.length < numTeams) {
+            Globals.getInstance().resetDefaultTeamSizes();
+            sizes = Globals.getInstance().mTeamSizes;
+        }
+
+        for (int t = 1; t <= numTeams; t++) {
+            if (teamPointers[t] <= teamLimits[t]) {
+                int capacity = sizes[t - 1];
+                double ratio = (capacity > 0) ? (double) teamCounts[t] / capacity : 1.0;
+                if (ratio < minRatio) {
+                    minRatio = ratio;
+                    bestTeam = t;
+                }
+            }
+        }
+        return bestTeam;
+    }
+
     public void rebalanceAllPlayers(final boolean randomize) {
         if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {
             Log.w(TAG, "rebalanceAllPlayers: Game is running, skipping team rebalance!");
@@ -561,52 +584,61 @@ public class TcpServer extends Service {
                         }
                     } else {
                         int numTeams = (gameMode == Globals.GAME_MODE_4TEAMS) ? 4 : 2;
-                        int playersPerTeam = maxPlayers / numTeams;
                         int[] teamPointers = new int[numTeams + 1];
-                        for (int t = 1; t <= numTeams; t++) {
-                            teamPointers[t] = (t - 1) * playersPerTeam + 1;
-                        }
+                        int[] teamLimits = new int[numTeams + 1];
+                        int[] teamCounts = new int[numTeams + 1];
 
-                        int currentTeamAssign = 1;
+                        for (int t = 1; t <= numTeams; t++) {
+                            teamPointers[t] = Globals.getInstance().getTeamStartID(t);
+                            teamLimits[t] = Globals.getInstance().getTeamEndID(t);
+                            teamCounts[t] = 0;
+                        }
 
                         if (!mIsDedicated && Globals.getInstance().mPlayerID != 0) {
                             byte oldHostID = Globals.getInstance().mPlayerID;
-                            int hostTeam = currentTeamAssign;
-                            byte newHostID = (byte) teamPointers[hostTeam];
-                            teamPointers[hostTeam]++;
-                            Globals.getInstance().mPlayerID = newHostID;
-                            String hostName = Globals.getInstance().mTeamPlayerNameMap.get(oldHostID);
-                            if (hostName == null) hostName = Globals.getInstance().mPlayerName;
-                            if (hostName != null) newNameMap.put(newHostID, hostName);
-                            InetAddress hostIP = Globals.getInstance().mTeamIPMap.get(oldHostID);
-                            if (hostIP == null) {
-                                try { hostIP = InetAddress.getByName(Globals.getIPAddressStr()); } catch (Exception e) {}
-                            }
-                            if (hostIP != null) {
-                                newTeamIPMap.put(newHostID, hostIP);
-                                newIPTeamMap.put(hostIP, newHostID);
-                            }
-                            Globals.PlayerSettings set = Globals.getInstance().mPlayerSettings.get(oldHostID);
-                            if (set != null) newSettingsMap.put(newHostID, set);
-                            Globals.GPSData gps = Globals.getInstance().mGPSData.get(oldHostID);
-                            if (gps != null) {
-                                gps.team = hostTeam;
-                                gps.hasUpdate = true;
-                                newGPSMap.put(newHostID, gps);
-                            }
+                            int hostTeam = findBestTeamForRebalance(numTeams, teamPointers, teamLimits, teamCounts);
+                            if (hostTeam != -1) {
+                                byte newHostID = (byte) teamPointers[hostTeam];
+                                teamPointers[hostTeam]++;
+                                teamCounts[hostTeam]++;
 
-                            Intent hostReplyIntent = new Intent(NetMsg.NETMSG_SERVERREPLY);
-                            hostReplyIntent.putExtra(UDPListenerService.INTENT_PLAYERID, newHostID);
-                            sendBroadcast(hostReplyIntent);
+                                Globals.getInstance().mPlayerID = newHostID;
+                                String hostName = Globals.getInstance().mTeamPlayerNameMap.get(oldHostID);
+                                if (hostName == null) hostName = Globals.getInstance().mPlayerName;
+                                if (hostName != null) newNameMap.put(newHostID, hostName);
+                                InetAddress hostIP = Globals.getInstance().mTeamIPMap.get(oldHostID);
+                                if (hostIP == null) {
+                                    try { hostIP = InetAddress.getByName(Globals.getIPAddressStr()); } catch (Exception e) {}
+                                }
+                                if (hostIP != null) {
+                                    newTeamIPMap.put(newHostID, hostIP);
+                                    newIPTeamMap.put(hostIP, newHostID);
+                                }
+                                Globals.PlayerSettings set = Globals.getInstance().mPlayerSettings.get(oldHostID);
+                                if (set != null) newSettingsMap.put(newHostID, set);
+                                Globals.GPSData gps = Globals.getInstance().mGPSData.get(oldHostID);
+                                if (gps != null) {
+                                    gps.team = hostTeam;
+                                    gps.hasUpdate = true;
+                                    newGPSMap.put(newHostID, gps);
+                                }
 
-                            currentTeamAssign = (currentTeamAssign % numTeams) + 1;
+                                Intent hostReplyIntent = new Intent(NetMsg.NETMSG_SERVERREPLY);
+                                hostReplyIntent.putExtra(UDPListenerService.INTENT_PLAYERID, newHostID);
+                                sendBroadcast(hostReplyIntent);
+                            }
                         }
 
                         for (ClientData client : clients) {
                             byte oldID = client.mPlayerID;
-                            int targetTeam = currentTeamAssign;
+                            int targetTeam = findBestTeamForRebalance(numTeams, teamPointers, teamLimits, teamCounts);
+                            if (targetTeam == -1) targetTeam = 1;
+
                             byte newID = (byte) teamPointers[targetTeam];
-                            teamPointers[targetTeam]++;
+                            if (teamPointers[targetTeam] <= teamLimits[targetTeam]) {
+                                teamPointers[targetTeam]++;
+                                teamCounts[targetTeam]++;
+                            }
 
                             client.clientID = (int) newID;
                             client.mPlayerID = newID;
@@ -630,7 +662,6 @@ public class TcpServer extends Service {
                             }
 
                             client.sendTCPMessage(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_SERVERREPLY + newID);
-                            currentTeamAssign = (currentTeamAssign % numTeams) + 1;
                         }
                     }
 
@@ -698,6 +729,13 @@ public class TcpServer extends Service {
             }
             game.put(JSON_LIMITS, limits);
             game.put(JSON_GAMEMODE, Globals.getInstance().mGameMode);
+            if (Globals.getInstance().mTeamSizes != null) {
+                JSONArray teamSizesArr = new JSONArray();
+                for (int size : Globals.getInstance().mTeamSizes) {
+                    teamSizesArr.put(size);
+                }
+                game.put(JSON_TEAMSIZES, teamSizesArr);
+            }
             if (mIsDedicated) {
                 game.put(JSON_DEDICATED, true);
                 game.put(JSON_GAMESTATE, Globals.getInstance().mGameState);
@@ -1261,6 +1299,26 @@ public class TcpServer extends Service {
                                                 kickPlayer(targetID);
                                             } catch (Exception e) {
                                                 e.printStackTrace();
+                                            }
+                                        } else if (message.startsWith(NetMsg.NETMSG_ADMIN_TEAMSIZES)) {
+                                            Log.d(TAG, "TcpServer received ADMIN_TEAMSIZES command: '" + message + "'");
+                                            if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
+                                                try {
+                                                    String sizesStr = message.substring(NetMsg.NETMSG_ADMIN_TEAMSIZES.length()).trim();
+                                                    String[] parts = sizesStr.split(",");
+                                                    int[] newSizes = new int[parts.length];
+                                                    int sum = 0;
+                                                    for (int i = 0; i < parts.length; i++) {
+                                                        newSizes[i] = Integer.parseInt(parts[i].trim());
+                                                        sum += newSizes[i];
+                                                    }
+                                                    if (sum == Globals.MAX_PLAYER_ID) {
+                                                        Globals.getInstance().mTeamSizes = newSizes;
+                                                        rebalanceAllPlayers(false);
+                                                    }
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
                                             }
                                         }
                                     } else {
