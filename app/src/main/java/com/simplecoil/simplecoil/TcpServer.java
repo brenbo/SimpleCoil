@@ -942,6 +942,10 @@ public class TcpServer extends Service {
     }
 
     public JSONArray getPlayerSettings(int playerID, boolean applyAll) {
+        return getPlayerSettings(playerID, applyAll, false);
+    }
+
+    public JSONArray getPlayerSettings(int playerID, boolean applyAll, boolean applyTeam) {
         boolean hasSemaphore = false;
         try {
             JSONArray players = new JSONArray();
@@ -958,6 +962,7 @@ public class TcpServer extends Service {
                         playerSettings.health = Globals.getInstance().mPlayerSettings.get((byte)playerID).health;
                         playerSettings.shots = Globals.getInstance().mPlayerSettings.get((byte)playerID).shots;
                         playerSettings.reloadTime = Globals.getInstance().mPlayerSettings.get((byte)playerID).reloadTime;
+                        playerSettings.reloadOnEmpty = Globals.getInstance().mPlayerSettings.get((byte)playerID).reloadOnEmpty;
                         playerSettings.spawnTime = Globals.getInstance().mPlayerSettings.get((byte)playerID).spawnTime;
                         playerSettings.damage = Globals.getInstance().mPlayerSettings.get((byte)playerID).damage;
                         playerSettings.overrideLives = Globals.getInstance().mPlayerSettings.get((byte)playerID).overrideLives;
@@ -966,6 +971,31 @@ public class TcpServer extends Service {
                         playerSettings.allowShotModeBurst3 = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeBurst3;
                         playerSettings.allowShotModeAuto = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeAuto;
                         playerSettings.recoilSetting = Globals.getInstance().mPlayerSettings.get((byte)playerID).recoilSetting;
+                        playerSettings.firingMode = Globals.getInstance().mPlayerSettings.get((byte)playerID).firingMode;
+                    }
+                }
+            } else if (applyTeam && playerID != SEND_ALL && Globals.getInstance().mGameMode != Globals.GAME_MODE_FFA) {
+                int sourceTeam = Globals.getInstance().calcNetworkTeam((byte) playerID);
+                for (Byte x = 1; x <= Globals.MAX_PLAYER_ID; x++) {
+                    if (x != playerID && Globals.getInstance().calcNetworkTeam(x) == sourceTeam) {
+                        Globals.PlayerSettings playerSettings = Globals.getInstance().mPlayerSettings.get(x);
+                        if (playerSettings == null) {
+                            playerSettings = new Globals.PlayerSettings();
+                            Globals.getInstance().mPlayerSettings.put(x, playerSettings);
+                        }
+                        playerSettings.health = Globals.getInstance().mPlayerSettings.get((byte)playerID).health;
+                        playerSettings.shots = Globals.getInstance().mPlayerSettings.get((byte)playerID).shots;
+                        playerSettings.reloadTime = Globals.getInstance().mPlayerSettings.get((byte)playerID).reloadTime;
+                        playerSettings.reloadOnEmpty = Globals.getInstance().mPlayerSettings.get((byte)playerID).reloadOnEmpty;
+                        playerSettings.spawnTime = Globals.getInstance().mPlayerSettings.get((byte)playerID).spawnTime;
+                        playerSettings.damage = Globals.getInstance().mPlayerSettings.get((byte)playerID).damage;
+                        playerSettings.overrideLives = Globals.getInstance().mPlayerSettings.get((byte)playerID).overrideLives;
+                        playerSettings.lives = Globals.getInstance().mPlayerSettings.get((byte)playerID).lives;
+                        playerSettings.allowShotModeSingle = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeSingle;
+                        playerSettings.allowShotModeBurst3 = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeBurst3;
+                        playerSettings.allowShotModeAuto = Globals.getInstance().mPlayerSettings.get((byte)playerID).allowShotModeAuto;
+                        playerSettings.recoilSetting = Globals.getInstance().mPlayerSettings.get((byte)playerID).recoilSetting;
+                        playerSettings.firingMode = Globals.getInstance().mPlayerSettings.get((byte)playerID).firingMode;
                     }
                 }
             }
@@ -1005,7 +1035,11 @@ public class TcpServer extends Service {
     }
 
     public void sendPlayerSettings(int playerID, boolean applyAll, boolean allowPlayerSettings) {
-        JSONArray players = getPlayerSettings(playerID, applyAll);
+        sendPlayerSettings(playerID, applyAll, false, allowPlayerSettings);
+    }
+
+    public void sendPlayerSettings(int playerID, boolean applyAll, boolean applyTeam, boolean allowPlayerSettings) {
+        JSONArray players = getPlayerSettings(playerID, applyAll, applyTeam);
         if (players == null)
             return;
         try {

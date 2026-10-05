@@ -50,7 +50,7 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
     private Button mFiringModeButton = null;
     private Button mResetButton = null;
     private Switch mApplyAllSwitch = null;
-    private Switch mAllowPlayerSettingsSwitch = null;
+    private Switch mApplyTeamSwitch = null;
     private Switch mAdminSwitch = null;
     private Button mSwitchTeamButton = null;
     private int mSelectedTargetTeam = 0;
@@ -129,7 +129,14 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         }
         Globals.getInstance().mPlayerSettingsSemaphore.release();
         mApplyAllSwitch.setChecked(false);
-        mAllowPlayerSettingsSwitch.setChecked(Globals.getInstance().mAllowPlayerSettings);
+        if (mApplyTeamSwitch != null) {
+            mApplyTeamSwitch.setChecked(false);
+            if (Globals.getInstance().mGameMode == Globals.GAME_MODE_FFA) {
+                mApplyTeamSwitch.setVisibility(View.GONE);
+            } else {
+                mApplyTeamSwitch.setVisibility(View.VISIBLE);
+            }
+        }
         if (mAdminSwitch != null) {
             mAdminSwitch.setVisibility(View.VISIBLE);
             mAdminSwitch.setChecked(playerSettings.isAdmin);
@@ -197,9 +204,11 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
         mShotModeSingle.setChecked(Globals.getInstance().mAllowSingleShotMode);
         mShotModeBurst3.setChecked(Globals.getInstance().mAllowBurst3ShotMode);
         mShotModeAuto.setChecked(Globals.getInstance().mAllowAutoShotMode);
-        mAllowPlayerSettingsSwitch.setVisibility(View.GONE);
         mFiringModeButton.setVisibility(View.GONE);
         mApplyAllSwitch.setVisibility(View.GONE);
+        if (mApplyTeamSwitch != null) {
+            mApplyTeamSwitch.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -249,8 +258,26 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                 mLivesET.setText("" + 0);
             }
         });
-        mAllowPlayerSettingsSwitch = view.findViewById(R.id.allow_player_settings_switch);
         mApplyAllSwitch = view.findViewById(R.id.apply_to_all_switch);
+        mApplyTeamSwitch = view.findViewById(R.id.apply_to_team_switch);
+        if (mApplyAllSwitch != null && mApplyTeamSwitch != null) {
+            mApplyAllSwitch.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mApplyAllSwitch.isChecked()) {
+                        mApplyTeamSwitch.setChecked(false);
+                    }
+                }
+            });
+            mApplyTeamSwitch.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mApplyTeamSwitch.isChecked()) {
+                        mApplyAllSwitch.setChecked(false);
+                    }
+                }
+            });
+        }
         mAdminSwitch = view.findViewById(R.id.admin_switch);
         mRecoilSettingButton = view.findViewById(R.id.recoil_setting_button);
         if (mRecoilSettingButton != null) {
@@ -410,7 +437,8 @@ public class PlayerSettingsAlertDialog extends AlertDialog implements PopupMenu.
                                 }
                             }
                             if (mTcpServer != null) {
-                                mTcpServer.sendPlayerSettings(mPlayerID, mApplyAllSwitch.isChecked(), mAllowPlayerSettingsSwitch.isChecked());
+                                boolean applyTeam = (mApplyTeamSwitch != null && mApplyTeamSwitch.isChecked());
+                                mTcpServer.sendPlayerSettings(mPlayerID, mApplyAllSwitch.isChecked(), applyTeam, Globals.getInstance().mAllowPlayerSettings);
                             }
                             Intent intentData = new Intent(NetMsg.NETMSG_PLAYERDATAUPDATE);
                             intentData.setPackage(mContext.getPackageName());

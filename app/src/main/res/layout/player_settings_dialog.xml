@@ -202,20 +202,6 @@
             android:text="@string/firing_mode_outdoor_no_cone" />
 
         <Button
-            android:id="@+id/reset_defaults_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/player_settings_reset" />
-
-        <Switch
-            android:id="@+id/apply_to_all_switch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:text="@string/player_settings_apply_to_all" />
-
-        <Button
             android:id="@+id/recoil_setting_button"
             style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="wrap_content"
@@ -242,13 +228,29 @@
             android:visibility="gone"
             android:text="@string/kick_player_button" />
 
+        <Button
+            android:id="@+id/reset_defaults_button"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:text="@string/player_settings_reset" />
+
         <Switch
-            android:id="@+id/allow_player_settings_switch"
+            android:id="@+id/apply_to_all_switch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:textColor="#FFFFFF"
-            android:text="@string/player_settings_allow_player_settings" />
+            android:text="@string/player_settings_apply_to_all" />
+
+        <Switch
+            android:id="@+id/apply_to_team_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:textColor="#FFFFFF"
+            android:text="@string/player_settings_apply_to_team" />
 
         <Switch
             android:id="@+id/admin_switch"
