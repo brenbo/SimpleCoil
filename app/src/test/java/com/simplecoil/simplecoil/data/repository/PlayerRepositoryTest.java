@@ -1,0 +1,91 @@
+/*
+ * Copyright (C) 2026 Ethan Yonker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.simplecoil.simplecoil.data.repository;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public class PlayerRepositoryTest {
+
+    private PlayerRepository playerRepo;
+    private GameSettingsRepository settingsRepo;
+
+    @Before
+    public void setUp() {
+        playerRepo = PlayerRepository.getInstance();
+        settingsRepo = GameSettingsRepository.getInstance();
+
+        playerRepo.setPlayerID((byte) 1);
+        playerRepo.setPlayerName("TestPlayer");
+        playerRepo.getTeamIPMap().clear();
+        playerRepo.getTeamPlayerNameMap().clear();
+    }
+
+    @Test
+    public void testPlayerDetails() {
+        assertEquals((byte) 1, playerRepo.getPlayerID());
+        assertEquals("TestPlayer", playerRepo.getPlayerName());
+    }
+
+    @Test
+    public void testCalcNetworkTeam2Teams() {
+        settingsRepo.setGameMode(GameSettingsRepository.GAME_MODE_2TEAMS);
+
+        assertEquals(1, playerRepo.calcNetworkTeam((byte) 1));
+        assertEquals(1, playerRepo.calcNetworkTeam((byte) 16));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 17));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 32));
+    }
+
+    @Test
+    public void testCalcNetworkTeam4Teams() {
+        settingsRepo.setGameMode(GameSettingsRepository.GAME_MODE_4TEAMS);
+
+        assertEquals(1, playerRepo.calcNetworkTeam((byte) 1));
+        assertEquals(1, playerRepo.calcNetworkTeam((byte) 8));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 9));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 16));
+        assertEquals(3, playerRepo.calcNetworkTeam((byte) 17));
+        assertEquals(3, playerRepo.calcNetworkTeam((byte) 24));
+        assertEquals(4, playerRepo.calcNetworkTeam((byte) 25));
+        assertEquals(4, playerRepo.calcNetworkTeam((byte) 32));
+    }
+
+    @Test
+    public void testCalcNetworkTeamFFA() {
+        settingsRepo.setGameMode(GameSettingsRepository.GAME_MODE_FFA);
+
+        assertEquals(5, playerRepo.calcNetworkTeam((byte) 5));
+        assertEquals(12, playerRepo.calcNetworkTeam((byte) 12));
+    }
+
+    @Test
+    public void testGrenadePairings() {
+        playerRepo.clearGrenadePairings();
+        int[] pairings = playerRepo.getGrenadePairings();
+        assertNotNull(pairings);
+        assertEquals(PlayerRepository.MAX_GRENADE_IDS, pairings.length);
+        assertEquals(PlayerRepository.INVALID_PLAYER_ID, pairings[0]);
+
+        playerRepo.setGrenadePairing(0, 5);
+        pairings = playerRepo.getGrenadePairings();
+        assertEquals(5, pairings[0]);
+    }
+}
