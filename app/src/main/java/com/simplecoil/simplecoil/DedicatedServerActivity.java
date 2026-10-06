@@ -39,6 +39,9 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -89,6 +92,8 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
     private CountDownTimer mSpawnTimer = null;
 
     private SharedPreferences sharedPreferences = null;
+
+    private DedicatedServerViewModel mViewModel = null;
 
     private PlayerDisplayData[] mPlayerDisplayData = new PlayerDisplayData[Globals.MAX_PLAYER_ID + 2];
     PlayerDisplayDataListAdapter mPlayerDisplayListAdapter = null;
@@ -154,6 +159,20 @@ public class DedicatedServerActivity extends AppCompatActivity implements PopupM
         this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         Globals.getInstance().mPlayerID = 0;
         Globals.getInstance().mGameState = Globals.GAME_STATE_NONE;
+
+        mViewModel = new ViewModelProvider(this).get(DedicatedServerViewModel.class);
+        mViewModel.getServerIpLiveData().observe(this, ip -> {
+            if (mServerIPTV != null && ip != null) {
+                mServerIPTV.setText(ip);
+            }
+        });
+        mViewModel.getPlayerCountLiveData().observe(this, count -> {
+            if (mNetworkPlayerCountTV != null && count != null) {
+                mNetworkPlayerCountTV.setText(getString(R.string.network_player_count, count));
+            }
+        });
+        mViewModel.startServerBeacon("SimpleCoil Server");
+
         mServerIPTV = findViewById(R.id.server_ip_tv);
         mGameTimer = findViewById(R.id.game_timer_chronometer);
         mGameCountDownTV = findViewById(R.id.game_countdown_tv);

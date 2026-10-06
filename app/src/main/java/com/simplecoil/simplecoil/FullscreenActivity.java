@@ -58,6 +58,9 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.simplecoil.simplecoil.ui.main.MainViewModel;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
@@ -106,6 +109,8 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
 
     // For testing and debugging network only -- dumps you straight to the play game layout and allows you to switch teams without connecting a blaster
     private static final boolean TEST_NETWORK = false;
+
+    protected MainViewModel mMainViewModel = null;
 
     private Button mReconnectButton = null;
     private Button mConnectButton = null;
@@ -513,6 +518,19 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fullscreen);
+
+        mMainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        mMainViewModel.getHealthLiveData().observe(this, health -> {
+            if (health != null && mHealthBar != null) {
+                mHealthBar.setProgress(health);
+            }
+        });
+        mMainViewModel.getAmmoLiveData().observe(this, ammo -> {
+            if (ammo != null && mShotsRemainingTV != null) {
+                mShotsRemainingTV.setText(String.valueOf(ammo));
+            }
+        });
+
         mFragmentMgr = getSupportFragmentManager();
         mEliminationCountTV = findViewById(R.id.eliminations_count_tv);
         mReconnectButton = findViewById(R.id.reconnect_weapon_button);
