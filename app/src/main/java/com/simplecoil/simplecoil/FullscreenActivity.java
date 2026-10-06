@@ -938,7 +938,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
     private static final int NETWORK_TYPE_ENABLED = 1;
     private static final int NETWORK_TYPE_JOINING = 2;
     private static final int NETWORK_TYPE_JOINED = 3;
-    private static final int NETWORK_TYPE_SERVING = 4;
 
     private void setNetworkMenu(int networkMenuType) {
         mNetworkMenuType = networkMenuType;
@@ -953,9 +952,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 case NETWORK_TYPE_JOINED:
                     mUseNetworkingButton.setText("CONNECTED (LEAVE)");
                     break;
-                case NETWORK_TYPE_SERVING:
-                    mUseNetworkingButton.setText("HOSTING SERVER");
-                    break;
             }
         }
         if (mNetworkPopup == null)
@@ -966,7 +962,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
             case NETWORK_TYPE_ENABLED:
                 mNetworkPopup.getMenu().add(0, R.id.join_item, 20, R.string.join_button);
                 mNetworkPopup.getMenu().add(0, R.id.join_ip_item, 30, R.string.join_ip_button);
-                mNetworkPopup.getMenu().add(0, R.id.create_server_item, 40, R.string.create_server_button);
                 mNetworkPopup.getMenu().add(0, R.id.player_name_item, 50, getString(R.string.player_name_button, Globals.getInstance().mPlayerName));
                 if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
                     mNetworkPopup.getMenu().add(0, R.id.game_mode_item, 60, R.string.game_mode_toggle_button);
@@ -981,14 +976,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 mNetworkPopup.getMenu().add(0, R.id.leave_item, 1, R.string.not_ready_button);
                 mNetworkPopup.getMenu().add(0, R.id.player_name_item, 50, getString(R.string.player_name_button, Globals.getInstance().mPlayerName));
                 mNetworkPopup.getMenu().add(0, R.id.disable_network_item, 70, R.string.no_network_button);
-                return;
-            case NETWORK_TYPE_SERVING:
-                mNetworkPopup.getMenu().add(0, R.id.cancel_server_item, 1, R.string.cancel_server_button);
-                mNetworkPopup.getMenu().add(0, R.id.player_name_item, 50, getString(R.string.player_name_button, Globals.getInstance().mPlayerName));
-                if (Globals.getInstance().mGameState == Globals.GAME_STATE_NONE) {
-                    mNetworkPopup.getMenu().add(0, R.id.game_mode_item, 60, R.string.game_mode_toggle_button);
-                    mNetworkPopup.getMenu().add(0, R.id.shuffle_teams_item, 65, R.string.shuffle_teams_button);
-                }
                 return;
         }
     }
@@ -1016,15 +1003,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     return true;
                 requestServerIP();
                 return true;
-            case R.id.create_server_item:
-                if (Globals.getInstance().mPlayerID == 0) {
-                    Globals.getInstance().mPlayerID = 1;
-                    setTeam();
-                }
-                mTcpServer.startTcpServer();
-                mUDPListenerService.createServer();
-                setNetworkMenu(NETWORK_TYPE_JOINING);
-                return true;
             case R.id.player_name_item:
                 requestPlayerName();
                 return true;
@@ -1036,17 +1014,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                 popup.show();
                 return true;
             case R.id.please_wait_item:
-                return true;
-            case R.id.cancel_server_item:
-                mReady = false;
-                setReady();
-                mIsServer = false;
-                mUDPListenerService.cancelServer();
-                mTcpServer.sendTCPMessageAll(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_SERVERCANCEL);
-                mTcpServer.stopTcpServer();
-                Globals.getInstance().mPlayerID = mSelectedPlayerID;
-                setTeam();
-                setNetworkMenu(NETWORK_TYPE_ENABLED);
                 return true;
             case R.id.leave_item:
                 mReady = false;
@@ -1550,9 +1517,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
 
         if (mReady && !mIsServer && mTcpClient != null && mTcpClient.isDedicatedServer()) {
             setNetworkMenu(NETWORK_TYPE_JOINED);
-            mPlayerDataButton.setVisibility(View.VISIBLE);
-        } else if (mIsServer && mUseNetwork) {
-            setNetworkMenu(NETWORK_TYPE_SERVING);
             mPlayerDataButton.setVisibility(View.VISIBLE);
         } else {
             setNetworkMenu(NETWORK_TYPE_ENABLED);
@@ -2678,10 +2642,12 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                         healthRemoved = Globals.getInstance().mPlayerSettings.get(hit_by_id).damage;
                                     if (mLastHitMessage < System.currentTimeMillis()) {
                                         mLastHitMessage = System.currentTimeMillis() + HIT_ANIMATION_DURATION_MILLISECONDS;
-                                        if (mHealth + healthRemoved > 0)
-                                            mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_HIT, hit_by_id);
-                                        else
-                                            mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_OUT, hit_by_id);
+                                        if (mTcpClient != null) {
+                                            if (mHealth + healthRemoved > 0)
+                                                mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_HIT + hit_by_id);
+                                            else
+                                                mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_OUT + hit_by_id);
+                                        }
                                     }
                                 }
                             }
@@ -2714,10 +2680,12 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                         healthRemoved += Globals.getInstance().mPlayerSettings.get(hit_by_id).damage;
                                     if (mLastHitMessage < System.currentTimeMillis()) {
                                         mLastHitMessage = System.currentTimeMillis() + HIT_ANIMATION_DURATION_MILLISECONDS;
-                                        if (mHealth + healthRemoved > 0)
-                                            mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_HIT, hit_by_id);
-                                        else
-                                            mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_OUT, hit_by_id);
+                                        if (mTcpClient != null) {
+                                            if (mHealth + healthRemoved > 0)
+                                                mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_HIT + hit_by_id);
+                                            else
+                                                mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_OUT + hit_by_id);
+                                        }
                                     }
                                 }
                             }
@@ -2782,16 +2750,12 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                                 startSpawn(eliminatedBy);
                                 if (mUseNetwork) {
                                     if (hit_by_id != Globals.getInstance().mPlayerID && Globals.getInstance().calcNetworkTeam(hit_by_id) != Globals.getInstance().calcNetworkTeam(Globals.getInstance().mPlayerID)) {
-                                        if (mTcpClient.isDedicatedServer())
+                                        if (mTcpClient != null)
                                             mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ELIMINATED + hit_by_id, true);
-                                        else
-                                            mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_ELIMINATED, hit_by_id);
                                     }
                                     if (mHasLivesLimit && mEliminationCount <= 0) {
-                                        if (mTcpClient.isDedicatedServer())
-                                            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_LEAVE);
-                                        else
-                                            mUDPListenerService.sendUDPMessageAll(NetMsg.NETMSG_LEAVE);
+                                        if (mTcpClient != null)
+                                            mTcpClient.leaveServer();
                                     }
                                 } else {
                                     if (mHasLivesLimit && mEliminationCount <= 0) {
@@ -2823,7 +2787,8 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     playSound(R.raw.shootingshort, getApplicationContext());
                     if (mUseNetwork && mLastShotFired < System.currentTimeMillis()) {
                         mLastShotFired = System.currentTimeMillis() + HIT_ANIMATION_DURATION_MILLISECONDS;
-                        mUDPListenerService.sendUDPMessageAll(NetMsg.NETMSG_SHOTFIRED);
+                        if (mTcpClient != null)
+                            mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_SHOTFIRED);
                     }
                     if (Globals.getInstance().mReloadOnEmpty && shotsRemaining == 0 && Globals.getInstance().mGameState != Globals.GAME_STATE_NONE)
                         startReload();
@@ -2942,22 +2907,15 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                     mTeamScore++;
                     score = "" + mTeamScore;
                     mTeamScoreTV.setText(score);
-                    if (!mTcpClient.isDedicatedServer()) {
-                        // Send a message to all teammates about the score increase
-                        int startPoint = Globals.getInstance().getTeamStartID(mNetworkTeam);
-                        int endPoint = Globals.getInstance().getTeamEndID(mNetworkTeam);
-                        for (int x = startPoint; x <= endPoint; x++) {
-                            if (x != Globals.getInstance().mPlayerID) { // don't send a message to ourselves
-                                mUDPListenerService.sendUDPMessage(NetMsg.NETMSG_TEAMELIMINATED, (byte) x);
-                            }
-                        }
+                    if (mTcpClient != null) {
+                        mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_TEAMELIMINATED);
                     }
                 }
                 if ((Globals.getInstance().mGameLimit & Globals.GAME_LIMIT_SCORE) != 0 && mScore >= Globals.getInstance().mScoreLimit) {
-                    if (!mTcpClient.isDedicatedServer()) {
-                        mUDPListenerService.endGame();
-                        endGame();
+                    if (mTcpClient != null) {
+                        mTcpClient.sendTCPMessage(TcpServer.TCPMESSAGE_PREFIX + TcpServer.TCPPREFIX_MESG + NetMsg.NETMSG_ENDGAME);
                     }
+                    endGame();
                 }
             } else if (NetMsg.NETMSG_TEAMELIMINATED.equals(action)) {
                 // Increase team score in team games
@@ -3079,17 +3037,6 @@ public class FullscreenActivity extends AppCompatActivity implements PopupMenu.O
                         }
                     }, 2000);
                 }
-            } else if (NetMsg.NETMSG_SERVERCREATED.equals(action)) {
-                cancelServerSearchTimeout();
-                mReady = true;
-                mIsServer = true;
-                setReady();
-                String ip = Globals.getInstance().mServerIP.toString();
-                if (ip.startsWith("/"))
-                    ip = ip.substring(1);
-                mServerIPTV.setText(getString(R.string.server_status_serving_on, ip));
-                mServerIPTV.setVisibility(View.VISIBLE);
-                setNetworkMenu(NETWORK_TYPE_SERVING);
             } else if (NetMsg.NETMSG_SERVERCANCEL.equals(action)) {
                 cancelServerSearchTimeout();
                 if (Globals.getInstance().mGameState != Globals.GAME_STATE_NONE) {

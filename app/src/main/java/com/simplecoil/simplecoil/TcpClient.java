@@ -207,6 +207,32 @@ public class TcpClient extends Service {
                                     Intent intent = new Intent(NetMsg.NETMSG_ELIMINATED);
                                     intent.putExtra(UDPListenerService.INTENT_PLAYERID, id);
                                     sendBroadcast(intent);
+                                } else if (message.startsWith(NetMsg.NETMSG_HIT)) {
+                                    message = message.substring(NetMsg.NETMSG_HIT.length());
+                                    Intent intent = new Intent(NetMsg.NETMSG_HIT);
+                                    if (!message.isEmpty()) {
+                                        try {
+                                            byte id = (byte) Integer.parseInt(message);
+                                            intent.putExtra(UDPListenerService.INTENT_PLAYERID, id);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    sendBroadcast(intent);
+                                } else if (message.startsWith(NetMsg.NETMSG_OUT)) {
+                                    message = message.substring(NetMsg.NETMSG_OUT.length());
+                                    Intent intent = new Intent(NetMsg.NETMSG_OUT);
+                                    if (!message.isEmpty()) {
+                                        try {
+                                            byte id = (byte) Integer.parseInt(message);
+                                            intent.putExtra(UDPListenerService.INTENT_PLAYERID, id);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                    sendBroadcast(intent);
+                                } else if (message.equals(NetMsg.NETMSG_SHOTFIRED)) {
+                                    sendBroadcast(new Intent(NetMsg.NETMSG_SHOTFIRED));
                                 } else if (message.startsWith(NetMsg.NETMSG_SERVERREPLY)) {
                                     Intent intent = new Intent(NetMsg.NETMSG_SERVERREPLY);
                                     String assignedIDStr = message.substring(NetMsg.NETMSG_SERVERREPLY.length());

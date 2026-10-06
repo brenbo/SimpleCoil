@@ -4,8 +4,6 @@
         android:title="@string/join_button" />
     <item android:id="@+id/join_ip_item"
         android:title="@string/join_ip_button" />
-    <item android:id="@+id/create_server_item"
-        android:title="@string/create_server_button" />
     <item android:id="@+id/player_name_item"
         android:title="@string/player_name_button" />
     <item android:id="@+id/game_mode_item"
@@ -14,8 +12,6 @@
         android:title="@string/please_wait" />
     <item android:id="@+id/leave_item"
         android:title="@string/leave_button" />
-    <item android:id="@+id/cancel_server_item"
-        android:title="@string/cancel_server_button" />
     <item android:id="@+id/disable_network_item"
         android:title="@string/no_network_button" />
 </menu>

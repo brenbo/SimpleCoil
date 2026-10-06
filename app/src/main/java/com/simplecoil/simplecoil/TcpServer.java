@@ -1299,6 +1299,28 @@ public class TcpServer extends Service {
                                             int scoreLimit = ((Globals.getInstance().mGameLimit & Globals.GAME_LIMIT_SCORE) != 0 ? Globals.getInstance().mScoreLimit : 0);
                                             if (clientID >= 0 && scoreLimit != 0 && mClientData.get(clientID).points >= scoreLimit)
                                                 endGame();
+                                        } else if (message.equals(NetMsg.NETMSG_SHOTFIRED)) {
+                                            sendTCPMessageAll(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_SHOTFIRED);
+                                        } else if (message.startsWith(NetMsg.NETMSG_HIT)) {
+                                            message = message.substring(NetMsg.NETMSG_HIT.length());
+                                            try {
+                                                byte shooterId = (byte) Integer.parseInt(message);
+                                                byte targetId = entry.getValue().mPlayerID;
+                                                sendTCPMessageID(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_HIT + targetId, shooterId, false, true);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        } else if (message.startsWith(NetMsg.NETMSG_OUT)) {
+                                            message = message.substring(NetMsg.NETMSG_OUT.length());
+                                            try {
+                                                byte shooterId = (byte) Integer.parseInt(message);
+                                                byte targetId = entry.getValue().mPlayerID;
+                                                sendTCPMessageID(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_OUT + targetId, shooterId, false, true);
+                                            } catch (Exception e) {
+                                                e.printStackTrace();
+                                            }
+                                        } else if (message.equals(NetMsg.NETMSG_TEAMELIMINATED)) {
+                                            sendTCPMessageTeam(TCPMESSAGE_PREFIX + TCPPREFIX_MESG + NetMsg.NETMSG_TEAMELIMINATED, entry.getValue().mPlayerID, false, false, true);
                                         } else if (message.equals(NetMsg.NETMSG_PLAYERDATAREQUEST)) {
                                             sendPlayerData(entry.getValue().mPlayerID);
                                         } else if (message.equals(NetMsg.NETMSG_STARTGAME) || message.startsWith(NetMsg.NETMSG_ADMIN_STARTGAME)) {
