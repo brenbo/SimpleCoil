@@ -145,16 +145,6 @@
                 android:text="@string/field_clear" />
 
             <Button
-                android:id="@+id/field_rules_button"
-                style="@style/Widget.AppCompat.Button.Colored"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="2dp"
-                android:layout_marginEnd="2dp"
-                android:text="@string/field_rules" />
-
-            <Button
                 android:id="@+id/field_presets_button"
                 style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"

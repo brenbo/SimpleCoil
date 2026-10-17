@@ -43,6 +43,7 @@ import com.simplecoil.simplecoil.network.WireCodec
 import com.simplecoil.simplecoil.network.discovery.DiscoveryBeacon
 import com.simplecoil.simplecoil.network.server.GameServer
 import com.simplecoil.simplecoil.network.server.LiveGame
+import com.simplecoil.simplecoil.network.server.ServerGps
 import com.simplecoil.simplecoil.network.server.SavedServerSettings
 import com.simplecoil.simplecoil.network.server.SessionPhase
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -77,6 +79,7 @@ class TcpServer : Service() {
     private lateinit var serverSettings: GameSettingsRepository
     private var liveGame: LiveGame? = null
     private var spawnMoves: Job? = null
+    private var gpsReports: Job? = null
 
     inner class LocalBinder : Binder() {
         val service: TcpServer get() = this@TcpServer
@@ -138,6 +141,9 @@ class TcpServer : Service() {
         beacon.stop()
         spawnMoves?.cancel()
         spawnMoves = null
+        gpsReports?.cancel()
+        gpsReports = null
+        container.serverGps.value = emptyList()
         container.fieldImageryServer.liveConfig = null
         container.fieldImageryServer.extras = null
         container.fieldImageryServer.stop()
@@ -164,6 +170,13 @@ class TcpServer : Service() {
             .filterIsInstance<ServerEvent.Eliminated>()
             .map { it.victimId.toInt() to it.shooterId.toInt() }
         spawnMoves = LiveGame.launchIn(scope, game, server.snapshot.map { it.phase }, eliminations)
+        gpsReports = scope.launch {
+            while (true) {
+                val players = server.snapshot.value.players.filter { it.connected }.map { it.playerId.toInt() to (it.name ?: "") }
+                container.serverGps.value = ServerGps.report(players, playerFixes(), System.nanoTime() / 1_000_000L)
+                delay(ServerGps.REFRESH_MILLIS)
+            }
+        }
     }
 
     /** Each player's last reported position and when it came, from the server's GPS reports. */

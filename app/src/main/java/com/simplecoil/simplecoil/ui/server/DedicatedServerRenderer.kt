@@ -105,6 +105,7 @@ class DedicatedServerRenderer(
         startingTimerButton.isEnabled = !running
         // The field can't change under a running game
         fieldMapButton.isEnabled = !running
+        fieldRulesButton.isEnabled = !running
         gpsModeGroup.children.forEach { it.isEnabled = !running }
         // Free for all has no teammates: the server treats teammate GPS as off (shown as Off)
         gpsModeTeammateButton.isEnabled = !running && !teamMode.isFreeForAll

@@ -143,6 +143,8 @@ class MapFragment : Fragment() {
             renderDrops()
             showDropBanner()
             refreshTarget()
+            location.currentBestLocation?.takeIf { tracking && (SystemClock.elapsedRealtimeNanos() - it.elapsedRealtimeNanos) / 1_000_000 < FRESH_FIX_MILLIS }
+                ?.let { sendLocation(it) }
             // While connected, check for a new field every few seconds, so the host's edits
             // show up soon after they close the field map (the request is tiny when nothing changed)
             if (container.networkGateway.isConnectedToServer) container.fieldImageryClient.syncSoon(container.gameState.serverIP)
@@ -423,7 +425,11 @@ class MapFragment : Fragment() {
     private fun sendLocation(fix: Location) {
         // Sent whenever we track: the server uses it for drops and shot distance, and only passes
         // it on to other players while it shares GPS
-        if (fix.latitude == lastSentLatitude && fix.longitude == lastSentLongitude) return
+        // An unchanged position is sent again every few seconds, so the server knows it is current
+        // (a player standing still still has their shots measured)
+        val now = SystemClock.elapsedRealtime()
+        if (fix.latitude == lastSentLatitude && fix.longitude == lastSentLongitude && now - lastSentAt < HEARTBEAT_MILLIS) return
+        lastSentAt = now
         lastSentLatitude = fix.latitude
         lastSentLongitude = fix.longitude
         if (activity == null) return
@@ -751,6 +757,10 @@ class MapFragment : Fragment() {
 
         private var lastSentLatitude = 0.0
         private var lastSentLongitude = 0.0
+        private var lastSentAt = 0L
+
+        /** How often an unchanged position goes to the server again. */
+        const val HEARTBEAT_MILLIS = 4_000L
 
         const val BORDER_SOURCE = "border"
         const val BORDER_LAYER = "border"

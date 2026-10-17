@@ -20,6 +20,7 @@ import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.loadout.Fix
 import com.simplecoil.simplecoil.domain.loadout.LiveField
+import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import com.simplecoil.simplecoil.domain.loadout.ShotStats
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
@@ -68,13 +69,17 @@ class LiveGame(
         phases.distinctUntilChanged().collectLatest { phase ->
             if (phase != SessionPhase.RUNNING) {
                 // Back to the host's field; the shots stay for the post-game stats
+                rules = null
                 field.stop()
                 publish()
                 return@collectLatest
             }
-            val base = savedField() ?: return@collectLatest
-            field.start(base)
             shots.clear()
+            val base = savedField()
+            // Shots are measured on any server, with or without a field set up
+            rules = base?.loadout ?: LoadoutRules()
+            base ?: return@collectLatest
+            field.start(base)
             publish()
             coroutineScope {
                 launch { moveSpawns(base) }
@@ -124,15 +129,19 @@ class LiveGame(
         }
     }
 
+    /** The game's loadout rules while one runs; null between games. */
+    @Volatile
+    private var rules: LoadoutRules? = null
+
     private fun onEliminated(victimId: Int, shooterId: Int) {
-        val config = field.config() ?: return
+        val rules = rules ?: return
         val fixes = positions()
         val victim = fixes[victimId]
-        if (config.loadout.trackShots) {
-            shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), config.loadout.maxShotMeters)
+        if (rules.trackShots) {
+            shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), rules.maxShotMeters)
         }
         // Scavenger ammo where they fell, if we know where that was
-        if (config.loadout.ammo == AmmoMode.SCAVENGER && victim != null &&
+        if (field.isActive && rules.ammo == AmmoMode.SCAVENGER && victim != null &&
             monoClock() - victim.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS) {
             field.scavenge(victim.point, wallClock())
             publish()

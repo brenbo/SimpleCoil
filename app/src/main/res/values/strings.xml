@@ -341,6 +341,11 @@
         <item quantity="one">Field map saved %1$s · sent to %2$d phone</item>
         <item quantity="other">Field map saved %1$s · sent to %2$d phones</item>
     </plurals>
+    <plurals name="server_gps_all">
+        <item quantity="one">GPS: the player is reporting</item>
+        <item quantity="other">GPS: all %1$d players reporting</item>
+    </plurals>
+    <string name="server_gps_some">GPS: %1$d of %2$d reporting · no fix from %3$s</string>
     <string name="field_map_title">Field map</string>
     <string name="field_map_hint">Find your field, draw its border, then download the photo. Phones get both when they join.</string>
     <string name="field_hint_circle">Tap the center of the field, then tap its edge.</string>

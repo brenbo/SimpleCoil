@@ -103,3 +103,33 @@ class LiveGameTransferTest {
 }
 
 private fun TestScope.cancel() = coroutineContext[kotlinx.coroutines.Job]?.cancel()
+
+class ServerGpsTest {
+    @Test
+    fun aPlayerIsReportingWithARecentFix() {
+        val here = LatLon(39.0, -77.0)
+        val report = ServerGps.report(listOf(1 to "Ann", 2 to "Bob", 3 to "Cat"),
+            mapOf(1 to Fix(here, 95_000), 2 to Fix(here, 10_000)), 100_000)
+        assertEquals(listOf(true, false, false), report.map { it.reporting })
+    }
+}
+
+class LiveGameShotsTest {
+    @Test
+    fun shotsAreMeasuredOnAServerWithoutAField() {
+        val scope = TestScope(StandardTestDispatcher())
+        val here = LatLon(39.0, -77.0)
+        val there = com.simplecoil.simplecoil.domain.map.GeoMath.offset(here, 50.0, 0.0)
+        val server = FieldImageryServer(FieldPackStore(java.io.File("unused")), port = 0)
+        val eliminations = kotlinx.coroutines.flow.MutableSharedFlow<Pair<Int, Int>>(extraBufferCapacity = 1)
+        val phase = MutableStateFlow(SessionPhase.RUNNING)
+        val game = LiveGame(server, savedField = { null }, positions = { mapOf(1 to Fix(here, 0), 2 to Fix(there, 0)) },
+            teamOf = { it }, nameOf = { "p$it" }, monoClock = { 1_000L })
+        LiveGame.launchIn(scope, game, phase, eliminations)
+        scope.testScheduler.runCurrent()
+        eliminations.tryEmit(2 to 1)
+        scope.testScheduler.runCurrent()
+        assertEquals(50.0, game.shots.longest()!!.meters, 1.0)
+        scope.cancel()
+    }
+}

@@ -194,7 +194,7 @@ class ShotStats(private val maxFixAgeMillis: Long = MAX_FIX_AGE_MILLIS) {
         shots.groupBy { it.shooterId }.values.map { mine -> mine.maxBy { it.meters } }.sortedByDescending { it.meters }
 
     companion object {
-        /** Positions come about once a second while players move; older than this is stale. */
-        const val MAX_FIX_AGE_MILLIS = 10_000L
+        /** Phones report at least every 4 s while tracking (moving or not); older than this is stale. */
+        const val MAX_FIX_AGE_MILLIS = 15_000L
     }
 }

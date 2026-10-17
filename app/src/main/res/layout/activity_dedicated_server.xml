@@ -351,6 +351,14 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/field_map_button" />
 
+                            <Button
+                                android:id="@+id/field_rules_button"
+                                style="@style/Widget.AppCompat.Button.Colored"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:text="@string/field_rules" />
+
                             <TextView
                                 android:id="@+id/field_map_status_tv"
                                 android:layout_width="0dp"
@@ -360,6 +368,15 @@
                                 android:text="@string/field_map_status_none"
                                 android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
                         </LinearLayout>
+
+                        <!-- Whose GPS the server hears from: a player without a fix has no shot distances, drops or spawns -->
+                        <TextView
+                            android:id="@+id/server_gps_tv"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse"
+                            android:visibility="gone" />
 
                         <LinearLayout
                             android:layout_width="match_parent"

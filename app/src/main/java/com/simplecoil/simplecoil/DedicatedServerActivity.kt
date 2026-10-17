@@ -18,6 +18,7 @@ package com.simplecoil.simplecoil
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.addCallback
@@ -41,6 +42,10 @@ import com.simplecoil.simplecoil.ui.server.DedicatedServerRenderer
 import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
 import com.simplecoil.simplecoil.ui.server.ServerUiEffect
 import com.simplecoil.simplecoil.ui.map.FieldMapActivity
+import com.simplecoil.simplecoil.ui.map.FieldRulesDialog
+import com.simplecoil.simplecoil.domain.map.BorderRules
+import com.simplecoil.simplecoil.domain.map.DistanceUnits
+import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.ui.sheet.FillingBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -48,6 +53,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
+import java.io.IOException
 
 /**
  * The dedicated server's screen (dedicated server design §6.2). The server runs in its own
@@ -87,6 +94,7 @@ class DedicatedServerActivity : AppCompatActivity() {
                 launch { vm.state.collect { state -> state?.let { renderer.render(it) } } }
                 launch { vm.effects.collect { onEffect(it) } }
                 launch { showFieldMapStatus() }
+                launch { showGps() }
             }
         }
     }
@@ -109,6 +117,45 @@ class DedicatedServerActivity : AppCompatActivity() {
                         ?: info?.let { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it.createdAtMillis)) } ?: ""
                     if (sent > 0) resources.getQuantityString(R.plurals.field_map_status_sent, sent, label, sent)
                     else getString(R.string.field_map_status_saved, label)
+                }
+            }
+        }
+    }
+
+    /** "GPS: 3 of 4 reporting · no fix from Bob": whose positions the server hears (shot distance, drops, spawns). */
+    private suspend fun showGps() {
+        val container = (application as SimpleCoilApp).container
+        container.serverGps.collect { players ->
+            binding.serverGpsTv.visibility = if (players.isEmpty()) View.GONE else View.VISIBLE
+            val missing = players.filter { !it.reporting }
+            binding.serverGpsTv.text = if (missing.isEmpty()) {
+                resources.getQuantityString(R.plurals.server_gps_all, players.size, players.size)
+            } else {
+                getString(R.string.server_gps_some, players.size - missing.size, players.size,
+                    missing.joinToString(", ") { it.name.ifBlank { "#${it.playerId}" } })
+            }
+            binding.serverGpsTv.setTextColor(if (missing.isEmpty()) 0xFF81C784.toInt() else 0xFFFFB74D.toInt())
+        }
+    }
+
+    /** The game rules for the field: out of bounds, respawn, ammo and drops (map design: Server UI). */
+    private fun showRules() {
+        val container = (application as SimpleCoilApp).container
+        lifecycleScope.launch {
+            val config = withContext(Dispatchers.IO) { container.serverFieldConfig.refresh() }
+                ?: FieldConfig(rules = BorderRules(units = DistanceUnits.defaultFor(Locale.getDefault())))
+            FieldRulesDialog.show(this@DedicatedServerActivity, config) { updated ->
+                lifecycleScope.launch {
+                    val saved = withContext(Dispatchers.IO) {
+                        try {
+                            container.serverFieldConfig.save(updated)
+                            true
+                        } catch (e: IOException) {
+                            false
+                        }
+                    }
+                    container.fieldImageryServer.onFieldChanged()
+                    if (!saved) Toast.makeText(applicationContext, R.string.field_map_save_error, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -143,6 +190,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             showDialog(StartingTimerDialog.newInstance(current, DedicatedServerViewModel.MAX_START_TIME_SECONDS), StartingTimerDialog.REQUEST_KEY)
         }
         fieldMapButton.setOnClickListener { startActivity(Intent(this@DedicatedServerActivity, FieldMapActivity::class.java)) }
+        fieldRulesButton.setOnClickListener { showRules() }
         startGameButton.setOnClickListener { vm.onStartPressed() }
         endGameButton.setOnClickListener { vm.onEndPressed() }
         resetGameButton.setOnClickListener { vm.onResetPressed() }

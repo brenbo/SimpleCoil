@@ -47,8 +47,10 @@ import com.simplecoil.simplecoil.network.imagery.FieldImageryClient
 import com.simplecoil.simplecoil.network.imagery.FieldImageryServer
 import com.simplecoil.simplecoil.network.imagery.FieldPackStore
 import com.simplecoil.simplecoil.network.imagery.FieldPresetStore
+import com.simplecoil.simplecoil.network.server.PlayerGps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import java.io.File
@@ -225,6 +227,9 @@ class AppContainer(private val app: Application) {
 
     /** What the dedicated server reports to its screen. */
     val serverEvents = EventBus<ServerEvent>(name = "ServerEvents")
+
+    /** While a dedicated server runs: each connected player's GPS, for its main screen. */
+    val serverGps = MutableStateFlow<List<PlayerGps>>(emptyList())
 
     /** Starts, stops and commands the dedicated server (dedicated server design §5.1). */
     val serverController: ServerController by lazy { TcpServerController(app, appScope) { userPreferences } }

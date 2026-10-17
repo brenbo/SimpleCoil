@@ -172,10 +172,12 @@ class ServerMessageHandler(
                 val team = client.player?.team ?: 0
                 synchronized(players) {
                     val gps = players.gpsData.getOrPut(playerId) { GpsData() }
+                    // A phone standing still repeats its position every few seconds: only a move
+                    // (or a team change) is passed on, but each one says the position is current
+                    if (gps.longitude != message.longitude || gps.latitude != message.latitude || gps.team != team) gps.hasUpdate = true
                     gps.longitude = message.longitude
                     gps.latitude = message.latitude
                     gps.team = team
-                    gps.hasUpdate = true // Client takes care of making sure that it is only sending us changes in coordinates
                     gps.updatedAt = System.nanoTime() / 1_000_000L
                 }
             }
