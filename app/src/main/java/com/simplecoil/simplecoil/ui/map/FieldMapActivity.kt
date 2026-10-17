@@ -56,7 +56,6 @@ import com.simplecoil.simplecoil.domain.map.Spawn
 import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.SpawnRules
 import com.simplecoil.simplecoil.domain.map.UsgsImagery
-import com.simplecoil.simplecoil.domain.team.TeamColors
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
 import com.simplecoil.simplecoil.network.imagery.UsgsFieldDownloader
 import kotlinx.coroutines.Dispatchers
@@ -68,9 +67,7 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
-import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
-import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -78,7 +75,6 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
-import org.maplibre.geojson.Polygon
 import java.io.IOException
 import java.text.DateFormat
 import java.util.Date
@@ -228,15 +224,7 @@ class FieldMapActivity : AppCompatActivity() {
             loaded.addSource(GeoJsonSource(BORDER_SOURCE))
             loaded.addSource(GeoJsonSource(DRAFT_SOURCE))
             loaded.addSource(GeoJsonSource(POINTS_SOURCE))
-            loaded.addSource(GeoJsonSource(SPAWNS_SOURCE))
-            loaded.addLayer(FillLayer(SPAWNS_FILL_LAYER, SPAWNS_SOURCE).withProperties(
-                PropertyFactory.fillColor(Expression.toColor(Expression.get(COLOR))),
-                PropertyFactory.fillOpacity(0.35f),
-            ))
-            loaded.addLayer(LineLayer(SPAWNS_LINE_LAYER, SPAWNS_SOURCE).withProperties(
-                PropertyFactory.lineColor(Expression.toColor(Expression.get(COLOR))),
-                PropertyFactory.lineWidth(2f),
-            ))
+            SpawnLayers.install(loaded, this)
             loaded.addLayer(LineLayer(PHOTO_SOURCE, PHOTO_SOURCE).withProperties(
                 PropertyFactory.lineColor(PHOTO_COLOR.toColorInt()),
                 PropertyFactory.lineWidth(1.5f),
@@ -444,14 +432,8 @@ class FieldMapActivity : AppCompatActivity() {
 
     private fun drawSpawns() {
         val style = style ?: return
-        val radius = config.spawnRules.radiusMeters
-        style.getSourceAs<GeoJsonSource>(SPAWNS_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(config.spawns.map { spawn ->
-            val ring = Border.Circle(spawn.point, radius).ring().map { Point.fromLngLat(it.longitude, it.latitude) }
-            Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).also {
-                it.addStringProperty(COLOR, if (spawn.team == Spawn.ANYONE) "#FFFFFF"
-                    else String.format(Locale.ROOT, "#%06X", TeamColors.colorOf(spawn.team) and 0xFFFFFF))
-            }
-        }))
+        SpawnLayers.update(style, config.spawns, radiusMeters = config.spawnRules.radiusMeters,
+            latitude = config.spawns.firstOrNull()?.point?.latitude ?: 0.0)
     }
 
     private fun clearBorder() {
@@ -846,10 +828,6 @@ class FieldMapActivity : AppCompatActivity() {
         const val BORDER_COLOR = "#FF5252"
         const val DRAFT_COLOR = "#FF9800"
         const val PHOTO_COLOR = "#4CAF50"
-        const val SPAWNS_SOURCE = "spawns"
-        const val SPAWNS_FILL_LAYER = "spawns-fill"
-        const val SPAWNS_LINE_LAYER = "spawns-line"
-        const val COLOR = "color"
 
         const val START_VIEW_METERS = 400.0
         const val MIN_RADIUS_METERS = 5.0

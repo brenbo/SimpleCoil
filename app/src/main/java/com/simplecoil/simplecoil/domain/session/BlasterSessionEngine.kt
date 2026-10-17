@@ -94,7 +94,7 @@ class BlasterSessionEngine(
     private var thumbLongPressReleased = false
 
     /** Reload held while awaiting a manual respawn, from the buttons-held byte. */
-    private var reloadHeldSince = NOT_HELD
+    private var reloadHoldTimer: Job? = null
 
     // Reload
     private var reloading = RELOADING_ELIMINATED
@@ -313,6 +313,8 @@ class BlasterSessionEngine(
         _state.update { it.copy(gameInProgress = false, spawn = SpawnPhase.None, shieldSeconds = null, clock = GameClock.Stopped(countdownText)) }
         outOfBounds = false
         respawnHolds.clear()
+        reloadHoldTimer?.cancel()
+        reloadHoldTimer = null
         if (reloading == RELOADING_OUT_OF_BOUNDS) reloading = RELOADING_ELIMINATED
         startReload(RELOADING_ELIMINATED)
     }
@@ -421,6 +423,11 @@ class BlasterSessionEngine(
     fun holdRespawn(reason: RespawnHold, held: Boolean) {
         val changed = if (held) respawnHolds.add(reason) else respawnHolds.remove(reason)
         if (!changed) return
+        // Manual respawn: tell the player whether they need to get to a spawn first
+        (_state.value.spawn as? SpawnPhase.AwaitingRespawn)?.let { awaiting ->
+            _state.update { it.copy(spawn = awaiting.copy(needsSpawn = respawnHolds.isNotEmpty())) }
+            return
+        }
         val waiting = _state.value.spawn as? SpawnPhase.AwaitingReturn ?: return
         if (respawnHolds.isEmpty()) {
             spawned()
@@ -487,7 +494,7 @@ class BlasterSessionEngine(
         }
 
         if (!startingGameLabel && config.manualRespawn) {
-            _state.update { it.copy(spawn = SpawnPhase.AwaitingRespawn(eliminatedBy)) }
+            _state.update { it.copy(spawn = SpawnPhase.AwaitingRespawn(eliminatedBy, needsSpawn = respawnHolds.isNotEmpty())) }
             return
         }
         startSpawnCountdown(eliminatedBy)
@@ -496,6 +503,11 @@ class BlasterSessionEngine(
     /** Manual respawn: the player asked to respawn, so start the respawn countdown. */
     fun startRespawn() {
         val awaiting = _state.value.spawn as? SpawnPhase.AwaitingRespawn ?: return
+        if (respawnHolds.isNotEmpty()) {
+            // Not in a spawn (or off the field): holding reload does nothing yet
+            emit(SessionEffect.Sound(SessionSound.EMPTY))
+            return
+        }
         startSpawnCountdown(awaiting.eliminatedBy)
     }
 
@@ -597,7 +609,8 @@ class BlasterSessionEngine(
             thumbLongPressed = false
             thumbPressPending = false
             thumbLongPressReleased = false
-            reloadHeldSince = NOT_HELD
+            reloadHoldTimer?.cancel()
+            reloadHoldTimer = null
             setShotMode(currentShotMode)
             scope.launch {
                 delay(FIRST_PACKET_TEAM_DELAY_MILLIS)
@@ -729,14 +742,18 @@ class BlasterSessionEngine(
     private fun processReloadHold(telemetry: GattProtocolHandler.TelemetryData) {
         val held = telemetry.buttonsHeld and GattProtocolHandler.RECOIL_BUTTON_RELOAD != 0
         if (!held || _state.value.spawn !is SpawnPhase.AwaitingRespawn) {
-            reloadHeldSince = NOT_HELD
+            reloadHoldTimer?.cancel()
+            reloadHoldTimer = null
             return
         }
-        val now = clock()
-        if (reloadHeldSince == NOT_HELD) reloadHeldSince = now
-        if (now - reloadHeldSince >= RELOAD_LONG_PRESS_MILLIS) {
-            reloadHeldSince = NOT_HELD
-            startRespawn()
+        // Timed from the press, not from packets: a blaster that only reports when a button
+        // changes sends nothing while it is held, and the hold would never reach two seconds
+        if (reloadHoldTimer == null) {
+            reloadHoldTimer = scope.launch {
+                delay(RELOAD_LONG_PRESS_MILLIS)
+                reloadHoldTimer = null
+                startRespawn()
+            }
         }
     }
 

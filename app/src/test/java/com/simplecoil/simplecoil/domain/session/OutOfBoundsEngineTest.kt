@@ -170,6 +170,45 @@ class OutOfBoundsEngineTest {
         assertEquals(null, h.state.shieldSeconds)
     }
 
+    private fun eliminatedWithManualRespawn() {
+        h.config.fullHealth = 1
+        h.config.manualRespawn = true
+        inGame()
+        h.telemetry(Packet().hit1(0x08, 0x3D))
+        assertTrue(h.state.spawn is SpawnPhase.AwaitingRespawn)
+    }
+
+    @Test
+    fun holdingReloadWorksEvenIfTheBlasterOnlyReportsThePress() {
+        eliminatedWithManualRespawn()
+        // One packet when the button goes down, then nothing until it comes up
+        h.telemetry(Packet().reload(1).reloadHeld())
+        h.advance(BlasterSessionEngine.RELOAD_LONG_PRESS_MILLIS)
+        assertTrue(h.state.spawn is SpawnPhase.Spawning)
+    }
+
+    @Test
+    fun manualRespawnOnlyWorksInTheSpawn() {
+        eliminatedWithManualRespawn()
+        h.engine.holdRespawn(RespawnHold.AWAY_FROM_SPAWN, true)
+        assertEquals(true, (h.state.spawn as SpawnPhase.AwaitingRespawn).needsSpawn)
+
+        // Holding reload away from the spawn does nothing but say so
+        h.effects.clear()
+        h.telemetry(Packet().reload(1).reloadHeld())
+        h.advance(BlasterSessionEngine.RELOAD_LONG_PRESS_MILLIS)
+        assertTrue(h.state.spawn is SpawnPhase.AwaitingRespawn)
+        assertTrue(h.sounds().contains(SessionSound.EMPTY))
+        h.telemetry(Packet().reload(1))
+
+        // In the spawn it works
+        h.engine.holdRespawn(RespawnHold.AWAY_FROM_SPAWN, false)
+        assertEquals(false, (h.state.spawn as SpawnPhase.AwaitingRespawn).needsSpawn)
+        h.telemetry(Packet().reload(2).reloadHeld())
+        h.advance(BlasterSessionEngine.RELOAD_LONG_PRESS_MILLIS)
+        assertTrue(h.state.spawn is SpawnPhase.Spawning)
+    }
+
     @Test
     fun nothingHappensOutsideAGame() {
         h.connected()

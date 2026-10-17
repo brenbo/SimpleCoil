@@ -24,7 +24,7 @@ sealed interface SpawnPhase {
     data class Spawning(val seconds: Long, val eliminatedBy: String, val startingGame: Boolean) : SpawnPhase
 
     /** Eliminated with manual respawn: waiting for the player to start the respawn countdown. */
-    data class AwaitingRespawn(val eliminatedBy: String) : SpawnPhase
+    data class AwaitingRespawn(val eliminatedBy: String, val needsSpawn: Boolean = false) : SpawnPhase
 
     /**
      * The respawn countdown is done, but the player is off the field ([outOfBounds]) or not at a

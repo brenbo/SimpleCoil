@@ -121,7 +121,7 @@ class SpawnControllerTest {
         controller.onFix(at(0.0, 0.0), 5f)
         eliminated()
         assertEquals("held:true", lastHeld())
-        advance(31_000)
+        advance(5 * 60_000L + 1_000)
         assertEquals("held:false", lastHeld())
     }
 
@@ -182,6 +182,46 @@ class SpawnControllerTest {
     }
 
     @Test
+    fun manualRespawnNeedsTheSpawnButNoWaitThere() {
+        controller.onFix(at(0.0, 0.0), 5f)
+        session.value = session.value.copy(spawn = SpawnPhase.AwaitingRespawn("", needsSpawn = false))
+        assertEquals("held:true", lastHeld())
+        controller.onFix(redSpawn.point, 5f)
+        // Standing in it is enough: the player then holds reload
+        assertEquals("held:false", lastHeld())
+    }
+
+    @Test
+    fun aRoughButUsableFixStillCounts() {
+        // Older phones often report 20-40 m; that still says which spawn someone is in
+        controller.onFix(at(0.0, 0.0), 35f)
+        eliminated()
+        assertEquals("held:true", lastHeld())
+    }
+
+    @Test
+    fun noFixIsReported() {
+        eliminated()
+        assertTrue(controller.noFix.value)
+        controller.onFix(at(0.0, 0.0), 5f)
+        assertFalse(controller.noFix.value)
+    }
+
+    @Test
+    fun layersSplitAMove() {
+        val newRed = Spawn(1, at(60.0, -60.0))
+        field.value = field.value!!.copy(spawns = listOf(newRed, blueSpawn), spawnGeneration = 1)
+        advance(2_500)
+        val layers = controller.layers()!!
+        assertEquals(listOf(blueSpawn), layers.steady)
+        assertEquals(listOf(newRed), layers.incoming)
+        assertEquals(listOf(redSpawn), layers.outgoing)
+        assertEquals(0.25, layers.progress, 0.01)
+        advance(10_000)
+        assertEquals(listOf(newRed, blueSpawn), controller.layers()!!.steady)
+    }
+
+    @Test
     fun theShieldEndsOutsideTheSpawnWhenAsked() {
         field.value = field.value!!.copy(spawnRules = field.value!!.spawnRules.copy(shieldOnlyInSpawn = true))
         session.value = session.value.copy(shieldSeconds = 5)
@@ -202,7 +242,7 @@ class SpawnControllerTest {
     fun inaccurateFixesDoNotCount() {
         controller.onFix(at(0.0, 0.0), 5f)
         eliminated()
-        controller.onFix(redSpawn.point, 40f)
+        controller.onFix(redSpawn.point, 60f)
         advance(5_000)
         assertEquals("held:true", lastHeld())
     }

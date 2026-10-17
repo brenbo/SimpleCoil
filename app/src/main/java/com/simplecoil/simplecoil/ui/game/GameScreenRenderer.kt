@@ -648,7 +648,8 @@ class GameScreenRenderer(
                 b.eliminatedTv.visibility = View.VISIBLE
                 b.eliminatedByTv.text = spawn.eliminatedBy
                 b.eliminatedByTv.visibility = View.VISIBLE
-                b.spawnCountdownTv.setText(R.string.manual_respawn_hint)
+                b.spawnCountdownTv.setText(if (spawn.needsSpawn) R.string.manual_respawn_go_to_spawn else R.string.manual_respawn_hint)
+                b.startRespawnButton.isEnabled = !spawn.needsSpawn
                 b.spawnCountdownTv.visibility = View.VISIBLE
             }
             is SpawnPhase.AwaitingReturn -> {

@@ -59,6 +59,11 @@ class SpawnController(
     /** Set while the player needs to walk to a spawn; null otherwise. */
     val guide: StateFlow<Guide?> = _guide.asStateFlow()
 
+    private val _noFix = MutableStateFlow(false)
+
+    /** True while the player should walk to a spawn but the phone has no GPS fix to check it by. */
+    val noFix: StateFlow<Boolean> = _noFix.asStateFlow()
+
     private var current: List<Spawn> = emptyList()
     private var previous: List<Spawn> = emptyList()
     private var movedAt = Long.MIN_VALUE
@@ -80,8 +85,10 @@ class SpawnController(
 
     /** A GPS fix (accuracy in metres; 0 = unknown). Fixes worse than the field's gate are ignored. */
     fun onFix(point: LatLon, accuracyMeters: Float) {
-        val gate = field.value?.rules?.accuracyGateMeters ?: 0.0
-        if (gate > 0 && (accuracyMeters <= 0f || accuracyMeters > gate)) return
+        // Looser than the border's gate: a phone that never gets a fix that good would otherwise
+        // never be placed in its spawn, and the respawn would not be held at all
+        val limit = maxOf(field.value?.rules?.accuracyGateMeters ?: 0.0, SPAWN_ACCURACY_LIMIT_METERS)
+        if (accuracyMeters > limit) return
         position = point
         positionAt = clock()
         update()
@@ -97,6 +104,19 @@ class SpawnController(
         // Only spawns that actually moved fade; one that stayed put stays solid
         return (previous - current.toSet()).map { ShownSpawn(it, radius, 1 - progress, it.isFor(team, ffa)) }.filter { it.opacity > 0 } +
             current.map { ShownSpawn(it, radius, if (it in previous) 1.0 else progress, it.isFor(team, ffa)) }
+    }
+
+    /** The spawns to draw, grouped by how they fade: [progress] 0..1 through a move. */
+    data class Layers(val steady: List<Spawn>, val incoming: List<Spawn>, val outgoing: List<Spawn>, val progress: Double, val radiusMeters: Double)
+
+    fun layers(nowMillis: Long = clock()): Layers? {
+        val config = field.value ?: return null
+        val radius = config.spawnRules.radiusMeters
+        val fade = config.spawnRules.crossfadeSeconds * 1000L
+        val progress = if (movedAt == Long.MIN_VALUE || fade <= 0) 1.0 else ((nowMillis - movedAt).toDouble() / fade).coerceIn(0.0, 1.0)
+        if (progress >= 1.0) return Layers(current, emptyList(), emptyList(), 1.0, radius)
+        val kept = previous.toSet()
+        return Layers(current.filter { it in kept }, current.filter { it !in kept }, previous - current.toSet(), progress, radius)
     }
 
     /** True while spawns are fading, so the map redraws them every frame. */
@@ -144,22 +164,27 @@ class SpawnController(
 
         // Without a recent fix (no GPS, or no permission) walking back can't be checked: don't trap the player
         val located = here != null && now - positionAt < POSITION_STALE_MILLIS
-        if (!rules.walkBack || spawns.isEmpty() || !located || !needsSpawn(state.spawn, rules)) {
+        val walking = rules.walkBack && spawns.isNotEmpty() && needsSpawn(state.spawn, rules)
+        // Say so, rather than quietly letting them respawn anywhere
+        _noFix.value = walking && !located
+        if (!walking || !located) {
             inSpawnSince = null
             setHeld(false)
             _guide.value = null
             return
         }
-        val inside = here != null && spawns.any { GeoMath.distanceMeters(here, it.point) <= rules.radiusMeters }
+        val inside = spawns.any { GeoMath.distanceMeters(here, it.point) <= rules.radiusMeters }
         if (inside) {
             if (inSpawnSince == null) inSpawnSince = now
         } else {
             inSpawnSince = null
         }
         val since = inSpawnSince
-        val arrived = since != null && now - since >= rules.secondsInSpawn * 1000L
+        // Manual respawn: being in the spawn is enough, the player then holds reload
+        val manual = state.spawn is SpawnPhase.AwaitingRespawn
+        val arrived = since != null && (manual || now - since >= rules.secondsInSpawn * 1000L)
         setHeld(!arrived)
-        _guide.value = if (arrived || here == null) null else {
+        _guide.value = if (arrived) null else {
             val nearest = spawns.minBy { GeoMath.distanceMeters(here, it.point) }
             Guide(nearest.point, (GeoMath.distanceMeters(here, nearest.point) - rules.radiusMeters).coerceAtLeast(0.0))
         }
@@ -183,13 +208,17 @@ class SpawnController(
         inSpawnSince = null
         setHeld(false)
         _guide.value = null
+        _noFix.value = false
     }
 
     private companion object {
         const val TICK_MILLIS = 1_000L
 
         /** A fix older than this doesn't count as knowing where the player is. */
-        const val POSITION_STALE_MILLIS = 30_000L
+        const val POSITION_STALE_MILLIS = 5 * 60_000L
+
+        /** Fixes less accurate than this are too rough to say whether someone is in a spawn. */
+        const val SPAWN_ACCURACY_LIMIT_METERS = 50.0
 
         /** GPS jitter at the spawn's edge doesn't end the shield. */
         const val SHIELD_MARGIN_METERS = 3.0

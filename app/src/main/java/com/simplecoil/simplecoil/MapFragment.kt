@@ -17,7 +17,6 @@
 package com.simplecoil.simplecoil
 
 import android.Manifest
-import android.graphics.BitmapFactory
 import android.location.Location
 import android.os.Bundle
 import android.os.Handler
@@ -38,7 +37,6 @@ import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.FragmentMapBinding
 import com.simplecoil.simplecoil.domain.map.AutoZoom
-import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.BorderTracker
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.GeoCircle
@@ -46,16 +44,16 @@ import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.HeadingFilter
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
-import com.simplecoil.simplecoil.domain.map.Spawn
 import com.simplecoil.simplecoil.domain.map.SpawnController
-import com.simplecoil.simplecoil.domain.team.TeamColors
 import com.simplecoil.simplecoil.hardware.location.CompassSensor
 import com.simplecoil.simplecoil.hardware.location.LocationUpdateListener
 import com.simplecoil.simplecoil.hardware.location.MapLocationManager
 import com.simplecoil.simplecoil.network.ClientEvent
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
 import com.simplecoil.simplecoil.ui.map.MapCredit
+import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
+import com.simplecoil.simplecoil.ui.map.SpawnLayers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -66,7 +64,6 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
-import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
@@ -76,8 +73,6 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
-import org.maplibre.geojson.Polygon
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -117,6 +112,9 @@ class MapFragment : Fragment() {
 
     /** The camera has been put somewhere sensible once. */
     private var placed = false
+
+    /** The heading your arrow was last turned to. */
+    private var arrowHeading = Double.NaN
 
     /** When the phone was last seen connected to its server. */
     private var lastConnectedAt = Long.MIN_VALUE
@@ -218,6 +216,7 @@ class MapFragment : Fragment() {
                 launch { container.playerFieldConfig.config.collect { showField(it) } }
                 launch { container.borderController.status.collect { showBorderStatus(it) } }
                 launch { container.spawnController.guide.collect { showGuide(it) } }
+                launch { container.spawnController.noFix.collect { showGuide(container.spawnController.guide.value) } }
             }
         }
     }
@@ -312,18 +311,9 @@ class MapFragment : Fragment() {
     }
 
     private fun addFieldLayers(style: Style) {
-        // Spawns: a disc in the team's colour, fading as they move; the dashed way to yours
-        style.addSource(GeoJsonSource(SPAWNS_SOURCE))
+        // Spawns under everything else; then the dashed way to yours, and the border
+        SpawnLayers.install(style, requireContext())
         style.addSource(GeoJsonSource(GUIDE_SOURCE))
-        style.addLayer(FillLayer(SPAWNS_FILL_LAYER, SPAWNS_SOURCE).withProperties(
-            PropertyFactory.fillColor(Expression.toColor(Expression.get(COLOR))),
-            PropertyFactory.fillOpacity(Expression.product(Expression.get(OPACITY), Expression.literal(SPAWN_FILL_OPACITY))),
-        ))
-        style.addLayer(LineLayer(SPAWNS_LINE_LAYER, SPAWNS_SOURCE).withProperties(
-            PropertyFactory.lineColor(Expression.toColor(Expression.get(COLOR))),
-            PropertyFactory.lineOpacity(Expression.get(OPACITY)),
-            PropertyFactory.lineWidth(2f),
-        ))
         style.addLayer(LineLayer(GUIDE_LAYER, GUIDE_SOURCE).withProperties(
             PropertyFactory.lineColor(GUIDE_COLOR.toColorInt()),
             PropertyFactory.lineWidth(3f),
@@ -338,10 +328,14 @@ class MapFragment : Fragment() {
     }
 
     private fun addPlayerLayers(style: Style) {
-        val res = resources
-        style.addImage(ICON_YOU, BitmapFactory.decodeResource(res, R.drawable.ic_gps_you))
-        style.addImage(ICON_TEAMMATE, BitmapFactory.decodeResource(res, R.drawable.ic_gps_teammate))
-        style.addImage(ICON_ENEMY, BitmapFactory.decodeResource(res, R.drawable.ic_gps_enemy))
+        val context = requireContext()
+        // Every team's markers (0 = no team colour: free for all)
+        for (team in 0..4) {
+            val color = MapIcons.teamColor(team)
+            style.addImage(youIcon(team), MapIcons.you(context, if (team == 0) YOU_COLOR else color))
+            style.addImage(playerIcon(team, enemy = false), MapIcons.player(context, color, enemy = false))
+            style.addImage(playerIcon(team, enemy = true), MapIcons.player(context, color, enemy = true))
+        }
         style.addSource(GeoJsonSource(PLAYERS_SOURCE))
         style.addSource(GeoJsonSource(YOU_SOURCE))
         style.addLayer(SymbolLayer(PLAYERS_LAYER, PLAYERS_SOURCE).withProperties(
@@ -349,13 +343,21 @@ class MapFragment : Fragment() {
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(true),
         ))
-        // You above everyone else
+        // You above everyone else, your arrow turned to where you face
         style.addLayer(SymbolLayer(YOU_LAYER, YOU_SOURCE).withProperties(
-            PropertyFactory.iconImage(ICON_YOU),
+            PropertyFactory.iconImage(Expression.get(KIND)),
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(true),
+            PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
         ))
     }
+
+    private fun youIcon(team: Int) = "you-$team"
+    private fun playerIcon(team: Int, enemy: Boolean) = if (enemy) "foe-$team" else "mate-$team"
+
+    /** A team's marker colour index: 1-4, or 0 in free for all (where "teams" are player ids). */
+    private fun markerTeam(team: Int): Int = if (settings.teamLayout.mode.isFreeForAll || team !in 1..4) 0 else team
+
 
     private fun onClientEvent(event: ClientEvent) {
         when (event) {
@@ -423,12 +425,15 @@ class MapFragment : Fragment() {
         val style = style ?: return
         val me = you()
         updateBorderVisibility()
+        val myTeam = markerTeam(settings.teamLayout.teamOf(container.players.playerID))
         style.getSourceAs<GeoJsonSource>(YOU_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(
-            listOfNotNull(me?.let { Feature.fromGeometry(Point.fromLngLat(it.longitude, it.latitude)) })))
+            listOfNotNull(me?.let { spot ->
+                Feature.fromGeometry(Point.fromLngLat(spot.longitude, spot.latitude)).also { it.addStringProperty(KIND, youIcon(myTeam)) }
+            })))
         style.getSourceAs<GeoJsonSource>(PLAYERS_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(
             others().map { p ->
                 Feature.fromGeometry(Point.fromLngLat(p.longitude, p.latitude)).also {
-                    it.addStringProperty(KIND, if (p.teammate) ICON_TEAMMATE else ICON_ENEMY)
+                    it.addStringProperty(KIND, playerIcon(markerTeam(p.team), enemy = !p.teammate))
                 }
             }))
     }
@@ -471,17 +476,13 @@ class MapFragment : Fragment() {
         refreshTarget()
     }
 
-    /** Draws the spawns, in their team's colour, fading as they move; other teams' a little fainter. */
+    /** Draws the spawns, the moving ones fading (map design: Moving spawns). */
     private fun renderSpawns() {
         val style = style ?: return
-        val features = container.spawnController.shown().map { shown ->
-            val ring = Border.Circle(shown.spawn.point, shown.radiusMeters).ring().map { Point.fromLngLat(it.longitude, it.latitude) }
-            Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).also {
-                it.addStringProperty(COLOR, teamColor(shown.spawn.team))
-                it.addNumberProperty(OPACITY, shown.opacity * if (shown.mine) 1.0 else OTHER_TEAM_OPACITY)
-            }
-        }
-        style.getSourceAs<GeoJsonSource>(SPAWNS_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(features))
+        val layers = container.spawnController.layers()
+        val latitude = layers?.let { (it.steady + it.incoming + it.outgoing).firstOrNull()?.point?.latitude } ?: 0.0
+        SpawnLayers.update(style, layers?.steady ?: emptyList(), layers?.incoming ?: emptyList(), layers?.outgoing ?: emptyList(),
+            layers?.progress ?: 1.0, layers?.radiusMeters ?: 10.0, latitude)
     }
 
     /** After an elimination with walk-back respawn: a dashed line and the distance to your nearest spawn. */
@@ -494,12 +495,12 @@ class MapFragment : Fragment() {
             } else null)))
         val banner = binding?.mapSpawnTv ?: return
         val units = field?.rules?.units
-        banner.isVisible = guide != null && units != null
-        if (guide != null && units != null) banner.text = getString(R.string.map_go_to_spawn, units.format(guide.meters))
+        when {
+            guide != null && units != null -> banner.text = getString(R.string.map_go_to_spawn, units.format(guide.meters))
+            container.spawnController.noFix.value -> banner.setText(R.string.map_spawn_no_gps)
+        }
+        banner.isVisible = (guide != null && units != null) || container.spawnController.noFix.value
     }
-
-    private fun teamColor(team: Int): String =
-        if (team == Spawn.ANYONE) ANYONE_COLOR else String.format(Locale.ROOT, "#%06X", TeamColors.colorOf(team) and 0xFFFFFF)
 
     private fun showBorderStatus(status: BorderTracker.Status?) {
         updateBorderVisibility()
@@ -620,7 +621,15 @@ class MapFragment : Fragment() {
 
     private fun moveCamera() {
         val map = map ?: return
-        if (userMoving || binding?.root?.isVisible != true) return
+        if (binding?.root?.isVisible != true) return
+        // Your arrow points the way you face, on the map
+        heading.heading?.let { h ->
+            if (arrowHeading.isNaN() || HeadingFilter.difference(arrowHeading, h) >= MIN_TURN_DEGREES) {
+                arrowHeading = h
+                style?.getLayer(YOU_LAYER)?.setProperties(PropertyFactory.iconRotate(h.toFloat()))
+            }
+        }
+        if (userMoving) return
         val now = map.cameraPosition
         val currentBearing = now.bearing
         val bearing = when {
@@ -666,21 +675,13 @@ class MapFragment : Fragment() {
         const val YOU_LAYER = "you"
         const val BORDER_SOURCE = "border"
         const val BORDER_LAYER = "border"
-        const val SPAWNS_SOURCE = "spawns"
-        const val SPAWNS_FILL_LAYER = "spawns-fill"
-        const val SPAWNS_LINE_LAYER = "spawns-line"
         const val GUIDE_SOURCE = "spawn-guide"
         const val GUIDE_LAYER = "spawn-guide"
-        const val COLOR = "color"
-        const val OPACITY = "opacity"
-        const val SPAWN_FILL_OPACITY = 0.3
-        const val OTHER_TEAM_OPACITY = 0.5
-        const val ANYONE_COLOR = "#FFFFFF"
         const val GUIDE_COLOR = "#69F0AE"
+
+        /** You, in free for all (no team colour). */
+        const val YOU_COLOR = 0xFF2979FF.toInt()
         const val KIND = "kind"
-        const val ICON_YOU = "player-you"
-        const val ICON_TEAMMATE = "player-teammate"
-        const val ICON_ENEMY = "player-enemy"
         const val BORDER_COLOR = "#FF5252"
         const val ACTIVE_COLOR = "#FF9800"
 

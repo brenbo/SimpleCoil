@@ -103,7 +103,8 @@ public class MapLocationManager {
                 public void onProviderDisabled(String provider) {}
             };
 
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 1, locationListener);
+            // No minimum distance: fixes keep coming while standing still (in a spawn, say)
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener);
             currentBestLocation = getLastBestLocation(context);
             if (currentBestLocation != null && listener != null) {
                 listener.onLocationUpdated(currentBestLocation, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
@@ -200,12 +201,15 @@ public class MapLocationManager {
         public final double latitude;
         public final double longitude;
         public final boolean teammate;
+        /** The team the server says they are on (in free for all, their player id). */
+        public final int team;
 
-        public PlayerPosition(int playerId, double latitude, double longitude, boolean teammate) {
+        public PlayerPosition(int playerId, double latitude, double longitude, boolean teammate, int team) {
             this.playerId = playerId;
             this.latitude = latitude;
             this.longitude = longitude;
             this.teammate = teammate;
+            this.team = team;
         }
     }
 
@@ -225,7 +229,7 @@ public class MapLocationManager {
                 data.hasUpdate = false;
                 if (data.latitude == 0 && data.longitude == 0) continue; // never reported
                 if (!isVisible(layout, gpsMode, me, data)) continue;
-                result.add(new PlayerPosition(pid, data.latitude, data.longitude, isTeammate(layout, me, data)));
+                result.add(new PlayerPosition(pid, data.latitude, data.longitude, isTeammate(layout, me, data), data.team));
             }
         }
         return result;

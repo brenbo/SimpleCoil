@@ -82,6 +82,7 @@
     <string name="spawn_in_label">Spawn in %1$d</string>
     <string name="start_respawn_button">Start Respawn</string>
     <string name="manual_respawn_hint">Hold reload to respawn</string>
+    <string name="manual_respawn_go_to_spawn">Walk to your spawn, then hold reload to respawn</string>
     <string name="respawn_shield_label">Shield: %1$d</string>
 
     <string name="ble_not_supported">BLE is not supported</string>
@@ -398,6 +399,7 @@
     <string name="respawn_return_to_field">Get back on the field to respawn</string>
     <string name="respawn_go_to_spawn">Walk to your spawn to respawn</string>
     <string name="map_go_to_spawn">Walk to your spawn · %1$s</string>
+    <string name="map_spawn_no_gps">No GPS fix: you can respawn anywhere</string>
 
     <!-- Spawns on the server's field map (map design: Respawn points) -->
     <string name="field_tool_spawns">Spawns</string>
