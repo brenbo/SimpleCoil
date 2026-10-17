@@ -51,7 +51,47 @@ class FieldImageryServer(
     private val store: FieldPackStore,
     private val configs: FieldConfigStore? = null,
     private val port: Int = FieldImageryProtocol.PORT,
+    /** The server's wall clock, sent with the config so phones can time drops. */
+    private val clock: () -> Long = System::currentTimeMillis,
 ) {
+    /** What a game answers beyond the field itself (map design: phase 4); null outside a game. */
+    interface Extras {
+        /** Player [playerId] claims drop [dropId]: its kind if they get it, else null. */
+        fun claim(dropId: String, playerId: Int): String?
+
+        /** Every player's position, as JSON, for player [playerId]'s UAV; null if not allowed. */
+        fun uav(playerId: Int): ByteArray?
+
+        /** The game's shot stats as JSON. */
+        fun stats(): ByteArray?
+    }
+
+    @Volatile
+    var extras: Extras? = null
+
+    private fun serveExtra(request: FieldImageryProtocol.Request, out: java.io.OutputStream) {
+        val extras = extras
+        val reply: String
+        var body: ByteArray? = null
+        when (request.kind) {
+            FieldImageryProtocol.Kind.CLAIM -> {
+                val (dropId, playerId) = FieldImageryProtocol.parseClaim(request.knownId) ?: return
+                val kind = extras?.claim(dropId, playerId)
+                reply = if (kind != null) FieldImageryProtocol.grantedLine(kind) else FieldImageryProtocol.DENIED_LINE
+                if (kind != null) onFieldChanged()
+            }
+            else -> {
+                body = if (request.kind == FieldImageryProtocol.Kind.UAV) {
+                    request.knownId.toIntOrNull()?.let { extras?.uav(it) }
+                } else {
+                    extras?.stats()
+                }
+                reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
+            }
+        }
+        out.write(reply.toByteArray(Charsets.US_ASCII))
+        body?.let { out.write(it) }
+    }
     @Volatile
     private var socket: ServerSocket? = null
     private var acceptThread: Thread? = null
@@ -142,24 +182,31 @@ class FieldImageryServer(
             val request = FieldImageryProtocol.parseRequest(line) ?: return
             val out = BufferedOutputStream(client.getOutputStream())
             val address = client.inetAddress?.hostAddress ?: "?"
+            when (request.kind) {
+                FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS -> {
+                    serveExtra(request, out)
+                    out.flush()
+                    return
+                }
+                else -> {}
+            }
             val currentId: String?
             val bytes: ByteArray?
-            when (request.kind) {
-                FieldImageryProtocol.Kind.PHOTO -> {
-                    currentId = store.refresh()?.id
-                    bytes = if (currentId == null || currentId == request.knownId) null else store.bytes()
-                }
-                FieldImageryProtocol.Kind.CONFIG -> {
-                    val config = liveConfig ?: configs?.refresh()
-                    currentId = config?.id
-                    bytes = if (config == null || currentId == request.knownId) null else config.toBytes()
-                }
+            if (request.kind == FieldImageryProtocol.Kind.PHOTO) {
+                currentId = store.refresh()?.id
+                bytes = if (currentId == null || currentId == request.knownId) null else store.bytes()
+            } else {
+                val config = liveConfig ?: configs?.refresh()
+                currentId = config?.id
+                bytes = if (config == null || currentId == request.knownId) null else config.toBytes()
             }
+            // The config's replies carry the server's clock, for drop countdowns
+            val time = if (request.kind == FieldImageryProtocol.Kind.CONFIG) clock() else null
             when {
-                currentId != null && currentId == request.knownId -> out.write(FieldImageryProtocol.SAME_LINE.toByteArray(Charsets.US_ASCII))
-                currentId == null || bytes == null -> out.write(FieldImageryProtocol.NONE_LINE.toByteArray(Charsets.US_ASCII))
+                currentId != null && currentId == request.knownId -> out.write(FieldImageryProtocol.sameLine(time).toByteArray(Charsets.US_ASCII))
+                currentId == null || bytes == null -> out.write(FieldImageryProtocol.noneLine(time).toByteArray(Charsets.US_ASCII))
                 else -> {
-                    out.write(FieldImageryProtocol.packLine(bytes.size).toByteArray(Charsets.US_ASCII))
+                    out.write(FieldImageryProtocol.packLine(bytes.size, time).toByteArray(Charsets.US_ASCII))
                     out.write(bytes)
                 }
             }
@@ -177,7 +224,7 @@ class FieldImageryServer(
             val (photo, config) = delivered[address] ?: (null to null)
             delivered[address] = when (kind) {
                 FieldImageryProtocol.Kind.PHOTO -> id to config
-                FieldImageryProtocol.Kind.CONFIG -> photo to id
+                else -> photo to id
             }
             recount()
         }
@@ -228,7 +275,9 @@ object FieldImageryProtocol {
     const val VERSION = "SCFIELD1"
     const val NONE_LINE = "$VERSION NONE\n"
     const val SAME_LINE = "$VERSION SAME\n"
+    const val DENIED_LINE = "$VERSION DENIED\n"
     private const val PACK = "PACK"
+    private const val GRANTED = "GRANTED"
 
     /** Sent for "none yet". */
     const val NO_ID = "-"
@@ -238,15 +287,40 @@ object FieldImageryProtocol {
     const val READ_TIMEOUT_MS = 15_000
 
     /** What a phone asks for. */
-    enum class Kind(val verb: String) { PHOTO("GET"), CONFIG("CONFIG") }
+    enum class Kind(val verb: String) {
+        PHOTO("GET"),
+        CONFIG("CONFIG"),
 
-    /** A phone's request: [kind], and the id it already has (`""` for none). */
+        /** Claim a drop: `SCFIELD1 CLAIM <drop id>,<player id>`; GRANTED <kind> or DENIED. */
+        CLAIM("CLAIM"),
+
+        /** Everyone's position for a UAV: `SCFIELD1 UAV <player id>`; PACK of JSON or NONE. */
+        UAV("UAV"),
+
+        /** The game's shot stats: `SCFIELD1 STATS -`; PACK of JSON or NONE. */
+        STATS("STATS"),
+    }
+
+    /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */
     data class Request(val kind: Kind, val knownId: String)
 
     fun requestLine(knownId: String?, kind: Kind = Kind.PHOTO): String =
         "$VERSION ${kind.verb} ${knownId?.takeIf { it.isNotEmpty() } ?: NO_ID}\n"
 
-    fun packLine(length: Int): String = "$VERSION $PACK $length\n"
+    fun claimLine(dropId: String, playerId: Int): String = requestLine("$dropId,$playerId", Kind.CLAIM)
+
+    /** A claim's drop id and player id, or null if it isn't one. */
+    fun parseClaim(arg: String): Pair<String, Int>? {
+        val parts = arg.split(',')
+        if (parts.size != 2 || parts[0].isEmpty()) return null
+        return parts[1].toIntOrNull()?.let { parts[0] to it }
+    }
+
+    /** The replies; [time], the server's clock, rides along on the config's. */
+    fun packLine(length: Int, time: Long? = null): String = "$VERSION $PACK $length${time?.let { " $it" } ?: ""}\n"
+    fun sameLine(time: Long?): String = "$VERSION SAME${time?.let { " $it" } ?: ""}\n"
+    fun noneLine(time: Long?): String = "$VERSION NONE${time?.let { " $it" } ?: ""}\n"
+    fun grantedLine(kind: String): String = "$VERSION $GRANTED $kind\n"
 
     /** The request a line holds, or null if it isn't one. */
     fun parseRequest(line: String): Request? {
@@ -261,6 +335,8 @@ object FieldImageryProtocol {
         data object None : Reply
         data object Same : Reply
         data class Pack(val length: Int) : Reply
+        data class Granted(val kind: String) : Reply
+        data object Denied : Reply
     }
 
     /** The reply a server's line means, or null if it is garbage. */
@@ -268,11 +344,24 @@ object FieldImageryProtocol {
         val parts = line.trim().split(' ')
         if (parts.isEmpty() || parts[0] != VERSION) return null
         return when {
-            parts.size == 2 && parts[1] == "NONE" -> Reply.None
-            parts.size == 2 && parts[1] == "SAME" -> Reply.Same
-            parts.size == 3 && parts[1] == PACK -> parts[2].toIntOrNull()
+            parts.size in 2..3 && parts[1] == "NONE" -> Reply.None
+            parts.size in 2..3 && parts[1] == "SAME" -> Reply.Same
+            parts.size == 2 && parts[1] == "DENIED" -> Reply.Denied
+            parts.size == 3 && parts[1] == GRANTED -> Reply.Granted(parts[2])
+            parts.size in 3..4 && parts[1] == PACK -> parts[2].toIntOrNull()
                 ?.takeIf { it in 1..FieldPackCodec.MAX_PACK_BYTES }?.let { Reply.Pack(it) }
             else -> null
         }
+    }
+
+    /** The server's clock on a config reply, or null if it has none. */
+    fun serverTime(line: String): Long? {
+        val parts = line.trim().split(' ')
+        val index = when {
+            parts.size == 3 && (parts[1] == "NONE" || parts[1] == "SAME") -> 2
+            parts.size == 4 && parts[1] == PACK -> 3
+            else -> return null
+        }
+        return parts[index].toLongOrNull()
     }
 }

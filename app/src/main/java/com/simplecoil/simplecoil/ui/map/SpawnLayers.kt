@@ -87,17 +87,25 @@ object SpawnLayers {
         radiusMeters: Double,
         latitude: Double,
     ) {
-        val zoneSize = zoneSize(radiusMeters, latitude)
+        // Spawns and their size change rarely: only hand them to the map when they do, as the map
+        // rebuilds them (and fades them in again) every time. A fade only changes opacity.
+        val shape = Shape(steady, incoming, outgoing, radiusMeters, latitude)
+        val changed = shapes[style] != shape
+        if (changed) shapes[style] = shape
+        val zoneSize = if (changed) zoneSize(radiusMeters, latitude) else null
         for ((group, spawns, opacity) in listOf(
             Triple(STEADY, steady, 1.0), Triple(INCOMING, incoming, progress), Triple(OUTGOING, outgoing, 1 - progress))) {
-            style.getSourceAs<GeoJsonSource>(group)?.setGeoJson(FeatureCollection.fromFeatures(spawns.map { spawn ->
-                Feature.fromGeometry(Point.fromLngLat(spawn.point.longitude, spawn.point.latitude)).also {
-                    it.addStringProperty(ZONE, zoneImage(spawn.team.coerceIn(0, 4)))
-                    it.addStringProperty(BADGE, badgeImage(spawn.team.coerceIn(0, 4)))
-                }
-            }))
+            if (changed) {
+                style.getSourceAs<GeoJsonSource>(group)?.setGeoJson(FeatureCollection.fromFeatures(spawns.map { spawn ->
+                    Feature.fromGeometry(Point.fromLngLat(spawn.point.longitude, spawn.point.latitude)).also {
+                        it.addStringProperty(ZONE, zoneImage(spawn.team.coerceIn(0, 4)))
+                        it.addStringProperty(BADGE, badgeImage(spawn.team.coerceIn(0, 4)))
+                    }
+                }))
+                style.getLayer("$group-zone")?.setProperties(PropertyFactory.iconSize(zoneSize!!))
+            }
             val alpha = opacity.toFloat().coerceIn(0f, 1f)
-            style.getLayer("$group-zone")?.setProperties(PropertyFactory.iconSize(zoneSize), PropertyFactory.iconOpacity(alpha))
+            style.getLayer("$group-zone")?.setProperties(PropertyFactory.iconOpacity(alpha))
             style.getLayer("$group-badge")?.setProperties(PropertyFactory.iconOpacity(alpha))
         }
     }
@@ -112,6 +120,11 @@ object SpawnLayers {
         return Expression.interpolate(Expression.exponential(2f), Expression.zoom(),
             Expression.stop(LOW_ZOOM.toFloat(), atLow), Expression.stop(HIGH_ZOOM.toFloat(), atHigh))
     }
+
+    /** What was last handed to each map's spawn layers. */
+    private data class Shape(val steady: List<Spawn>, val incoming: List<Spawn>, val outgoing: List<Spawn>, val radius: Double, val latitude: Double)
+
+    private val shapes = java.util.WeakHashMap<Style, Shape>()
 
     private const val LOW_ZOOM = 10.0
     private const val HIGH_ZOOM = 22.0

@@ -91,4 +91,7 @@ sealed interface ServerEvent {
 
     /** The time limit ran out; the game is ending. */
     data object TimeExpired : ServerEvent
+
+    /** During a game, [victimId] was eliminated by [shooterId] (0, or the victim, if nobody). */
+    data class Eliminated(val victimId: Byte, val shooterId: Byte) : ServerEvent
 }

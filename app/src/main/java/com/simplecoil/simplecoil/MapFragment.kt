@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil
 
 import android.Manifest
+import android.graphics.Bitmap
 import android.location.Location
 import android.os.Bundle
 import android.os.Handler
@@ -27,6 +28,7 @@ import android.view.Choreographer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
@@ -37,6 +39,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.FragmentMapBinding
+import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.map.AutoZoom
 import com.simplecoil.simplecoil.domain.map.BorderTracker
 import com.simplecoil.simplecoil.domain.map.FieldConfig
@@ -64,11 +67,9 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
-import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
@@ -114,8 +115,13 @@ class MapFragment : Fragment() {
     /** The camera has been put somewhere sensible once. */
     private var placed = false
 
-    /** The heading your arrow was last turned to. */
-    private var arrowHeading = Double.NaN
+    /** The other players on the map, their marker views, and the marker images by team. */
+    private var shownPlayers: List<MapLocationManager.PlayerPosition> = emptyList()
+    private val playerViews = HashMap<Int, ImageView>()
+    private val playerBitmaps = HashMap<Int, Bitmap>()
+
+    /** The team colour your arrow was last drawn in. */
+    private var youTeam = -1
 
     /** When the phone was last seen connected to its server. */
     private var lastConnectedAt = Long.MIN_VALUE
@@ -139,6 +145,8 @@ class MapFragment : Fragment() {
             if (!framesRunning) return
             if (container.spawnController.isFading()) renderSpawns()
             moveCamera()
+            placeYou()
+            placePlayers()
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
@@ -271,6 +279,8 @@ class MapFragment : Fragment() {
     override fun onDestroyView() {
         binding?.mapView?.onDestroy()
         binding = null
+        youTeam = -1
+        playerViews.clear()
         map = null
         style = null
         super.onDestroyView()
@@ -287,6 +297,9 @@ class MapFragment : Fragment() {
 
     private fun onMapReady(map: MapLibreMap) {
         this.map = map
+        // From a few blocks across down to a few metres: no zooming out to the planet or into the blur
+        map.setMinZoomPreference(MIN_ZOOM)
+        map.setMaxZoomPreference(MAX_ZOOM)
         map.uiSettings.apply {
             isCompassEnabled = false
             isLogoEnabled = false
@@ -306,7 +319,6 @@ class MapFragment : Fragment() {
         map.setStyle(MapStyles.playStyle()) { loaded ->
             style = loaded
             addFieldLayers(loaded)
-            addPlayerLayers(loaded)
             photo?.let { showPhoto(it) }
             showField(field)
             renderPlayers()
@@ -331,37 +343,12 @@ class MapFragment : Fragment() {
         ))
     }
 
-    private fun addPlayerLayers(style: Style) {
-        val context = requireContext()
-        // Every team's markers (0 = no team colour: free for all)
-        for (team in 0..4) {
-            val color = MapIcons.teamColor(team)
-            style.addImage(youIcon(team), MapIcons.you(context, if (team == 0) YOU_COLOR else color))
-            style.addImage(playerIcon(team, enemy = false), MapIcons.player(context, color, enemy = false))
-            style.addImage(playerIcon(team, enemy = true), MapIcons.player(context, color, enemy = true))
-        }
-        style.addSource(GeoJsonSource(PLAYERS_SOURCE))
-        style.addSource(GeoJsonSource(YOU_SOURCE))
-        style.addLayer(SymbolLayer(PLAYERS_LAYER, PLAYERS_SOURCE).withProperties(
-            PropertyFactory.iconImage(Expression.get(KIND)),
-            PropertyFactory.iconAllowOverlap(true),
-            PropertyFactory.iconIgnorePlacement(true),
-        ))
-        // You above everyone else, your arrow turned to where you face
-        style.addLayer(SymbolLayer(YOU_LAYER, YOU_SOURCE).withProperties(
-            PropertyFactory.iconImage(Expression.get(KIND)),
-            PropertyFactory.iconAllowOverlap(true),
-            PropertyFactory.iconIgnorePlacement(true),
-            PropertyFactory.iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),
-        ))
-    }
-
-    private fun youIcon(team: Int) = "you-$team"
-    private fun playerIcon(team: Int, enemy: Boolean) = if (enemy) "foe-$team" else "mate-$team"
+    /** The marker for a player on [team] (0 = no team colour), made once and reused. */
+    private fun playerBitmap(team: Int, enemy: Boolean): Bitmap =
+        playerBitmaps.getOrPut(if (enemy) -team - 1 else team) { MapIcons.player(requireContext(), MapIcons.teamColor(team), enemy) }
 
     /** A team's marker colour index: 1-4, or 0 in free for all (where "teams" are player ids). */
     private fun markerTeam(team: Int): Int = if (settings.teamLayout.mode.isFreeForAll || team !in 1..4) 0 else team
-
 
     private fun onClientEvent(event: ClientEvent) {
         when (event) {
@@ -404,11 +391,12 @@ class MapFragment : Fragment() {
      * keep to, spawns to walk back to): those are checked on this phone, even with sharing off.
      */
     private fun wantsGps(): Boolean =
-        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true
+        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true ||
+            field?.loadout?.let { it.dropsEnabled || it.trackShots || it.ammo == AmmoMode.SCAVENGER } == true
 
     private fun sendLocation(fix: Location) {
-        // Only shared when the server asks for positions
-        if (!settings.isUseGPS) return
+        // Sent whenever we track: the server uses it for drops and shot distance, and only passes
+        // it on to other players while it shares GPS
         if (fix.latitude == lastSentLatitude && fix.longitude == lastSentLongitude) return
         lastSentLatitude = fix.latitude
         lastSentLongitude = fix.longitude
@@ -427,19 +415,22 @@ class MapFragment : Fragment() {
 
     private fun renderPlayers() {
         val style = style ?: return
-        val me = you()
         updateBorderVisibility()
         val myTeam = markerTeam(settings.teamLayout.teamOf(container.players.playerID))
-        style.getSourceAs<GeoJsonSource>(YOU_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(
-            listOfNotNull(me?.let { spot ->
-                Feature.fromGeometry(Point.fromLngLat(spot.longitude, spot.latitude)).also { it.addStringProperty(KIND, youIcon(myTeam)) }
-            })))
-        style.getSourceAs<GeoJsonSource>(PLAYERS_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(
-            others().map { p ->
-                Feature.fromGeometry(Point.fromLngLat(p.longitude, p.latitude)).also {
-                    it.addStringProperty(KIND, playerIcon(markerTeam(p.team), enemy = !p.teammate))
-                }
-            }))
+        if (myTeam != youTeam) {
+            youTeam = myTeam
+            binding?.mapYouIv?.setImageBitmap(MapIcons.you(requireContext(), if (myTeam == 0) YOU_COLOR else MapIcons.teamColor(myTeam)))
+        }
+        // Other players: plain views over the map, placed every frame (placePlayers)
+        shownPlayers = others()
+        val layer = binding?.mapPlayersLayer ?: return
+        val ids = shownPlayers.map { it.playerId }.toSet()
+        playerViews.keys.filter { it !in ids }.forEach { layer.removeView(playerViews.remove(it)) }
+        for (p in shownPlayers) {
+            val view = playerViews.getOrPut(p.playerId) { ImageView(requireContext()).also { layer.addView(it, ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)) } }
+            view.setImageBitmap(playerBitmap(markerTeam(p.team), enemy = !p.teammate))
+        }
+        placePlayers()
     }
 
     /** Shows the field's photo, loading it off the main thread; null takes it away. */
@@ -603,7 +594,7 @@ class MapFragment : Fragment() {
     private fun zoomFor(circle: GeoCircle): Double? {
         val view = binding?.mapView ?: return null
         val sizeDp = min(view.width, view.height) / resources.displayMetrics.density
-        return if (sizeDp > 0) GeoMath.zoomToFit(circle, sizeDp.toDouble()) else null
+        return if (sizeDp > 0) GeoMath.zoomToFit(circle, sizeDp.toDouble(), MIN_ZOOM, MAX_ZOOM) else null
     }
 
     /**
@@ -623,16 +614,41 @@ class MapFragment : Fragment() {
         root.isVisible = net.useNetwork && lastConnectedAt != Long.MIN_VALUE && now - lastConnectedAt < DISCONNECTED_HIDE_MILLIS
     }
 
+    /**
+     * Puts your arrow where you are on screen, turned the way you face. It's a plain view over
+     * the map, moved every frame, so it turns smoothly and shows on every phone.
+     */
+    private fun placeYou() {
+        val view = binding?.mapYouIv ?: return
+        val map = map
+        val me = you()
+        if (map == null || me == null || style == null) {
+            view.isVisible = false
+            return
+        }
+        val spot = map.projection.toScreenLocation(LatLng(me.latitude, me.longitude))
+        view.translationX = spot.x - view.width / 2f
+        view.translationY = spot.y - view.height / 2f
+        val mapBearing = map.cameraPosition.bearing
+        // Without a compass the arrow just points up the map
+        view.rotation = ((heading.heading ?: mapBearing) - mapBearing).toFloat()
+        view.isVisible = true
+    }
+
+    /** Puts each other player's marker where they are on screen. */
+    private fun placePlayers() {
+        val map = map ?: return
+        for (p in shownPlayers) {
+            val view = playerViews[p.playerId] ?: continue
+            val spot = map.projection.toScreenLocation(LatLng(p.latitude, p.longitude))
+            view.translationX = spot.x - view.width / 2f
+            view.translationY = spot.y - view.height / 2f
+        }
+    }
+
     private fun moveCamera() {
         val map = map ?: return
         if (binding?.root?.isVisible != true) return
-        // Your arrow points the way you face, on the map
-        heading.heading?.let { h ->
-            if (arrowHeading.isNaN() || HeadingFilter.difference(arrowHeading, h) >= MIN_TURN_DEGREES) {
-                arrowHeading = h
-                style?.getLayer(YOU_LAYER)?.setProperties(PropertyFactory.iconRotate(h.toFloat()))
-            }
-        }
         if (userMoving) return
         val now = map.cameraPosition
         val currentBearing = now.bearing
@@ -673,10 +689,6 @@ class MapFragment : Fragment() {
         private var lastSentLatitude = 0.0
         private var lastSentLongitude = 0.0
 
-        const val PLAYERS_SOURCE = "players"
-        const val PLAYERS_LAYER = "players"
-        const val YOU_SOURCE = "you"
-        const val YOU_LAYER = "you"
         const val BORDER_SOURCE = "border"
         const val BORDER_LAYER = "border"
         const val GUIDE_SOURCE = "spawn-guide"
@@ -688,7 +700,10 @@ class MapFragment : Fragment() {
 
         /** You, in free for all (no team colour). */
         const val YOU_COLOR = 0xFF2979FF.toInt()
-        const val KIND = "kind"
+
+        /** About 5 km across on a phone, to a few metres. */
+        const val MIN_ZOOM = 13.0
+        const val MAX_ZOOM = 20.0
         const val BORDER_COLOR = "#FF5252"
         const val ACTIVE_COLOR = "#FF9800"
 

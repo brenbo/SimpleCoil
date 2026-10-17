@@ -16,6 +16,8 @@
 
 package com.simplecoil.simplecoil.domain.map
 
+import com.simplecoil.simplecoil.domain.loadout.Drop
+import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -155,6 +157,10 @@ data class FieldConfig(
     val spawnRules: SpawnRules = SpawnRules(),
     /** Counts the times the server moved the spawns this game, so phones can fade old into new. */
     val spawnGeneration: Int = 0,
+    /** Ammo, drops, killstreaks and shot distance (map design: Ammo, drops and power-ups). */
+    val loadout: LoadoutRules = LoadoutRules(),
+    /** The drops on the field right now, during a game. */
+    val drops: List<Drop> = emptyList(),
 ) {
     /** Changes whenever anything in the config does; phones compare it to skip a download. */
     val id: String by lazy {
@@ -167,6 +173,8 @@ data class FieldConfig(
             .put("spawns", Spawn.listToJson(spawns))
             .put("spawnRules", spawnRules.toJson())
             .put("spawnGeneration", spawnGeneration)
+            .put("loadout", loadout.toJson())
+            .put("drops", Drop.listToJson(drops))
         when (val b = border) {
             is Border.Circle -> json.put("border", JSONObject().put("type", "circle")
                 .put("lat", b.center.latitude).put("lon", b.center.longitude).put("radius", b.radiusMeters))
@@ -202,6 +210,8 @@ data class FieldConfig(
                 spawns = Spawn.listFromJson(json.optJSONArray("spawns")),
                 spawnRules = SpawnRules.fromJson(json.optJSONObject("spawnRules")),
                 spawnGeneration = json.optInt("spawnGeneration", 0),
+                loadout = LoadoutRules.fromJson(json.optJSONObject("loadout")),
+                drops = Drop.listFromJson(json.optJSONArray("drops")),
             )
         } catch (e: JSONException) {
             throw IOException("bad field config", e)

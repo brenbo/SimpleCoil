@@ -22,4 +22,6 @@ public class GpsData {
     public volatile double longitude = 0;
     public volatile int team = 0;
     public volatile boolean hasUpdate = false;
+    /** When this position arrived (monotonic milliseconds), on the server; 0 if never. */
+    public volatile long updatedAt = 0;
 }

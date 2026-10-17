@@ -46,6 +46,13 @@ class FieldImageryClient(
 ) {
     enum class Result { UPDATED, SAME, NONE, FAILED }
 
+    /** The server's clock minus this phone's, from the last config reply. */
+    @Volatile
+    var serverClockOffsetMillis = 0L
+
+    /** The server's clock now, as best this phone can tell: drops are timed by it. */
+    fun serverNow(): Long = System.currentTimeMillis() + serverClockOffsetMillis
+
     private var running: Job? = null
     private var lastAttempt = Long.MIN_VALUE
     private var lastServer: InetAddress? = null
@@ -104,12 +111,17 @@ class FieldImageryClient(
         Socket().use { socket ->
             socket.connect(InetSocketAddress(server, port), FieldImageryProtocol.CONNECT_TIMEOUT_MS)
             socket.soTimeout = FieldImageryProtocol.READ_TIMEOUT_MS
+            val sentAt = System.currentTimeMillis()
             socket.getOutputStream().apply {
                 write(FieldImageryProtocol.requestLine(knownId, kind).toByteArray(Charsets.US_ASCII))
                 flush()
             }
             val input = BufferedInputStream(socket.getInputStream())
             val line = FieldImageryServer.readLine(input) ?: throw IOException("no reply")
+            // How far this phone's clock is from the server's, so drop countdowns agree
+            FieldImageryProtocol.serverTime(line)?.let { serverTime ->
+                serverClockOffsetMillis = serverTime - (sentAt + System.currentTimeMillis()) / 2
+            }
             when (val reply = FieldImageryProtocol.parseReply(line) ?: throw IOException("bad reply: $line")) {
                 FieldImageryProtocol.Reply.None -> {
                     // The server has none, so ours is from somewhere else: don't use it here
@@ -122,6 +134,7 @@ class FieldImageryClient(
                     Log.i(TAG, "Got the field ${kind.name.lowercase()} (${reply.length} bytes)")
                     Result.UPDATED
                 }
+                else -> throw IOException("unexpected reply: $line")
             }
         }
     } catch (e: IOException) {

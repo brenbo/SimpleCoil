@@ -176,6 +176,7 @@ class ServerMessageHandler(
                     gps.latitude = message.latitude
                     gps.team = team
                     gps.hasUpdate = true // Client takes care of making sure that it is only sending us changes in coordinates
+                    gps.updatedAt = System.nanoTime() / 1_000_000L
                 }
             }
             is ClientMessage.Settings -> {
@@ -285,6 +286,8 @@ class ServerMessageHandler(
             Log.d(TAG, "elimination ignored outside a game")
             return
         }
+        // For the map: scavenger pickups and shot distance (map design: phase 4)
+        if (roster.isRunning()) events.publish(ServerEvent.Eliminated(elimination.victimId, elimination.shooterId))
         if (!roster.isRunning()) {
             server.sendPlayerData(GameServer.SEND_ALL)
             events.publish(ServerEvent.PlayerDataChanged(null))

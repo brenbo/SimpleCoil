@@ -211,6 +211,9 @@ class FieldMapActivity : AppCompatActivity() {
 
     private fun onMapReady(map: MapLibreMap) {
         this.map = map
+        // Out to the whole country, to find the field from home; in to a few metres
+        map.setMinZoomPreference(MIN_ZOOM)
+        map.setMaxZoomPreference(MAX_ZOOM)
         map.uiSettings.apply {
             isLogoEnabled = false
             isAttributionEnabled = false
@@ -833,6 +836,8 @@ class FieldMapActivity : AppCompatActivity() {
         const val MIN_RADIUS_METERS = 5.0
         val US_CENTER = LatLon(39.5, -98.35)
         const val US_ZOOM = 3.0
+        const val MIN_ZOOM = 3.0
+        const val MAX_ZOOM = 20.0
 
         const val WALK_INTERVAL_MILLIS = 1_000L
         const val WALK_MIN_STEP_METERS = 2f

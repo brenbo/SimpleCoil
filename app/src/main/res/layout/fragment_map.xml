@@ -11,6 +11,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- You: drawn over the map rather than in it, so it can turn every frame without the map
+         rebuilding it (which kept it from ever showing on phones with a compass). -->
+    <!-- The other players, drawn over the map the same way. -->
+    <FrameLayout
+        android:id="@+id/map_players_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageView
+        android:id="@+id/map_you_iv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
     <ImageButton
         android:id="@+id/map_compass_button"
         android:layout_width="40dp"
