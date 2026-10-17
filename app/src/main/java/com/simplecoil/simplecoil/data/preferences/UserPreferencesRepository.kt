@@ -83,6 +83,22 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun deviceAddress(): String = prefs.getString(DEVICE_ADDRESS, "") ?: ""
     fun saveDeviceAddress(address: String) = prefs.edit { putString(DEVICE_ADDRESS, address) }
 
+    /** The map turns with the phone (heading-up) rather than keeping north up. */
+    fun mapHeadingUp(): Boolean = prefs.getBoolean(MAP_HEADING_UP, true)
+    fun saveMapHeadingUp(headingUp: Boolean) = prefs.edit { putBoolean(MAP_HEADING_UP, headingUp) }
+
+    /** The map's auto zoom button (AutoZoom's name); null until the player picks one. */
+    fun mapAutoZoom(): String? = prefs.getString(MAP_AUTO_ZOOM, null)
+    fun saveMapAutoZoom(mode: String) = prefs.edit { putString(MAP_AUTO_ZOOM, mode) }
+
+    /** Where the dedicated server's field map was left: latitude, longitude and zoom; null if never. */
+    fun fieldMapCamera(): DoubleArray? {
+        val parts = prefs.getString(FIELD_MAP_CAMERA, null)?.split(',')?.mapNotNull { it.toDoubleOrNull() } ?: return null
+        return if (parts.size == 3) parts.toDoubleArray() else null
+    }
+    fun saveFieldMapCamera(latitude: Double, longitude: Double, zoom: Double) =
+        prefs.edit { putString(FIELD_MAP_CAMERA, "$latitude,$longitude,$zoom") }
+
     companion object {
         const val PREF_NAME = "SimpleCoil"
         const val PLAYER_NAME = "PlayerName"
@@ -100,5 +116,8 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val DEVICE_ADDRESS = "DeviceAddress"
         const val GPS_MODE = "GPSMode"
         const val ALLOW_CHOOSE_TEAMS = "AllowChooseTeams"
+        const val MAP_HEADING_UP = "MapHeadingUp"
+        const val MAP_AUTO_ZOOM = "MapAutoZoom"
+        const val FIELD_MAP_CAMERA = "FieldMapCamera"
     }
 }

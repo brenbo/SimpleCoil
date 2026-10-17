@@ -193,6 +193,9 @@ class ClientConnection(
     /** The client is still running, or still stopping. */
     val isRunning: Boolean get() = keepListening
 
+    /** True while connected to the server (the socket is open), not while reconnecting. */
+    val isConnected: Boolean get() = synchronized(outLock) { out != null }
+
     /** The service is going away. */
     fun shutdown() {
         writer.shutdown()

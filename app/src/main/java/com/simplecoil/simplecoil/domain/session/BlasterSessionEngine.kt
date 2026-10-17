@@ -311,6 +311,9 @@ class BlasterSessionEngine(
             (_state.value.clock as? GameClock.Stopped)?.countdownText
         }
         _state.update { it.copy(gameInProgress = false, spawn = SpawnPhase.None, shieldSeconds = null, clock = GameClock.Stopped(countdownText)) }
+        outOfBounds = false
+        respawnHeld = false
+        if (reloading == RELOADING_OUT_OF_BOUNDS) reloading = RELOADING_ELIMINATED
         startReload(RELOADING_ELIMINATED)
     }
 
@@ -366,7 +369,13 @@ class BlasterSessionEngine(
     }
 
     private fun finishReload() {
-        if ((reloading != RELOADING_STARTED && reloading != RELOADING_ELIMINATED) || config.gameState != GameStateRepository.GAME_STATE_RUNNING) return
+        if ((reloading != RELOADING_STARTED && reloading != RELOADING_ELIMINATED && reloading != RELOADING_OUT_OF_BOUNDS) ||
+            config.gameState != GameStateRepository.GAME_STATE_RUNNING) return
+        if (outOfBounds) {
+            // Out of bounds: the blaster stays held until the player is back on the field
+            reloading = RELOADING_OUT_OF_BOUNDS
+            return
+        }
         reloading = RELOADING_FINISHING
         emptyTriggerCount = 0
         Log.d(TAG, "Finishing reload")
@@ -387,7 +396,49 @@ class BlasterSessionEngine(
                 emit(SessionEffect.Sound(SessionSound.RELOAD))
             }
             Log.d(TAG, "Reload finished")
+            // Went out of bounds while the reload was being written
+            if (outOfBounds) startReload(RELOADING_OUT_OF_BOUNDS)
         }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Out of bounds (map design: Border)
+    // ---------------------------------------------------------------------------------------
+
+    /** The player is off the field: the blaster can't shoot (held as if reloading) while [disabled]. */
+    var outOfBounds = false
+        private set
+
+    /** The player is off the field: a respawn waits until they are back. */
+    var respawnHeld = false
+        private set
+
+    fun setRespawnHeld(held: Boolean) {
+        if (respawnHeld == held) return
+        respawnHeld = held
+        if (!held && _state.value.spawn is SpawnPhase.AwaitingReturn) spawned()
+    }
+
+    fun setOutOfBounds(disabled: Boolean) {
+        if (outOfBounds == disabled) return
+        outOfBounds = disabled
+        if (disabled) {
+            if (reloading == RELOADING_NONE) startReload(RELOADING_OUT_OF_BOUNDS)
+        } else if (reloading == RELOADING_OUT_OF_BOUNDS) {
+            finishReload()
+        }
+    }
+
+    /** Out of bounds too long, with the health penalty: loses [amount] health, as a hit from nobody. */
+    fun applyOutOfBoundsDamage(amount: Int) {
+        if (amount <= 0 || config.gameState != GameStateRepository.GAME_STATE_RUNNING) return
+        applyDamage(-amount, 0, network?.useNetwork == true)
+    }
+
+    /** Out of bounds too long, with the elimination penalty. */
+    fun eliminateOutOfBounds() {
+        if (config.gameState != GameStateRepository.GAME_STATE_RUNNING) return
+        applyDamage(-health, 0, network?.useNetwork == true)
     }
 
     private fun setShotsRemaining(shotsRemaining: Byte) {
@@ -437,7 +488,14 @@ class BlasterSessionEngine(
                 _state.update { it.copy(spawn = SpawnPhase.Spawning(millisLeft / 1000, eliminatedBy, startingGameLabel)) }
                 emit(SessionEffect.Sound(SessionSound.BEEP))
             },
-            onFinish = { spawned() })
+            onFinish = {
+                if (respawnHeld) {
+                    // Off the field: respawn once the player is back on it
+                    _state.update { it.copy(spawn = SpawnPhase.AwaitingReturn(eliminatedBy, startingGameLabel)) }
+                } else {
+                    spawned()
+                }
+            })
     }
 
     private fun spawned() {
@@ -730,6 +788,7 @@ class BlasterSessionEngine(
         private const val RELOADING_STARTED = 1
         private const val RELOADING_FINISHING = 2
         private const val RELOADING_ELIMINATED = 3
+        private const val RELOADING_OUT_OF_BOUNDS = 4
 
         /** Automatically reloads after this many empty trigger pulls (for young players). */
         const val MAX_EMPTY_TRIGGER_PULLS = 3

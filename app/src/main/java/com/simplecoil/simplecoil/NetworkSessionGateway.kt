@@ -67,6 +67,9 @@ class NetworkSessionGateway(
     private var tcpClientConnection: ServiceConnection? = null
 
     override var useNetwork = false
+
+    /** Playing on a server and connected to it right now (the map only shows then). */
+    val isConnectedToServer: Boolean get() = useNetwork && tcpClient?.isConnected == true
     /** Main thread only. */
     var score = 0
     /** Main thread only. */

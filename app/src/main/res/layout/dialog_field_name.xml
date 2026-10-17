@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Naming a saved field, styled like the other dialogs. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#080808"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <TextView
+        style="@style/DialogTitle"
+        android:text="@string/field_presets_save" />
+
+    <TextView
+        style="@style/DialogLabel"
+        android:labelFor="@+id/field_name_et"
+        android:text="@string/field_presets_name_hint" />
+
+    <EditText
+        style="@style/DialogField"
+        android:id="@+id/field_name_et"
+        android:importantForAutofill="no"
+        android:inputType="textCapWords"
+        android:maxLength="40" />
+</LinearLayout>

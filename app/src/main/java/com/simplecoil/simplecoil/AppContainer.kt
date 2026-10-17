@@ -22,9 +22,11 @@ import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
+import com.simplecoil.simplecoil.domain.map.BorderController
 import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
 import com.simplecoil.simplecoil.domain.session.GameConfig
 import com.simplecoil.simplecoil.domain.session.RepositoryGameConfig
+import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsManager
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsPlayer
 import com.simplecoil.simplecoil.hardware.audio.HapticsPlayer
@@ -37,8 +39,14 @@ import com.simplecoil.simplecoil.hardware.location.MapLocationManager
 import com.simplecoil.simplecoil.network.ClientEvent
 import com.simplecoil.simplecoil.network.EventBus
 import com.simplecoil.simplecoil.network.ServerEvent
+import com.simplecoil.simplecoil.network.imagery.FieldConfigStore
+import com.simplecoil.simplecoil.network.imagery.FieldImageryClient
+import com.simplecoil.simplecoil.network.imagery.FieldImageryServer
+import com.simplecoil.simplecoil.network.imagery.FieldPackStore
+import com.simplecoil.simplecoil.network.imagery.FieldPresetStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import java.io.File
 
 /**
  * The application's object graph (manual DI, APP_CONTAINER_DESIGN.md). Built once in
@@ -102,6 +110,52 @@ class AppContainer(private val app: Application) {
 
     /** The map's location tracking and markers; process-wide, as the map fragment comes and goes. */
     val mapLocation: MapLocationManager by lazy { MapLocationManager(players, settings) }
+
+    // Field imagery (map design: Field imagery packs)
+
+    /** The field a server last sent this phone, for the play screen's map. */
+    val playerFieldStore: FieldPackStore by lazy { FieldPackStore(File(app.filesDir, "field/player")) }
+
+    /** The field the dedicated server downloaded and shares with the phones. */
+    val serverFieldStore: FieldPackStore by lazy { FieldPackStore(File(app.filesDir, "field/server")) }
+
+    /** The border and rules a server last sent this phone (map design: Map objects). */
+    val playerFieldConfig: FieldConfigStore by lazy { FieldConfigStore(File(app.filesDir, "field/player")) }
+
+    /** The border and rules the dedicated server's host set up. */
+    val serverFieldConfig: FieldConfigStore by lazy { FieldConfigStore(File(app.filesDir, "field/server")) }
+
+    /** The dedicated server's saved fields. */
+    val fieldPresets: FieldPresetStore by lazy { FieldPresetStore(File(app.filesDir, "field/presets")) }
+
+    /** Serves the server's field while the dedicated server runs. */
+    val fieldImageryServer: FieldImageryServer by lazy { FieldImageryServer(serverFieldStore, serverFieldConfig) }
+
+    /** Fetches the server's field into [playerFieldStore] and [playerFieldConfig]. */
+    val fieldImageryClient: FieldImageryClient by lazy {
+        FieldImageryClient(playerFieldStore, appScope, dispatchers.io, clock, configs = playerFieldConfig)
+    }
+
+    /** Warns and penalises a player who leaves the field during a game (map design: Border). */
+    val borderController: BorderController by lazy {
+        val engine = sessionEngine
+        BorderController(
+            field = playerFieldConfig.config,
+            penalties = object : BorderController.Penalties {
+                override fun setOutOfBounds(disabled: Boolean) = engine.setOutOfBounds(disabled)
+                override fun holdRespawn(held: Boolean) = engine.setRespawnHeld(held)
+                override fun damage(amount: Int) = engine.applyOutOfBoundsDamage(amount)
+                override fun eliminate() = engine.eliminateOutOfBounds()
+            },
+            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            feedback = object : BorderController.Feedback {
+                override fun play(sound: SessionSound) = soundEffects.play(sound)
+                override fun vibrate() = haptics.vibrate()
+            },
+            scope = appScope,
+            clock = clock,
+        )
+    }
 
     // Network
 

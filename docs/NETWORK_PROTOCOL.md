@@ -256,3 +256,21 @@ When GPS is enabled (`usegps`), clients send location updates to the server as p
 | **16 Players** | 9.60 kbps (1.20 KB/s) | 164.22 kbps (20.53 KB/s) | **173.82 kbps** (21.73 KB/s) | **~184.1 kbps** (23.01 KB/s) | **~82.8 MB / hr** |
 | **32 Players** | 19.20 kbps (2.40 KB/s) | 647.94 kbps (80.99 KB/s) | **667.14 kbps** (83.39 KB/s) | **~697.9 kbps** (87.23 KB/s) | **~314 MB / hr** |
 
+
+## 8. Field map (TCP, port 17511)
+
+The dedicated server shares the field's aerial photo on its own port, beside the game connection. The game protocol never carries it: its frames are capped at 64 KB, and older phones never ask for the photo, so they keep working unchanged.
+
+While connected, a phone asks every 5 seconds; with nothing new the reply is one short line. Each connection carries one request and one reply, each a line of ASCII ending in `\n`:
+
+| Phone sends | Server replies |
+| --- | --- |
+| `SCFIELD1 GET -` (no field yet) or `SCFIELD1 GET <id>` | `SCFIELD1 NONE`: the server has no field, so the phone drops any field it kept |
+| | `SCFIELD1 SAME`: the phone already has this field |
+| | `SCFIELD1 PACK <length>`, then `<length>` bytes of the field pack |
+
+A field pack is `SCFIELD1`, a 4-byte big-endian length and that many bytes of JSON info (`id`, `north`, `south`, `east`, `west`, `width`, `height`, `credit`, `created`), then a 4-byte length and the JPEG. The `id` is a hash of the photo and where it sits, so it changes whenever either does. Packs over 16 MB are refused. The server sends to at most four phones at a time, so 20 phones joining at once don't swamp the Wi-Fi.
+
+The field's config (its name, border and out-of-bounds rules) goes the same way, with `SCFIELD1 CONFIG -` or `SCFIELD1 CONFIG <id>`. The `PACK` reply then carries the config as UTF-8 JSON: `version`, `name`, `rules` (`countdown`, `penalty`, `healthPerTick`, `tickSeconds`, `onlyNear`, `grace`, `leaveMargin`, `accuracyGate`, `edgeBuffer`, `units`), and `border`, either `{"type":"circle","lat","lon","radius"}` or `{"type":"polygon","points":[[lat, lon], ...]}`. A phone ignores a border type it doesn't know. The photo and the config have separate ids, so new rules reach the phones without resending the photo. Phones also ask right away when a game starts, so a game always uses the latest border.
+
+Each phone checks its own position against the border and applies the penalty itself. The server only hears the result: an out-of-bounds elimination arrives as an ordinary `ELIMINATED` from player 0, so nobody scores it.

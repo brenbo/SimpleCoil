@@ -156,6 +156,9 @@ class TcpClient : Service() {
     /** Tells the server we are leaving, then stops: LEAVE is the last frame written. */
     fun leaveServer() = client.leaveServer()
 
+    /** True while connected to the server, not while reconnecting. */
+    val isConnected: Boolean get() = client.isConnected
+
     /** Waits up to [timeoutMillis] for everything sent so far to be written; false on timeout. Blocks. */
     fun awaitPendingWrites(timeoutMillis: Long) = client.awaitPendingWrites(timeoutMillis)
 

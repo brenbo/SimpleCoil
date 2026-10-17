@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The play screen's map: the field photo and border, the players, a compass that switches
+     between facing-up and north-up, the three-way auto zoom under it, an out-of-bounds warning,
+     and the imagery's credit. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageButton
+        android:id="@+id/map_compass_button"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="6dp"
+        android:background="@drawable/bg_map_button"
+        android:contentDescription="@string/map_compass_heading_up"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_map_north" />
+
+    <ImageButton
+        android:id="@+id/map_zoom_button"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="52dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/bg_map_button"
+        android:contentDescription="@string/map_zoom_off"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_map_zoom_off" />
+
+    <TextView
+        android:id="@+id/map_out_of_bounds_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginStart="52dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="52dp"
+        android:background="#CCD32F2F"
+        android:gravity="center"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/map_credit_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:background="#66000000"
+        android:paddingStart="3dp"
+        android:paddingEnd="3dp"
+        android:text="@string/map_credit_short"
+        android:textColor="#DDFFFFFF"
+        android:textSize="10sp"
+        android:visibility="gone" />
+</FrameLayout>

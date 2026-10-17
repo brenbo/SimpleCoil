@@ -110,6 +110,7 @@ class TcpServer : Service() {
         server.loadSettings(saved)
         server.start()
         beacon.start(SERVER_NAME)
+        container.fieldImageryServer.start()
         server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
         startAsForeground()
         updateWifiLock()
@@ -121,6 +122,7 @@ class TcpServer : Service() {
         serving = false
         server.sendToAll(WireCodec.encode(ServerMessage.Command(ServerCommand.ServerCancel)))
         beacon.stop()
+        container.fieldImageryServer.stop()
         server.stop() // closes each connection once the SERVERCANCEL is written
         notificationUpdates?.cancel()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)

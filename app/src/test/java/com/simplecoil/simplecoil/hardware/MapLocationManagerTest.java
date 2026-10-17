@@ -27,17 +27,63 @@ import com.simplecoil.simplecoil.hardware.location.MapLocationManager;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class MapLocationManagerTest {
 
     private MapLocationManager locationManager;
+    private GameSettingsRepository settings;
+    private PlayerRepository players;
 
     @Before
     public void setUp() {
-        GameSettingsRepository settings = new GameSettingsRepository();
-        locationManager = new MapLocationManager(new PlayerRepository(settings, new GameStateRepository()), settings);
+        settings = new GameSettingsRepository();
+        players = new PlayerRepository(settings, new GameStateRepository());
+        locationManager = new MapLocationManager(players, settings);
+    }
+
+    private void report(int playerId, int team, double latitude, double longitude) {
+        GpsData data = playerOnTeam(team);
+        data.latitude = latitude;
+        data.longitude = longitude;
+        data.hasUpdate = true;
+        players.getGpsData().put((byte) playerId, data);
+    }
+
+    @Test
+    public void testVisiblePlayersSkipsMeHiddenAndUnreported() {
+        settings.setTeamMode(TeamMode.TWO_TEAMS);
+        settings.setGpsMode(GameSettingsRepository.GPS_TEAMMATE);
+        players.setPlayerID((byte) 3); // team 1
+        report(3, 1, 40.0, -75.0); // me
+        report(4, 1, 40.001, -75.001); // teammate
+        report(10, 2, 40.002, -75.002); // enemy, hidden in teammates-only mode
+        report(5, 1, 0, 0); // never reported a position
+
+        List<MapLocationManager.PlayerPosition> shown = locationManager.visiblePlayers();
+
+        assertEquals(1, shown.size());
+        assertEquals(4, shown.get(0).playerId);
+        assertTrue(shown.get(0).teammate);
+        assertEquals(40.001, shown.get(0).latitude, 1e-9);
+    }
+
+    @Test
+    public void testVisiblePlayersShowsEnemiesInAllMode() {
+        settings.setTeamMode(TeamMode.TWO_TEAMS);
+        settings.setGpsMode(GameSettingsRepository.GPS_ALL);
+        players.setPlayerID((byte) 3);
+        report(10, 2, 40.002, -75.002);
+
+        List<MapLocationManager.PlayerPosition> shown = locationManager.visiblePlayers();
+
+        assertEquals(1, shown.size());
+        assertFalse(shown.get(0).teammate);
+        assertFalse(players.getGpsData().get((byte) 10).hasUpdate);
     }
 
     @Test

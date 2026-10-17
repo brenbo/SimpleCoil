@@ -16,6 +16,7 @@
 
 package com.simplecoil.simplecoil
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
@@ -39,8 +40,14 @@ import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardAdapter
 import com.simplecoil.simplecoil.ui.server.DedicatedServerRenderer
 import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
 import com.simplecoil.simplecoil.ui.server.ServerUiEffect
+import com.simplecoil.simplecoil.ui.map.FieldMapActivity
 import com.simplecoil.simplecoil.ui.sheet.FillingBottomSheet
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.DateFormat
+import java.util.Date
 
 /**
  * The dedicated server's screen (dedicated server design §6.2). The server runs in its own
@@ -79,6 +86,30 @@ class DedicatedServerActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { vm.state.collect { state -> state?.let { renderer.render(it) } } }
                 launch { vm.effects.collect { onEffect(it) } }
+                launch { showFieldMapStatus() }
+            }
+        }
+    }
+
+    /** "Field map saved Oct 16 · sent to 3 phones", or none (map design: Field imagery packs). */
+    private suspend fun showFieldMapStatus() {
+        val container = (application as SimpleCoilApp).container
+        withContext(Dispatchers.IO) {
+            container.serverFieldStore.refresh()
+            container.serverFieldConfig.refresh()
+        }
+        combine(container.serverFieldStore.info, container.serverFieldConfig.config, container.fieldImageryServer.deliveredCount) { info, config, sent ->
+            Triple(info, config, sent)
+        }.collect { (info, config, sent) ->
+            binding.fieldMapStatusTv.text = when {
+                info == null && config?.border == null -> getString(R.string.field_map_status_none)
+                else -> {
+                    // The field's name if it has one, else when its photo was downloaded
+                    val label = config?.name?.takeIf { it.isNotBlank() }
+                        ?: info?.let { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it.createdAtMillis)) } ?: ""
+                    if (sent > 0) resources.getQuantityString(R.plurals.field_map_status_sent, sent, label, sent)
+                    else getString(R.string.field_map_status_saved, label)
+                }
             }
         }
     }
@@ -111,6 +142,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             val current = vm.state.value?.startTimeSeconds ?: GameSettingsRepository.START_TIME_SECONDS
             showDialog(StartingTimerDialog.newInstance(current, DedicatedServerViewModel.MAX_START_TIME_SECONDS), StartingTimerDialog.REQUEST_KEY)
         }
+        fieldMapButton.setOnClickListener { startActivity(Intent(this@DedicatedServerActivity, FieldMapActivity::class.java)) }
         startGameButton.setOnClickListener { vm.onStartPressed() }
         endGameButton.setOnClickListener { vm.onEndPressed() }
         resetGameButton.setOnClickListener { vm.onResetPressed() }

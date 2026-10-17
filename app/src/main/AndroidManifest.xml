@@ -92,6 +92,14 @@
             android:label="@string/title_activity_dedicated_server"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- The dedicated server's field map: pick and download the field's aerial photo -->
+        <activity
+            android:name=".ui.map.FieldMapActivity"
+            android:exported="false"
+            android:label="@string/field_map_title"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

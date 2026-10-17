@@ -165,6 +165,9 @@ class GameClient(
     /** The service is going away. */
     fun shutdown() = connection.shutdown()
 
+    /** True while connected to the server, not while reconnecting. */
+    val isConnected: Boolean get() = connection.isConnected
+
     /** For tests: [handler]'s handling of one frame. */
     internal fun handleFrameForTest(raw: String): Boolean = handler.handle(raw)
 

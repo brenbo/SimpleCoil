@@ -1,10 +1,10 @@
 # SimpleCoil Privacy Policy
 
-**Effective date:** October 14, 2026
+**Effective date:** October 16, 2026
 
 SimpleCoil is a free, open-source app by Ethan Yonker that connects to Recoil laser tag blasters and runs laser tag games over a local network. This policy explains what information the app uses, where it goes, and how long it is kept.
 
-**In short:** SimpleCoil has no accounts, no ads, no analytics and no tracking. It never sends your information to the developer or any third party, and it doesn't connect to the internet. Information only travels between devices on the local Wi-Fi network during a game you join, and only for as long as the game needs it.
+**In short:** SimpleCoil has no accounts, no ads, no analytics and no tracking. It never sends your information to the developer. Players' phones don't connect to the internet: information only travels between devices on the local Wi-Fi network during a game you join, and only for as long as the game needs it. The one exception is the dedicated server's field map, which downloads aerial photos from the U.S. Geological Survey when the host asks it to.
 
 ## Information the app uses
 
@@ -17,6 +17,11 @@ SimpleCoil asks for precise location only when you join a dedicated server that 
 Your location is held only in memory, on the game server and on the other players' devices, while the game is running. It isn't saved or recorded, and it isn't sent anywhere else. SimpleCoil doesn't use location in the background. If you deny location access, you can still play; you just won't appear on the map.
 
 On Android 11 and older, Android also requires location permission to scan for Bluetooth devices. There, SimpleCoil asks for it when you connect your blaster, and uses it only to find the blaster.
+
+### Field map (dedicated server only)
+The host of a dedicated server can download an aerial photo of the playing field from the U.S. Geological Survey (USGS), a U.S. government agency. To find the field, the server's field map screen loads USGS map images for the area the host is looking at, and the download asks USGS for a photo of the chosen area. Like any website, USGS receives the server phone's internet (IP) address and the area requested, under its own privacy policy (<https://www.usgs.gov/policies-and-notices>). The server's "My location" button uses the server phone's location only to move the map, and "Walk" records the path the host walks with the server phone to draw the field's border. Neither is sent to USGS; the border goes only to the phones that join, as part of the game.
+
+The server keeps the photo on its device and sends it to the phones that join its games over the local Wi-Fi network. Each phone keeps the latest field it was sent until another server sends a different one. Players' phones never contact USGS or anyone else on the internet.
 
 ### Bluetooth
 SimpleCoil uses Bluetooth to find and connect to your blaster. The app remembers your blaster's Bluetooth address so it can reconnect to it. When you join a network game, that address is sent to the game server so the server can recognize your blaster if you rejoin.
@@ -31,10 +36,10 @@ The camera is used only to scan QR codes, such as the code that pairs a phone wi
 SimpleCoil shows a notification while it keeps your blaster or a network game connected in the background. Notifications contain no personal information beyond the game status.
 
 ## Information stored on your device
-The app saves its settings on your device: your player name and ID, game settings, the dedicated server's settings, and your saved blaster. If you have Android backup turned on, these settings may be included in your device backup through Google's backup service, under your Google account. Nothing else from the app is backed up.
+The app saves its settings on your device: your player name and ID, game settings, the dedicated server's settings, your saved blaster, and the field map photo described above. If you have Android backup turned on, these settings may be included in your device backup through Google's backup service, under your Google account. Nothing else from the app is backed up.
 
 ## Sharing
-SimpleCoil doesn't sell, rent or share your information with anyone. The only information that leaves your device is the game information described above. It goes only to the game server and the other players in a game you choose to join, on your local network.
+SimpleCoil doesn't sell, rent or share your information with anyone. The only information that leaves your device is the game information described above, which goes only to the game server and the other players in a game you choose to join, on your local network, and, on a dedicated server whose host downloads a field map, the requests to USGS described under Field map.
 
 ## Data retention and deletion
 Game information, including scores, player lists and locations, lasts only as long as the game. It is gone when the game server stops. To delete the settings saved on your device, clear the app's storage in Android settings or uninstall the app.

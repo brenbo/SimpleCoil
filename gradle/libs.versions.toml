@@ -1,5 +1,5 @@
 [versions]
-agp = "9.4.1"
+agp = "9.3.0"
 kotlin = "2.4.21"
 coroutines = "1.11.0"
 lifecycle = "2.11.0"
@@ -18,6 +18,8 @@ androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-view
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version = "1.13.0" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version = "1.2.1" }
+# Open-source map engine (map design: Map engine); minSdk 23
+maplibre-android = { module = "org.maplibre.gl:android-sdk", version = "13.7.1" }
 junit = { module = "junit:junit", version = "4.13.2" }
 mockito-core = { module = "org.mockito:mockito-core", version = "5.24.0" }
 # Real org.json for JVM tests (android.jar only has stubs)

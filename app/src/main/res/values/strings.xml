@@ -314,4 +314,97 @@
         <item quantity="one">Stop the server? %1$d player will be disconnected.</item>
         <item quantity="other">Stop the server? %1$d players will be disconnected.</item>
     </plurals>
+
+    <!-- The map (map design: Map engine) -->
+    <string name="map_compass_heading_up">The map turns with you. Tap to keep north up.</string>
+    <string name="map_compass_north_up">North is up. Tap to turn the map with you.</string>
+    <string name="map_zoom_off">Auto zoom is off. Tap to fit everyone on the map.</string>
+    <string name="map_zoom_players">Fitting everyone on the map. Tap to fit the whole field.</string>
+    <string name="map_zoom_field">Fitting the whole field. Tap to turn auto zoom off.</string>
+    <string name="map_out_of_bounds_countdown">OUT OF BOUNDS · %1$d s · %2$s to go</string>
+    <string name="map_out_of_bounds_disabled">OUT OF BOUNDS · blaster off · %1$s to go</string>
+    <string name="map_out_of_bounds_health">OUT OF BOUNDS · losing health · %1$s to go</string>
+    <string name="map_out_of_bounds_warning">OUT OF BOUNDS · %1$s to go</string>
+    <string name="map_imagery_credit">Map services and data available from U.S. Geological Survey, National Geospatial Program.</string>
+
+    <!-- The dedicated server's field map (map design: Field imagery packs) -->
+    <string name="field_map_button">Field map</string>
+    <string name="field_map_status_none">Field map: none</string>
+    <string name="field_map_status_saved">Field map saved %1$s</string>
+    <plurals name="field_map_status_sent">
+        <item quantity="one">Field map saved %1$s · sent to %2$d phone</item>
+        <item quantity="other">Field map saved %1$s · sent to %2$d phones</item>
+    </plurals>
+    <string name="field_map_title">Field map</string>
+    <string name="field_map_hint">Find your field, draw its border, then download the photo. Phones get both when they join.</string>
+    <string name="field_hint_circle">Tap the center of the field, then tap its edge.</string>
+    <string name="field_hint_circle_edge">Now tap the edge of the field.</string>
+    <string name="field_hint_polygon">Tap each corner of the field in order. Undo removes the last one.</string>
+    <string name="field_hint_walk">Walk the edge of the field with this phone. Tap Walk again when you\'re back at the start.</string>
+    <string name="field_border_label">Border</string>
+    <string name="field_tool_circle">Circle</string>
+    <string name="field_tool_polygon">Corners</string>
+    <string name="field_tool_walk">Walk</string>
+    <string name="field_undo">Undo</string>
+    <string name="field_clear">Clear</string>
+    <string name="field_rules">Rules</string>
+    <string name="field_presets">Saved</string>
+    <string name="field_status_border_none">No border</string>
+    <string name="field_status_border_circle">Circle border, %1$s across</string>
+    <plurals name="field_status_border_polygon">
+        <item quantity="one">Border with %1$d corner</item>
+        <item quantity="other">Border with %1$d corners</item>
+    </plurals>
+    <string name="field_status_photo_none">no photo</string>
+    <string name="field_status_photo_saved">photo from %1$s</string>
+    <string name="field_status_line">%1$s · %2$s</string>
+    <string name="field_status_named">%1$s: %2$s</string>
+    <string name="field_walk_too_short">The walk needs at least 3 corners. Walk the whole edge and try again.</string>
+    <string name="field_border_saved">Border saved. Phones get it when they join or a game starts.</string>
+    <string name="field_border_cleared">Border cleared.</string>
+    <string name="field_presets_title">Saved fields</string>
+    <string name="field_presets_save">Save this field as…</string>
+    <string name="field_presets_name_hint">Field name</string>
+    <string name="field_presets_saved">Saved as %1$s.</string>
+    <string name="field_presets_loaded">Loaded %1$s.</string>
+    <string name="field_presets_deleted">Deleted %1$s.</string>
+    <string name="field_presets_load">Load</string>
+    <string name="field_presets_delete">Delete</string>
+    <string name="field_presets_error">Couldn\'t do that. Try again.</string>
+    <string name="field_dialog_save">Save</string>
+    <string name="field_dialog_cancel">Cancel</string>
+    <string name="rules_title">Out-of-bounds rules</string>
+    <string name="rules_penalty">When a player stays outside past the countdown</string>
+    <string name="rules_penalty_disable">Blaster off until they\'re back</string>
+    <string name="rules_penalty_health">Lose health until they\'re back</string>
+    <string name="rules_penalty_eliminate">Eliminated</string>
+    <string name="rules_penalty_warning">Warning only</string>
+    <string name="rules_countdown">Countdown before the penalty (0–60 s)</string>
+    <string name="rules_health_per_tick">Health lost (1–10)</string>
+    <string name="rules_tick_seconds">Every (1–10 s)</string>
+    <string name="rules_grace">Grace time before counting as outside (0–10 s)</string>
+    <string name="rules_units">Distances in</string>
+    <string name="rules_units_feet">Feet</string>
+    <string name="rules_units_meters">Metres</string>
+    <string name="rules_leave_margin">Leave margin past the line (%1$s)</string>
+    <string name="rules_accuracy_gate">Ignore GPS worse than (%1$s, 0 = off)</string>
+    <string name="rules_edge_buffer">Keep auto-placed things this far inside (%1$s)</string>
+    <string name="rules_only_near">Show the border only when a player is near it</string>
+    <string name="rules_near_distance">Near means within (%1$s)</string>
+    <string name="rules_section_penalty">Out of bounds</string>
+    <string name="rules_section_gps">GPS</string>
+    <string name="rules_section_map">Map</string>
+    <string name="map_credit_short">Data provided by USGS</string>
+    <string name="respawn_return_to_field">Get back on the field to respawn</string>
+    <string name="map_credit_title">Map data</string>
+    <string name="field_map_my_location">My location</string>
+    <string name="field_map_download">Download</string>
+    <string name="field_map_delete">Delete</string>
+    <string name="field_map_downloading">Downloading the field from USGS…</string>
+    <string name="field_map_saved">Field map saved. Phones get it when they join.</string>
+    <string name="field_map_network_error">Couldn\'t reach USGS. Check the internet connection and try again.</string>
+    <string name="field_map_no_imagery">USGS has no aerial photos here. It only covers the United States.</string>
+    <string name="field_map_deleted">Field map deleted.</string>
+    <string name="field_map_save_error">Couldn\'t save the field map.</string>
+    <string name="field_map_no_location">Can\'t find your location yet.</string>
 </resources>

@@ -26,6 +26,9 @@ sealed interface SpawnPhase {
     /** Eliminated with manual respawn: waiting for the player to start the respawn countdown. */
     data class AwaitingRespawn(val eliminatedBy: String) : SpawnPhase
 
+    /** The respawn countdown is done, but the player is off the field: they respawn once back (map design: Border). */
+    data class AwaitingReturn(val eliminatedBy: String, val startingGame: Boolean) : SpawnPhase
+
     /** Eliminated with no lives left; no respawn. */
     data class OutOfLives(val eliminatedBy: String) : SpawnPhase
 }

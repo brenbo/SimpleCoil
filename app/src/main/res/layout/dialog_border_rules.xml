@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The out-of-bounds rules (map design: Border, GPS limits), styled like the game limit and
+     player settings dialogs. Distances are in the chosen units. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#080808">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            style="@style/DialogTitle"
+            android:text="@string/rules_title" />
+
+        <TextView
+            style="@style/DialogSection"
+            android:text="@string/rules_section_penalty" />
+
+        <View style="@style/DialogDivider" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:text="@string/rules_penalty" />
+
+        <RadioGroup
+            android:id="@+id/rules_penalty_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_penalty_disable"
+                android:text="@string/rules_penalty_disable" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_penalty_health"
+                android:text="@string/rules_penalty_health" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_penalty_eliminate"
+                android:text="@string/rules_penalty_eliminate" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_penalty_warning"
+                android:text="@string/rules_penalty_warning" />
+        </RadioGroup>
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_countdown_et"
+            android:text="@string/rules_countdown" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_countdown_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_health_et"
+            android:text="@string/rules_health_per_tick" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_health_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_tick_et"
+            android:text="@string/rules_tick_seconds" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_tick_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogSection"
+            android:text="@string/rules_section_gps" />
+
+        <View style="@style/DialogDivider" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:text="@string/rules_units" />
+
+        <RadioGroup
+            android:id="@+id/rules_units_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_units_feet"
+                android:text="@string/rules_units_feet" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_units_meters"
+                android:layout_marginStart="16dp"
+                android:text="@string/rules_units_meters" />
+        </RadioGroup>
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_grace_et"
+            android:text="@string/rules_grace" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_grace_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_margin_label"
+            android:labelFor="@+id/rules_margin_et"
+            android:text="@string/rules_leave_margin" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_margin_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_accuracy_label"
+            android:labelFor="@+id/rules_accuracy_et"
+            android:text="@string/rules_accuracy_gate" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_accuracy_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_buffer_label"
+            android:labelFor="@+id/rules_buffer_et"
+            android:text="@string/rules_edge_buffer" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_buffer_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            style="@style/DialogSection"
+            android:text="@string/rules_section_map" />
+
+        <View style="@style/DialogDivider" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_only_near_switch"
+            android:text="@string/rules_only_near" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_near_label"
+            android:labelFor="@+id/rules_near_et"
+            android:text="@string/rules_near_distance" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_near_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+    </LinearLayout>
+</ScrollView>
