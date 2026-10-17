@@ -7,6 +7,47 @@
     android:background="#080808"
     android:padding="8dp" >
 
+    <!-- After a Domination or Hardpoint game: Victory or Defeat, animated in, over confetti for a win. -->
+    <FrameLayout
+        android:id="@+id/game_result_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:visibility="gone">
+
+        <com.simplecoil.simplecoil.ui.scoreboard.ConfettiView
+            android:id="@+id/game_result_confetti"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
+
+            <TextView
+                android:id="@+id/game_result_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.12"
+                android:shadowColor="#CC000000"
+                android:shadowDy="3"
+                android:shadowRadius="8"
+                android:textSize="40sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/game_result_score_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#B0BEC5"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </FrameLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/player_list"
         android:layout_width="match_parent"

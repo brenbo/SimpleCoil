@@ -27,6 +27,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import android.animation.ObjectAnimator
+import android.view.animation.BounceInterpolator
+import android.view.animation.OvershootInterpolator
+import com.simplecoil.simplecoil.data.repository.GameStateRepository
+import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import kotlinx.coroutines.Dispatchers
@@ -208,6 +213,8 @@ class ScoreboardDialog : GameDialogFragment() {
         binding.playerList.adapter = adapter
         setData(players)
         showFace()
+        // A Domination or Hardpoint result arrives a moment after the game ends
+        lifecycleScope.launch { appContainer.modeController.state.collect { showResult(it) } }
         val builder = alertBuilder()
             .setNegativeButton(R.string.ok) { dialog, _ -> dialog.cancel() }
             .setView(binding.root)
@@ -239,6 +246,70 @@ class ScoreboardDialog : GameDialogFragment() {
 
     fun setData(players: Array<PlayerDisplayData?>) {
         adapter?.submitList(ScoreboardRows.build(players, vm.scoreboardContext()))
+    }
+
+    private val appContainer get() = (requireActivity().application as SimpleCoilApp).container
+
+    /** The result this dialog last animated, so it plays once. */
+    private var resultShown: ModeState? = null
+
+    /**
+     * Victory or Defeat at the top, after an objective game (map design: Longest shot and
+     * post-game stats): a win springs in over confetti, a loss drops in and shakes.
+     */
+    private fun showResult(state: ModeState?) {
+        val b = binding ?: return
+        val container = appContainer
+        val over = container.gameState.gameState == GameStateRepository.GAME_STATE_NONE
+        if (state == null || state.winner == 0 || !over) {
+            b.gameResultLayout.visibility = View.GONE
+            resultShown = null
+            return
+        }
+        if (state == resultShown) return
+        resultShown = state
+        val id = container.players.playerID.toInt()
+        val layout = container.settings.teamLayout
+        val myTeam = if (layout.mode.isFreeForAll) id else layout.teamOf(id)
+        val won = state.winner == myTeam
+        val mine = state.scores[myTeam] ?: 0
+        val theirs = state.scores.filterKeys { it != myTeam }.values.maxOrNull() ?: 0
+        b.gameResultLayout.visibility = View.VISIBLE
+        b.gameResultTv.setText(if (won) R.string.mode_victory_big else R.string.mode_defeat_big)
+        b.gameResultTv.setTextColor(if (won) VICTORY_COLOR else DEFEAT_COLOR)
+        b.gameResultScoreTv.text = getString(R.string.mode_result_score, mine, theirs)
+        val tv = b.gameResultTv
+        tv.animate().cancel()
+        if (won) {
+            tv.scaleX = 0.2f
+            tv.scaleY = 0.2f
+            tv.alpha = 0f
+            tv.rotation = -12f
+            tv.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(650)
+                .setInterpolator(OvershootInterpolator(3f))
+                .withEndAction { pulse(tv, 3) }
+                .start()
+            b.gameResultConfetti.post { b.gameResultConfetti.burst() }
+        } else {
+            tv.translationY = -80f * resources.displayMetrics.density
+            tv.alpha = 0f
+            tv.animate().translationY(0f).alpha(1f).setDuration(800)
+                .setInterpolator(BounceInterpolator())
+                .withEndAction {
+                    val d = resources.displayMetrics.density
+                    ObjectAnimator.ofFloat(tv, View.TRANSLATION_X, 0f, -10 * d, 10 * d, -7 * d, 7 * d, -3 * d, 3 * d, 0f)
+                        .setDuration(450).start()
+                }
+                .start()
+        }
+    }
+
+    /** A winner's glow: [times] gentle swells. */
+    private fun pulse(view: View, times: Int) {
+        if (times <= 0 || binding == null) return
+        view.animate().scaleX(1.08f).scaleY(1.08f).setDuration(260).setInterpolator(null).withEndAction {
+            view.animate().scaleX(1f).scaleY(1f).setDuration(260).withEndAction { pulse(view, times - 1) }.start()
+        }.start()
     }
 
     /** Shows the list or the matrix, as the view model has it. */
@@ -353,6 +424,9 @@ private const val ARG_TEXT = "text"
 
 /** How often an open longest shots ranking asks the server again. */
 private const val SHOTS_REFRESH_MILLIS = 5_000L
+
+private const val VICTORY_COLOR = 0xFFFFD54F.toInt()
+private const val DEFEAT_COLOR = 0xFFEF5350.toInt()
 
 /** The score matrix grows to at most this much of the window's height, then scrolls. */
 private const val MATRIX_MAX_HEIGHT_FRACTION = 0.8f

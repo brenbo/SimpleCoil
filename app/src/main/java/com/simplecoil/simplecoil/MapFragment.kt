@@ -740,8 +740,7 @@ class MapFragment : Fragment() {
 
     /** One line about you and the points: who won, a point's news, or the point you stand on. */
     private fun modeStatus(state: ModeState, myTeam: Int): String? {
-        if (state.winner != 0) return getString(if (state.winner == myTeam) R.string.mode_victory else R.string.mode_defeat)
-        // After the game, only who won: nobody is taking or holding anything any more
+        // After the game, only the scores: who won is on the scoreboard
         if (!inGame()) return null
         // Hardpoint has one point at a time, so it goes unnamed
         if (state.mode == GameMode.HARDPOINT) return hardpointStatus(state, myTeam)
