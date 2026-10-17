@@ -245,6 +245,7 @@ class FieldMapActivity : AppCompatActivity() {
             loaded.addSource(GeoJsonSource(BORDER_SOURCE))
             loaded.addSource(GeoJsonSource(DRAFT_SOURCE))
             loaded.addSource(GeoJsonSource(POINTS_SOURCE))
+            OutsideShade.install(loaded)
             SpawnLayers.install(loaded, this)
             loaded.addLayer(LineLayer(PHOTO_SOURCE, PHOTO_SOURCE).withProperties(
                 PropertyFactory.lineColor(PHOTO_COLOR.toColorInt()),
@@ -592,6 +593,7 @@ class FieldMapActivity : AppCompatActivity() {
     private fun drawBorder() {
         val style = style ?: return
         style.getSourceAs<GeoJsonSource>(BORDER_SOURCE)?.setGeoJson(lines(config.border?.ring()))
+        OutsideShade.update(style, config.border?.ring())
     }
 
     /** What is being drawn: the tapped points, the walked path, a circle's center. */

@@ -68,6 +68,7 @@ import com.simplecoil.simplecoil.ui.map.MapCredit
 import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
 import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
+import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -372,6 +373,8 @@ class MapFragment : Fragment() {
     }
 
     private fun addFieldLayers(style: Style) {
+        // Outside the border greyed out, under everything on the field
+        OutsideShade.install(style)
         // Spawns under everything else; then the dashed way to yours, and the border
         SpawnLayers.install(style, requireContext())
         style.addSource(GeoJsonSource(GUIDE_SOURCE))
@@ -522,6 +525,7 @@ class MapFragment : Fragment() {
         renderSpawns()
         val style = style ?: return
         val ring = config?.border?.ring()
+        OutsideShade.update(style, ring)
         style.getSourceAs<GeoJsonSource>(BORDER_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(
             ring?.let { r -> Feature.fromGeometry(LineString.fromLngLats(r.map { Point.fromLngLat(it.longitude, it.latitude) })) })))
         updateBorderVisibility()
