@@ -21,6 +21,7 @@ import android.location.Location
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.Choreographer
 import android.view.LayoutInflater
@@ -153,8 +154,11 @@ class MapFragment : Fragment() {
             if (location.hasBearing() && location.hasSpeed()) {
                 heading.onCourse(location.bearing.toDouble(), location.speed, container.clock())
             }
-            container.borderController.onFix(LatLon(latitude, longitude), location.accuracy)
-            container.spawnController.onFix(LatLon(latitude, longitude), location.accuracy)
+            // A cached position from before the app started says nothing about where we are now
+            if ((SystemClock.elapsedRealtimeNanos() - location.elapsedRealtimeNanos) / 1_000_000 < FRESH_FIX_MILLIS) {
+                container.borderController.onFix(LatLon(latitude, longitude), location.accuracy)
+                container.spawnController.onFix(LatLon(latitude, longitude), location.accuracy)
+            }
             renderPlayers()
             refreshTarget()
         }
@@ -678,6 +682,9 @@ class MapFragment : Fragment() {
         const val GUIDE_SOURCE = "spawn-guide"
         const val GUIDE_LAYER = "spawn-guide"
         const val GUIDE_COLOR = "#69F0AE"
+
+        /** A fix older than this (a cached last-known position) isn't used for the border or spawns. */
+        const val FRESH_FIX_MILLIS = 2 * 60_000L
 
         /** You, in free for all (no team colour). */
         const val YOU_COLOR = 0xFF2979FF.toInt()

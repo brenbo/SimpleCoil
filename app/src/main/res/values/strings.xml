@@ -399,7 +399,7 @@
     <string name="respawn_return_to_field">Get back on the field to respawn</string>
     <string name="respawn_go_to_spawn">Walk to your spawn to respawn</string>
     <string name="map_go_to_spawn">Walk to your spawn · %1$s</string>
-    <string name="map_spawn_no_gps">No GPS fix: you can respawn anywhere</string>
+    <string name="map_spawn_no_gps">No location fix: turn location on (high accuracy) and go outside. Respawning anywhere until then.</string>
 
     <!-- Spawns on the server's field map (map design: Respawn points) -->
     <string name="field_tool_spawns">Spawns</string>

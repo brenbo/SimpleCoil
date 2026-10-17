@@ -103,8 +103,15 @@ public class MapLocationManager {
                 public void onProviderDisabled(String provider) {}
             };
 
-            // No minimum distance: fixes keep coming while standing still (in a spawn, say)
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, locationListener);
+            // No minimum distance: fixes keep coming while standing still (in a spawn, say).
+            // GPS, and network location as well, for phones set to battery-saving location (no
+            // GPS at all) or slow to get a GPS fix; isBetterLocation picks the better of the two.
+            List<String> providers = locationManager.getAllProviders();
+            for (String provider : new String[] {LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER}) {
+                if (providers.contains(provider)) {
+                    locationManager.requestLocationUpdates(provider, 1000, 0, locationListener);
+                }
+            }
             currentBestLocation = getLastBestLocation(context);
             if (currentBestLocation != null && listener != null) {
                 listener.onLocationUpdated(currentBestLocation, currentBestLocation.getLatitude(), currentBestLocation.getLongitude());
