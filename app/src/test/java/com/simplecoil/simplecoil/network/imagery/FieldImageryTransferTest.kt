@@ -20,6 +20,7 @@ import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
+import com.simplecoil.simplecoil.domain.map.Spawn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -60,6 +61,13 @@ class FieldImageryTransferTest {
         server.stop()
     }
 
+    /** The server counts a delivery on its own thread just after the phone has its reply: give it a moment. */
+    private fun assertDelivered(expected: Int) {
+        val deadline = System.currentTimeMillis() + 2_000
+        while (server.deliveredCount.value != expected && System.currentTimeMillis() < deadline) Thread.sleep(10)
+        assertEquals(expected, server.deliveredCount.value)
+    }
+
     private fun phone(name: String, clock: () -> Long = { 0L }): Pair<FieldPackStore, FieldImageryClient> {
         val store = FieldPackStore(File(tmp.root, name))
         return store to FieldImageryClient(store, TestScope(), Dispatchers.IO, clock, port = server.localPort,
@@ -83,10 +91,10 @@ class FieldImageryTransferTest {
         assertEquals(FieldImageryClient.Result.UPDATED, client.sync(loopback))
         assertEquals(pack.info, store.info.value)
         assertArrayEquals(pack.image, store.load()!!.image)
-        assertEquals(1, server.deliveredCount.value)
+        assertDelivered(1)
 
         assertEquals(FieldImageryClient.Result.SAME, client.sync(loopback))
-        assertEquals(1, server.deliveredCount.value)
+        assertDelivered(1)
     }
 
     @Test
@@ -102,7 +110,7 @@ class FieldImageryTransferTest {
 
         assertEquals(FieldImageryClient.Result.UPDATED, client.sync(loopback))
         assertEquals(newer.info.id, store.info.value!!.id)
-        assertEquals(1, server.deliveredCount.value)
+        assertDelivered(1)
     }
 
     @Test
@@ -136,7 +144,7 @@ class FieldImageryTransferTest {
             assertEquals(serverStore.info.value, store.info.value)
         }
         // All from one address here, so they count as one phone
-        assertEquals(1, server.deliveredCount.value)
+        assertDelivered(1)
     }
 
     @Test
@@ -196,7 +204,7 @@ class FieldImageryTransferTest {
         assertEquals(FieldImageryClient.Result.UPDATED, client.sync(loopback))
         assertEquals(border, configs.config.value)
         assertNull(store.info.value) // no photo yet
-        assertEquals(1, server.deliveredCount.value)
+        assertDelivered(1)
         assertEquals(FieldImageryClient.Result.SAME, client.sync(loopback))
 
         // New rules reach the phone without the photo being sent again
@@ -209,12 +217,33 @@ class FieldImageryTransferTest {
         assertEquals(FieldImageryClient.Result.UPDATED, client.sync(loopback))
         assertEquals(OutOfBoundsPenalty.ELIMINATED, configs.config.value!!.rules.penalty)
         assertEquals(serverStore.info.value, store.info.value)
-        assertEquals(1, server.deliveredCount.value)
+        assertDelivered(1)
 
         // The host clears the border: the phone drops it
         serverConfig.clear()
         client.sync(loopback)
         assertNull(configs.config.value)
+    }
+
+    @Test
+    fun movedSpawnsAreServedWithoutChangingTheSavedField() {
+        val saved = border.copy(spawns = listOf(Spawn(1, LatLon(39.0, -77.0005)), Spawn(2, LatLon(39.0, -76.9995))))
+        serverConfig.save(saved)
+        val configs = FieldConfigStore(File(tmp.root, "phone"))
+        val client = FieldImageryClient(FieldPackStore(File(tmp.root, "phone")), TestScope(), Dispatchers.IO, { 0L },
+            port = server.localPort, configs = configs)
+        client.sync(loopback)
+
+        val moved = saved.copy(spawns = listOf(Spawn(1, LatLon(39.0003, -77.0)), Spawn(2, LatLon(38.9997, -77.0))), spawnGeneration = 1)
+        server.liveConfig = moved
+        assertEquals(FieldImageryClient.Result.UPDATED, client.sync(loopback))
+        assertEquals(moved, configs.config.value)
+        assertEquals(saved, serverConfig.refresh())
+
+        // The game ends: back to the host's spawns
+        server.liveConfig = null
+        client.sync(loopback)
+        assertEquals(saved, configs.config.value)
     }
 
     @Test

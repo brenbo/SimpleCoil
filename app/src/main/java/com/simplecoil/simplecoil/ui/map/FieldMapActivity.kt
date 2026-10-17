@@ -52,7 +52,11 @@ import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
 import com.simplecoil.simplecoil.domain.map.PathSimplifier
+import com.simplecoil.simplecoil.domain.map.Spawn
+import com.simplecoil.simplecoil.domain.map.SpawnPlanner
+import com.simplecoil.simplecoil.domain.map.SpawnRules
 import com.simplecoil.simplecoil.domain.map.UsgsImagery
+import com.simplecoil.simplecoil.domain.team.TeamColors
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
 import com.simplecoil.simplecoil.network.imagery.UsgsFieldDownloader
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +68,9 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -72,6 +78,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
 import java.io.IOException
 import java.text.DateFormat
 import java.util.Date
@@ -89,7 +96,7 @@ import kotlin.math.roundToInt
  */
 class FieldMapActivity : AppCompatActivity() {
 
-    private enum class Tool { NONE, CIRCLE, POLYGON, WALK }
+    private enum class Tool { NONE, CIRCLE, POLYGON, WALK, SPAWNS }
 
     private lateinit var container: AppContainer
     private lateinit var binding: ActivityFieldMapBinding
@@ -105,6 +112,7 @@ class FieldMapActivity : AppCompatActivity() {
     private val corners = ArrayList<LatLon>()
     private val walked = ArrayList<LatLon>()
     private var walkListener: LocationListener? = null
+    private var spawnTeam = 1
 
     private val requestLocationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -128,12 +136,15 @@ class FieldMapActivity : AppCompatActivity() {
             val chosen = when (id) {
                 binding.fieldToolCircleButton.id -> Tool.CIRCLE
                 binding.fieldToolPolygonButton.id -> Tool.POLYGON
+                binding.fieldToolSpawnsButton.id -> Tool.SPAWNS
                 else -> Tool.WALK
             }
             if (checked) startTool(chosen) else if (tool == chosen) finishTool()
         }
         binding.fieldUndoButton.setOnClickListener { undo() }
-        binding.fieldClearButton.setOnClickListener { clearBorder() }
+        binding.fieldClearButton.setOnClickListener { if (tool == Tool.SPAWNS) clearSpawns() else clearBorder() }
+        binding.fieldSpawnTeamButton.setOnClickListener { nextSpawnTeam() }
+        binding.fieldAutoPlaceButton.setOnClickListener { autoPlace() }
         binding.fieldRulesButton.setOnClickListener { showRules() }
         binding.fieldPresetsButton.setOnClickListener { showPresets() }
         binding.fieldMyLocationButton.setOnClickListener { goToMyLocation() }
@@ -152,6 +163,7 @@ class FieldMapActivity : AppCompatActivity() {
                     container.serverFieldConfig.config.collect { saved ->
                         saved?.let { config = it }
                         drawBorder()
+                        drawSpawns()
                         showStatus()
                     }
                 }
@@ -216,6 +228,15 @@ class FieldMapActivity : AppCompatActivity() {
             loaded.addSource(GeoJsonSource(BORDER_SOURCE))
             loaded.addSource(GeoJsonSource(DRAFT_SOURCE))
             loaded.addSource(GeoJsonSource(POINTS_SOURCE))
+            loaded.addSource(GeoJsonSource(SPAWNS_SOURCE))
+            loaded.addLayer(FillLayer(SPAWNS_FILL_LAYER, SPAWNS_SOURCE).withProperties(
+                PropertyFactory.fillColor(Expression.toColor(Expression.get(COLOR))),
+                PropertyFactory.fillOpacity(0.35f),
+            ))
+            loaded.addLayer(LineLayer(SPAWNS_LINE_LAYER, SPAWNS_SOURCE).withProperties(
+                PropertyFactory.lineColor(Expression.toColor(Expression.get(COLOR))),
+                PropertyFactory.lineWidth(2f),
+            ))
             loaded.addLayer(LineLayer(PHOTO_SOURCE, PHOTO_SOURCE).withProperties(
                 PropertyFactory.lineColor(PHOTO_COLOR.toColorInt()),
                 PropertyFactory.lineWidth(1.5f),
@@ -239,6 +260,7 @@ class FieldMapActivity : AppCompatActivity() {
             moveToStart()
             showPhoto(photo)
             drawBorder()
+            drawSpawns()
         }
     }
 
@@ -288,8 +310,13 @@ class FieldMapActivity : AppCompatActivity() {
                 binding.fieldHintTv.setText(R.string.field_hint_walk)
                 startWalk()
             }
+            Tool.SPAWNS -> {
+                if (spawnTeam !in spawnTeams()) spawnTeam = spawnTeams().first()
+                showSpawnTeam()
+            }
             Tool.NONE -> binding.fieldHintTv.setText(R.string.field_map_hint)
         }
+        binding.fieldSpawnRow.isVisible = chosen == Tool.SPAWNS
         drawDraft()
     }
 
@@ -309,6 +336,7 @@ class FieldMapActivity : AppCompatActivity() {
         circleCenter = null
         corners.clear()
         walked.clear()
+        binding.fieldSpawnRow.isVisible = false
         binding.fieldHintTv.setText(R.string.field_map_hint)
         drawDraft()
     }
@@ -331,6 +359,13 @@ class FieldMapActivity : AppCompatActivity() {
                 corners += point
                 if (corners.size >= 3) saveBorder(Border.Polygon(corners.toList()))
             }
+            Tool.SPAWNS -> {
+                // A tap on a spawn removes it; anywhere else adds one for the chosen team
+                val radius = config.spawnRules.radiusMeters
+                val hit = config.spawns.lastOrNull { GeoMath.distanceMeters(it.point, point) <= radius }
+                saveConfig(config.copy(spawns = if (hit != null) config.spawns - hit else config.spawns + Spawn(spawnTeam, point)))
+                drawSpawns()
+            }
             Tool.WALK, Tool.NONE -> return false
         }
         drawDraft()
@@ -345,9 +380,78 @@ class FieldMapActivity : AppCompatActivity() {
                 saveBorder(if (corners.size >= 3) Border.Polygon(corners.toList()) else null)
             }
             Tool.WALK -> if (walked.isNotEmpty()) walked.removeAt(walked.size - 1)
+            Tool.SPAWNS -> if (config.spawns.isNotEmpty()) {
+                saveConfig(config.copy(spawns = config.spawns.dropLast(1)))
+                drawSpawns()
+            }
             Tool.NONE -> {}
         }
         drawDraft()
+    }
+
+    // Spawns
+
+    /** The teams spawns can be for in the server's team mode: 1-2, 1-4, or anyone (free for all). */
+    private fun spawnTeams(): List<Int> = SpawnPlanner.teamsFor(container.userPreferences.teamMode().teamCount)
+
+    private fun nextSpawnTeam() {
+        val teams = spawnTeams()
+        spawnTeam = teams[(teams.indexOf(spawnTeam) + 1) % teams.size]
+        showSpawnTeam()
+    }
+
+    private fun teamName(team: Int): String = getString(when (team) {
+        1 -> R.string.field_team_1
+        2 -> R.string.field_team_2
+        3 -> R.string.field_team_3
+        4 -> R.string.field_team_4
+        else -> R.string.field_team_anyone
+    })
+
+    private fun showSpawnTeam() {
+        val name = teamName(spawnTeam)
+        binding.fieldSpawnTeamButton.text = getString(R.string.field_spawn_team, name)
+        binding.fieldHintTv.text = getString(R.string.field_hint_spawns, name)
+    }
+
+    /** Puts down every team's spawns by the rules, in place of the ones there. */
+    private fun autoPlace() {
+        val border = config.border
+        if (border == null) {
+            Toast.makeText(applicationContext, R.string.field_auto_place_need_border, Toast.LENGTH_LONG).show()
+            return
+        }
+        val base = config
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.Default) {
+                SpawnPlanner.place(border, spawnTeams(), base.spawnRules, base.rules.edgeBufferMeters)
+            }
+            if (result.spawns.isEmpty()) {
+                Toast.makeText(applicationContext, R.string.field_auto_place_failed, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            saveConfig(config.copy(spawns = result.spawns))
+            drawSpawns()
+            if (result.relaxed) Toast.makeText(applicationContext, R.string.field_auto_place_relaxed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun clearSpawns() {
+        saveConfig(config.copy(spawns = emptyList()))
+        drawSpawns()
+        Toast.makeText(applicationContext, R.string.field_spawns_cleared, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun drawSpawns() {
+        val style = style ?: return
+        val radius = config.spawnRules.radiusMeters
+        style.getSourceAs<GeoJsonSource>(SPAWNS_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(config.spawns.map { spawn ->
+            val ring = Border.Circle(spawn.point, radius).ring().map { Point.fromLngLat(it.longitude, it.latitude) }
+            Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).also {
+                it.addStringProperty(COLOR, if (spawn.team == Spawn.ANYONE) "#FFFFFF"
+                    else String.format(Locale.ROOT, "#%06X", TeamColors.colorOf(spawn.team) and 0xFFFFFF))
+            }
+        }))
     }
 
     private fun clearBorder() {
@@ -506,7 +610,8 @@ class FieldMapActivity : AppCompatActivity() {
         val photoText = photo?.let {
             getString(R.string.field_status_photo_saved, DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it.createdAtMillis)))
         } ?: getString(R.string.field_status_photo_none)
-        val line = getString(R.string.field_status_line, border, photoText)
+        val spawns = config.spawns.size.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.field_status_spawns, it, it) }
+        val line = getString(R.string.field_status_line, if (spawns == null) border else "$border · $spawns", photoText)
         binding.fieldStatusTv.text = if (config.name.isBlank()) line else getString(R.string.field_status_named, config.name, line)
         binding.fieldDeleteButton.isEnabled = photo != null
     }
@@ -516,18 +621,24 @@ class FieldMapActivity : AppCompatActivity() {
     private fun showRules() {
         val dialog = DialogBorderRulesBinding.inflate(layoutInflater)
         val rules = config.rules
+        val spawnRules = config.spawnRules
         var units = rules.units
-        val fields = listOf(dialog.rulesMarginEt, dialog.rulesAccuracyEt, dialog.rulesBufferEt, dialog.rulesNearEt)
+        val fields = listOf(dialog.rulesMarginEt, dialog.rulesAccuracyEt, dialog.rulesBufferEt, dialog.rulesNearEt,
+            dialog.rulesSpawnRadiusEt, dialog.rulesEnemyClearEt)
         fun showDistances(meters: List<Double>) {
             val unit = if (units == DistanceUnits.FEET) "ft" else "m"
             dialog.rulesMarginLabel.text = getString(R.string.rules_leave_margin, unit)
             dialog.rulesAccuracyLabel.text = getString(R.string.rules_accuracy_gate, unit)
             dialog.rulesBufferLabel.text = getString(R.string.rules_edge_buffer, unit)
             dialog.rulesNearLabel.text = getString(R.string.rules_near_distance, unit)
+            dialog.rulesSpawnRadiusLabel.text = getString(R.string.rules_spawn_radius, unit)
+            dialog.rulesEnemyClearLabel.text = getString(R.string.rules_enemy_clear, unit)
             fields.zip(meters).forEach { (field, m) -> field.setText(number(units.fromMeters(m).roundToInt())) }
         }
         fun readMeters(field: EditText, fallback: Double) = field.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: fallback
-        val defaults = listOf(rules.leaveMarginMeters, rules.accuracyGateMeters, rules.edgeBufferMeters, rules.nearDistanceMeters)
+        fun readInt(field: EditText, fallback: Int) = field.text?.toString()?.toIntOrNull() ?: fallback
+        val defaults = listOf(rules.leaveMarginMeters, rules.accuracyGateMeters, rules.edgeBufferMeters, rules.nearDistanceMeters,
+            spawnRules.radiusMeters, spawnRules.enemyClearMeters)
         fun readAll() = fields.zip(defaults).map { (field, fallback) -> readMeters(field, fallback) }
 
         dialog.rulesPenaltyGroup.check(when (rules.penalty) {
@@ -541,6 +652,15 @@ class FieldMapActivity : AppCompatActivity() {
         dialog.rulesTickEt.setText(number(rules.tickSeconds))
         dialog.rulesGraceEt.setText(number(rules.graceSeconds))
         dialog.rulesOnlyNearSwitch.isChecked = rules.showOnlyWhenNear
+        dialog.rulesWalkBackSwitch.isChecked = spawnRules.walkBack
+        dialog.rulesStartAtSpawnSwitch.isChecked = spawnRules.startAtSpawn
+        dialog.rulesShieldInSpawnSwitch.isChecked = spawnRules.shieldOnlyInSpawn
+        dialog.rulesSecondsInSpawnEt.setText(number(spawnRules.secondsInSpawn))
+        dialog.rulesPerTeamEt.setText(number(spawnRules.perTeam))
+        dialog.rulesEnemyShareEt.setText(number((spawnRules.enemySpawnShare * 100).roundToInt()))
+        dialog.rulesMoveMinutesEt.setText(number(spawnRules.moveMinutes))
+        dialog.rulesCrossfadeEt.setText(number(spawnRules.crossfadeSeconds))
+        dialog.rulesOldGraceEt.setText(number(spawnRules.oldSpawnGraceSeconds))
         dialog.rulesUnitsGroup.check(if (units == DistanceUnits.FEET) R.id.rules_units_feet else R.id.rules_units_meters)
         showDistances(defaults)
         dialog.rulesUnitsGroup.setOnCheckedChangeListener { _, id ->
@@ -553,30 +673,45 @@ class FieldMapActivity : AppCompatActivity() {
         AlertDialog.Builder(this, R.style.AppDialogTheme)
             .setView(dialog.root)
             .setPositiveButton(R.string.field_dialog_save) { _, _ ->
-                val (margin, accuracy, buffer, near) = readAll()
+                val distances = readAll()
                 val updated = BorderRules(
-                    countdownSeconds = dialog.rulesCountdownEt.text?.toString()?.toIntOrNull() ?: rules.countdownSeconds,
+                    countdownSeconds = readInt(dialog.rulesCountdownEt, rules.countdownSeconds),
                     penalty = when (dialog.rulesPenaltyGroup.checkedRadioButtonId) {
                         R.id.rules_penalty_health -> OutOfBoundsPenalty.LOSE_HEALTH
                         R.id.rules_penalty_eliminate -> OutOfBoundsPenalty.ELIMINATED
                         R.id.rules_penalty_warning -> OutOfBoundsPenalty.WARNING_ONLY
                         else -> OutOfBoundsPenalty.DISABLE_BLASTER
                     },
-                    healthPerTick = dialog.rulesHealthEt.text?.toString()?.toIntOrNull() ?: rules.healthPerTick,
-                    tickSeconds = dialog.rulesTickEt.text?.toString()?.toIntOrNull() ?: rules.tickSeconds,
+                    healthPerTick = readInt(dialog.rulesHealthEt, rules.healthPerTick),
+                    tickSeconds = readInt(dialog.rulesTickEt, rules.tickSeconds),
                     showOnlyWhenNear = dialog.rulesOnlyNearSwitch.isChecked,
-                    nearDistanceMeters = near,
-                    graceSeconds = dialog.rulesGraceEt.text?.toString()?.toIntOrNull() ?: rules.graceSeconds,
-                    leaveMarginMeters = margin,
-                    accuracyGateMeters = accuracy,
-                    edgeBufferMeters = buffer,
+                    nearDistanceMeters = distances[3],
+                    graceSeconds = readInt(dialog.rulesGraceEt, rules.graceSeconds),
+                    leaveMarginMeters = distances[0],
+                    accuracyGateMeters = distances[1],
+                    edgeBufferMeters = distances[2],
                     units = units,
                 ).clamped()
-                saveConfig(config.copy(rules = updated))
+                val updatedSpawns = SpawnRules(
+                    walkBack = dialog.rulesWalkBackSwitch.isChecked,
+                    startAtSpawn = dialog.rulesStartAtSpawnSwitch.isChecked,
+                    secondsInSpawn = readInt(dialog.rulesSecondsInSpawnEt, spawnRules.secondsInSpawn),
+                    radiusMeters = distances[4],
+                    perTeam = readInt(dialog.rulesPerTeamEt, spawnRules.perTeam),
+                    enemySpawnShare = dialog.rulesEnemyShareEt.text?.toString()?.toIntOrNull()?.let { it / 100.0 } ?: spawnRules.enemySpawnShare,
+                    enemyClearMeters = distances[5],
+                    moveMinutes = readInt(dialog.rulesMoveMinutesEt, spawnRules.moveMinutes),
+                    crossfadeSeconds = readInt(dialog.rulesCrossfadeEt, spawnRules.crossfadeSeconds),
+                    oldSpawnGraceSeconds = readInt(dialog.rulesOldGraceEt, spawnRules.oldSpawnGraceSeconds),
+                    shieldOnlyInSpawn = dialog.rulesShieldInSpawnSwitch.isChecked,
+                ).clamped()
+                saveConfig(config.copy(rules = updated, spawnRules = updatedSpawns))
+                drawSpawns()
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .show()
     }
+
 
     // Saved fields
 
@@ -655,6 +790,7 @@ class FieldMapActivity : AppCompatActivity() {
             config = loaded
             container.fieldImageryServer.onFieldChanged()
             drawBorder()
+            drawSpawns()
             showStatus()
             (loaded.border?.bounds ?: photo?.bounds)?.let { moveTo(it) }
             Toast.makeText(applicationContext, getString(R.string.field_presets_loaded, name), Toast.LENGTH_SHORT).show()
@@ -710,6 +846,10 @@ class FieldMapActivity : AppCompatActivity() {
         const val BORDER_COLOR = "#FF5252"
         const val DRAFT_COLOR = "#FF9800"
         const val PHOTO_COLOR = "#4CAF50"
+        const val SPAWNS_SOURCE = "spawns"
+        const val SPAWNS_FILL_LAYER = "spawns-fill"
+        const val SPAWNS_LINE_LAYER = "spawns-line"
+        const val COLOR = "color"
 
         const val START_VIEW_METERS = 400.0
         const val MIN_RADIUS_METERS = 5.0

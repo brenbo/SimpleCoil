@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil.network.imagery
 
 import android.util.Log
+import com.simplecoil.simplecoil.domain.map.FieldConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,6 +100,17 @@ class FieldImageryServer(
         acceptThread = null
     }
 
+    /**
+     * The config served in place of the host's saved one while a game moves the spawns (map
+     * design: Moving spawns); null serves the saved one again. The saved setup is never changed.
+     */
+    @Volatile
+    var liveConfig: FieldConfig? = null
+        set(value) {
+            field = value
+            onFieldChanged()
+        }
+
     /** The field changed (photo, border or rules): count who has it again. */
     fun onFieldChanged() {
         synchronized(delivered) { recount() }
@@ -138,8 +150,9 @@ class FieldImageryServer(
                     bytes = if (currentId == null || currentId == request.knownId) null else store.bytes()
                 }
                 FieldImageryProtocol.Kind.CONFIG -> {
-                    currentId = configs?.refresh()?.id
-                    bytes = if (currentId == null || currentId == request.knownId) null else configs.bytes()
+                    val config = liveConfig ?: configs?.refresh()
+                    currentId = config?.id
+                    bytes = if (config == null || currentId == request.knownId) null else config.toBytes()
                 }
             }
             when {
@@ -173,7 +186,7 @@ class FieldImageryServer(
     /** Under the [delivered] lock. */
     private fun recount() {
         val photo = store.info.value?.id
-        val config = configs?.config?.value?.id
+        val config = (liveConfig ?: configs?.config?.value)?.id
         _deliveredCount.value = if (photo == null && config == null) 0 else {
             delivered.values.count { (p, c) -> p == photo && c == config }
         }

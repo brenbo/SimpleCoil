@@ -93,6 +93,133 @@
 
         <TextView
             style="@style/DialogSection"
+            android:text="@string/rules_section_respawn" />
+
+        <View style="@style/DialogDivider" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_walk_back_switch"
+            android:text="@string/rules_walk_back" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_start_at_spawn_switch"
+            android:text="@string/rules_start_at_spawn" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_seconds_in_spawn_et"
+            android:text="@string/rules_seconds_in_spawn" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_seconds_in_spawn_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_spawn_radius_label"
+            android:labelFor="@+id/rules_spawn_radius_et"
+            android:text="@string/rules_spawn_radius" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_spawn_radius_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_per_team_et"
+            android:text="@string/rules_spawns_per_team" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_per_team_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="1" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_enemy_share_et"
+            android:text="@string/rules_enemy_spawn_share" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_enemy_share_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_move_minutes_et"
+            android:text="@string/rules_move_minutes" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_move_minutes_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_enemy_clear_label"
+            android:labelFor="@+id/rules_enemy_clear_et"
+            android:text="@string/rules_enemy_clear" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_enemy_clear_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_crossfade_et"
+            android:text="@string/rules_crossfade" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_crossfade_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_old_grace_et"
+            android:text="@string/rules_old_grace" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_old_grace_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_shield_in_spawn_switch"
+            android:text="@string/rules_shield_in_spawn" />
+
+        <TextView
+            style="@style/DialogSection"
             android:text="@string/rules_section_gps" />
 
         <View style="@style/DialogDivider" />

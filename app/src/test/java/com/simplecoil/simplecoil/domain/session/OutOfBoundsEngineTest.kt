@@ -117,13 +117,13 @@ class OutOfBoundsEngineTest {
     @Test
     fun aHeldRespawnWaitsForThePlayerToComeBack() {
         inGame()
-        h.engine.setRespawnHeld(true)
+        h.engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, true)
         h.engine.eliminateOutOfBounds()
         h.advance((h.config.respawnTimeSeconds + 5) * 1000)
         assertTrue(h.state.spawn is SpawnPhase.AwaitingReturn)
         assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
 
-        h.engine.setRespawnHeld(false)
+        h.engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, false)
         assertEquals(SpawnPhase.None, h.state.spawn)
         assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
         assertEquals("finishReload:5/30", h.rec.ble.last())
@@ -132,13 +132,42 @@ class OutOfBoundsEngineTest {
     @Test
     fun comingBackDuringTheCountdownRespawnsOnTime() {
         inGame()
-        h.engine.setRespawnHeld(true)
+        h.engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, true)
         h.engine.eliminateOutOfBounds()
         h.advance(1_000)
-        h.engine.setRespawnHeld(false)
+        h.engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, false)
         assertTrue(h.state.spawn is SpawnPhase.Spawning)
         h.advance(h.config.respawnTimeSeconds * 1000)
         assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+    }
+
+    @Test
+    fun everyHoldMustLetGo() {
+        inGame()
+        h.engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, true)
+        h.engine.holdRespawn(RespawnHold.AWAY_FROM_SPAWN, true)
+        h.engine.eliminateOutOfBounds()
+        h.advance((h.config.respawnTimeSeconds + 1) * 1000)
+        assertEquals(true, (h.state.spawn as SpawnPhase.AwaitingReturn).outOfBounds)
+
+        // Back on the field, but not at a spawn yet
+        h.engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, false)
+        assertEquals(false, (h.state.spawn as SpawnPhase.AwaitingReturn).outOfBounds)
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+
+        h.engine.holdRespawn(RespawnHold.AWAY_FROM_SPAWN, false)
+        assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+    }
+
+    @Test
+    fun theShieldCanEndEarly() {
+        h.config.respawnShieldTimeSeconds = 10L
+        inGame()
+        h.engine.eliminateOutOfBounds()
+        h.advance((h.config.respawnTimeSeconds + 1) * 1000)
+        assertTrue(h.state.shieldSeconds != null)
+        h.engine.endRespawnShield()
+        assertEquals(null, h.state.shieldSeconds)
     }
 
     @Test

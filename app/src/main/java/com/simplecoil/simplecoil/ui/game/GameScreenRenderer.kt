@@ -656,7 +656,7 @@ class GameScreenRenderer(
                 b.eliminatedTv.visibility = View.VISIBLE
                 b.eliminatedByTv.text = spawn.eliminatedBy
                 b.eliminatedByTv.visibility = View.VISIBLE
-                b.spawnCountdownTv.setText(R.string.respawn_return_to_field)
+                b.spawnCountdownTv.setText(if (spawn.outOfBounds) R.string.respawn_return_to_field else R.string.respawn_go_to_spawn)
                 b.spawnCountdownTv.visibility = View.VISIBLE
             }
             is SpawnPhase.OutOfLives -> {

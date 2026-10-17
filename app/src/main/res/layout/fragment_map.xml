@@ -55,6 +55,24 @@
         android:textStyle="bold"
         android:visibility="gone" />
 
+    <!-- After an elimination with walk-back respawn: how far to your spawn. -->
+    <TextView
+        android:id="@+id/map_spawn_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:background="#CC1B5E20"
+        android:gravity="center"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/map_credit_tv"
         android:layout_width="wrap_content"

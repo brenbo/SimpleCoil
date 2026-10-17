@@ -26,8 +26,11 @@ sealed interface SpawnPhase {
     /** Eliminated with manual respawn: waiting for the player to start the respawn countdown. */
     data class AwaitingRespawn(val eliminatedBy: String) : SpawnPhase
 
-    /** The respawn countdown is done, but the player is off the field: they respawn once back (map design: Border). */
-    data class AwaitingReturn(val eliminatedBy: String, val startingGame: Boolean) : SpawnPhase
+    /**
+     * The respawn countdown is done, but the player is off the field ([outOfBounds]) or not at a
+     * spawn yet: they respawn once that is fixed (map design: Border, Respawn points).
+     */
+    data class AwaitingReturn(val eliminatedBy: String, val startingGame: Boolean, val outOfBounds: Boolean = true) : SpawnPhase
 
     /** Eliminated with no lives left; no respawn. */
     data class OutOfLives(val eliminatedBy: String) : SpawnPhase
@@ -108,4 +111,13 @@ sealed interface SessionEffect {
 
     /** The game must end (time ran out). */
     data object EndGameRequested : SessionEffect
+}
+
+/** Why a respawn waits (map design: Border, Respawn points). */
+enum class RespawnHold {
+    /** The player is off the field. */
+    OUT_OF_BOUNDS,
+
+    /** The player hasn't walked back to a spawn yet. */
+    AWAY_FROM_SPAWN,
 }

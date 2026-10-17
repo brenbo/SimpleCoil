@@ -38,6 +38,7 @@ import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.FragmentMapBinding
 import com.simplecoil.simplecoil.domain.map.AutoZoom
+import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.BorderTracker
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.GeoCircle
@@ -45,6 +46,9 @@ import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.HeadingFilter
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
+import com.simplecoil.simplecoil.domain.map.Spawn
+import com.simplecoil.simplecoil.domain.map.SpawnController
+import com.simplecoil.simplecoil.domain.team.TeamColors
 import com.simplecoil.simplecoil.hardware.location.CompassSensor
 import com.simplecoil.simplecoil.hardware.location.LocationUpdateListener
 import com.simplecoil.simplecoil.hardware.location.MapLocationManager
@@ -62,6 +66,7 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.FillLayer
 import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.Property
 import org.maplibre.android.style.layers.PropertyFactory
@@ -71,6 +76,8 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
+import org.maplibre.geojson.Polygon
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -118,6 +125,7 @@ class MapFragment : Fragment() {
     private val ticker = object : Runnable {
         override fun run() {
             updateVisibility()
+            renderSpawns()
             refreshTarget()
             // While connected, check for a new field every few seconds, so the host's edits
             // show up soon after they close the field map (the request is tiny when nothing changed)
@@ -130,13 +138,14 @@ class MapFragment : Fragment() {
     private val frame = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!framesRunning) return
+            if (container.spawnController.isFading()) renderSpawns()
             moveCamera()
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
 
     private val requestLocationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) enableGps(settings.isUseGPS)
+        if (granted) enableGps(wantsGps())
     }
 
     private val locationListener = object : LocationUpdateListener {
@@ -147,6 +156,7 @@ class MapFragment : Fragment() {
                 heading.onCourse(location.bearing.toDouble(), location.speed, container.clock())
             }
             container.borderController.onFix(LatLon(latitude, longitude), location.accuracy)
+            container.spawnController.onFix(LatLon(latitude, longitude), location.accuracy)
             renderPlayers()
             refreshTarget()
         }
@@ -207,6 +217,7 @@ class MapFragment : Fragment() {
                 launch { container.playerFieldStore.info.collect { showPhoto(it) } }
                 launch { container.playerFieldConfig.config.collect { showField(it) } }
                 launch { container.borderController.status.collect { showBorderStatus(it) } }
+                launch { container.spawnController.guide.collect { showGuide(it) } }
             }
         }
     }
@@ -219,7 +230,7 @@ class MapFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         binding?.mapView?.onResume()
-        enableGps(settings.isUseGPS)
+        enableGps(wantsGps())
         if (headingUp) startCompass()
         updateVisibility()
         handler.post(ticker)
@@ -301,6 +312,23 @@ class MapFragment : Fragment() {
     }
 
     private fun addFieldLayers(style: Style) {
+        // Spawns: a disc in the team's colour, fading as they move; the dashed way to yours
+        style.addSource(GeoJsonSource(SPAWNS_SOURCE))
+        style.addSource(GeoJsonSource(GUIDE_SOURCE))
+        style.addLayer(FillLayer(SPAWNS_FILL_LAYER, SPAWNS_SOURCE).withProperties(
+            PropertyFactory.fillColor(Expression.toColor(Expression.get(COLOR))),
+            PropertyFactory.fillOpacity(Expression.product(Expression.get(OPACITY), Expression.literal(SPAWN_FILL_OPACITY))),
+        ))
+        style.addLayer(LineLayer(SPAWNS_LINE_LAYER, SPAWNS_SOURCE).withProperties(
+            PropertyFactory.lineColor(Expression.toColor(Expression.get(COLOR))),
+            PropertyFactory.lineOpacity(Expression.get(OPACITY)),
+            PropertyFactory.lineWidth(2f),
+        ))
+        style.addLayer(LineLayer(GUIDE_LAYER, GUIDE_SOURCE).withProperties(
+            PropertyFactory.lineColor(GUIDE_COLOR.toColorInt()),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineDasharray(arrayOf(1.5f, 1.5f)),
+        ))
         style.addSource(GeoJsonSource(BORDER_SOURCE))
         style.addLayer(LineLayer(BORDER_LAYER, BORDER_SOURCE).withProperties(
             PropertyFactory.lineColor(BORDER_COLOR.toColorInt()),
@@ -336,13 +364,13 @@ class MapFragment : Fragment() {
                 refreshTarget()
             }
             is ClientEvent.ListPlayers -> {
-                enableGps(settings.isUseGPS)
+                enableGps(wantsGps())
                 // Hearing from the server: fetch its field if it has a new one
                 container.fieldImageryClient.syncSoon(container.gameState.serverIP)
             }
             // The game starts with the server's latest border and rules
             ClientEvent.StartGame -> container.fieldImageryClient.syncSoon(container.gameState.serverIP, force = true)
-            ClientEvent.GpsSettingChanged -> enableGps(settings.isUseGPS)
+            ClientEvent.GpsSettingChanged -> enableGps(wantsGps())
             ClientEvent.NetworkConnected, ClientEvent.NetworkDisconnected, ClientEvent.ServerCancel -> updateVisibility()
             else -> {}
         }
@@ -365,7 +393,16 @@ class MapFragment : Fragment() {
         renderPlayers()
     }
 
+    /**
+     * Track our position when the server shares GPS, or when the field needs it (a border to
+     * keep to, spawns to walk back to): those are checked on this phone, even with sharing off.
+     */
+    private fun wantsGps(): Boolean =
+        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true
+
     private fun sendLocation(fix: Location) {
+        // Only shared when the server asks for positions
+        if (!settings.isUseGPS) return
         if (fix.latitude == lastSentLatitude && fix.longitude == lastSentLongitude) return
         lastSentLatitude = fix.latitude
         lastSentLongitude = fix.longitude
@@ -374,7 +411,7 @@ class MapFragment : Fragment() {
     }
 
     private fun you(): LatLon? {
-        if (!settings.isUseGPS) return null
+        if (!tracking) return null
         val best = location.currentBestLocation ?: return null
         return LatLon(best.latitude, best.longitude)
     }
@@ -424,6 +461,8 @@ class MapFragment : Fragment() {
     /** Draws the field's border (or takes it away). */
     private fun showField(config: FieldConfig?) {
         field = config
+        if (isResumed) enableGps(wantsGps())
+        renderSpawns()
         val style = style ?: return
         val ring = config?.border?.ring()
         style.getSourceAs<GeoJsonSource>(BORDER_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(
@@ -431,6 +470,36 @@ class MapFragment : Fragment() {
         updateBorderVisibility()
         refreshTarget()
     }
+
+    /** Draws the spawns, in their team's colour, fading as they move; other teams' a little fainter. */
+    private fun renderSpawns() {
+        val style = style ?: return
+        val features = container.spawnController.shown().map { shown ->
+            val ring = Border.Circle(shown.spawn.point, shown.radiusMeters).ring().map { Point.fromLngLat(it.longitude, it.latitude) }
+            Feature.fromGeometry(Polygon.fromLngLats(listOf(ring))).also {
+                it.addStringProperty(COLOR, teamColor(shown.spawn.team))
+                it.addNumberProperty(OPACITY, shown.opacity * if (shown.mine) 1.0 else OTHER_TEAM_OPACITY)
+            }
+        }
+        style.getSourceAs<GeoJsonSource>(SPAWNS_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(features))
+    }
+
+    /** After an elimination with walk-back respawn: a dashed line and the distance to your nearest spawn. */
+    private fun showGuide(guide: SpawnController.Guide?) {
+        val me = you()
+        style?.getSourceAs<GeoJsonSource>(GUIDE_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(
+            if (guide != null && me != null) {
+                Feature.fromGeometry(LineString.fromLngLats(listOf(
+                    Point.fromLngLat(me.longitude, me.latitude), Point.fromLngLat(guide.target.longitude, guide.target.latitude))))
+            } else null)))
+        val banner = binding?.mapSpawnTv ?: return
+        val units = field?.rules?.units
+        banner.isVisible = guide != null && units != null
+        if (guide != null && units != null) banner.text = getString(R.string.map_go_to_spawn, units.format(guide.meters))
+    }
+
+    private fun teamColor(team: Int): String =
+        if (team == Spawn.ANYONE) ANYONE_COLOR else String.format(Locale.ROOT, "#%06X", TeamColors.colorOf(team) and 0xFFFFFF)
 
     private fun showBorderStatus(status: BorderTracker.Status?) {
         updateBorderVisibility()
@@ -597,6 +666,17 @@ class MapFragment : Fragment() {
         const val YOU_LAYER = "you"
         const val BORDER_SOURCE = "border"
         const val BORDER_LAYER = "border"
+        const val SPAWNS_SOURCE = "spawns"
+        const val SPAWNS_FILL_LAYER = "spawns-fill"
+        const val SPAWNS_LINE_LAYER = "spawns-line"
+        const val GUIDE_SOURCE = "spawn-guide"
+        const val GUIDE_LAYER = "spawn-guide"
+        const val COLOR = "color"
+        const val OPACITY = "opacity"
+        const val SPAWN_FILL_OPACITY = 0.3
+        const val OTHER_TEAM_OPACITY = 0.5
+        const val ANYONE_COLOR = "#FFFFFF"
+        const val GUIDE_COLOR = "#69F0AE"
         const val KIND = "kind"
         const val ICON_YOU = "player-you"
         const val ICON_TEAMMATE = "player-teammate"

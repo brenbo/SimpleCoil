@@ -373,7 +373,7 @@
     <string name="field_presets_error">Couldn\'t do that. Try again.</string>
     <string name="field_dialog_save">Save</string>
     <string name="field_dialog_cancel">Cancel</string>
-    <string name="rules_title">Out-of-bounds rules</string>
+    <string name="rules_title">Field rules</string>
     <string name="rules_penalty">When a player stays outside past the countdown</string>
     <string name="rules_penalty_disable">Blaster off until they\'re back</string>
     <string name="rules_penalty_health">Lose health until they\'re back</string>
@@ -396,6 +396,41 @@
     <string name="rules_section_map">Map</string>
     <string name="map_credit_short">Data provided by USGS</string>
     <string name="respawn_return_to_field">Get back on the field to respawn</string>
+    <string name="respawn_go_to_spawn">Walk to your spawn to respawn</string>
+    <string name="map_go_to_spawn">Walk to your spawn · %1$s</string>
+
+    <!-- Spawns on the server's field map (map design: Respawn points) -->
+    <string name="field_tool_spawns">Spawns</string>
+    <string name="field_spawn_team">Team: %1$s</string>
+    <string name="field_team_1">Red</string>
+    <string name="field_team_2">Blue</string>
+    <string name="field_team_3">Green</string>
+    <string name="field_team_4">Yellow</string>
+    <string name="field_team_anyone">Anyone</string>
+    <string name="field_auto_place">Auto-place</string>
+    <string name="field_hint_spawns">Tap to add a %1$s spawn. Tap a spawn to remove it. Undo removes the last one.</string>
+    <string name="field_auto_place_need_border">Draw a border first: spawns are placed inside it.</string>
+    <string name="field_auto_place_relaxed">The field is small, so some spawns are closer than the rules ask.</string>
+    <string name="field_auto_place_failed">Couldn\'t find room for the spawns. Try a bigger border or a smaller spawn.</string>
+    <string name="field_spawns_cleared">Spawns cleared.</string>
+    <plurals name="field_status_spawns">
+        <item quantity="one">%1$d spawn</item>
+        <item quantity="other">%1$d spawns</item>
+    </plurals>
+
+    <!-- The respawn rules -->
+    <string name="rules_section_respawn">Respawn</string>
+    <string name="rules_walk_back">Walk back to a spawn to respawn</string>
+    <string name="rules_start_at_spawn">Start the game at your spawn too</string>
+    <string name="rules_seconds_in_spawn">Seconds in the spawn to respawn (0–30)</string>
+    <string name="rules_spawn_radius">Spawn radius (%1$s)</string>
+    <string name="rules_spawns_per_team">Spawns per team for Auto-place (1–4)</string>
+    <string name="rules_enemy_spawn_share">Keep enemy spawns apart (percent of the field width)</string>
+    <string name="rules_enemy_clear">Moved spawns avoid enemies within (%1$s)</string>
+    <string name="rules_move_minutes">Move spawns every (minutes, 0 = never)</string>
+    <string name="rules_crossfade">Fade time when spawns move (0–30 s)</string>
+    <string name="rules_old_grace">Old spawn still works for (0–60 s)</string>
+    <string name="rules_shield_in_spawn">Respawn shield only inside the spawn</string>
     <string name="map_credit_title">Map data</string>
     <string name="field_map_my_location">My location</string>
     <string name="field_map_download">Download</string>

@@ -142,14 +142,19 @@ data class BorderRules(
 }
 
 /**
- * Everything about a field except its photo (map design: Map objects): the border and its
- * rules. The server sends it to every phone; it is small, so it changes without resending the
- * photo. Later phases add spawns, objectives and drops here.
+ * Everything about a field except its photo (map design: Map objects): the border, the
+ * respawn points and their rules. The server sends it to every phone; it is small, so it
+ * changes without resending the photo. Later phases add objectives and drops here.
  */
 data class FieldConfig(
     val name: String = "",
     val border: Border? = null,
     val rules: BorderRules = BorderRules(),
+    /** The respawn points (map design: Respawn points). */
+    val spawns: List<Spawn> = emptyList(),
+    val spawnRules: SpawnRules = SpawnRules(),
+    /** Counts the times the server moved the spawns this game, so phones can fade old into new. */
+    val spawnGeneration: Int = 0,
 ) {
     /** Changes whenever anything in the config does; phones compare it to skip a download. */
     val id: String by lazy {
@@ -159,6 +164,9 @@ data class FieldConfig(
 
     fun toJson(): JSONObject {
         val json = JSONObject().put("version", VERSION).put("name", name).put("rules", rules.toJson())
+            .put("spawns", Spawn.listToJson(spawns))
+            .put("spawnRules", spawnRules.toJson())
+            .put("spawnGeneration", spawnGeneration)
         when (val b = border) {
             is Border.Circle -> json.put("border", JSONObject().put("type", "circle")
                 .put("lat", b.center.latitude).put("lon", b.center.longitude).put("radius", b.radiusMeters))
@@ -187,7 +195,14 @@ data class FieldConfig(
                     else -> null // a border type from a newer server: play without it
                 }
             }
-            FieldConfig(json.optString("name", ""), border, BorderRules.fromJson(json.optJSONObject("rules")))
+            FieldConfig(
+                name = json.optString("name", ""),
+                border = border,
+                rules = BorderRules.fromJson(json.optJSONObject("rules")),
+                spawns = Spawn.listFromJson(json.optJSONArray("spawns")),
+                spawnRules = SpawnRules.fromJson(json.optJSONObject("spawnRules")),
+                spawnGeneration = json.optInt("spawnGeneration", 0),
+            )
         } catch (e: JSONException) {
             throw IOException("bad field config", e)
         } catch (e: IllegalArgumentException) {

@@ -312,7 +312,7 @@ class BlasterSessionEngine(
         }
         _state.update { it.copy(gameInProgress = false, spawn = SpawnPhase.None, shieldSeconds = null, clock = GameClock.Stopped(countdownText)) }
         outOfBounds = false
-        respawnHeld = false
+        respawnHolds.clear()
         if (reloading == RELOADING_OUT_OF_BOUNDS) reloading = RELOADING_ELIMINATED
         startReload(RELOADING_ELIMINATED)
     }
@@ -409,14 +409,33 @@ class BlasterSessionEngine(
     var outOfBounds = false
         private set
 
-    /** The player is off the field: a respawn waits until they are back. */
-    var respawnHeld = false
-        private set
+    private val respawnHolds = HashSet<RespawnHold>()
 
-    fun setRespawnHeld(held: Boolean) {
-        if (respawnHeld == held) return
-        respawnHeld = held
-        if (!held && _state.value.spawn is SpawnPhase.AwaitingReturn) spawned()
+    /** Something keeps the player from respawning: off the field, or not at a spawn yet. */
+    val respawnHeld: Boolean get() = respawnHolds.isNotEmpty()
+
+    /**
+     * Holds (or lets go of) the respawn for [reason]. A respawn countdown that ends while held
+     * waits ([SpawnPhase.AwaitingReturn]) until nothing holds it, then the player spawns.
+     */
+    fun holdRespawn(reason: RespawnHold, held: Boolean) {
+        val changed = if (held) respawnHolds.add(reason) else respawnHolds.remove(reason)
+        if (!changed) return
+        val waiting = _state.value.spawn as? SpawnPhase.AwaitingReturn ?: return
+        if (respawnHolds.isEmpty()) {
+            spawned()
+        } else {
+            _state.update { it.copy(spawn = waiting.copy(outOfBounds = RespawnHold.OUT_OF_BOUNDS in respawnHolds)) }
+        }
+    }
+
+    /** Ends the respawn shield now (it is only good inside the spawn). */
+    fun endRespawnShield() {
+        if (!isShielded) return
+        shieldTimer?.cancel()
+        shieldTimer = null
+        isShielded = false
+        _state.update { it.copy(shieldSeconds = null) }
     }
 
     fun setOutOfBounds(disabled: Boolean) {
@@ -490,8 +509,10 @@ class BlasterSessionEngine(
             },
             onFinish = {
                 if (respawnHeld) {
-                    // Off the field: respawn once the player is back on it
-                    _state.update { it.copy(spawn = SpawnPhase.AwaitingReturn(eliminatedBy, startingGameLabel)) }
+                    // Off the field, or not at a spawn yet: respawn once that is fixed
+                    _state.update {
+                        it.copy(spawn = SpawnPhase.AwaitingReturn(eliminatedBy, startingGameLabel, RespawnHold.OUT_OF_BOUNDS in respawnHolds))
+                    }
                 } else {
                     spawned()
                 }

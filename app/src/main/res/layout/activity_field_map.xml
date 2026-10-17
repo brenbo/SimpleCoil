@@ -84,7 +84,41 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/field_tool_walk" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/field_tool_spawns_button"
+                style="@style/ServerSegment"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/field_tool_spawns" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- With the Spawns tool: which team a tap adds a spawn for, and Auto-place. -->
+        <LinearLayout
+            android:id="@+id/field_spawn_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/field_spawn_team_button"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="2dp" />
+
+            <Button
+                android:id="@+id/field_auto_place_button"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="2dp"
+                android:text="@string/field_auto_place" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

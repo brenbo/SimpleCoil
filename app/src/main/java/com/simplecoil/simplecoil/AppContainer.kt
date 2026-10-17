@@ -23,9 +23,11 @@ import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
 import com.simplecoil.simplecoil.domain.map.BorderController
+import com.simplecoil.simplecoil.domain.map.SpawnController
 import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
 import com.simplecoil.simplecoil.domain.session.GameConfig
 import com.simplecoil.simplecoil.domain.session.RepositoryGameConfig
+import com.simplecoil.simplecoil.domain.session.RespawnHold
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsManager
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsPlayer
@@ -136,6 +138,23 @@ class AppContainer(private val app: Application) {
         FieldImageryClient(playerFieldStore, appScope, dispatchers.io, clock, configs = playerFieldConfig)
     }
 
+    /** Walk-back respawn and moving spawns on this phone (map design: Respawn points). */
+    val spawnController: SpawnController by lazy {
+        val engine = sessionEngine
+        SpawnController(
+            field = playerFieldConfig.config,
+            session = engine.state,
+            actions = object : SpawnController.Actions {
+                override fun holdRespawn(held: Boolean) = engine.holdRespawn(RespawnHold.AWAY_FROM_SPAWN, held)
+                override fun endShield() = engine.endRespawnShield()
+            },
+            myTeam = { settings.teamLayout.let { it.teamOf(players.playerID) to it.mode.isFreeForAll } },
+            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            scope = appScope,
+            clock = clock,
+        )
+    }
+
     /** Warns and penalises a player who leaves the field during a game (map design: Border). */
     val borderController: BorderController by lazy {
         val engine = sessionEngine
@@ -143,7 +162,7 @@ class AppContainer(private val app: Application) {
             field = playerFieldConfig.config,
             penalties = object : BorderController.Penalties {
                 override fun setOutOfBounds(disabled: Boolean) = engine.setOutOfBounds(disabled)
-                override fun holdRespawn(held: Boolean) = engine.setRespawnHeld(held)
+                override fun holdRespawn(held: Boolean) = engine.holdRespawn(RespawnHold.OUT_OF_BOUNDS, held)
                 override fun damage(amount: Int) = engine.applyOutOfBoundsDamage(amount)
                 override fun eliminate() = engine.eliminateOutOfBounds()
             },
