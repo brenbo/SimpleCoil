@@ -39,10 +39,12 @@ class ObjectiveOverlay(private val context: Context, private val layer: FrameLay
 
     private val views = HashMap<String, PointView>()
     private var radiusMeters = 10.0
+    private var letters = true
 
     /** Shows [objectives], each [radius] metres in radius. */
-    fun update(objectives: List<ObjectiveState>, radius: Double) {
+    fun update(objectives: List<ObjectiveState>, radius: Double, letters: Boolean = true) {
         radiusMeters = radius
+        this.letters = letters
         val shown = objectives.filter { it.active || it.next }
         val ids = shown.map { it.id }.toSet()
         views.keys.filter { it !in ids }.forEach { layer.removeView(views.remove(it)) }
@@ -109,6 +111,8 @@ class ObjectiveOverlay(private val context: Context, private val layer: FrameLay
                 box.set(inset, inset, width - inset, height - inset)
                 canvas.drawArc(box, -90f, (o.progress * 360).toFloat(), false, ring)
             }
+            if (!letters) return
+
             letter.textSize = (r * 0.9f).coerceIn(12f * density, 28f * density)
             canvas.drawText(o.id, r, r - (letter.descent() + letter.ascent()) / 2, letter)
         }

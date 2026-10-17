@@ -758,7 +758,7 @@ class FieldMapActivity : AppCompatActivity() {
                     // A field preset is the place: border, spawns, points and photo. The game's mode and
                     // rules stay as set on the server's main screen (or by a game preset).
                     val kept = saved.copy(rules = config.rules, spawnRules = config.spawnRules, loadout = config.loadout,
-                        mode = config.mode, objectiveRules = config.objectiveRules)
+                        mode = config.mode, objectiveRules = config.objectiveRules, modeRules = config.modeRules)
                     if (pack != null) container.serverFieldStore.save(pack) else container.serverFieldStore.clear()
                     container.serverFieldConfig.save(kept)
                     kept

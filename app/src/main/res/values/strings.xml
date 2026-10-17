@@ -412,7 +412,10 @@
     <string name="mode_enemy_capturing">Hostiles taking %1$s</string>
     <string name="mode_secured">%1$s secured</string>
     <string name="mode_lost">%1$s lost</string>
-    <string name="mode_moved">Hardpoint moved to %1$s</string>
+    <string name="mode_hp_contested">Point contested</string>
+    <string name="mode_hp_holding">Holding the point</string>
+    <string name="mode_hp_secured">Point taken</string>
+    <string name="mode_hp_moved">The point moved</string>
     <string name="mode_victory">Victory</string>
     <string name="mode_defeat">Defeat</string>
     <string name="field_map_hint">Find your field, draw its border, then download the photo. Phones get both when they join.</string>
@@ -511,7 +514,6 @@
     <string name="map_drop_claiming">Claiming %1$s · %2$d</string>
     <string name="map_drop_claimed">%1$s!</string>
     <string name="map_killstreak">Killstreak: %1$s!</string>
-    <string name="map_longest_shot">Longest shot: %1$s · %2$s</string>
 
     <!-- The loadout rules -->
     <string name="rules_section_loadout">Ammo and drops</string>

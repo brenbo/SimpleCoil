@@ -48,6 +48,7 @@ data class GamePreset(
     /** [field] with this preset's mode and rules; its border, spawns and points stay. */
     fun applyTo(field: FieldConfig): FieldConfig = field.copy(
         mode = mode, objectiveRules = objectiveRules, rules = borderRules, spawnRules = spawnRules, loadout = loadout,
+        modeRules = if (mode.hasObjectives) field.modeRules + (mode to objectiveRules) else field.modeRules,
     )
 
     fun toJson(): JSONObject = JSONObject()

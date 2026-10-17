@@ -47,7 +47,6 @@ import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.map.AutoZoom
 import com.simplecoil.simplecoil.domain.map.BorderTracker
-import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.GeoCircle
 import com.simplecoil.simplecoil.domain.map.GeoMath
@@ -55,6 +54,8 @@ import com.simplecoil.simplecoil.domain.map.HeadingFilter
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
 import com.simplecoil.simplecoil.domain.map.SpawnController
+import com.simplecoil.simplecoil.data.repository.GameStateRepository
+import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.ModeController
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.hardware.location.CompassSensor
@@ -155,6 +156,7 @@ class MapFragment : Fragment() {
             renderDrops()
             showDropBanner()
             showModeBanner()
+            if (!inGame()) objectiveOverlay?.clear()
             refreshTarget()
             location.currentBestLocation?.takeIf { tracking && (SystemClock.elapsedRealtimeNanos() - it.elapsedRealtimeNanos) / 1_000_000 < FRESH_FIX_MILLIS }
                 ?.let { sendLocation(it) }
@@ -699,8 +701,8 @@ class MapFragment : Fragment() {
     }
 
     private fun renderMode(state: ModeState?) {
-        if (state == null || !state.mode.hasObjectives) objectiveOverlay?.clear()
-        else objectiveOverlay?.update(state.objectives, state.radiusMeters)
+        if (state == null || !state.mode.hasObjectives || !inGame()) objectiveOverlay?.clear()
+        else objectiveOverlay?.update(state.objectives, state.radiusMeters, letters = state.mode != GameMode.HARDPOINT)
         showModeBanner()
     }
 
@@ -739,12 +741,16 @@ class MapFragment : Fragment() {
     /** One line about you and the points: who won, a point's news, or the point you stand on. */
     private fun modeStatus(state: ModeState, myTeam: Int): String? {
         if (state.winner != 0) return getString(if (state.winner == myTeam) R.string.mode_victory else R.string.mode_defeat)
+        // After the game, only who won: nobody is taking or holding anything any more
+        if (!inGame()) return null
+        // Hardpoint has one point at a time, so it goes unnamed
+        if (state.mode == GameMode.HARDPOINT) return hardpointStatus(state, myTeam)
         val notice = lastModeNotice?.takeIf { container.clock() - lastModeNoticeAt < NOTICE_MILLIS }
         if (notice != null) return when (notice) {
             is ModeController.Notice.Secured -> getString(R.string.mode_secured, notice.id)
             is ModeController.Notice.Lost -> getString(R.string.mode_lost, notice.id)
             is ModeController.Notice.UnderAttack -> getString(R.string.mode_enemy_capturing, notice.id)
-            is ModeController.Notice.Moved -> getString(R.string.mode_moved, notice.id)
+            is ModeController.Notice.Moved -> getString(R.string.mode_hp_moved)
         }
         val here = you() ?: return null
         val on = state.objectives.firstOrNull { it.active && GeoMath.distanceMeters(here, it.point) <= state.radiusMeters } ?: return null
@@ -756,38 +762,52 @@ class MapFragment : Fragment() {
         }
     }
 
+    private fun hardpointStatus(state: ModeState, myTeam: Int): String? {
+        val notice = lastModeNotice?.takeIf { container.clock() - lastModeNoticeAt < NOTICE_MILLIS }
+        when (notice) {
+            is ModeController.Notice.Secured -> return getString(R.string.mode_hp_secured)
+            is ModeController.Notice.Moved -> return getString(R.string.mode_hp_moved)
+            else -> {}
+        }
+        val here = you() ?: return null
+        val on = state.objectives.firstOrNull { it.active && GeoMath.distanceMeters(here, it.point) <= state.radiusMeters } ?: return null
+        return when {
+            on.contested -> getString(R.string.mode_hp_contested)
+            on.owner == myTeam -> getString(R.string.mode_hp_holding)
+            else -> null
+        }
+    }
+
+    private fun inGame() = container.gameState.gameState != GameStateRepository.GAME_STATE_NONE
+
     private fun renderDrops() {
         dropOverlay?.update(container.loadoutController.visibleDrops(), container.fieldImageryClient.serverNow())
     }
 
-    /** Claiming a drop beats a fresh notice, which beats the last game's longest shot. */
+    /** Claiming a drop beats a fresh notice. (The longest shot is on the scoreboard.) */
     private fun showDropBanner() {
         val banner = binding?.mapDropTv ?: return
         val context = context ?: return
         val claiming = container.loadoutController.claiming.value
         val notice = lastNotice?.takeIf { container.clock() - lastNoticeAt < NOTICE_MILLIS }
-        val longest = container.loadoutController.longestShot.value
         val text = when {
             claiming != null -> getString(R.string.map_drop_claiming, DropOverlay.name(context, claiming.drop.kind), claiming.secondsLeft)
             notice is LoadoutController.Notice.DropIncoming -> getString(R.string.map_drop_incoming, DropOverlay.name(context, notice.kind))
             notice is LoadoutController.Notice.Claimed -> getString(R.string.map_drop_claimed, DropOverlay.name(context, notice.kind))
             notice is LoadoutController.Notice.Killstreak -> getString(R.string.map_killstreak, DropOverlay.name(context, notice.kind))
-            longest != null -> getString(R.string.map_longest_shot, longest.shooterName,
-                (field?.rules?.units ?: DistanceUnits.FEET).format(longest.meters))
             else -> null
         }
         banner.text = text
         banner.isVisible = text != null
     }
 
-    /** After a game: the longest shot as a line from shooter to target, and in the banner. */
+    /** After a game: the longest shot as a line from shooter to target (its names and distance are on the scoreboard). */
     private fun showLongestShot(shot: LongestShot?) {
         style?.getSourceAs<GeoJsonSource>(LONGEST_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(
             shot?.let {
                 Feature.fromGeometry(LineString.fromLngLats(listOf(
                     Point.fromLngLat(it.from.longitude, it.from.latitude), Point.fromLngLat(it.to.longitude, it.to.latitude))))
             })))
-        showDropBanner()
     }
 
     /** Puts each other player's marker where they are on screen. */

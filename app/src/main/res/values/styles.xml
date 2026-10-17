@@ -37,6 +37,17 @@
         <item name="android:paddingEnd">4dp</item>
     </style>
 
+    <!-- The field map's five tools in a row: the text shrinks to fit a narrow phone instead of cutting off -->
+    <style name="FieldToolSegment" parent="ServerSegment">
+        <item name="android:letterSpacing">0</item>
+        <item name="android:paddingStart">2dp</item>
+        <item name="android:paddingEnd">2dp</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">8sp</item>
+        <item name="autoSizeMaxTextSize">12sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
     <!-- The dedicated server's home screen cards (map design: Dedicated server settings) -->
     <style name="ServerCard">
         <item name="android:layout_width">match_parent</item>

@@ -53,9 +53,12 @@ object ObjectivePlanner {
         }
     }
 
-    /** How many points [mode] gets on [border]: the rules' count, or by the field's size. */
+    /**
+     * How many points [mode] gets on [border]: Domination's by the rules' count or the field's size;
+     * Hardpoint always moves between a few spots, by the field's size (one is live at a time).
+     */
     fun count(mode: GameMode, border: Border, rules: ObjectiveRules): Int {
-        if (rules.pointCount > 0) return rules.pointCount
+        if (rules.pointCount > 0 && mode != GameMode.HARDPOINT) return rules.pointCount
         val area = areaSquareMeters(border)
         val bySize = when {
             area < rules.smallFieldSquareMeters -> 1

@@ -69,41 +69,41 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/field_tool_circle_button"
-                style="@style/ServerSegment"
+                style="@style/FieldToolSegment"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/field_tool_circle" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/field_tool_polygon_button"
-                style="@style/ServerSegment"
+                style="@style/FieldToolSegment"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/field_tool_polygon" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/field_tool_walk_button"
-                style="@style/ServerSegment"
+                style="@style/FieldToolSegment"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/field_tool_walk" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/field_tool_spawns_button"
-                style="@style/ServerSegment"
+                style="@style/FieldToolSegment"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/field_tool_spawns" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/field_tool_objectives_button"
-                style="@style/ServerSegment"
+                style="@style/FieldToolSegment"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_weight="1"
                 android:text="@string/field_tool_objectives" />
         </com.google.android.material.button.MaterialButtonToggleGroup>

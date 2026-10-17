@@ -26,6 +26,7 @@ import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.GeoMath
+import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.ModeEngine
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
@@ -144,7 +145,10 @@ class LiveGame(
     /** [base] with its capture points: the host's, or placed now by field size when it left them to the server. */
     private fun withObjectives(base: FieldConfig): FieldConfig {
         val border = base.border
-        if (!base.mode.hasObjectives || border == null || base.objectives.isNotEmpty()) return base
+        if (!base.mode.hasObjectives || border == null) return base
+        // The host's points, unless Hardpoint has too few to move between
+        val enough = if (base.mode == GameMode.HARDPOINT) base.objectives.size >= 2 else base.objectives.isNotEmpty()
+        if (enough) return base
         val count = ObjectivePlanner.count(base.mode, border, base.objectiveRules)
         val placed = ObjectivePlanner.place(border, count, base.objectiveRules, base.spawns, base.spawnRules.radiusMeters,
             base.rules.edgeBufferMeters, random)

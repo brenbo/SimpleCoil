@@ -131,6 +131,10 @@ class ModesTest {
         assertEquals(listOf(a, b), back.objectives)
         assertEquals(rules, back.objectiveRules)
         assertEquals(GameMode.CLASSIC, FieldConfig.fromJson(JSONObject()).mode)
+        // Each mode's settings come back, so switching modes and back keeps them
+        val both = config.copy(modeRules = mapOf(GameMode.DOMINATION to rules, GameMode.HARDPOINT to ObjectiveRules.defaultsFor(GameMode.HARDPOINT)))
+        assertEquals(both.modeRules, FieldConfig.fromJson(both.toJson()).modeRules)
+        assertEquals(ObjectiveRules.MIN_RADIUS_METERS, ObjectiveRules(radiusMeters = 0.5).clamped().radiusMeters, 0.0)
     }
 
     // Placement
@@ -143,6 +147,8 @@ class ModesTest {
         assertEquals(3, ObjectivePlanner.count(GameMode.DOMINATION, Border.Circle(center, 100.0), rules))
         assertEquals(5, ObjectivePlanner.count(GameMode.DOMINATION, Border.Circle(center, 100.0), rules.copy(pointCount = 5)))
         assertEquals(5, ObjectivePlanner.count(GameMode.HARDPOINT, Border.Circle(center, 100.0), rules))
+        // Hardpoint always moves between spots, whatever the count says
+        assertEquals(3, ObjectivePlanner.count(GameMode.HARDPOINT, Border.Circle(center, 25.0), rules.copy(pointCount = 1)))
         val square = Border.Polygon(listOf(at(0.0, 0.0), at(0.0, 100.0), at(100.0, 100.0), at(100.0, 0.0)))
         assertEquals(10_000.0, ObjectivePlanner.areaSquareMeters(square), 50.0)
     }

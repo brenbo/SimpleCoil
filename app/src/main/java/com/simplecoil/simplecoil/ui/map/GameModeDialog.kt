@@ -50,6 +50,9 @@ object GameModeDialog {
         val areaFactor = if (feet) SQUARE_FEET_PER_SQUARE_METER else 1.0
         var mode = config.mode
         val start = config.objectiveRules
+        // Each mode keeps its own settings: switching to another and back finds them as they were
+        val remembered = config.modeRules.toMutableMap()
+        if (config.mode.hasObjectives) remembered[config.mode] = start
 
         fun put(field: EditText, value: Int) = field.setText(String.format(Locale.ROOT, "%d", value))
         fun fill(r: ObjectiveRules) {
@@ -115,6 +118,9 @@ object GameModeDialog {
                 GameMode.HARDPOINT -> R.string.mode_about_hardpoint
             })
             d.modeSettings.isVisible = mode.hasObjectives
+            // Hardpoint moves between spots chosen by field size: one is live at a time
+            d.modePointsLabel.isVisible = domination
+            d.modePointsEt.isVisible = domination
             d.modeCaptureLabel.isVisible = domination
             d.modeCaptureEt.isVisible = domination
             d.modeFasterSwitch.isVisible = domination
@@ -133,13 +139,14 @@ object GameModeDialog {
         showMode()
         markChanged()
         d.modeGroup.setOnCheckedChangeListener { _, id ->
-            // Picking a mode loads its defaults
+            // Picking a mode loads its settings as last saved, or its defaults
+            if (mode.hasObjectives) remembered[mode] = read()
             mode = when (id) {
                 R.id.mode_domination -> GameMode.DOMINATION
                 R.id.mode_hardpoint -> GameMode.HARDPOINT
                 else -> GameMode.CLASSIC
             }
-            fill(ObjectiveRules.defaultsFor(mode))
+            fill(remembered[mode] ?: ObjectiveRules.defaultsFor(mode))
             showMode()
             markChanged()
         }
@@ -162,17 +169,15 @@ object GameModeDialog {
                 if (mode.hasObjectives && config.border == null) {
                     Toast.makeText(context.applicationContext, R.string.mode_needs_border, Toast.LENGTH_LONG).show()
                 }
-                onSave(config.copy(mode = mode, objectiveRules = read()))
+                val rules = if (mode.hasObjectives) read() else config.objectiveRules
+                if (mode.hasObjectives) remembered[mode] = rules
+                onSave(config.copy(mode = mode, objectiveRules = rules, modeRules = remembered.toMap()))
             }
-            .setNeutralButton(R.string.mode_reset, null)
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .create()
-        dialog.setOnShowListener {
-            // Reset keeps the sheet open
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                fill(ObjectiveRules.defaultsFor(mode))
-                markChanged()
-            }
+        d.modeResetButton.setOnClickListener {
+            fill(ObjectiveRules.defaultsFor(mode))
+            markChanged()
         }
         dialog.show()
     }

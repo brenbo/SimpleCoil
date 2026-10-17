@@ -208,6 +208,16 @@
                     android:inputType="number"
                     android:maxLength="7" />
             </LinearLayout>
+
+            <!-- In the sheet, not beside Save and Cancel: three buttons there don't fit and stack -->
+            <Button
+                android:id="@+id/mode_reset_button"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="@string/mode_reset" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -92,7 +92,7 @@ data class ObjectiveRules(
         pointCount = pointCount.coerceIn(0, 5),
         smallFieldSquareMeters = smallFieldSquareMeters.coerceIn(100.0, 1_000_000.0),
         largeFieldSquareMeters = largeFieldSquareMeters.coerceIn(smallFieldSquareMeters.coerceIn(100.0, 1_000_000.0), 1_000_000.0),
-        radiusMeters = radiusMeters.coerceIn(8.0, 30.0),
+        radiusMeters = radiusMeters.coerceIn(MIN_RADIUS_METERS, 30.0),
         captureSeconds = captureSeconds.coerceIn(5, 60),
         pointsPerTick = pointsPerTick.coerceIn(1, 10),
         tickSeconds = tickSeconds.coerceIn(1, 10),
@@ -102,6 +102,9 @@ data class ObjectiveRules(
     )
 
     companion object {
+        /** About 5 ft: a point can be as small as a doorway. */
+        const val MIN_RADIUS_METERS = 1.5
+
         /**
          * What picking [mode] loads (map design: Mode first). Hardpoint scores every second
          * for the one point, so a held point wins in a couple of minutes.
