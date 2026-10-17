@@ -790,9 +790,13 @@ class GameViewModelTest {
         assertEquals(ScoreMatrixState.Loading, vm.scoreMatrixState)
         emitNetwork(matrixReply(41, WireMatrixCell(1, 17, 1)))
         assertTrue(vm.scoreMatrixState is ScoreMatrixState.Ready)
-        // The server was reset: the last game's matrix is gone, and an open matrix asks again
+        // The server was reset: the scoreboard closes and the last game's matrix is gone
         advance(GameViewModel.SCORE_MATRIX_MIN_INTERVAL_MS)
         emitNetwork(ClientEvent.ListPlayers(null, 0, SessionPhase.LOBBY.wireValue, 0))
+        assertFalse(vm.scoreboardVisible)
+        assertEquals(null, vm.scoreMatrixState)
+        // Opened again, it asks for the new one
+        openMatrix()
         assertEquals(ScoreMatrixState.Loading, vm.scoreMatrixState)
         verify(client, times(2)).sendTCPMessage(matrixRequest)
         emitNetwork(matrixReply(null))

@@ -1369,6 +1369,8 @@ class GameViewModel(
             screen?.showScore(0)
             screen?.showTeamScore(0)
             onSessionReset()
+            // The last game's scoreboard (and its Victory or Defeat) goes with it
+            closeScoreboard()
         }
         serverPhase = phase
         screen?.rebuildAdminMenu()
