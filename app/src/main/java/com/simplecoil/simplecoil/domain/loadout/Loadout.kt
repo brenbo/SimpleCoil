@@ -207,3 +207,29 @@ data class LoadoutRules(
         }
     }
 }
+
+/** Another player as a UAV shows them: id, team and where they were. */
+data class UavPlayer(val playerId: Int, val team: Int, val point: LatLon) {
+    companion object {
+        fun listFromJson(json: String): List<UavPlayer> {
+            val players = JSONObject(json).getJSONArray("players")
+            return (0 until players.length()).map {
+                val p = players.getJSONArray(it)
+                UavPlayer(p.getInt(0), p.getInt(1), LatLon(p.getDouble(2), p.getDouble(3)))
+            }
+        }
+    }
+}
+
+/** The game's longest shot (map design: Longest shot): who, whom, how far, and from where to where. */
+data class LongestShot(val shooterName: String, val victimName: String, val meters: Double, val from: LatLon, val to: LatLon) {
+    companion object {
+        fun fromJson(json: String): LongestShot? {
+            val longest = JSONObject(json).optJSONObject("longest") ?: return null
+            val from = longest.getJSONArray("from")
+            val to = longest.getJSONArray("to")
+            return LongestShot(longest.optString("shooterName"), longest.optString("victimName"), longest.getDouble("meters"),
+                LatLon(from.getDouble(0), from.getDouble(1)), LatLon(to.getDouble(0), to.getDouble(1)))
+        }
+    }
+}

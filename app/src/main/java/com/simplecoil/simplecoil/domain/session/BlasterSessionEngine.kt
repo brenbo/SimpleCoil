@@ -201,9 +201,9 @@ class BlasterSessionEngine(
     /** Player settings changed: reapply recoil and move off a shot mode that's no longer allowed. */
     fun applyPlayerSettings() {
         applyCurrentRecoilSetting()
-        ShotModePolicy.coerceToAllowed(currentShotMode, config.allowSingleShotMode, config.allowBurstShotMode,
-            config.allowAutoShotMode)?.let { setShotMode(it) }
-        val allowedModes = listOf(config.allowSingleShotMode, config.allowBurstShotMode, config.allowAutoShotMode).count { it }
+        ShotModePolicy.coerceToAllowed(currentShotMode, allowSingle(), allowBurst(),
+            allowAuto())?.let { setShotMode(it) }
+        val allowedModes = listOf(allowSingle(), allowBurst(), allowAuto()).count { it }
         _state.update {
             it.copy(shotModeChangeable = allowedModes > 1,
                 recoilChangeable = config.serverRecoilSetting == GameSettingsRepository.RECOIL_SETTING_DEFAULT)
@@ -221,8 +221,8 @@ class BlasterSessionEngine(
 
     /** The thumb button or the shot mode tile: move to the next allowed shot mode. */
     fun cycleShotMode() {
-        ShotModePolicy.nextOnThumb(currentShotMode, config.allowSingleShotMode, config.allowBurstShotMode,
-            config.allowAutoShotMode)?.let { setShotMode(it) }
+        ShotModePolicy.nextOnThumb(currentShotMode, allowSingle(), allowBurst(),
+            allowAuto())?.let { setShotMode(it) }
     }
 
     /** The "blaster disconnected" dialog was dismissed by a reconnect: re-send recoil (§1.6: +600 ms). */
@@ -313,6 +313,9 @@ class BlasterSessionEngine(
         _state.update { it.copy(gameInProgress = false, spawn = SpawnPhase.None, shieldSeconds = null, clock = GameClock.Stopped(countdownText)) }
         outOfBounds = false
         respawnHolds.clear()
+        extraLives = 0
+        loseDeathPowerUps()
+        _state.update { it.copy(extraLives = 0) }
         reloadHoldTimer?.cancel()
         reloadHoldTimer = null
         if (reloading == RELOADING_OUT_OF_BOUNDS) reloading = RELOADING_ELIMINATED
@@ -365,6 +368,12 @@ class BlasterSessionEngine(
        state here. */
     private fun startReload(reloadStatus: Int = RELOADING_STARTED) {
         if (reloading != RELOADING_NONE) return
+        if (reloadStatus == RELOADING_STARTED && reserve == 0) {
+            // Limited ammo and none left: no reload until a refill
+            emit(SessionEffect.Sound(SessionSound.EMPTY))
+            emit(SessionEffect.Toast(SessionToast.OUT_OF_AMMO))
+            return
+        }
         reloading = reloadStatus
         _state.update { it.copy(reloadBarShown = true) }
         blaster.startReload(config.playerId)
@@ -378,6 +387,8 @@ class BlasterSessionEngine(
             reloading = RELOADING_OUT_OF_BOUNDS
             return
         }
+        // A reload the player asked for uses a magazine from a limited reserve; a respawn doesn't
+        if (reloading == RELOADING_STARTED) reserve?.let { setAmmoReserve((it - 1).coerceAtLeast(0)) }
         reloading = RELOADING_FINISHING
         emptyTriggerCount = 0
         Log.d(TAG, "Finishing reload")
@@ -434,6 +445,70 @@ class BlasterSessionEngine(
         } else {
             _state.update { it.copy(spawn = waiting.copy(outOfBounds = RespawnHold.OUT_OF_BOUNDS in respawnHolds)) }
         }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Loadout (map design: Ammo, drops and power-ups)
+    // ---------------------------------------------------------------------------------------
+
+    /** Magazines left with limited ammo; null for unlimited. */
+    private var reserve: Int? = null
+
+    /** Shot modes a power-up allows on top of the server's, until the player is eliminated. */
+    private var grantedShotModes = emptySet<Int>()
+    private var overshield = 0
+    private var extraLives = 0
+
+    /** Limited ammo: [magazines] left (null: unlimited, as before). */
+    fun setAmmoReserve(magazines: Int?) {
+        reserve = magazines
+        _state.update { it.copy(reserve = magazines) }
+    }
+
+    /** Full auto or burst from a drop or killstreak, until the player is eliminated; switches to it. */
+    fun grantShotMode(shotMode: Int) {
+        grantedShotModes = grantedShotModes + shotMode
+        _state.update { it.copy(poweredShotMode = shotMode) }
+        updateShotModeChangeable()
+        setShotMode(shotMode)
+    }
+
+    fun healFull() {
+        if (config.gameState != GameStateRepository.GAME_STATE_RUNNING) return
+        health = config.fullHealth
+        _state.update { it.copy(health = health) }
+    }
+
+    /** The next [hits] hits do nothing (lost when eliminated). */
+    fun addOvershield(hits: Int) {
+        overshield += hits
+        _state.update { it.copy(overshieldHits = overshield) }
+    }
+
+    /** The next elimination respawns in place. */
+    fun addExtraLife() {
+        extraLives++
+        _state.update { it.copy(extraLives = extraLives) }
+    }
+
+    /** Eliminated: full auto, burst and overshield go; the shot mode falls back to an allowed one. */
+    private fun loseDeathPowerUps() {
+        overshield = 0
+        if (grantedShotModes.isNotEmpty()) {
+            grantedShotModes = emptySet()
+            updateShotModeChangeable()
+            ShotModePolicy.coerceToAllowed(currentShotMode, allowSingle(), allowBurst(), allowAuto())?.let { setShotMode(it) }
+        }
+        _state.update { it.copy(overshieldHits = 0, poweredShotMode = null) }
+    }
+
+    private fun allowSingle() = config.allowSingleShotMode || GameSettingsRepository.SHOT_MODE_SINGLE in grantedShotModes
+    private fun allowBurst() = config.allowBurstShotMode || GameSettingsRepository.SHOT_MODE_BURST in grantedShotModes
+    private fun allowAuto() = config.allowAutoShotMode || GameSettingsRepository.SHOT_MODE_FULL_AUTO in grantedShotModes
+
+    private fun updateShotModeChangeable() {
+        val allowedModes = listOf(allowSingle(), allowBurst(), allowAuto()).count { it }
+        _state.update { it.copy(shotModeChangeable = allowedModes > 1) }
     }
 
     /** Ends the respawn shield now (it is only good inside the spawn). */
@@ -668,7 +743,14 @@ class BlasterSessionEngine(
             }
         }
         if (hit.healthRemoved != 0 && config.gameState == GameStateRepository.GAME_STATE_RUNNING) {
-            applyDamage(hit.healthRemoved, hit.hitById, useNetwork)
+            if (overshield > 0) {
+                // An overshield takes the hit instead
+                overshield--
+                _state.update { it.copy(overshieldHits = overshield) }
+                emit(SessionEffect.Sound(SessionSound.HIT_SHIELDED))
+            } else {
+                applyDamage(hit.healthRemoved, hit.hitById, useNetwork)
+            }
         }
 
         /* Since setting player ID is somewhat unreliable, we use this to make sure that we are
@@ -795,10 +877,21 @@ class BlasterSessionEngine(
         if (hasLivesLimit) eliminationCount-- else eliminationCount++
         setEliminationDisplay(eliminationCount)
         val eliminatedBy = if (useNetwork) config.playerName(hitById) ?: "" else ""
-        startSpawn(eliminatedBy)
         // Every elimination is reported, including by our own or a teammate's grenade: the server
         // counts the life lost and decides whether the shooter scores.
         if (useNetwork) network?.sendEliminated(hitById)
+        loseDeathPowerUps()
+        if (extraLives > 0 && !(hasLivesLimit && eliminationCount <= 0)) {
+            // An extra life: back in at once, where you stand
+            extraLives--
+            health = config.fullHealth
+            _state.update { it.copy(health = health, extraLives = extraLives) }
+            clearHitOverlay()
+            emit(SessionEffect.Sound(SessionSound.SPAWN))
+            emit(SessionEffect.Toast(SessionToast.EXTRA_LIFE_USED))
+            return
+        }
+        startSpawn(eliminatedBy)
         if (hasLivesLimit && eliminationCount <= 0) {
             emit(SessionEffect.Toast(SessionToast.OUT_OF_LIVES))
         }

@@ -319,6 +319,17 @@
             android:text="@string/count_zero"
             android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
 
+        <!-- Magazines left with limited ammo, and power-ups (map design: Ammo, drops and power-ups) -->
+        <TextView
+            android:id="@+id/loadout_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/shots_remaining_tv"
+            android:layout_alignStart="@+id/shots_label_tv"
+            android:textColor="#FFB74D"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <ProgressBar
             android:id="@+id/reload_pb"
             android:visibility="gone"

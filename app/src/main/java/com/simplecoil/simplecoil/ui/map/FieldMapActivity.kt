@@ -42,6 +42,9 @@ import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.databinding.ActivityFieldMapBinding
 import com.simplecoil.simplecoil.databinding.DialogBorderRulesBinding
 import com.simplecoil.simplecoil.databinding.DialogFieldNameBinding
+import com.simplecoil.simplecoil.domain.loadout.AmmoMode
+import com.simplecoil.simplecoil.domain.loadout.DropKind
+import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.BorderRules
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
@@ -609,7 +612,8 @@ class FieldMapActivity : AppCompatActivity() {
         val spawnRules = config.spawnRules
         var units = rules.units
         val fields = listOf(dialog.rulesMarginEt, dialog.rulesAccuracyEt, dialog.rulesBufferEt, dialog.rulesNearEt,
-            dialog.rulesSpawnRadiusEt, dialog.rulesEnemyClearEt)
+            dialog.rulesSpawnRadiusEt, dialog.rulesEnemyClearEt, dialog.rulesClaimRadiusEt, dialog.rulesMaxShotEt)
+        val loadout = config.loadout
         fun showDistances(meters: List<Double>) {
             val unit = if (units == DistanceUnits.FEET) "ft" else "m"
             dialog.rulesMarginLabel.text = getString(R.string.rules_leave_margin, unit)
@@ -618,12 +622,19 @@ class FieldMapActivity : AppCompatActivity() {
             dialog.rulesNearLabel.text = getString(R.string.rules_near_distance, unit)
             dialog.rulesSpawnRadiusLabel.text = getString(R.string.rules_spawn_radius, unit)
             dialog.rulesEnemyClearLabel.text = getString(R.string.rules_enemy_clear, unit)
+            dialog.rulesClaimRadiusLabel.text = getString(R.string.rules_claim_radius, unit)
+            dialog.rulesMaxShotLabel.text = getString(R.string.rules_max_shot, unit)
             fields.zip(meters).forEach { (field, m) -> field.setText(number(units.fromMeters(m).roundToInt())) }
         }
         fun readMeters(field: EditText, fallback: Double) = field.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: fallback
         fun readInt(field: EditText, fallback: Int) = field.text?.toString()?.toIntOrNull() ?: fallback
         val defaults = listOf(rules.leaveMarginMeters, rules.accuracyGateMeters, rules.edgeBufferMeters, rules.nearDistanceMeters,
-            spawnRules.radiusMeters, spawnRules.enemyClearMeters)
+            spawnRules.radiusMeters, spawnRules.enemyClearMeters, loadout.claimRadiusMeters, loadout.maxShotMeters)
+        val dropBoxes = mapOf(
+            DropKind.SUPPLY to dialog.rulesDropSupply, DropKind.BURST to dialog.rulesDropBurst, DropKind.AMMO to dialog.rulesDropAmmo,
+            DropKind.MEDKIT to dialog.rulesDropMedkit, DropKind.EXTRA_LIFE to dialog.rulesDropLife,
+            DropKind.OVERSHIELD to dialog.rulesDropShield, DropKind.UAV to dialog.rulesDropUav,
+        )
         fun readAll() = fields.zip(defaults).map { (field, fallback) -> readMeters(field, fallback) }
 
         dialog.rulesPenaltyGroup.check(when (rules.penalty) {
@@ -646,6 +657,29 @@ class FieldMapActivity : AppCompatActivity() {
         dialog.rulesMoveMinutesEt.setText(number(spawnRules.moveMinutes))
         dialog.rulesCrossfadeEt.setText(number(spawnRules.crossfadeSeconds))
         dialog.rulesOldGraceEt.setText(number(spawnRules.oldSpawnGraceSeconds))
+        dialog.rulesAmmoGroup.check(when (loadout.ammo) {
+            AmmoMode.UNLIMITED -> R.id.rules_ammo_unlimited
+            AmmoMode.LIMITED -> R.id.rules_ammo_limited
+            AmmoMode.SCAVENGER -> R.id.rules_ammo_scavenger
+        })
+        dialog.rulesReserveEt.setText(number(loadout.startingReserve))
+        dialog.rulesRefillSwitch.isChecked = loadout.refillAtSpawn
+        dialog.rulesScavengeSecondsEt.setText(number(loadout.scavengeSeconds))
+        dialog.rulesScavengeMagsEt.setText(number(loadout.scavengeMagazines))
+        dialog.rulesDropsSwitch.isChecked = loadout.dropsEnabled
+        dropBoxes.forEach { (kind, box) -> box.isChecked = kind in loadout.dropKinds }
+        dialog.rulesDropIntervalEt.setText(number(loadout.dropIntervalMinutes))
+        dialog.rulesDropWarningEt.setText(number(loadout.dropWarningSeconds))
+        dialog.rulesClaimSecondsEt.setText(number(loadout.claimSeconds))
+        dialog.rulesDropLastsEt.setText(number(loadout.dropLastsMinutes))
+        dialog.rulesNearestTeamSwitch.isChecked = loadout.dropsNearestTeamOnly
+        dialog.rulesShieldHitsEt.setText(number(loadout.overshieldHits))
+        dialog.rulesUavSecondsEt.setText(number(loadout.uavSeconds))
+        dialog.rulesKillstreaksSwitch.isChecked = loadout.killstreaks
+        dialog.rulesUavKillsEt.setText(number(loadout.uavKills))
+        dialog.rulesAutoKillsEt.setText(number(loadout.fullAutoKills))
+        dialog.rulesTrackShotsSwitch.isChecked = loadout.trackShots
+        dialog.rulesLongestShotSwitch.isChecked = loadout.longestShotAward
         dialog.rulesUnitsGroup.check(if (units == DistanceUnits.FEET) R.id.rules_units_feet else R.id.rules_units_meters)
         showDistances(defaults)
         dialog.rulesUnitsGroup.setOnCheckedChangeListener { _, id ->
@@ -690,7 +724,34 @@ class FieldMapActivity : AppCompatActivity() {
                     oldSpawnGraceSeconds = readInt(dialog.rulesOldGraceEt, spawnRules.oldSpawnGraceSeconds),
                     shieldOnlyInSpawn = dialog.rulesShieldInSpawnSwitch.isChecked,
                 ).clamped()
-                saveConfig(config.copy(rules = updated, spawnRules = updatedSpawns))
+                val updatedLoadout = LoadoutRules(
+                    ammo = when (dialog.rulesAmmoGroup.checkedRadioButtonId) {
+                        R.id.rules_ammo_limited -> AmmoMode.LIMITED
+                        R.id.rules_ammo_scavenger -> AmmoMode.SCAVENGER
+                        else -> AmmoMode.UNLIMITED
+                    },
+                    startingReserve = readInt(dialog.rulesReserveEt, loadout.startingReserve),
+                    refillAtSpawn = dialog.rulesRefillSwitch.isChecked,
+                    scavengeSeconds = readInt(dialog.rulesScavengeSecondsEt, loadout.scavengeSeconds),
+                    scavengeMagazines = readInt(dialog.rulesScavengeMagsEt, loadout.scavengeMagazines),
+                    dropsEnabled = dialog.rulesDropsSwitch.isChecked,
+                    dropKinds = dropBoxes.filterValues { it.isChecked }.keys,
+                    dropIntervalMinutes = readInt(dialog.rulesDropIntervalEt, loadout.dropIntervalMinutes),
+                    dropWarningSeconds = readInt(dialog.rulesDropWarningEt, loadout.dropWarningSeconds),
+                    claimSeconds = readInt(dialog.rulesClaimSecondsEt, loadout.claimSeconds),
+                    dropLastsMinutes = readInt(dialog.rulesDropLastsEt, loadout.dropLastsMinutes),
+                    claimRadiusMeters = distances[6],
+                    dropsNearestTeamOnly = dialog.rulesNearestTeamSwitch.isChecked,
+                    overshieldHits = readInt(dialog.rulesShieldHitsEt, loadout.overshieldHits),
+                    uavSeconds = readInt(dialog.rulesUavSecondsEt, loadout.uavSeconds),
+                    killstreaks = dialog.rulesKillstreaksSwitch.isChecked,
+                    uavKills = readInt(dialog.rulesUavKillsEt, loadout.uavKills),
+                    fullAutoKills = readInt(dialog.rulesAutoKillsEt, loadout.fullAutoKills),
+                    trackShots = dialog.rulesTrackShotsSwitch.isChecked,
+                    maxShotMeters = distances[7],
+                    longestShotAward = dialog.rulesLongestShotSwitch.isChecked,
+                ).clamped()
+                saveConfig(config.copy(rules = updated, spawnRules = updatedSpawns, loadout = updatedLoadout))
                 drawSpawns()
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)

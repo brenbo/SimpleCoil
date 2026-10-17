@@ -398,7 +398,69 @@
     <string name="map_credit_short">Data provided by USGS</string>
     <string name="respawn_return_to_field">Get back on the field to respawn</string>
     <string name="respawn_go_to_spawn">Walk to your spawn to respawn</string>
-    <string name="map_go_to_spawn">Walk to your spawn · %1$s</string>
+    <string name="toast_out_of_ammo">Out of ammo. Refill at your spawn or grab an ammo drop.</string>
+    <string name="toast_extra_life_used">Extra life used: back in!</string>
+    <plurals name="loadout_magazines">
+        <item quantity="one">%1$d mag</item>
+        <item quantity="other">%1$d mags</item>
+    </plurals>
+    <string name="loadout_full_auto">Full auto</string>
+    <string name="loadout_burst">Burst</string>
+    <string name="loadout_shield">Shield %1$d</string>
+    <plurals name="loadout_extra_lives">
+        <item quantity="one">Extra life</item>
+        <item quantity="other">%1$d extra lives</item>
+    </plurals>
+    <string name="loadout_separator">" · "</string>
+
+    <!-- Drops (map design: Drops) -->
+    <string name="drop_label_supply">AUTO</string>
+    <string name="drop_label_burst">3X</string>
+    <string name="drop_label_ammo">AMMO</string>
+    <string name="drop_label_medkit">MED</string>
+    <string name="drop_label_life">1UP</string>
+    <string name="drop_label_shield">SHLD</string>
+    <string name="drop_label_uav">UAV</string>
+    <string name="drop_name_supply">Full auto</string>
+    <string name="drop_name_burst">Burst</string>
+    <string name="drop_name_ammo">Ammo</string>
+    <string name="drop_name_scavenge">Scavenged ammo</string>
+    <string name="drop_name_medkit">Medkit</string>
+    <string name="drop_name_life">Extra life</string>
+    <string name="drop_name_shield">Overshield</string>
+    <string name="drop_name_uav">UAV</string>
+    <string name="map_drop_incoming">%1$s drop incoming</string>
+    <string name="map_drop_claiming">Claiming %1$s · %2$d</string>
+    <string name="map_drop_claimed">%1$s!</string>
+    <string name="map_killstreak">Killstreak: %1$s!</string>
+    <string name="map_longest_shot">Longest shot: %1$s · %2$s</string>
+
+    <!-- The loadout rules -->
+    <string name="rules_section_loadout">Ammo and drops</string>
+    <string name="rules_ammo">Ammo</string>
+    <string name="rules_ammo_unlimited">Unlimited</string>
+    <string name="rules_ammo_limited">Limited magazines</string>
+    <string name="rules_ammo_scavenger">Limited, and fallen players drop ammo</string>
+    <string name="rules_reserve">Magazines each life (1–20)</string>
+    <string name="rules_refill_at_spawn">Refill magazines at your spawn</string>
+    <string name="rules_scavenge_seconds">Dropped ammo lasts (15–120 s)</string>
+    <string name="rules_scavenge_mags">Magazines in dropped ammo (1–10)</string>
+    <string name="rules_drops">Drops</string>
+    <string name="rules_drop_kinds">What can drop</string>
+    <string name="rules_drop_interval">A drop every (1–10 minutes)</string>
+    <string name="rules_drop_warning">Warning before it lands (0–60 s)</string>
+    <string name="rules_claim_seconds">Stand on it to claim (1–15 s)</string>
+    <string name="rules_drop_lasts">A drop lasts (1–10 minutes)</string>
+    <string name="rules_claim_radius">Claim within (%1$s)</string>
+    <string name="rules_nearest_team">Only the team nearest a drop sees it</string>
+    <string name="rules_shield_hits">Overshield stops (1–10 hits)</string>
+    <string name="rules_uav_seconds">UAV shows enemies for (5–60 s)</string>
+    <string name="rules_killstreaks">Killstreaks</string>
+    <string name="rules_uav_kills">Eliminations in a row for a UAV (0 = never)</string>
+    <string name="rules_auto_kills">Eliminations in a row for full auto (0 = never)</string>
+    <string name="rules_track_shots">Measure shot distance</string>
+    <string name="rules_max_shot">Ignore shots longer than (%1$s)</string>
+    <string name="rules_longest_shot">Longest Shot award</string>    <string name="map_go_to_spawn">Walk to your spawn · %1$s</string>
     <string name="map_spawn_no_gps">No location fix: turn location on (high accuracy) and go outside. Respawning anywhere until then.</string>
 
     <!-- Spawns on the server's field map (map design: Respawn points) -->

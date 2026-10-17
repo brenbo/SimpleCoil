@@ -40,8 +40,11 @@ import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.FragmentMapBinding
 import com.simplecoil.simplecoil.domain.loadout.AmmoMode
+import com.simplecoil.simplecoil.domain.loadout.LoadoutController
+import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.map.AutoZoom
 import com.simplecoil.simplecoil.domain.map.BorderTracker
+import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.GeoCircle
 import com.simplecoil.simplecoil.domain.map.GeoMath
@@ -54,6 +57,7 @@ import com.simplecoil.simplecoil.hardware.location.LocationUpdateListener
 import com.simplecoil.simplecoil.hardware.location.MapLocationManager
 import com.simplecoil.simplecoil.network.ClientEvent
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
+import com.simplecoil.simplecoil.ui.map.DropOverlay
 import com.simplecoil.simplecoil.ui.map.MapCredit
 import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
@@ -120,6 +124,11 @@ class MapFragment : Fragment() {
     private val playerViews = HashMap<Int, ImageView>()
     private val playerBitmaps = HashMap<Int, Bitmap>()
 
+    /** The drops over the map, and the last loadout notice with when it came. */
+    private var dropOverlay: DropOverlay? = null
+    private var lastNotice: LoadoutController.Notice? = null
+    private var lastNoticeAt = 0L
+
     /** The team colour your arrow was last drawn in. */
     private var youTeam = -1
 
@@ -131,6 +140,8 @@ class MapFragment : Fragment() {
         override fun run() {
             updateVisibility()
             renderSpawns()
+            renderDrops()
+            showDropBanner()
             refreshTarget()
             // While connected, check for a new field every few seconds, so the host's edits
             // show up soon after they close the field map (the request is tiny when nothing changed)
@@ -147,6 +158,7 @@ class MapFragment : Fragment() {
             moveCamera()
             placeYou()
             placePlayers()
+            map?.projection?.let { dropOverlay?.place(it) }
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
@@ -166,6 +178,7 @@ class MapFragment : Fragment() {
             if ((SystemClock.elapsedRealtimeNanos() - location.elapsedRealtimeNanos) / 1_000_000 < FRESH_FIX_MILLIS) {
                 container.borderController.onFix(LatLon(latitude, longitude), location.accuracy)
                 container.spawnController.onFix(LatLon(latitude, longitude), location.accuracy)
+                container.loadoutController.onFix(LatLon(latitude, longitude))
             }
             renderPlayers()
             refreshTarget()
@@ -189,6 +202,7 @@ class MapFragment : Fragment() {
             ?.let { runCatching { AutoZoom.valueOf(it) }.getOrNull() } ?: AutoZoom.FIELD
         // While resumed, as the broadcast receiver it replaces was registered
         container.clientEvents.observe(this, Lifecycle.State.RESUMED) { onClientEvent(it) }
+        container.loadoutController // starts it: it watches the game from here on
     }
 
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -198,6 +212,7 @@ class MapFragment : Fragment() {
         b.mapView.onCreate(savedInstanceState)
         b.mapView.getMapAsync { onMapReady(it) }
         b.mapCompassButton.setOnClickListener { toggleHeadingUp() }
+        dropOverlay = DropOverlay(requireContext(), b.mapDropsLayer)
         b.mapZoomButton.setOnClickListener {
             setAutoZoom(autoZoom.next())
             preferences.saveMapAutoZoom(autoZoom.name)
@@ -229,6 +244,10 @@ class MapFragment : Fragment() {
                 launch { container.borderController.status.collect { showBorderStatus(it) } }
                 launch { container.spawnController.guide.collect { showGuide(it) } }
                 launch { container.spawnController.noFix.collect { showGuide(container.spawnController.guide.value) } }
+                launch { container.loadoutController.claiming.collect { showDropBanner() } }
+                launch { container.loadoutController.notices.collect { lastNotice = it; lastNoticeAt = container.clock(); showDropBanner() } }
+                launch { container.loadoutController.longestShot.collect { showLongestShot(it) } }
+                launch { container.loadoutController.uav.collect { renderPlayers() } }
             }
         }
     }
@@ -280,6 +299,7 @@ class MapFragment : Fragment() {
         binding?.mapView?.onDestroy()
         binding = null
         youTeam = -1
+        dropOverlay = null
         playerViews.clear()
         map = null
         style = null
@@ -334,6 +354,12 @@ class MapFragment : Fragment() {
             PropertyFactory.lineColor(GUIDE_COLOR.toColorInt()),
             PropertyFactory.lineWidth(3f),
             PropertyFactory.lineDasharray(arrayOf(1.5f, 1.5f)),
+        ))
+        style.addSource(GeoJsonSource(LONGEST_SOURCE))
+        style.addLayer(LineLayer(LONGEST_LAYER, LONGEST_SOURCE).withProperties(
+            PropertyFactory.lineColor(LONGEST_COLOR.toColorInt()),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineDasharray(arrayOf(2f, 1f)),
         ))
         style.addSource(GeoJsonSource(BORDER_SOURCE))
         style.addLayer(LineLayer(BORDER_LAYER, BORDER_SOURCE).withProperties(
@@ -422,7 +448,9 @@ class MapFragment : Fragment() {
             binding?.mapYouIv?.setImageBitmap(MapIcons.you(requireContext(), if (myTeam == 0) YOU_COLOR else MapIcons.teamColor(myTeam)))
         }
         // Other players: plain views over the map, placed every frame (placePlayers)
-        shownPlayers = others()
+        val uav = container.loadoutController.uav.value
+        shownPlayers = others().let { seen -> seen + uav.filter { u -> seen.none { it.playerId == u.playerId } }.map { u ->
+            MapLocationManager.PlayerPosition(u.playerId, u.point.latitude, u.point.longitude, false, u.team) } }
         val layer = binding?.mapPlayersLayer ?: return
         val ids = shownPlayers.map { it.playerId }.toSet()
         playerViews.keys.filter { it !in ids }.forEach { layer.removeView(playerViews.remove(it)) }
@@ -635,6 +663,41 @@ class MapFragment : Fragment() {
         view.isVisible = true
     }
 
+    /** The drops on the field, with their countdowns (map design: Drops). */
+    private fun renderDrops() {
+        dropOverlay?.update(container.loadoutController.visibleDrops(), container.fieldImageryClient.serverNow())
+    }
+
+    /** Claiming a drop beats a fresh notice, which beats the last game's longest shot. */
+    private fun showDropBanner() {
+        val banner = binding?.mapDropTv ?: return
+        val context = context ?: return
+        val claiming = container.loadoutController.claiming.value
+        val notice = lastNotice?.takeIf { container.clock() - lastNoticeAt < NOTICE_MILLIS }
+        val longest = container.loadoutController.longestShot.value
+        val text = when {
+            claiming != null -> getString(R.string.map_drop_claiming, DropOverlay.name(context, claiming.drop.kind), claiming.secondsLeft)
+            notice is LoadoutController.Notice.DropIncoming -> getString(R.string.map_drop_incoming, DropOverlay.name(context, notice.kind))
+            notice is LoadoutController.Notice.Claimed -> getString(R.string.map_drop_claimed, DropOverlay.name(context, notice.kind))
+            notice is LoadoutController.Notice.Killstreak -> getString(R.string.map_killstreak, DropOverlay.name(context, notice.kind))
+            longest != null -> getString(R.string.map_longest_shot, longest.shooterName,
+                (field?.rules?.units ?: DistanceUnits.FEET).format(longest.meters))
+            else -> null
+        }
+        banner.text = text
+        banner.isVisible = text != null
+    }
+
+    /** After a game: the longest shot as a line from shooter to target, and in the banner. */
+    private fun showLongestShot(shot: LongestShot?) {
+        style?.getSourceAs<GeoJsonSource>(LONGEST_SOURCE)?.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(
+            shot?.let {
+                Feature.fromGeometry(LineString.fromLngLats(listOf(
+                    Point.fromLngLat(it.from.longitude, it.from.latitude), Point.fromLngLat(it.to.longitude, it.to.latitude))))
+            })))
+        showDropBanner()
+    }
+
     /** Puts each other player's marker where they are on screen. */
     private fun placePlayers() {
         val map = map ?: return
@@ -694,6 +757,12 @@ class MapFragment : Fragment() {
         const val GUIDE_SOURCE = "spawn-guide"
         const val GUIDE_LAYER = "spawn-guide"
         const val GUIDE_COLOR = "#69F0AE"
+        const val LONGEST_SOURCE = "longest-shot"
+        const val LONGEST_LAYER = "longest-shot"
+        const val LONGEST_COLOR = "#FFD54F"
+
+        /** How long a drop or killstreak notice stays up. */
+        const val NOTICE_MILLIS = 4_000L
 
         /** A fix older than this (a cached last-known position) isn't used for the border or spawns. */
         const val FRESH_FIX_MILLIS = 2 * 60_000L

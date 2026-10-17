@@ -537,6 +537,22 @@ class GameScreenRenderer(
 
     private fun number(value: Int): String = context.getString(R.string.number, value)
 
+    /** "3 mags · Full auto · Shield 2 · Extra life": what the loadout holds right now. */
+    private fun renderLoadout(s: SessionState) {
+        val parts = listOfNotNull(
+            s.reserve?.let { context.resources.getQuantityString(R.plurals.loadout_magazines, it, it) },
+            when (s.poweredShotMode) {
+                GameSettingsRepository.SHOT_MODE_FULL_AUTO -> context.getString(R.string.loadout_full_auto)
+                GameSettingsRepository.SHOT_MODE_BURST -> context.getString(R.string.loadout_burst)
+                else -> null
+            },
+            s.overshieldHits.takeIf { it > 0 }?.let { context.getString(R.string.loadout_shield, it) },
+            s.extraLives.takeIf { it > 0 }?.let { context.resources.getQuantityString(R.plurals.loadout_extra_lives, it, it) },
+        )
+        b.loadoutTv.text = parts.joinToString(context.getString(R.string.loadout_separator))
+        b.loadoutTv.visibility = if (parts.isEmpty()) View.GONE else View.VISIBLE
+    }
+
     fun render(s: SessionState) {
         val p = rendered
         rendered = s
@@ -553,6 +569,8 @@ class GameScreenRenderer(
                 b.shotsRemainingTv.visibility = View.VISIBLE
             }
         }
+        if (p == null || p.reserve != s.reserve || p.poweredShotMode != s.poweredShotMode ||
+            p.overshieldHits != s.overshieldHits || p.extraLives != s.extraLives) renderLoadout(s)
         if (p == null || p.hitsTaken != s.hitsTaken) b.hitsTakenTv.text = number(s.hitsTaken)
         if (p == null || p.eliminationDisplay != s.eliminationDisplay) b.eliminationsCountTv.text = number(s.eliminationDisplay)
         if (p == null || p.shotMode != s.shotMode) {

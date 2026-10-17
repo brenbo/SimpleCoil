@@ -71,6 +71,14 @@ data class SessionState(
     val blasterType: Byte? = null,
     val grenadePaired: Boolean = false,
     val spawn: SpawnPhase = SpawnPhase.None,
+    /** Magazines left with limited ammo; null for unlimited (map design: Limited ammo). */
+    val reserve: Int? = null,
+    /** Full auto or burst from a drop or killstreak, until eliminated; null if none. */
+    val poweredShotMode: Int? = null,
+    /** Hits the overshield still stops. */
+    val overshieldHits: Int = 0,
+    /** Eliminations that will respawn in place. */
+    val extraLives: Int = 0,
     /** Name shown by the "you're hit" overlay while it plays; null when not playing. */
     val hitOverlay: String? = null,
     /** Respawn shield seconds left; null when not shielded. */
@@ -89,7 +97,7 @@ enum class SessionSound {
     GAME_END,
 }
 
-enum class SessionToast { GRENADE_PAIRED, OUT_OF_LIVES, RECOIL_FORCED_ENABLED, RECOIL_FORCED_DISABLED, GAME_TIME_EXPIRED }
+enum class SessionToast { GRENADE_PAIRED, OUT_OF_LIVES, RECOIL_FORCED_ENABLED, RECOIL_FORCED_DISABLED, GAME_TIME_EXPIRED, OUT_OF_AMMO, EXTRA_LIFE_USED }
 
 /** One-shot outputs. */
 sealed interface SessionEffect {

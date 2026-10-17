@@ -276,3 +276,19 @@ The field's config (its name, border and out-of-bounds rules) goes the same way,
 Each phone checks its own position against the border and applies the penalty itself. The server only hears the result: an out-of-bounds elimination arrives as an ordinary `ELIMINATED` from player 0, so nobody scores it.
 
 The config also carries the respawn points: `spawns` as `[[team, lat, lon], ...]` (team 1-4, or 0 for anyone in free for all), `spawnRules` (`walkBack`, `startAtSpawn`, `secondsInSpawn`, `radius`, `perTeam`, `enemySpawnShare`, `enemyClear`, `moveMinutes`, `crossfade`, `oldGrace`, `shieldOnlyInSpawn`), and `spawnGeneration`. When the rules move the spawns during a game, the server serves a config with the moved spawns and a higher `spawnGeneration` in place of the host's saved one, and goes back to the saved one when the game ends; phones pick the change up on their next 5-second check. Walk-back respawn is checked on each phone, like the border.
+
+### 8.1 Ammo, drops and the longest shot
+
+The config's `loadout` holds the ammo and drop rules: `ammo` (`unlimited`, `limited` or `scavenger`), `reserve`, `refillAtSpawn`, `scavengeSeconds`, `scavengeMagazines`, `drops`, `dropKinds` (any of `supply`, `burst`, `ammo`, `medkit`, `life`, `shield`, `uav`), `dropInterval` (minutes), `dropWarning` (seconds), `claimSeconds`, `dropLasts` (minutes), `claimRadius` (meters), `nearestTeamOnly`, `overshieldHits`, `uavSeconds`, `killstreaks`, `uavKills`, `fullAutoKills`, `trackShots`, `maxShot` (meters) and `longestShot`. During a game the config also carries `drops`, as `[[id, kind, lat, lon, landsAt, expiresAt], ...]`; kind `scavenge` is the ammo a fallen player drops. A phone skips a kind it doesn't know.
+
+`landsAt` and `expiresAt` are the server's wall clock in milliseconds. So phones can count down without their clocks matching, the config's `NONE`, `SAME` and `PACK` replies end with the server's clock: `SCFIELD1 SAME <time>`, `SCFIELD1 PACK <length> <time>`. Older phones ignore it.
+
+The server is the one place a drop is claimed, so two players can't both get it:
+
+| Phone sends | Server replies |
+|---|---|
+| `SCFIELD1 CLAIM <dropId>,<playerId>` | `SCFIELD1 GRANTED <kind>`, and the drop is gone for everyone; or `SCFIELD1 DENIED` if it's gone, hasn't landed, or an enemy stands on it too |
+| `SCFIELD1 UAV <playerId>` | `SCFIELD1 PACK <length>` of `{"players":[[id, team, lat, lon], ...]}` (the phone shows only the other teams), or `NONE` |
+| `SCFIELD1 STATS -` | `SCFIELD1 PACK <length>` of `{"longest":{"shooter","shooterName","victim","victimName","meters","from":[lat, lon],"to":[lat, lon]}}`, or `NONE` with no measured shot |
+
+Limited ammo, refills, power-ups and killstreaks are kept on each phone. For shot distance, the server pairs each `ELIMINATED` with the shooter's and victim's last positions, if both arrived within the last 10 seconds and are no farther apart than `maxShot`.

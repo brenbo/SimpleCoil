@@ -106,6 +106,21 @@ object MapIcons {
         c.drawCircle(half, half, half - 2f * d, stroke(ColorUtils.setAlphaComponent(color, 230), 3f * d))
     }
 
+    /** A drop: a crate in the drop's colour, labelled with what it gives. */
+    fun drop(context: Context, color: Int, label: String): Bitmap = draw(context, 40f) { c, d ->
+        val box = RectF(4f * d, 6f * d, 36f * d, 34f * d)
+        c.drawRoundRect(box, 7f * d, 7f * d, fill(color, shadow = d))
+        c.drawRoundRect(box, 7f * d, 7f * d, stroke(Color.WHITE, 2f * d))
+        val ink = if (ColorUtils.calculateLuminance(color) > 0.6) Color.parseColor("#263238") else Color.WHITE
+        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = ink
+            textAlign = Paint.Align.CENTER
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            textSize = (if (label.length > 3) 9f else 11f) * d
+        }
+        c.drawText(label, box.centerX(), box.centerY() - (text.descent() + text.ascent()) / 2, text)
+    }
+
     /** The zone bitmap's size in dp, which the map scales to the spawn's real size. */
     const val ZONE_DP = 128f
 

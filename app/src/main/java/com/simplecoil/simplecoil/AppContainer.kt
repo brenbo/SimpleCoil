@@ -22,6 +22,7 @@ import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
+import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.map.BorderController
 import com.simplecoil.simplecoil.domain.map.SpawnController
 import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
@@ -48,6 +49,8 @@ import com.simplecoil.simplecoil.network.imagery.FieldPackStore
 import com.simplecoil.simplecoil.network.imagery.FieldPresetStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import java.io.File
 
 /**
@@ -151,6 +154,44 @@ class AppContainer(private val app: Application) {
             myTeam = { settings.teamLayout.let { it.teamOf(players.playerID) to it.mode.isFreeForAll } },
             inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
             scope = appScope,
+            clock = clock,
+        )
+    }
+
+    /** Ammo, drops, power-ups, killstreaks and the longest shot on this phone (map design: phase 4). */
+    val loadoutController: LoadoutController by lazy {
+        val engine = sessionEngine
+        val client = fieldImageryClient
+        LoadoutController(
+            field = playerFieldConfig.config,
+            session = engine.state,
+            blaster = object : LoadoutController.Blaster {
+                override fun setAmmoReserve(magazines: Int?) = engine.setAmmoReserve(magazines)
+                override fun grantShotMode(shotMode: Int) = engine.grantShotMode(shotMode)
+                override fun healFull() = engine.healFull()
+                override fun addOvershield(hits: Int) = engine.addOvershield(hits)
+                override fun addExtraLife() = engine.addExtraLife()
+            },
+            server = object : LoadoutController.Server {
+                override fun now(): Long = client.serverNow()
+                override fun claim(dropId: String, playerId: Int) = gameState.serverIP?.let { client.claim(it, dropId, playerId) }
+                override fun uav(playerId: Int) = gameState.serverIP?.let { client.uav(it, playerId) }
+                override fun longestShot() = gameState.serverIP?.let { client.longestShot(it) }
+            },
+            me = {
+                val id = players.playerID.toInt()
+                val layout = settings.teamLayout
+                id to if (layout.mode.isFreeForAll) id else layout.teamOf(id)
+            },
+            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            inOwnSpawn = { spawnController.isInOwnSpawn() },
+            feedback = object : LoadoutController.Feedback {
+                override fun play(sound: SessionSound) = soundEffects.play(sound)
+                override fun vibrate() = haptics.vibrate()
+            },
+            kills = clientEvents.events.filterIsInstance<ClientEvent.Eliminated>().map { },
+            scope = appScope,
+            io = dispatchers.io,
             clock = clock,
         )
     }

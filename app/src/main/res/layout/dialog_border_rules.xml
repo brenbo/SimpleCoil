@@ -220,6 +220,277 @@
 
         <TextView
             style="@style/DialogSection"
+            android:text="@string/rules_section_loadout" />
+
+        <View style="@style/DialogDivider" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:text="@string/rules_ammo" />
+
+        <RadioGroup
+            android:id="@+id/rules_ammo_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_ammo_unlimited"
+                android:text="@string/rules_ammo_unlimited" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_ammo_limited"
+                android:text="@string/rules_ammo_limited" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_ammo_scavenger"
+                android:text="@string/rules_ammo_scavenger" />
+        </RadioGroup>
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_reserve_et"
+            android:text="@string/rules_reserve" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_reserve_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_refill_switch"
+            android:text="@string/rules_refill_at_spawn" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_scavenge_seconds_et"
+            android:text="@string/rules_scavenge_seconds" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_scavenge_seconds_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_scavenge_mags_et"
+            android:text="@string/rules_scavenge_mags" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_scavenge_mags_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_drops_switch"
+            android:text="@string/rules_drops" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:text="@string/rules_drop_kinds" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_supply"
+            android:text="@string/drop_name_supply" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_burst"
+            android:text="@string/drop_name_burst" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_ammo"
+            android:text="@string/drop_name_ammo" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_medkit"
+            android:text="@string/drop_name_medkit" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_life"
+            android:text="@string/drop_name_life" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_shield"
+            android:text="@string/drop_name_shield" />
+
+        <CheckBox
+            style="@style/DialogRadio"
+            android:id="@+id/rules_drop_uav"
+            android:text="@string/drop_name_uav" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_drop_interval_et"
+            android:text="@string/rules_drop_interval" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_drop_interval_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_drop_warning_et"
+            android:text="@string/rules_drop_warning" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_drop_warning_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_claim_seconds_et"
+            android:text="@string/rules_claim_seconds" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_claim_seconds_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_drop_lasts_et"
+            android:text="@string/rules_drop_lasts" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_drop_lasts_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_claim_radius_label"
+            android:labelFor="@+id/rules_claim_radius_et"
+            android:text="@string/rules_claim_radius" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_claim_radius_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_nearest_team_switch"
+            android:text="@string/rules_nearest_team" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_shield_hits_et"
+            android:text="@string/rules_shield_hits" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_shield_hits_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_uav_seconds_et"
+            android:text="@string/rules_uav_seconds" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_uav_seconds_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_killstreaks_switch"
+            android:text="@string/rules_killstreaks" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_uav_kills_et"
+            android:text="@string/rules_uav_kills" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_uav_kills_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:labelFor="@+id/rules_auto_kills_et"
+            android:text="@string/rules_auto_kills" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_auto_kills_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="2" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_track_shots_switch"
+            android:text="@string/rules_track_shots" />
+
+        <TextView
+            style="@style/DialogLabel"
+            android:id="@+id/rules_max_shot_label"
+            android:labelFor="@+id/rules_max_shot_et"
+            android:text="@string/rules_max_shot" />
+
+        <EditText
+            style="@style/DialogField"
+            android:id="@+id/rules_max_shot_et"
+            android:digits="0123456789"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="3" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            style="@style/DialogSwitch"
+            android:id="@+id/rules_longest_shot_switch"
+            android:text="@string/rules_longest_shot" />
+
+        <TextView
+            style="@style/DialogSection"
             android:text="@string/rules_section_gps" />
 
         <View style="@style/DialogDivider" />

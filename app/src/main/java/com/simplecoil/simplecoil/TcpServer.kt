@@ -34,14 +34,15 @@ import androidx.core.app.ServiceCompat
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
+import com.simplecoil.simplecoil.domain.loadout.Fix
 import com.simplecoil.simplecoil.domain.map.LatLon
-import com.simplecoil.simplecoil.domain.map.Spawn
-import com.simplecoil.simplecoil.domain.map.SpawnPlanner
+import com.simplecoil.simplecoil.network.ServerEvent
 import com.simplecoil.simplecoil.network.ServerCommand
 import com.simplecoil.simplecoil.network.ServerMessage
 import com.simplecoil.simplecoil.network.WireCodec
 import com.simplecoil.simplecoil.network.discovery.DiscoveryBeacon
 import com.simplecoil.simplecoil.network.server.GameServer
+import com.simplecoil.simplecoil.network.server.LiveGame
 import com.simplecoil.simplecoil.network.server.SavedServerSettings
 import com.simplecoil.simplecoil.network.server.SessionPhase
 import kotlinx.coroutines.CoroutineScope
@@ -49,9 +50,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -74,6 +74,8 @@ class TcpServer : Service() {
     private var screenVisible = false
     private var wifiLock: WifiManager.WifiLock? = null
     private lateinit var serverPlayers: PlayerRepository
+    private lateinit var serverSettings: GameSettingsRepository
+    private var liveGame: LiveGame? = null
     private var spawnMoves: Job? = null
 
     inner class LocalBinder : Binder() {
@@ -91,6 +93,7 @@ class TcpServer : Service() {
         // touches the play screen's player id, name, settings or game state.
         val settings = GameSettingsRepository()
         val gameState = GameStateRepository()
+        serverSettings = settings
         serverPlayers = PlayerRepository(settings, gameState)
         server = GameServer(settings, serverPlayers, gameState, container.serverEvents, container.clock,
             saveTeamMode = { container.userPreferences.saveTeamMode(it) })
@@ -121,7 +124,7 @@ class TcpServer : Service() {
         server.start()
         beacon.start(SERVER_NAME)
         container.fieldImageryServer.start()
-        spawnMoves = scope.launch { moveSpawnsDuringGames() }
+        startLiveGame()
         server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
         startAsForeground()
         updateWifiLock()
@@ -136,6 +139,7 @@ class TcpServer : Service() {
         spawnMoves?.cancel()
         spawnMoves = null
         container.fieldImageryServer.liveConfig = null
+        container.fieldImageryServer.extras = null
         container.fieldImageryServer.stop()
         server.stop() // closes each connection once the SERVERCANCEL is written
         notificationUpdates?.cancel()
@@ -144,38 +148,29 @@ class TcpServer : Service() {
     }
 
     /**
-     * Moves the spawns every few minutes during a game, if the field's rules say so (map design:
-     * Moving spawns). The moved spawns are served in place of the host's saved ones and dropped
-     * when the game ends; the host's setup is never changed.
+     * The server's half of the field during games (map design: phases 3 and 4): moving spawns,
+     * drops, scavenger ammo and shot distance, all served to the phones by the field service.
      */
-    private suspend fun moveSpawnsDuringGames() {
-        val imagery = container.fieldImageryServer
-        server.snapshot.map { it.phase }.distinctUntilChanged().collectLatest { phase ->
-            imagery.liveConfig = null
-            if (phase != SessionPhase.RUNNING) return@collectLatest
-            var generation = 0
-            var current: List<Spawn>? = null
-            while (true) {
-                val base = withContext(Dispatchers.IO) { container.serverFieldConfig.refresh() } ?: return@collectLatest
-                val minutes = base.spawnRules.moveMinutes
-                if (minutes <= 0 || base.spawns.isEmpty()) return@collectLatest
-                delay(minutes * 60_000L)
-                generation++
-                val spawnsNow = current ?: base.spawns
-                val moved = withContext(Dispatchers.Default) {
-                    SpawnPlanner.moved(base, spawnsNow, generation, playerPositions())
-                } ?: continue
-                current = moved.spawns
-                imagery.liveConfig = moved
-            }
-        }
+    private fun startLiveGame() {
+        val game = LiveGame(
+            imagery = container.fieldImageryServer,
+            savedField = { withContext(Dispatchers.IO) { container.serverFieldConfig.refresh() } },
+            positions = ::playerFixes,
+            teamOf = { id -> serverSettings.teamLayout.let { if (it.mode.isFreeForAll) id else it.teamOf(id) } },
+            nameOf = { id -> server.snapshot.value.players.firstOrNull { it.playerId.toInt() == id }?.name },
+        )
+        liveGame = game
+        val eliminations = container.serverEvents.events
+            .filterIsInstance<ServerEvent.Eliminated>()
+            .map { it.victimId.toInt() to it.shooterId.toInt() }
+        spawnMoves = LiveGame.launchIn(scope, game, server.snapshot.map { it.phase }, eliminations)
     }
 
-    /** Where each team's players last reported being, for keeping moved spawns clear of enemies. */
-    private fun playerPositions(): Map<Int, List<LatLon>> = synchronized(serverPlayers) {
-        serverPlayers.gpsData.values
-            .filter { it.latitude != 0.0 || it.longitude != 0.0 }
-            .groupBy({ it.team }, { LatLon(it.latitude, it.longitude) })
+    /** Each player's last reported position and when it came, from the server's GPS reports. */
+    private fun playerFixes(): Map<Int, Fix> = synchronized(serverPlayers) {
+        serverPlayers.gpsData.entries
+            .filter { (_, gps) -> gps.latitude != 0.0 || gps.longitude != 0.0 }
+            .associate { (id, gps) -> id.toInt() to Fix(LatLon(gps.latitude, gps.longitude), gps.updatedAt) }
     }
 
     /** Wi-Fi stays awake while the server screen is in the foreground, and sleeps with the device otherwise (§5.6, Q3). */

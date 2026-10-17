@@ -17,6 +17,9 @@
 package com.simplecoil.simplecoil.network.imagery
 
 import android.util.Log
+import com.simplecoil.simplecoil.domain.loadout.DropKind
+import com.simplecoil.simplecoil.domain.loadout.LongestShot
+import com.simplecoil.simplecoil.domain.loadout.UavPlayer
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -141,6 +144,47 @@ class FieldImageryClient(
         // An older server, or none: the map works without it
         Log.i(TAG, "No field ${kind.name.lowercase()} from $server: " + e.message)
         Result.FAILED
+    }
+
+    // Game extras (map design: phase 4): one short request each, off the main thread
+
+    /** Claims drop [dropId] for [playerId]; the kind if this phone got it, else null. */
+    fun claim(server: InetAddress, dropId: String, playerId: Int): DropKind? = exchange(server,
+        FieldImageryProtocol.claimLine(dropId, playerId)) { reply, _ ->
+        (reply as? FieldImageryProtocol.Reply.Granted)?.let { DropKind.fromWire(it.kind) }
+    }
+
+    /** Every other player's position, for a UAV; null if the server has none to give. */
+    fun uav(server: InetAddress, playerId: Int): List<UavPlayer>? = exchange(server,
+        FieldImageryProtocol.requestLine(playerId.toString(), FieldImageryProtocol.Kind.UAV)) { _, body ->
+        body?.let { UavPlayer.listFromJson(String(it, Charsets.UTF_8)) }
+    }
+
+    /** The game's longest shot; null if there was none (or no server). */
+    fun longestShot(server: InetAddress): LongestShot? = exchange(server,
+        FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.STATS)) { _, body ->
+        body?.let { LongestShot.fromJson(String(it, Charsets.UTF_8)) }
+    }
+
+    /** Sends [line], reads the reply (and its body, if it has one) and makes something of them; null on any failure. */
+    private fun <T> exchange(server: InetAddress, line: String, read: (FieldImageryProtocol.Reply, ByteArray?) -> T?): T? = try {
+        Socket().use { socket ->
+            socket.connect(InetSocketAddress(server, port), FieldImageryProtocol.CONNECT_TIMEOUT_MS)
+            socket.soTimeout = FieldImageryProtocol.READ_TIMEOUT_MS
+            socket.getOutputStream().apply {
+                write(line.toByteArray(Charsets.US_ASCII))
+                flush()
+            }
+            val input = BufferedInputStream(socket.getInputStream())
+            val replyLine = FieldImageryServer.readLine(input) ?: return null
+            val reply = FieldImageryProtocol.parseReply(replyLine) ?: return null
+            val body = (reply as? FieldImageryProtocol.Reply.Pack)?.let { readFully(input, it.length) }
+            read(reply, body)
+        }
+    } catch (e: Exception) {
+        // Including bad JSON: these are extras, never worth a crash
+        Log.i(TAG, "Field request failed: " + e.message)
+        null
     }
 
     private fun readFully(input: InputStream, length: Int): ByteArray {

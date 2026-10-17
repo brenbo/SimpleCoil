@@ -143,6 +143,8 @@ class DialogCoordinator(
             SessionToast.RECOIL_FORCED_ENABLED -> toast("Recoil is forced ENABLED by server")
             SessionToast.RECOIL_FORCED_DISABLED -> toast("Recoil is forced DISABLED by server")
             SessionToast.GAME_TIME_EXPIRED -> toast(appContext.getString(R.string.dialog_game_time_expired))
+            SessionToast.OUT_OF_AMMO -> toast(appContext.getString(R.string.toast_out_of_ammo))
+            SessionToast.EXTRA_LIFE_USED -> toast(appContext.getString(R.string.toast_extra_life_used))
         }
     }
 

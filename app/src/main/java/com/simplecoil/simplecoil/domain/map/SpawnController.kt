@@ -119,6 +119,13 @@ class SpawnController(
         return Layers(current.filter { it in kept }, current.filter { it !in kept }, previous - current.toSet(), progress, radius)
     }
 
+    /** True if the player's last good fix is inside one of their team's spawns. */
+    fun isInOwnSpawn(): Boolean {
+        val config = field.value ?: return false
+        val here = position ?: return false
+        return usable(config, clock()).any { GeoMath.distanceMeters(here, it.point) <= config.spawnRules.radiusMeters }
+    }
+
     /** True while spawns are fading, so the map redraws them every frame. */
     fun isFading(nowMillis: Long = clock()): Boolean {
         val fade = (field.value?.spawnRules?.crossfadeSeconds ?: 0) * 1000L

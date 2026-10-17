@@ -13,6 +13,12 @@
 
     <!-- You: drawn over the map rather than in it, so it can turn every frame without the map
          rebuilding it (which kept it from ever showing on phones with a compass). -->
+    <!-- Drops: crates with a countdown until they land. -->
+    <FrameLayout
+        android:id="@+id/map_drops_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <!-- The other players, drawn over the map the same way. -->
     <FrameLayout
         android:id="@+id/map_players_layer"
@@ -87,6 +93,24 @@
         android:paddingBottom="4dp"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- Drops and power-ups: claiming, what just happened, and after a game the longest shot. -->
+    <TextView
+        android:id="@+id/map_drop_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="52dp"
+        android:background="#E6E65100"
+        android:gravity="center"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
         android:textStyle="bold"
         android:visibility="gone" />
 
