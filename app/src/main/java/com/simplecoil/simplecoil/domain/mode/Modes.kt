@@ -16,19 +16,32 @@
 
 package com.simplecoil.simplecoil.domain.mode
 
+import com.simplecoil.simplecoil.domain.map.GeoCircle
 import com.simplecoil.simplecoil.domain.map.LatLon
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** The game mode (map design: Game modes). Classic is the game as it always was. */
-enum class GameMode(val wireValue: String, val hasObjectives: Boolean) {
+/**
+ * The game mode (map design: Game modes). Classic is the game as it always was; the others the
+ * dedicated server runs, and the phones ask it how the game stands ([onServer]).
+ */
+enum class GameMode(val wireValue: String, val hasObjectives: Boolean, val needsBorder: Boolean = hasObjectives) {
     CLASSIC("classic", false),
 
     /** Capture points A, B, C; each held point scores. */
     DOMINATION("domination", true),
 
     /** One active point at a time, moving on a timer; holding it scores. */
-    HARDPOINT("hardpoint", true);
+    HARDPOINT("hardpoint", true),
+
+    /** A shrinking safe zone; out once eliminated; the last team standing wins. */
+    BATTLE_ROYALE("battleroyale", false, needsBorder = true),
+
+    /** Score is the distance of each elimination. */
+    MARKSMAN("marksman", false);
+
+    /** The server runs it and the phones fetch its state. */
+    val onServer: Boolean get() = this != CLASSIC
 
     companion object {
         fun fromWire(value: String?): GameMode = entries.firstOrNull { it.wireValue == value } ?: CLASSIC
@@ -164,6 +177,10 @@ data class ModeState(
     val winner: Int,
     /** Hardpoint: when the point moves (server wall clock); 0 for never. */
     val movesAt: Long,
+    /** Battle Royale: the zone. */
+    val zone: ZoneState? = null,
+    /** Battle Royale: the players out for good. */
+    val out: Set<Int> = emptySet(),
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("mode", mode.wireValue)
@@ -178,8 +195,22 @@ data class ModeState(
         .put("radius", radiusMeters)
         .put("winner", winner)
         .put("movesAt", movesAt)
+        .apply {
+            zone?.let { z ->
+                put("zone", JSONObject()
+                    .put("current", circleJson(z.current))
+                    .put("next", z.next?.let { circleJson(it) })
+                    .put("phase", z.phase).put("phases", z.phases).put("shrinking", z.shrinking)
+                    .put("changesAt", z.changesAt).put("damage", z.damage).put("tick", z.tickSeconds).put("noRespawn", z.noRespawn))
+            }
+            if (out.isNotEmpty()) put("out", JSONArray().apply { out.sorted().forEach { put(it) } })
+        }
 
     companion object {
+        private fun circleJson(c: GeoCircle): JSONArray = JSONArray().put(c.center.latitude).put(c.center.longitude).put(c.radiusMeters)
+
+        private fun circleFromJson(a: JSONArray) = GeoCircle(LatLon(a.getDouble(0), a.getDouble(1)), a.getDouble(2))
+
         fun fromJson(json: JSONObject): ModeState {
             val objectives = json.getJSONArray("objectives")
             val scores = json.getJSONArray("scores")
@@ -195,6 +226,12 @@ data class ModeState(
                 radiusMeters = json.optDouble("radius", ObjectiveRules().radiusMeters),
                 winner = json.optInt("winner", 0),
                 movesAt = json.optLong("movesAt", 0L),
+                zone = json.optJSONObject("zone")?.let { z ->
+                    ZoneState(circleFromJson(z.getJSONArray("current")), z.optJSONArray("next")?.let { circleFromJson(it) },
+                        z.optInt("phase"), z.optInt("phases"), z.optBoolean("shrinking"), z.optLong("changesAt"),
+                        z.optInt("damage", 1), z.optInt("tick", 3), z.optBoolean("noRespawn", true))
+                },
+                out = json.optJSONArray("out")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet(),
             )
         }
     }

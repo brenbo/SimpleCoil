@@ -102,7 +102,7 @@ class ModeController(
 
     private suspend fun poll() {
         val playing = inGame()
-        val objective = field.value?.mode?.hasObjectives == true
+        val objective = field.value?.mode?.onServer == true
         if (playing && !wasInGame) _state.value = null // a new game
         val ended = !playing && wasInGame
         wasInGame = playing

@@ -47,6 +47,7 @@ import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.map.AutoZoom
 import com.simplecoil.simplecoil.domain.map.BorderTracker
+import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.GeoCircle
 import com.simplecoil.simplecoil.domain.map.GeoMath
@@ -69,6 +70,7 @@ import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
 import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
 import com.simplecoil.simplecoil.ui.map.OutsideShade
+import com.simplecoil.simplecoil.ui.map.ZoneLayers
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -200,6 +202,7 @@ class MapFragment : Fragment() {
                 container.borderController.onFix(LatLon(latitude, longitude), location.accuracy)
                 container.spawnController.onFix(LatLon(latitude, longitude), location.accuracy)
                 container.loadoutController.onFix(LatLon(latitude, longitude))
+                container.zoneController.onFix(LatLon(latitude, longitude))
             }
             renderPlayers()
             refreshTarget()
@@ -225,6 +228,7 @@ class MapFragment : Fragment() {
         container.clientEvents.observe(this, Lifecycle.State.RESUMED) { onClientEvent(it) }
         container.loadoutController // starts it: it watches the game from here on
         container.modeController
+        container.zoneController
     }
 
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -272,6 +276,7 @@ class MapFragment : Fragment() {
                 launch { container.loadoutController.longestShot.collect { showLongestShot(it) } }
                 launch { container.loadoutController.uav.collect { renderPlayers() } }
                 launch { container.modeController.state.collect { renderMode(it) } }
+                launch { container.zoneController.outside.collect { showModeBanner() } }
                 launch { container.modeController.notices.collect { lastModeNotice = it; lastModeNoticeAt = container.clock(); showModeBanner() } }
             }
         }
@@ -375,6 +380,7 @@ class MapFragment : Fragment() {
     private fun addFieldLayers(style: Style) {
         // Outside the border greyed out, under everything on the field
         OutsideShade.install(style)
+        ZoneLayers.install(style)
         // Spawns under everything else; then the dashed way to yours, and the border
         SpawnLayers.install(style, requireContext())
         style.addSource(GeoJsonSource(GUIDE_SOURCE))
@@ -445,7 +451,7 @@ class MapFragment : Fragment() {
      * keep to, spawns to walk back to): those are checked on this phone, even with sharing off.
      */
     private fun wantsGps(): Boolean =
-        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true || field?.mode?.hasObjectives == true ||
+        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true || field?.mode?.onServer == true ||
             field?.loadout?.let { it.dropsEnabled || it.trackShots || it.ammo == AmmoMode.SCAVENGER } == true
 
     private fun sendLocation(fix: Location) {
@@ -705,6 +711,7 @@ class MapFragment : Fragment() {
     }
 
     private fun renderMode(state: ModeState?) {
+        renderZone(state)
         if (state == null || !state.mode.hasObjectives || !inGame()) objectiveOverlay?.clear()
         else objectiveOverlay?.update(state.objectives, state.radiusMeters, letters = state.mode != GameMode.HARDPOINT)
         showModeBanner()
@@ -717,37 +724,69 @@ class MapFragment : Fragment() {
     private fun showModeBanner() {
         val banner = binding?.mapModeTv ?: return
         val state = container.modeController.state.value
-        if (state == null || !state.mode.hasObjectives) {
+        if (state == null || !state.mode.onServer) {
             banner.isVisible = false
             return
         }
         val myTeam = container.players.playerID.toInt().let { id -> if (settings.teamLayout.mode.isFreeForAll) id else settings.teamLayout.teamOf(id) }
+        val units = field?.rules?.units ?: DistanceUnits.defaultFor(Locale.getDefault())
         val text = SpannableStringBuilder()
-        // Your team first, then the others by score
+        // Your team first, then the others by score. Battle Royale: players left; Marksman: distance
         val teams = (state.scores.keys + myTeam).distinct().sortedWith(compareBy({ it != myTeam }, { -(state.scores[it] ?: 0) }))
         for (team in teams.take(MAX_SCORES_SHOWN)) {
             if (text.isNotEmpty()) text.append("   ")
             val start = text.length
             text.append("●")
             text.setSpan(ForegroundColorSpan(objectiveColor(team)), start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            text.append(" ").append(String.format(Locale.ROOT, "%d", state.scores[team] ?: 0))
+            val score = state.scores[team] ?: 0
+            text.append(" ").append(when (state.mode) {
+                GameMode.MARKSMAN -> units.format(score.toDouble())
+                GameMode.BATTLE_ROYALE -> resources.getQuantityString(R.plurals.br_left, score, score)
+                else -> String.format(Locale.ROOT, "%d", score)
+            })
         }
-        text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
-        if (state.movesAt != 0L && state.winner == 0) {
-            val seconds = ((state.movesAt - container.fieldImageryClient.serverNow()) / 1000).coerceAtLeast(0)
-            text.append(" · ").append(getString(R.string.mode_moves_in, String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)))
+        val now = container.fieldImageryClient.serverNow()
+        fun clock(at: Long): String = ((at - now) / 1000).coerceAtLeast(0).let { String.format(Locale.ROOT, "%d:%02d", it / 60, it % 60) }
+        when (state.mode) {
+            GameMode.BATTLE_ROYALE -> state.zone?.takeIf { state.winner == 0 && inGame() }?.let { zone ->
+                text.append(" · ").append(when {
+                    zone.shrinking -> getString(R.string.br_zone_shrinking)
+                    zone.changesAt != 0L -> getString(R.string.br_zone_shrinks_in, clock(zone.changesAt))
+                    else -> getString(R.string.br_zone_final)
+                })
+            }
+            GameMode.MARKSMAN -> if (state.scoreToWin > 0) text.append("   ").append(getString(R.string.mode_to_win_text, units.format(state.scoreToWin.toDouble())))
+            else -> {
+                text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
+                if (state.movesAt != 0L && state.winner == 0) text.append(" · ").append(getString(R.string.mode_moves_in, clock(state.movesAt)))
+            }
         }
-        modeStatus(state, myTeam)?.let { text.append("\n").append(it) }
+        modeStatus(state, myTeam, units)?.let { text.append("\n").append(it) }
         banner.text = text
         banner.isVisible = true
     }
 
+    /** Battle Royale's zone: the storm shaded outside it, its edge, and where it goes next, dashed. */
+    private fun renderZone(state: ModeState?) {
+        val style = style ?: return
+        val zone = state?.zone?.takeIf { state.mode == GameMode.BATTLE_ROYALE && inGame() }
+        ZoneLayers.update(style, zone)
+    }
+
     /** One line about you and the points: who won, a point's news, or the point you stand on. */
-    private fun modeStatus(state: ModeState, myTeam: Int): String? {
+    private fun modeStatus(state: ModeState, myTeam: Int, units: DistanceUnits): String? {
         // After the game, only the scores: who won is on the scoreboard
         if (!inGame()) return null
-        // Hardpoint has one point at a time, so it goes unnamed
-        if (state.mode == GameMode.HARDPOINT) return hardpointStatus(state, myTeam)
+        when (state.mode) {
+            // Hardpoint has one point at a time, so it goes unnamed
+            GameMode.HARDPOINT -> return hardpointStatus(state, myTeam)
+            GameMode.BATTLE_ROYALE -> {
+                if (container.players.playerID.toInt() in state.out) return getString(R.string.br_you_are_out)
+                return container.zoneController.outside.value?.let { getString(R.string.br_outside, units.format(it.metersToSafety)) }
+            }
+            GameMode.MARKSMAN, GameMode.CLASSIC -> return null
+            GameMode.DOMINATION -> {}
+        }
         val notice = lastModeNotice?.takeIf { container.clock() - lastModeNoticeAt < NOTICE_MILLIS }
         if (notice != null) return when (notice) {
             is ModeController.Notice.Secured -> getString(R.string.mode_secured, notice.id)

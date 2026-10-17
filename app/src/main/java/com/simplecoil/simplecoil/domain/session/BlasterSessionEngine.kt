@@ -431,6 +431,13 @@ class BlasterSessionEngine(
      * Holds (or lets go of) the respawn for [reason]. A respawn countdown that ends while held
      * waits ([SpawnPhase.AwaitingReturn]) until nothing holds it, then the player spawns.
      */
+    /** Battle Royale once respawns are over: an eliminated player is out for the rest of the game. */
+    private var noRespawn = false
+
+    fun setNoRespawn(on: Boolean) {
+        noRespawn = on
+    }
+
     fun holdRespawn(reason: RespawnHold, held: Boolean) {
         val changed = if (held) respawnHolds.add(reason) else respawnHolds.remove(reason)
         if (!changed) return
@@ -563,7 +570,7 @@ class BlasterSessionEngine(
         startReload(RELOADING_ELIMINATED)
         clearHitOverlay()
 
-        if (hasLivesLimit && eliminationCount <= 0) {
+        if ((hasLivesLimit && eliminationCount <= 0) || noRespawn) {
             _state.update { it.copy(spawn = SpawnPhase.OutOfLives(eliminatedBy)) }
             return
         }

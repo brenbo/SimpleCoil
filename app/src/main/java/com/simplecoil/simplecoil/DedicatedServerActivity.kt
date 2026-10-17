@@ -50,6 +50,7 @@ import com.simplecoil.simplecoil.ui.map.FieldRulesDialog
 import com.simplecoil.simplecoil.ui.map.GameModeDialog
 import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
+import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import androidx.core.view.isVisible
@@ -219,7 +220,8 @@ class DedicatedServerActivity : AppCompatActivity() {
                 val field = container.serverFieldConfig.refresh() ?: FieldConfig(rules = BorderRules(units = DistanceUnits.defaultFor(Locale.getDefault())))
                 val preset = GamePreset(
                     name = name, mode = field.mode, objectiveRules = field.objectiveRules, borderRules = field.rules,
-                    spawnRules = field.spawnRules, loadout = field.loadout, teamMode = state.teamMode,
+                    spawnRules = field.spawnRules, loadout = field.loadout, battleRoyale = field.battleRoyale, marksman = field.marksman,
+                    teamMode = state.teamMode,
                     gpsMode = if (state.useGps) state.gpsMode else GameSettingsRepository.GPS_DISABLED,
                     timeLimit = state.limits.shown(LimitKind.TIME), livesLimit = state.limits.shown(LimitKind.LIVES),
                     scoreLimit = state.limits.shown(LimitKind.SCORE), startTimeSeconds = state.startTimeSeconds,
@@ -286,6 +288,10 @@ class DedicatedServerActivity : AppCompatActivity() {
                     else resources.getQuantityString(R.plurals.server_summary_points, rules.pointCount, rules.pointCount),
                     rules.scoreToWin)
                 GameMode.HARDPOINT -> getString(R.string.server_summary_hardpoint, rules.moveSeconds, rules.scoreToWin)
+                GameMode.BATTLE_ROYALE -> (config?.battleRoyale ?: BattleRoyaleRules()).let { br ->
+                    getString(R.string.server_summary_battle_royale, br.phases, br.firstWaitSeconds / 60)
+                }
+                GameMode.MARKSMAN -> getString(R.string.server_summary_marksman)
             }
             val loadout = config?.loadout ?: LoadoutRules()
             val parts = listOfNotNull(

@@ -304,3 +304,9 @@ The server runs the game: once a second it counts who stands on each point (play
 | `SCFIELD1 MODE <playerId>,<1 if in the game, else 0>` | `SCFIELD1 PACK <length>` of `{"mode","objectives":[[letter, lat, lon, owner, capturing, progress, contested, active, next], ...],"scores":[[team, score], ...],"toWin","radius","winner","movesAt"}`, or `NONE` outside an objective game |
 
 `owner`, `capturing` and `winner` are teams (player ids in free for all; 0 for none), `progress` runs from 0 to 1, `contested`, `active` and `next` are 1 or 0, and `movesAt` is the server's wall clock when a Hardpoint moves on (0 for never). Each request also tells the server whether that player is in the game, so a player waiting to respawn can't hold a point.
+
+### 8.3 Battle Royale and Marksman
+
+`mode` can also be `battleroyale` or `marksman`. The config carries their rules as `battleRoyale` (`phases`, `firstWait`, `shrink` and `pause` in seconds, `finalDiameter` in metres, `damage`, `tick` in seconds, `rises`, `respawnUntil`, the phase from which eliminations are final, 0 for always) and `marksman` (`minimum` and `toWin`, in metres, `toWin` 0 for none).
+
+The `MODE` reply works as in 8.2. In Battle Royale, `scores` holds how many players each team has left, `out` lists the player ids out for good, and `zone` is `{"current":[lat, lon, radius],"next":[lat, lon, radius] or null,"phase","phases","shrinking","changesAt","damage","tick","noRespawn"}`, with `changesAt` the server's wall clock when the zone next starts or stops shrinking. The server plans every circle when the game starts; each phone checks its own position against `current` and takes `damage` every `tick` seconds outside it, and once `noRespawn` is set an elimination keeps that player out. The last team with anyone left wins. In Marksman, `scores` is each team's total elimination distance in whole metres.

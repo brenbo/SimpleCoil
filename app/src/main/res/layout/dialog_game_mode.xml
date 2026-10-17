@@ -35,6 +35,16 @@
                 style="@style/DialogRadio"
                 android:id="@+id/mode_hardpoint"
                 android:text="@string/mode_hardpoint" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_battle_royale"
+                android:text="@string/mode_battle_royale" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_marksman"
+                android:text="@string/mode_marksman" />
         </RadioGroup>
 
         <TextView
@@ -208,16 +218,181 @@
                     android:inputType="number"
                     android:maxLength="7" />
             </LinearLayout>
-
-            <!-- In the sheet, not beside Save and Cancel: three buttons there don't fit and stack -->
-            <Button
-                android:id="@+id/mode_reset_button"
-                style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="8dp"
-                android:text="@string/mode_reset" />
         </LinearLayout>
+        <!-- Battle Royale -->
+        <LinearLayout
+            android:id="@+id/br_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_phases_label"
+                android:labelFor="@+id/br_phases_et"
+                android:text="@string/br_phases" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_phases_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_first_wait_label"
+                android:labelFor="@+id/br_first_wait_et"
+                android:text="@string/br_first_wait" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_first_wait_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_shrink_label"
+                android:labelFor="@+id/br_shrink_et"
+                android:text="@string/br_shrink" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_shrink_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_pause_label"
+                android:labelFor="@+id/br_pause_et"
+                android:text="@string/br_pause" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_pause_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_final_label"
+                android:labelFor="@+id/br_final_et"
+                android:text="@string/br_final" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_final_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_damage_label"
+                android:labelFor="@+id/br_damage_et"
+                android:text="@string/br_damage" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_damage_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_tick_label"
+                android:labelFor="@+id/br_tick_et"
+                android:text="@string/br_tick" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_tick_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                style="@style/DialogSwitch"
+                android:id="@+id/br_rises_switch"
+                android:text="@string/br_rises" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/br_respawn_label"
+                android:labelFor="@+id/br_respawn_et"
+                android:text="@string/br_respawn" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/br_respawn_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1" />
+
+        </LinearLayout>
+
+        <!-- Marksman -->
+        <LinearLayout
+            android:id="@+id/marksman_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/marksman_minimum_label"
+                android:labelFor="@+id/marksman_minimum_et"
+                android:text="@string/marksman_minimum" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/marksman_minimum_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/marksman_to_win_label"
+                android:labelFor="@+id/marksman_to_win_et"
+                android:text="@string/marksman_to_win" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/marksman_to_win_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="6" />
+
+        </LinearLayout>
+
+        <!-- In the sheet, not beside Save and Cancel: three buttons there don't fit and stack -->
+        <Button
+            android:id="@+id/mode_reset_button"
+            style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:text="@string/mode_reset" />
+
     </LinearLayout>
 </ScrollView>

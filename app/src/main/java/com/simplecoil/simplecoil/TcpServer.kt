@@ -162,8 +162,9 @@ class TcpServer : Service() {
             imagery = container.fieldImageryServer,
             savedField = { withContext(Dispatchers.IO) { container.serverFieldConfig.refresh() } },
             positions = ::playerFixes,
-            teamOf = { id -> serverSettings.teamLayout.let { if (it.mode.isFreeForAll) id else it.teamOf(id) } },
+            teamOf = ::liveTeamOf,
             nameOf = { id -> server.snapshot.value.players.firstOrNull { it.playerId.toInt() == id }?.name },
+            players = { server.snapshot.value.players.filter { it.connected }.associate { it.playerId.toInt() to liveTeamOf(it.playerId.toInt()) } },
             // Domination or Hardpoint won: the game ends as when the host presses End
             onWinner = { server.endGame() },
         )
@@ -180,6 +181,9 @@ class TcpServer : Service() {
             }
         }
     }
+
+    /** A player's side in the field's games: their team, or in free for all, themselves. */
+    private fun liveTeamOf(id: Int): Int = serverSettings.teamLayout.let { if (it.mode.isFreeForAll) id else it.teamOf(id) }
 
     /** Each player's last reported position and when it came, from the server's GPS reports. */
     private fun playerFixes(): Map<Int, Fix> = synchronized(serverPlayers) {

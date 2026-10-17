@@ -18,7 +18,9 @@ package com.simplecoil.simplecoil.domain.map
 
 import com.simplecoil.simplecoil.domain.loadout.Drop
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
+import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.MarksmanRules
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import org.json.JSONArray
@@ -171,6 +173,8 @@ data class FieldConfig(
     val objectiveRules: ObjectiveRules = ObjectiveRules(),
     /** Each objective mode's settings as last saved, so switching modes and back keeps them. */
     val modeRules: Map<GameMode, ObjectiveRules> = emptyMap(),
+    val battleRoyale: BattleRoyaleRules = BattleRoyaleRules(),
+    val marksman: MarksmanRules = MarksmanRules(),
 ) {
     /** Changes whenever anything in the config does; phones compare it to skip a download. */
     val id: String by lazy {
@@ -189,6 +193,8 @@ data class FieldConfig(
             .put("objectives", Objective.listToJson(objectives))
             .put("objectiveRules", objectiveRules.toJson())
             .put("modeRules", JSONObject().apply { modeRules.forEach { (mode, r) -> put(mode.wireValue, r.toJson()) } })
+            .put("battleRoyale", battleRoyale.toJson())
+            .put("marksman", marksman.toJson())
         when (val b = border) {
             is Border.Circle -> json.put("border", JSONObject().put("type", "circle")
                 .put("lat", b.center.latitude).put("lon", b.center.longitude).put("radius", b.radiusMeters))
@@ -232,6 +238,8 @@ data class FieldConfig(
                 modeRules = json.optJSONObject("modeRules")?.let { m ->
                     GameMode.entries.filter { it.hasObjectives && m.has(it.wireValue) }.associateWith { ObjectiveRules.fromJson(m.optJSONObject(it.wireValue)) }
                 } ?: emptyMap(),
+                battleRoyale = BattleRoyaleRules.fromJson(json.optJSONObject("battleRoyale")),
+                marksman = MarksmanRules.fromJson(json.optJSONObject("marksman")),
             )
         } catch (e: JSONException) {
             throw IOException("bad field config", e)

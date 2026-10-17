@@ -363,6 +363,8 @@
         <item quantity="one">%1$d point</item>
         <item quantity="other">%1$d points</item>
     </plurals>
+    <string name="server_summary_battle_royale">Battle Royale · phases: %1$d · first shrink at %2$d:00</string>
+    <string name="server_summary_marksman">Marksman: score by elimination distance</string>
     <string name="server_summary_teams">%1$s · GPS: %2$s</string>
     <string name="server_summary_ammo_limited">Limited ammo</string>
     <string name="server_summary_ammo_scavenger">Scavenger ammo</string>
@@ -386,6 +388,21 @@
     <string name="mode_about_classic">Score by eliminating players, with the game limits as always.</string>
     <string name="mode_about_domination">Capture points A, B and C by standing in them. Every point your team holds scores. Needs a field border.</string>
     <string name="mode_about_hardpoint">One point counts at a time and it moves on a timer. Hold it alone to score. Needs a field border.</string>
+    <string name="mode_battle_royale">Battle Royale</string>
+    <string name="mode_marksman">Marksman</string>
+    <string name="mode_about_battle_royale">A safe zone shrinks in phases. Outside it you lose health. Once respawns are over, an elimination puts you out; the last team standing wins. Needs a field border.</string>
+    <string name="mode_about_marksman">Score is the distance of each elimination instead of the count. Needs GPS on every phone.</string>
+    <string name="br_phases">Zone phases (2–6)</string>
+    <string name="br_first_wait">Minutes before the first shrink (1–10)</string>
+    <string name="br_shrink">Seconds each shrink takes (30–300)</string>
+    <string name="br_pause">Seconds between shrinks (30–300)</string>
+    <string name="br_final">Final zone across (%1$s)</string>
+    <string name="br_damage">Health lost outside the zone (1–10)</string>
+    <string name="br_tick">Every (1–10 s)</string>
+    <string name="br_rises">More damage each phase</string>
+    <string name="br_respawn">Respawns until phase (0 = no respawns)</string>
+    <string name="marksman_minimum">Shots shorter than this score nothing (%1$s)</string>
+    <string name="marksman_to_win">Total distance to win (%1$s, 0 = play to the game limits)</string>
     <string name="mode_score_to_win">Score to win (50–1000)</string>
     <string name="mode_points">Points (0 = by field size, up to 5)</string>
     <string name="mode_capture_seconds">Seconds to capture (5–60)</string>
@@ -412,6 +429,16 @@
     <string name="mode_enemy_capturing">Hostiles taking %1$s</string>
     <string name="mode_secured">%1$s secured</string>
     <string name="mode_lost">%1$s lost</string>
+    <plurals name="br_left">
+        <item quantity="one">%1$d left</item>
+        <item quantity="other">%1$d left</item>
+    </plurals>
+    <string name="br_zone_shrinking">zone closing</string>
+    <string name="br_zone_shrinks_in">zone closes in %1$s</string>
+    <string name="br_zone_final">final zone</string>
+    <string name="br_outside">Outside the zone! %1$s to safety</string>
+    <string name="br_you_are_out">You are out</string>
+    <string name="mode_to_win_text">to %1$s</string>
     <string name="mode_hp_contested">Point contested</string>
     <string name="mode_hp_holding">Holding the point</string>
     <string name="mode_hp_secured">Point taken</string>

@@ -29,7 +29,9 @@ import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.databinding.DialogGameModeBinding
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
+import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.MarksmanRules
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -83,6 +85,42 @@ object GameModeDialog {
             showNextSeconds = int(d.modeShowNextEt, start.showNextSeconds),
         ).clamped()
 
+        // Battle Royale and Marksman
+        fun fillBattleRoyale(r: BattleRoyaleRules) {
+            put(d.brPhasesEt, r.phases)
+            put(d.brFirstWaitEt, r.firstWaitSeconds / 60)
+            put(d.brShrinkEt, r.shrinkSeconds)
+            put(d.brPauseEt, r.pauseSeconds)
+            put(d.brFinalEt, units.fromMeters(r.finalDiameterMeters).roundToInt())
+            put(d.brDamageEt, r.damagePerTick)
+            put(d.brTickEt, r.tickSeconds)
+            d.brRisesSwitch.isChecked = r.damageRises
+            put(d.brRespawnEt, r.respawnUntilPhase)
+        }
+        val brStart = config.battleRoyale
+        fun readBattleRoyale(): BattleRoyaleRules = BattleRoyaleRules(
+            phases = int(d.brPhasesEt, brStart.phases),
+            firstWaitSeconds = d.brFirstWaitEt.text?.toString()?.toIntOrNull()?.times(60) ?: brStart.firstWaitSeconds,
+            shrinkSeconds = int(d.brShrinkEt, brStart.shrinkSeconds),
+            pauseSeconds = int(d.brPauseEt, brStart.pauseSeconds),
+            finalDiameterMeters = d.brFinalEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: brStart.finalDiameterMeters,
+            damagePerTick = int(d.brDamageEt, brStart.damagePerTick),
+            tickSeconds = int(d.brTickEt, brStart.tickSeconds),
+            damageRises = d.brRisesSwitch.isChecked,
+            respawnUntilPhase = int(d.brRespawnEt, brStart.respawnUntilPhase),
+        ).clamped()
+        fun fillMarksman(r: MarksmanRules) {
+            put(d.marksmanMinimumEt, units.fromMeters(r.minimumMeters).roundToInt())
+            put(d.marksmanToWinEt, units.fromMeters(r.distanceToWinMeters).roundToInt())
+        }
+        fun readMarksman(): MarksmanRules = MarksmanRules(
+            minimumMeters = d.marksmanMinimumEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.marksman.minimumMeters,
+            distanceToWinMeters = d.marksmanToWinEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.marksman.distanceToWinMeters,
+        ).clamped()
+        d.brFinalLabel.text = context.getString(R.string.br_final, unit)
+        d.marksmanMinimumLabel.text = context.getString(R.string.marksman_minimum, unit)
+        d.marksmanToWinLabel.text = context.getString(R.string.marksman_to_win, unit)
+
         // Each setting's label, and how to tell if it differs from the mode's default
         class Row(val label: TextView, val base: String, val changed: (ObjectiveRules, ObjectiveRules) -> Boolean)
         val rows = listOf(
@@ -116,8 +154,13 @@ object GameModeDialog {
                 GameMode.CLASSIC -> R.string.mode_about_classic
                 GameMode.DOMINATION -> R.string.mode_about_domination
                 GameMode.HARDPOINT -> R.string.mode_about_hardpoint
+                GameMode.BATTLE_ROYALE -> R.string.mode_about_battle_royale
+                GameMode.MARKSMAN -> R.string.mode_about_marksman
             })
             d.modeSettings.isVisible = mode.hasObjectives
+            d.brSettings.isVisible = mode == GameMode.BATTLE_ROYALE
+            d.marksmanSettings.isVisible = mode == GameMode.MARKSMAN
+            d.modeResetButton.isVisible = mode != GameMode.CLASSIC
             // Hardpoint moves between spots chosen by field size: one is live at a time
             d.modePointsLabel.isVisible = domination
             d.modePointsEt.isVisible = domination
@@ -134,8 +177,12 @@ object GameModeDialog {
             GameMode.CLASSIC -> R.id.mode_classic
             GameMode.DOMINATION -> R.id.mode_domination
             GameMode.HARDPOINT -> R.id.mode_hardpoint
+            GameMode.BATTLE_ROYALE -> R.id.mode_battle_royale
+            GameMode.MARKSMAN -> R.id.mode_marksman
         })
         fill(start)
+        fillBattleRoyale(brStart)
+        fillMarksman(config.marksman)
         showMode()
         markChanged()
         d.modeGroup.setOnCheckedChangeListener { _, id ->
@@ -144,9 +191,11 @@ object GameModeDialog {
             mode = when (id) {
                 R.id.mode_domination -> GameMode.DOMINATION
                 R.id.mode_hardpoint -> GameMode.HARDPOINT
+                R.id.mode_battle_royale -> GameMode.BATTLE_ROYALE
+                R.id.mode_marksman -> GameMode.MARKSMAN
                 else -> GameMode.CLASSIC
             }
-            fill(remembered[mode] ?: ObjectiveRules.defaultsFor(mode))
+            if (mode.hasObjectives) fill(remembered[mode] ?: ObjectiveRules.defaultsFor(mode))
             showMode()
             markChanged()
         }
@@ -166,17 +215,22 @@ object GameModeDialog {
         val dialog = AlertDialog.Builder(context, R.style.AppDialogTheme)
             .setView(d.root)
             .setPositiveButton(R.string.field_dialog_save) { _, _ ->
-                if (mode.hasObjectives && config.border == null) {
+                if (mode.needsBorder && config.border == null) {
                     Toast.makeText(context.applicationContext, R.string.mode_needs_border, Toast.LENGTH_LONG).show()
                 }
                 val rules = if (mode.hasObjectives) read() else config.objectiveRules
                 if (mode.hasObjectives) remembered[mode] = rules
-                onSave(config.copy(mode = mode, objectiveRules = rules, modeRules = remembered.toMap()))
+                onSave(config.copy(mode = mode, objectiveRules = rules, modeRules = remembered.toMap(),
+                    battleRoyale = readBattleRoyale(), marksman = readMarksman()))
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .create()
         d.modeResetButton.setOnClickListener {
-            fill(ObjectiveRules.defaultsFor(mode))
+            when (mode) {
+                GameMode.BATTLE_ROYALE -> fillBattleRoyale(BattleRoyaleRules())
+                GameMode.MARKSMAN -> fillMarksman(MarksmanRules())
+                else -> fill(ObjectiveRules.defaultsFor(mode))
+            }
             markChanged()
         }
         dialog.show()

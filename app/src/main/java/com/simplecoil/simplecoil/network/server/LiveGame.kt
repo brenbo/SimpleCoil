@@ -27,6 +27,10 @@ import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.BattleRoyaleEngine
+import com.simplecoil.simplecoil.domain.mode.MarksmanEngine
+import com.simplecoil.simplecoil.domain.mode.ModeState
+import com.simplecoil.simplecoil.domain.mode.ZonePlan
 import com.simplecoil.simplecoil.domain.mode.ModeEngine
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
@@ -58,6 +62,8 @@ class LiveGame(
     private val teamOf: (Int) -> Int,
     /** A player's name, for the stats. */
     private val nameOf: (Int) -> String?,
+    /** The players in the game, by id, with their team (Battle Royale counts who is left). */
+    private val players: () -> Map<Int, Int> = { emptyMap() },
     /** Server wall clock, for drop times. */
     private val wallClock: () -> Long = System::currentTimeMillis,
     /** Monotonic clock, as GPS reports are stamped. */
@@ -92,6 +98,8 @@ class LiveGame(
             val base = savedField()
             // Shots are measured on any server, with or without a field set up
             rules = base?.loadout ?: LoadoutRules()
+            mode = base?.mode ?: GameMode.CLASSIC
+            battleRoyale = null
             modeBytes = null
             alive.clear()
             base ?: return@collectLatest
@@ -161,11 +169,27 @@ class LiveGame(
      * server ends the game.
      */
     private suspend fun runMode(base: FieldConfig) {
-        if (!base.mode.hasObjectives || base.objectives.isEmpty()) return
-        val engine = ModeEngine(base.mode, base.objectives, base.objectiveRules, wallClock())
+        val tick: () -> ModeState = when (base.mode) {
+            GameMode.DOMINATION, GameMode.HARDPOINT -> {
+                if (base.objectives.isEmpty()) return
+                val engine = ModeEngine(base.mode, base.objectives, base.objectiveRules, wallClock());
+                { engine.tick(wallClock(), presence(base.objectives, base.objectiveRules.radiusMeters)) }
+            }
+            GameMode.BATTLE_ROYALE -> {
+                val border = base.border ?: return
+                val engine = BattleRoyaleEngine(ZonePlan(border, base.battleRoyale, wallClock(), random))
+                battleRoyale = engine;
+                { engine.tick(wallClock(), players()) }
+            }
+            GameMode.MARKSMAN -> {
+                val engine = MarksmanEngine(base.marksman);
+                { engine.tick(shots.all(), teamOf) }
+            }
+            GameMode.CLASSIC -> return
+        }
         var won = false
         while (true) {
-            val state = engine.tick(wallClock(), presence(base.objectives, base.objectiveRules.radiusMeters))
+            val state = tick()
             modeBytes = state.toJson().toString().toByteArray(Charsets.UTF_8)
             if (state.winner != 0 && !won) {
                 won = true
@@ -201,11 +225,20 @@ class LiveGame(
     @Volatile
     private var rules: LoadoutRules? = null
 
+    /** The game's mode while one runs, and its Battle Royale. */
+    @Volatile
+    private var mode = GameMode.CLASSIC
+
+    @Volatile
+    private var battleRoyale: BattleRoyaleEngine? = null
+
     private fun onEliminated(victimId: Int, shooterId: Int) {
         val rules = rules ?: return
         val fixes = positions()
         val victim = fixes[victimId]
-        if (rules.trackShots) {
+        battleRoyale?.onEliminated(victimId, wallClock())
+        // Marksman scores by distance, so it always measures
+        if (rules.trackShots || mode == GameMode.MARKSMAN) {
             shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), rules.maxShotMeters)
         }
         // Scavenger ammo where they fell, if we know where that was

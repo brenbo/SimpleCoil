@@ -24,6 +24,7 @@ import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
 import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.mode.ModeController
+import com.simplecoil.simplecoil.domain.mode.ZoneController
 import com.simplecoil.simplecoil.domain.map.BorderController
 import com.simplecoil.simplecoil.domain.map.SpawnController
 import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
@@ -225,6 +226,26 @@ class AppContainer(private val app: Application) {
             },
             scope = appScope,
             io = dispatchers.io,
+        )
+    }
+
+    /** Battle Royale's zone on this phone: damage outside it, and no respawns once they are over. */
+    val zoneController: ZoneController by lazy {
+        val engine = sessionEngine
+        ZoneController(
+            state = modeController.state,
+            session = engine.state,
+            penalties = object : ZoneController.Penalties {
+                override fun damage(amount: Int) = engine.applyOutOfBoundsDamage(amount)
+                override fun setNoRespawn(on: Boolean) = engine.setNoRespawn(on)
+            },
+            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            feedback = object : ZoneController.Feedback {
+                override fun play(sound: SessionSound) = soundEffects.play(sound)
+                override fun vibrate() = haptics.vibrate()
+            },
+            scope = appScope,
+            clock = clock,
         )
     }
 
