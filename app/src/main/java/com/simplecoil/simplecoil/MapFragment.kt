@@ -23,6 +23,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.Choreographer
 import android.view.LayoutInflater
@@ -52,6 +55,8 @@ import com.simplecoil.simplecoil.domain.map.HeadingFilter
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
 import com.simplecoil.simplecoil.domain.map.SpawnController
+import com.simplecoil.simplecoil.domain.mode.ModeController
+import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.hardware.location.CompassSensor
 import com.simplecoil.simplecoil.hardware.location.LocationUpdateListener
 import com.simplecoil.simplecoil.hardware.location.MapLocationManager
@@ -61,6 +66,7 @@ import com.simplecoil.simplecoil.ui.map.DropOverlay
 import com.simplecoil.simplecoil.ui.map.MapCredit
 import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
+import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -81,6 +87,7 @@ import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import kotlin.math.abs
 import kotlin.math.min
+import java.util.Locale
 
 /**
  * The in-game map (map design: Map engine, Border). The field photo and border the server sent,
@@ -129,6 +136,11 @@ class MapFragment : Fragment() {
     private var lastNotice: LoadoutController.Notice? = null
     private var lastNoticeAt = 0L
 
+    /** The capture points over the map, and the last news of them with when it came. */
+    private var objectiveOverlay: ObjectiveOverlay? = null
+    private var lastModeNotice: ModeController.Notice? = null
+    private var lastModeNoticeAt = 0L
+
     /** The team colour your arrow was last drawn in. */
     private var youTeam = -1
 
@@ -142,6 +154,7 @@ class MapFragment : Fragment() {
             renderSpawns()
             renderDrops()
             showDropBanner()
+            showModeBanner()
             refreshTarget()
             location.currentBestLocation?.takeIf { tracking && (SystemClock.elapsedRealtimeNanos() - it.elapsedRealtimeNanos) / 1_000_000 < FRESH_FIX_MILLIS }
                 ?.let { sendLocation(it) }
@@ -160,7 +173,10 @@ class MapFragment : Fragment() {
             moveCamera()
             placeYou()
             placePlayers()
-            map?.projection?.let { dropOverlay?.place(it) }
+            map?.projection?.let {
+                objectiveOverlay?.place(it)
+                dropOverlay?.place(it)
+            }
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
@@ -205,6 +221,7 @@ class MapFragment : Fragment() {
         // While resumed, as the broadcast receiver it replaces was registered
         container.clientEvents.observe(this, Lifecycle.State.RESUMED) { onClientEvent(it) }
         container.loadoutController // starts it: it watches the game from here on
+        container.modeController
     }
 
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -215,6 +232,7 @@ class MapFragment : Fragment() {
         b.mapView.getMapAsync { onMapReady(it) }
         b.mapCompassButton.setOnClickListener { toggleHeadingUp() }
         dropOverlay = DropOverlay(requireContext(), b.mapDropsLayer)
+        objectiveOverlay = ObjectiveOverlay(requireContext(), b.mapObjectivesLayer) { objectiveColor(it) }
         b.mapZoomButton.setOnClickListener {
             setAutoZoom(autoZoom.next())
             preferences.saveMapAutoZoom(autoZoom.name)
@@ -250,6 +268,8 @@ class MapFragment : Fragment() {
                 launch { container.loadoutController.notices.collect { lastNotice = it; lastNoticeAt = container.clock(); showDropBanner() } }
                 launch { container.loadoutController.longestShot.collect { showLongestShot(it) } }
                 launch { container.loadoutController.uav.collect { renderPlayers() } }
+                launch { container.modeController.state.collect { renderMode(it) } }
+                launch { container.modeController.notices.collect { lastModeNotice = it; lastModeNoticeAt = container.clock(); showModeBanner() } }
             }
         }
     }
@@ -302,6 +322,7 @@ class MapFragment : Fragment() {
         binding = null
         youTeam = -1
         dropOverlay = null
+        objectiveOverlay = null
         playerViews.clear()
         map = null
         style = null
@@ -419,7 +440,7 @@ class MapFragment : Fragment() {
      * keep to, spawns to walk back to): those are checked on this phone, even with sharing off.
      */
     private fun wantsGps(): Boolean =
-        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true ||
+        settings.isUseGPS || field?.border != null || field?.spawns?.isNotEmpty() == true || field?.mode?.hasObjectives == true ||
             field?.loadout?.let { it.dropsEnabled || it.trackShots || it.ammo == AmmoMode.SCAVENGER } == true
 
     private fun sendLocation(fix: Location) {
@@ -670,6 +691,71 @@ class MapFragment : Fragment() {
     }
 
     /** The drops on the field, with their countdowns (map design: Drops). */
+    /** A team's colour on the capture points; in free for all, yours and everyone else's. */
+    private fun objectiveColor(team: Int): Int = if (settings.teamLayout.mode.isFreeForAll) {
+        if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
+    } else {
+        MapIcons.teamColor(team, ENEMY_COLOR)
+    }
+
+    private fun renderMode(state: ModeState?) {
+        if (state == null || !state.mode.hasObjectives) objectiveOverlay?.clear()
+        else objectiveOverlay?.update(state.objectives, state.radiusMeters)
+        showModeBanner()
+    }
+
+    /**
+     * Domination and Hardpoint: each team's score and the score to win, then where you stand,
+     * or what just happened to a point, or who won.
+     */
+    private fun showModeBanner() {
+        val banner = binding?.mapModeTv ?: return
+        val state = container.modeController.state.value
+        if (state == null || !state.mode.hasObjectives) {
+            banner.isVisible = false
+            return
+        }
+        val myTeam = container.players.playerID.toInt().let { id -> if (settings.teamLayout.mode.isFreeForAll) id else settings.teamLayout.teamOf(id) }
+        val text = SpannableStringBuilder()
+        // Your team first, then the others by score
+        val teams = (state.scores.keys + myTeam).distinct().sortedWith(compareBy({ it != myTeam }, { -(state.scores[it] ?: 0) }))
+        for (team in teams.take(MAX_SCORES_SHOWN)) {
+            if (text.isNotEmpty()) text.append("   ")
+            val start = text.length
+            text.append("●")
+            text.setSpan(ForegroundColorSpan(objectiveColor(team)), start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            text.append(" ").append(String.format(Locale.ROOT, "%d", state.scores[team] ?: 0))
+        }
+        text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
+        if (state.movesAt != 0L && state.winner == 0) {
+            val seconds = ((state.movesAt - container.fieldImageryClient.serverNow()) / 1000).coerceAtLeast(0)
+            text.append(" · ").append(getString(R.string.mode_moves_in, String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)))
+        }
+        modeStatus(state, myTeam)?.let { text.append("\n").append(it) }
+        banner.text = text
+        banner.isVisible = true
+    }
+
+    /** One line about you and the points: who won, a point's news, or the point you stand on. */
+    private fun modeStatus(state: ModeState, myTeam: Int): String? {
+        if (state.winner != 0) return getString(if (state.winner == myTeam) R.string.mode_victory else R.string.mode_defeat)
+        val notice = lastModeNotice?.takeIf { container.clock() - lastModeNoticeAt < NOTICE_MILLIS }
+        if (notice != null) return when (notice) {
+            is ModeController.Notice.Secured -> getString(R.string.mode_secured, notice.id)
+            is ModeController.Notice.Lost -> getString(R.string.mode_lost, notice.id)
+            is ModeController.Notice.UnderAttack -> getString(R.string.mode_enemy_capturing, notice.id)
+            is ModeController.Notice.Moved -> getString(R.string.mode_moved, notice.id)
+        }
+        val here = you() ?: return null
+        val on = state.objectives.firstOrNull { it.active && GeoMath.distanceMeters(here, it.point) <= state.radiusMeters } ?: return null
+        return when {
+            on.contested -> getString(R.string.mode_contested, on.id)
+            on.capturing == myTeam -> getString(R.string.mode_capturing, on.id)
+            on.owner == myTeam -> getString(R.string.mode_holding, on.id)
+            else -> null
+        }
+    }
+
     private fun renderDrops() {
         dropOverlay?.update(container.loadoutController.visibleDrops(), container.fieldImageryClient.serverNow())
     }
@@ -779,6 +865,12 @@ class MapFragment : Fragment() {
 
         /** You, in free for all (no team colour). */
         const val YOU_COLOR = 0xFF2979FF.toInt()
+
+        /** Everyone else on the capture points in free for all, and a team with no colour. */
+        const val ENEMY_COLOR = 0xFFE53935.toInt()
+
+        /** Scores on the banner: yours and the leaders, four teams at most. */
+        const val MAX_SCORES_SHOWN = 4
 
         /** About 5 km across on a phone, to a few metres. */
         const val MIN_ZOOM = 13.0

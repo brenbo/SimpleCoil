@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The game mode sheet (map design: Game modes, Dedicated server settings): the mode, its common
+     settings, and the rest under Advanced. Styled like the rules and game limit dialogs. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#080808">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <TextView
+            style="@style/DialogTitle"
+            android:text="@string/mode_title" />
+
+        <RadioGroup
+            android:id="@+id/mode_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_classic"
+                android:text="@string/mode_classic" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_domination"
+                android:text="@string/mode_domination" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_hardpoint"
+                android:text="@string/mode_hardpoint" />
+        </RadioGroup>
+
+        <TextView
+            style="@style/DialogHint"
+            android:id="@+id/mode_about_tv" />
+
+        <LinearLayout
+            android:id="@+id/mode_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/mode_to_win_label"
+                android:labelFor="@+id/mode_to_win_et"
+                android:text="@string/mode_score_to_win" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/mode_to_win_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="4" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/mode_points_label"
+                android:labelFor="@+id/mode_points_et"
+                android:text="@string/mode_points" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/mode_points_et"
+                android:digits="012345"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/mode_capture_label"
+                android:labelFor="@+id/mode_capture_et"
+                android:text="@string/mode_capture_seconds" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/mode_capture_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/mode_move_label"
+                android:labelFor="@+id/mode_move_et"
+                android:text="@string/mode_move_seconds" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/mode_move_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <!-- Advanced: collapsed until tapped. -->
+            <TextView
+                style="@style/DialogSection"
+                android:id="@+id/mode_advanced_tv"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="@string/mode_advanced_closed" />
+
+            <LinearLayout
+                android:id="@+id/mode_advanced"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/DialogLabel"
+                    android:id="@+id/mode_radius_label"
+                    android:labelFor="@+id/mode_radius_et"
+                    android:text="@string/mode_radius" />
+
+                <EditText
+                    style="@style/DialogField"
+                    android:id="@+id/mode_radius_et"
+                    android:digits="0123456789"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="3" />
+
+                <TextView
+                    style="@style/DialogLabel"
+                    android:id="@+id/mode_per_tick_label"
+                    android:labelFor="@+id/mode_per_tick_et"
+                    android:text="@string/mode_points_per_tick" />
+
+                <EditText
+                    style="@style/DialogField"
+                    android:id="@+id/mode_per_tick_et"
+                    android:digits="0123456789"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="2" />
+
+                <TextView
+                    style="@style/DialogLabel"
+                    android:id="@+id/mode_tick_label"
+                    android:labelFor="@+id/mode_tick_et"
+                    android:text="@string/mode_tick_seconds" />
+
+                <EditText
+                    style="@style/DialogField"
+                    android:id="@+id/mode_tick_et"
+                    android:digits="0123456789"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="2" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    style="@style/DialogSwitch"
+                    android:id="@+id/mode_faster_switch"
+                    android:text="@string/mode_more_faster" />
+
+                <TextView
+                    style="@style/DialogLabel"
+                    android:id="@+id/mode_show_next_label"
+                    android:labelFor="@+id/mode_show_next_et"
+                    android:text="@string/mode_show_next" />
+
+                <EditText
+                    style="@style/DialogField"
+                    android:id="@+id/mode_show_next_et"
+                    android:digits="0123456789"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="3" />
+
+                <TextView
+                    style="@style/DialogLabel"
+                    android:id="@+id/mode_small_label"
+                    android:labelFor="@+id/mode_small_et"
+                    android:text="@string/mode_small_field" />
+
+                <EditText
+                    style="@style/DialogField"
+                    android:id="@+id/mode_small_et"
+                    android:digits="0123456789"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="7" />
+
+                <TextView
+                    style="@style/DialogLabel"
+                    android:id="@+id/mode_large_label"
+                    android:labelFor="@+id/mode_large_et"
+                    android:text="@string/mode_large_field" />
+
+                <EditText
+                    style="@style/DialogField"
+                    android:id="@+id/mode_large_et"
+                    android:digits="0123456789"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:maxLength="7" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

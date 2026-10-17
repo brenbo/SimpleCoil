@@ -64,6 +64,9 @@ class FieldImageryServer(
 
         /** The game's shot stats as JSON. */
         fun stats(): ByteArray?
+
+        /** The objective game's state as JSON, hearing that [playerId] is [alive]; null outside one. */
+        fun mode(playerId: Int, alive: Boolean): ByteArray?
     }
 
     @Volatile
@@ -81,10 +84,10 @@ class FieldImageryServer(
                 if (kind != null) onFieldChanged()
             }
             else -> {
-                body = if (request.kind == FieldImageryProtocol.Kind.UAV) {
-                    request.knownId.toIntOrNull()?.let { extras?.uav(it) }
-                } else {
-                    extras?.stats()
+                body = when (request.kind) {
+                    FieldImageryProtocol.Kind.UAV -> request.knownId.toIntOrNull()?.let { extras?.uav(it) }
+                    FieldImageryProtocol.Kind.MODE -> FieldImageryProtocol.parseMode(request.knownId)?.let { (id, alive) -> extras?.mode(id, alive) }
+                    else -> extras?.stats()
                 }
                 reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
             }
@@ -183,7 +186,7 @@ class FieldImageryServer(
             val out = BufferedOutputStream(client.getOutputStream())
             val address = client.inetAddress?.hostAddress ?: "?"
             when (request.kind) {
-                FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS -> {
+                FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE -> {
                     serveExtra(request, out)
                     out.flush()
                     return
@@ -299,6 +302,9 @@ object FieldImageryProtocol {
 
         /** The game's shot stats: `SCFIELD1 STATS -`; PACK of JSON or NONE. */
         STATS("STATS"),
+
+        /** An objective game as it stands: `SCFIELD1 MODE <player id>,<1 if alive, else 0>`; PACK of JSON or NONE. */
+        MODE("MODE"),
     }
 
     /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */
@@ -308,6 +314,16 @@ object FieldImageryProtocol {
         "$VERSION ${kind.verb} ${knownId?.takeIf { it.isNotEmpty() } ?: NO_ID}\n"
 
     fun claimLine(dropId: String, playerId: Int): String = requestLine("$dropId,$playerId", Kind.CLAIM)
+
+    fun modeLine(playerId: Int, alive: Boolean): String = requestLine("$playerId,${if (alive) 1 else 0}", Kind.MODE)
+
+    /** A mode request's player id and whether they are in the game, or null if it isn't one. */
+    fun parseMode(arg: String): Pair<Int, Boolean>? {
+        val parts = arg.split(',')
+        if (parts.size != 2) return null
+        val id = parts[0].toIntOrNull() ?: return null
+        return id to (parts[1] == "1")
+    }
 
     /** A claim's drop id and player id, or null if it isn't one. */
     fun parseClaim(arg: String): Pair<String, Int>? {

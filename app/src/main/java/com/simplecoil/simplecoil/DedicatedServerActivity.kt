@@ -31,6 +31,10 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.ActivityDedicatedServerBinding
+import com.simplecoil.simplecoil.databinding.DialogFieldNameBinding
+import com.simplecoil.simplecoil.domain.mode.GamePreset
+import com.simplecoil.simplecoil.domain.rules.LimitKind
+import androidx.appcompat.app.AlertDialog
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.ui.dialogs.ConfirmDialog
 import com.simplecoil.simplecoil.ui.dialogs.GameLimitDialog
@@ -43,6 +47,12 @@ import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
 import com.simplecoil.simplecoil.ui.server.ServerUiEffect
 import com.simplecoil.simplecoil.ui.map.FieldMapActivity
 import com.simplecoil.simplecoil.ui.map.FieldRulesDialog
+import com.simplecoil.simplecoil.ui.map.GameModeDialog
+import com.simplecoil.simplecoil.domain.loadout.AmmoMode
+import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
+import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
+import androidx.core.view.isVisible
 import com.simplecoil.simplecoil.domain.map.BorderRules
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
@@ -95,6 +105,7 @@ class DedicatedServerActivity : AppCompatActivity() {
                 launch { vm.effects.collect { onEffect(it) } }
                 launch { showFieldMapStatus() }
                 launch { showGps() }
+                launch { showCardSummaries() }
             }
         }
     }
@@ -139,25 +150,155 @@ class DedicatedServerActivity : AppCompatActivity() {
     }
 
     /** The game rules for the field: out of bounds, respawn, ammo and drops (map design: Server UI). */
-    private fun showRules() {
+    private fun showRules(section: FieldRulesDialog.Section) = editField { config, save ->
+        FieldRulesDialog.show(this, config, section, save)
+    }
+
+    private fun showMode() = editField { config, save -> GameModeDialog.show(this, config, save) }
+
+    /** Opens a sheet on the saved field (or a new one) with [sheet]; what it saves goes to the phones. */
+    private fun editField(sheet: (FieldConfig, (FieldConfig) -> Unit) -> Unit) {
         val container = (application as SimpleCoilApp).container
         lifecycleScope.launch {
             val config = withContext(Dispatchers.IO) { container.serverFieldConfig.refresh() }
                 ?: FieldConfig(rules = BorderRules(units = DistanceUnits.defaultFor(Locale.getDefault())))
-            FieldRulesDialog.show(this@DedicatedServerActivity, config) { updated ->
-                lifecycleScope.launch {
-                    val saved = withContext(Dispatchers.IO) {
-                        try {
-                            container.serverFieldConfig.save(updated)
-                            true
-                        } catch (e: IOException) {
-                            false
-                        }
-                    }
-                    container.fieldImageryServer.onFieldChanged()
-                    if (!saved) Toast.makeText(applicationContext, R.string.field_map_save_error, Toast.LENGTH_SHORT).show()
+            sheet(config) { updated -> saveField(updated) }
+        }
+    }
+
+    private fun saveField(updated: FieldConfig) {
+        val container = (application as SimpleCoilApp).container
+        lifecycleScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                try {
+                    container.serverFieldConfig.save(updated)
+                    true
+                } catch (e: IOException) {
+                    false
                 }
             }
+            container.fieldImageryServer.onFieldChanged()
+            if (!saved) Toast.makeText(applicationContext, R.string.field_map_save_error, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Game presets (map design: Presets): the whole setup under a name, "Saturday BR"
+
+    private fun showPresets() {
+        val container = (application as SimpleCoilApp).container
+        lifecycleScope.launch {
+            val names = withContext(Dispatchers.IO) { container.gamePresets.names() }
+            val items = (listOf(getString(R.string.game_presets_save)) + names).toTypedArray()
+            AlertDialog.Builder(this@DedicatedServerActivity, R.style.AppDialogTheme)
+                .setTitle(R.string.game_presets_title)
+                .setItems(items) { _, which -> if (which == 0) askPresetName() else presetOptions(names[which - 1]) }
+                .setNegativeButton(R.string.field_dialog_cancel, null)
+                .show()
+        }
+    }
+
+    private fun askPresetName() {
+        val dialog = DialogFieldNameBinding.inflate(layoutInflater)
+        dialog.fieldNameTitleTv.setText(R.string.game_presets_save)
+        dialog.fieldNameLabelTv.setText(R.string.game_presets_name_hint)
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setView(dialog.root)
+            .setPositiveButton(R.string.field_dialog_save) { _, _ ->
+                val name = dialog.fieldNameEt.text.toString().trim()
+                if (name.isNotEmpty()) savePreset(name)
+            }
+            .setNegativeButton(R.string.field_dialog_cancel, null)
+            .show()
+    }
+
+    private fun savePreset(name: String) {
+        val container = (application as SimpleCoilApp).container
+        val state = vm.state.value ?: return
+        lifecycleScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                val field = container.serverFieldConfig.refresh() ?: FieldConfig(rules = BorderRules(units = DistanceUnits.defaultFor(Locale.getDefault())))
+                val preset = GamePreset(
+                    name = name, mode = field.mode, objectiveRules = field.objectiveRules, borderRules = field.rules,
+                    spawnRules = field.spawnRules, loadout = field.loadout, teamMode = state.teamMode,
+                    gpsMode = if (state.useGps) state.gpsMode else GameSettingsRepository.GPS_DISABLED,
+                    timeLimit = state.limits.shown(LimitKind.TIME), livesLimit = state.limits.shown(LimitKind.LIVES),
+                    scoreLimit = state.limits.shown(LimitKind.SCORE), startTimeSeconds = state.startTimeSeconds,
+                    allowChooseTeams = state.allowChooseTeams,
+                )
+                try {
+                    container.gamePresets.save(preset)
+                    true
+                } catch (e: IOException) {
+                    false
+                }
+            }
+            Toast.makeText(applicationContext, if (ok) getString(R.string.game_presets_saved, name) else getString(R.string.field_presets_error),
+                Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun presetOptions(name: String) {
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setTitle(name)
+            .setItems(arrayOf(getString(R.string.field_presets_load), getString(R.string.field_presets_delete))) { _, which ->
+                if (which == 0) loadPreset(name) else deletePreset(name)
+            }
+            .setNegativeButton(R.string.field_dialog_cancel, null)
+            .show()
+    }
+
+    /** The preset's server settings go through the same paths as the controls; its rules onto the saved field. */
+    private fun loadPreset(name: String) {
+        val container = (application as SimpleCoilApp).container
+        lifecycleScope.launch {
+            val preset = withContext(Dispatchers.IO) { container.gamePresets.load(name) } ?: return@launch
+            vm.onTeamModeSelected(preset.teamMode)
+            vm.onGpsModeSelected(preset.gpsMode)
+            vm.onGameLimitsEntered(mapOf(
+                LimitKind.TIME to preset.timeLimit.toString(),
+                LimitKind.LIVES to preset.livesLimit.toString(),
+                LimitKind.SCORE to preset.scoreLimit.toString(),
+            ))
+            vm.onStartTimeEntered(preset.startTimeSeconds.toString())
+            vm.onAllowChooseTeamsChanged(preset.allowChooseTeams)
+            editField { config, _ -> saveField(preset.applyTo(config)) }
+            Toast.makeText(applicationContext, getString(R.string.game_presets_loaded, name), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun deletePreset(name: String) {
+        val container = (application as SimpleCoilApp).container
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { container.gamePresets.delete(name) }
+            Toast.makeText(applicationContext, getString(R.string.field_presets_deleted, name), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** The Game mode and Extras cards' one-line summaries, from the saved field. */
+    private suspend fun showCardSummaries() {
+        val container = (application as SimpleCoilApp).container
+        container.serverFieldConfig.config.collect { config ->
+            val rules = config?.objectiveRules ?: ObjectiveRules()
+            binding.modeSummaryTv.text = when (config?.mode ?: GameMode.CLASSIC) {
+                GameMode.CLASSIC -> getString(R.string.server_summary_classic)
+                GameMode.DOMINATION -> getString(R.string.server_summary_domination,
+                    if (rules.pointCount == 0) getString(R.string.server_summary_points_auto)
+                    else resources.getQuantityString(R.plurals.server_summary_points, rules.pointCount, rules.pointCount),
+                    rules.scoreToWin)
+                GameMode.HARDPOINT -> getString(R.string.server_summary_hardpoint, rules.moveSeconds, rules.scoreToWin)
+            }
+            val loadout = config?.loadout ?: LoadoutRules()
+            val parts = listOfNotNull(
+                getString(when (loadout.ammo) {
+                    AmmoMode.UNLIMITED -> R.string.server_summary_ammo_unlimited
+                    AmmoMode.LIMITED -> R.string.server_summary_ammo_limited
+                    AmmoMode.SCAVENGER -> R.string.server_summary_ammo_scavenger
+                }),
+                getString(R.string.server_summary_drops, loadout.dropIntervalMinutes).takeIf { loadout.dropsEnabled },
+                getString(R.string.server_summary_killstreaks).takeIf { loadout.killstreaks },
+                getString(R.string.server_summary_longest).takeIf { loadout.trackShots && loadout.longestShotAward },
+            )
+            binding.extrasSummaryTv.text = parts.joinToString(" · ")
         }
     }
 
@@ -190,7 +331,15 @@ class DedicatedServerActivity : AppCompatActivity() {
             showDialog(StartingTimerDialog.newInstance(current, DedicatedServerViewModel.MAX_START_TIME_SECONDS), StartingTimerDialog.REQUEST_KEY)
         }
         fieldMapButton.setOnClickListener { startActivity(Intent(this@DedicatedServerActivity, FieldMapActivity::class.java)) }
-        fieldRulesButton.setOnClickListener { showRules() }
+        fieldRulesButton.setOnClickListener { showRules(FieldRulesDialog.Section.FIELD) }
+        extrasCardHeader.setOnClickListener { showRules(FieldRulesDialog.Section.EXTRAS) }
+        modeCardHeader.setOnClickListener { showMode() }
+        presetsButton.setOnClickListener { showPresets() }
+        // Teams and players opens in place
+        teamsCardHeader.setOnClickListener {
+            teamsBody.isVisible = !teamsBody.isVisible
+            teamsChevronTv.setText(if (teamsBody.isVisible) R.string.server_card_close else R.string.server_card_open)
+        }
         startGameButton.setOnClickListener { vm.onStartPressed() }
         endGameButton.setOnClickListener { vm.onEndPressed() }
         resetGameButton.setOnClickListener { vm.onResetPressed() }

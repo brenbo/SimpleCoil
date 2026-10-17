@@ -292,3 +292,15 @@ The server is the one place a drop is claimed, so two players can't both get it:
 | `SCFIELD1 STATS -` | `SCFIELD1 PACK <length>` of `{"longest":{"shooter","shooterName","victim","victimName","meters","from":[lat, lon],"to":[lat, lon]},"players":[[id, name, meters, victimName], ...]}` (each player's longest, for the scoreboard), or `NONE` with no measured shot |
 
 Limited ammo, refills, power-ups and killstreaks are kept on each phone. For shot distance, the server pairs each `ELIMINATED` with the shooter's and victim's last positions, if both arrived within the last 10 seconds and are no farther apart than `maxShot`.
+
+### 8.2 Domination and Hardpoint
+
+The config's `mode` is `classic`, `domination` or `hardpoint`. `objectives` lists the capture points as `[[letter, lat, lon], ...]`; empty means the server places them by field size when a game starts, and then serves the placed ones in the live config. `objectiveRules` holds `points` (0 = by field size), `smallField` and `largeField` (square metres), `radius` (metres), `capture` (seconds), `moreFaster`, `perTick`, `tick` (seconds), `toWin`, `move` and `showNext` (seconds).
+
+The server runs the game: once a second it counts who stands on each point (players with a position from the last 15 seconds who have not said they are out), moves capture progress and the scores on, and ends the game when a team reaches `toWin`. Phones ask once a second while a game runs:
+
+| Phone sends | Server replies |
+|---|---|
+| `SCFIELD1 MODE <playerId>,<1 if in the game, else 0>` | `SCFIELD1 PACK <length>` of `{"mode","objectives":[[letter, lat, lon, owner, capturing, progress, contested, active, next], ...],"scores":[[team, score], ...],"toWin","radius","winner","movesAt"}`, or `NONE` outside an objective game |
+
+`owner`, `capturing` and `winner` are teams (player ids in free for all; 0 for none), `progress` runs from 0 to 1, `contested`, `active` and `next` are 1 or 0, and `movesAt` is the server's wall clock when a Hardpoint moves on (0 for never). Each request also tells the server whether that player is in the game, so a player waiting to respawn can't hold a point.

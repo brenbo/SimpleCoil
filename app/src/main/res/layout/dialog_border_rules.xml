@@ -13,8 +13,15 @@
         android:padding="10dp">
 
         <TextView
+            android:id="@+id/rules_title_tv"
             style="@style/DialogTitle"
             android:text="@string/rules_title" />
+
+        <LinearLayout
+            android:id="@+id/rules_field_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
         <TextView
             style="@style/DialogSection"
@@ -217,6 +224,14 @@
             style="@style/DialogSwitch"
             android:id="@+id/rules_shield_in_spawn_switch"
             android:text="@string/rules_shield_in_spawn" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rules_extras_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
         <TextView
             style="@style/DialogSection"
@@ -489,6 +504,14 @@
             android:id="@+id/rules_longest_shot_switch"
             android:text="@string/rules_longest_shot" />
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rules_gps_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
         <TextView
             style="@style/DialogSection"
             android:text="@string/rules_section_gps" />
@@ -572,6 +595,14 @@
             android:inputType="number"
             android:maxLength="3" />
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rules_map_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
         <TextView
             style="@style/DialogSection"
             android:text="@string/rules_section_map" />
@@ -596,5 +627,8 @@
             android:importantForAutofill="no"
             android:inputType="number"
             android:maxLength="3" />
+        </LinearLayout>
+
+
     </LinearLayout>
 </ScrollView>

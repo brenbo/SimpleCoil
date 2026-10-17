@@ -45,6 +45,10 @@ import com.simplecoil.simplecoil.databinding.DialogFieldNameBinding
 import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
+import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.Objective
+import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
+import com.simplecoil.simplecoil.domain.mode.ObjectiveState
 import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.BorderRules
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
@@ -95,7 +99,7 @@ import kotlin.math.roundToInt
  */
 class FieldMapActivity : AppCompatActivity() {
 
-    private enum class Tool { NONE, CIRCLE, POLYGON, WALK, SPAWNS }
+    private enum class Tool { NONE, CIRCLE, POLYGON, WALK, SPAWNS, OBJECTIVES }
 
     private lateinit var container: AppContainer
     private lateinit var binding: ActivityFieldMapBinding
@@ -112,6 +116,9 @@ class FieldMapActivity : AppCompatActivity() {
     private val walked = ArrayList<LatLon>()
     private var walkListener: LocationListener? = null
     private var spawnTeam = 1
+
+    /** The capture points drawn over the map. */
+    private var objectiveOverlay: ObjectiveOverlay? = null
 
     private val requestLocationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -136,14 +143,22 @@ class FieldMapActivity : AppCompatActivity() {
                 binding.fieldToolCircleButton.id -> Tool.CIRCLE
                 binding.fieldToolPolygonButton.id -> Tool.POLYGON
                 binding.fieldToolSpawnsButton.id -> Tool.SPAWNS
+                binding.fieldToolObjectivesButton.id -> Tool.OBJECTIVES
                 else -> Tool.WALK
             }
             if (checked) startTool(chosen) else if (tool == chosen) finishTool()
         }
         binding.fieldUndoButton.setOnClickListener { undo() }
-        binding.fieldClearButton.setOnClickListener { if (tool == Tool.SPAWNS) clearSpawns() else clearBorder() }
+        binding.fieldClearButton.setOnClickListener {
+            when (tool) {
+                Tool.SPAWNS -> clearSpawns()
+                Tool.OBJECTIVES -> clearObjectives()
+                else -> clearBorder()
+            }
+        }
         binding.fieldSpawnTeamButton.setOnClickListener { nextSpawnTeam() }
-        binding.fieldAutoPlaceButton.setOnClickListener { autoPlace() }
+        binding.fieldAutoPlaceButton.setOnClickListener { if (tool == Tool.OBJECTIVES) autoPlaceObjectives() else autoPlace() }
+        objectiveOverlay = ObjectiveOverlay(this, binding.fieldObjectivesLayer) { MapIcons.teamColor(it) }
         binding.fieldPresetsButton.setOnClickListener { showPresets() }
         binding.fieldMyLocationButton.setOnClickListener { goToMyLocation() }
         binding.fieldDownloadButton.setOnClickListener { download() }
@@ -223,6 +238,7 @@ class FieldMapActivity : AppCompatActivity() {
             isRotateGesturesEnabled = false
         }
         map.addOnMapClickListener { point -> onMapTapped(LatLon(point.latitude, point.longitude)) }
+        map.addOnCameraMoveListener { objectiveOverlay?.place(map.projection) }
         map.setStyle(MapStyles.browseStyle()) { loaded ->
             style = loaded
             loaded.addSource(GeoJsonSource(PHOTO_SOURCE))
@@ -307,9 +323,11 @@ class FieldMapActivity : AppCompatActivity() {
                 if (spawnTeam !in spawnTeams()) spawnTeam = spawnTeams().first()
                 showSpawnTeam()
             }
+            Tool.OBJECTIVES -> showObjectiveHint()
             Tool.NONE -> binding.fieldHintTv.setText(R.string.field_map_hint)
         }
-        binding.fieldSpawnRow.isVisible = chosen == Tool.SPAWNS
+        binding.fieldSpawnRow.isVisible = chosen == Tool.SPAWNS || chosen == Tool.OBJECTIVES
+        binding.fieldSpawnTeamButton.isVisible = chosen == Tool.SPAWNS
         drawDraft()
     }
 
@@ -359,6 +377,7 @@ class FieldMapActivity : AppCompatActivity() {
                 saveConfig(config.copy(spawns = if (hit != null) config.spawns - hit else config.spawns + Spawn(spawnTeam, point)))
                 drawSpawns()
             }
+            Tool.OBJECTIVES -> onObjectiveTapped(point)
             Tool.WALK, Tool.NONE -> return false
         }
         drawDraft()
@@ -376,6 +395,11 @@ class FieldMapActivity : AppCompatActivity() {
             Tool.SPAWNS -> if (config.spawns.isNotEmpty()) {
                 saveConfig(config.copy(spawns = config.spawns.dropLast(1)))
                 drawSpawns()
+            }
+            Tool.OBJECTIVES -> if (config.objectives.isNotEmpty()) {
+                saveConfig(config.copy(objectives = config.objectives.dropLast(1)))
+                drawSpawns()
+                showObjectiveHint()
             }
             Tool.NONE -> {}
         }
@@ -417,7 +441,8 @@ class FieldMapActivity : AppCompatActivity() {
         val base = config
         lifecycleScope.launch {
             val result = withContext(Dispatchers.Default) {
-                SpawnPlanner.place(border, spawnTeams(), base.spawnRules, base.rules.edgeBufferMeters)
+                SpawnPlanner.place(border, spawnTeams(), base.spawnRules, base.rules.edgeBufferMeters,
+                    keepClear = SpawnPlanner.objectiveClearance(base))
             }
             if (result.spawns.isEmpty()) {
                 Toast.makeText(applicationContext, R.string.field_auto_place_failed, Toast.LENGTH_LONG).show()
@@ -439,6 +464,69 @@ class FieldMapActivity : AppCompatActivity() {
         val style = style ?: return
         SpawnLayers.update(style, config.spawns, radiusMeters = config.spawnRules.radiusMeters,
             latitude = config.spawns.firstOrNull()?.point?.latitude ?: 0.0)
+        drawObjectives()
+    }
+
+    // Capture points (map design: Domination, Hardpoint)
+
+    private fun showObjectiveHint() {
+        binding.fieldHintTv.text = getString(R.string.field_hint_objectives, Objective.letter(config.objectives.size))
+    }
+
+    /** A tap on a point removes it; anywhere else adds the next letter. */
+    private fun onObjectiveTapped(point: LatLon) {
+        val radius = config.objectiveRules.radiusMeters
+        val hit = config.objectives.lastOrNull { GeoMath.distanceMeters(it.point, point) <= radius }
+        val points = when {
+            hit != null -> config.objectives - hit
+            config.objectives.size >= MAX_OBJECTIVES -> {
+                Toast.makeText(applicationContext, R.string.field_objectives_full, Toast.LENGTH_SHORT).show()
+                return
+            }
+            else -> config.objectives + Objective("", point)
+        }
+        // Lettered in order, so removing B makes C the new B
+        saveConfig(config.copy(objectives = points.mapIndexed { i, o -> o.copy(id = Objective.letter(i)) }))
+        drawSpawns()
+        showObjectiveHint()
+    }
+
+    /** Puts down the points the field's size calls for, clear of the spawns, in place of any there. */
+    private fun autoPlaceObjectives() {
+        val border = config.border
+        if (border == null) {
+            Toast.makeText(applicationContext, R.string.field_auto_place_need_border, Toast.LENGTH_LONG).show()
+            return
+        }
+        val base = config
+        lifecycleScope.launch {
+            val placed = withContext(Dispatchers.Default) {
+                val mode = if (base.mode.hasObjectives) base.mode else GameMode.DOMINATION
+                ObjectivePlanner.place(border, ObjectivePlanner.count(mode, border, base.objectiveRules), base.objectiveRules,
+                    base.spawns, base.spawnRules.radiusMeters, base.rules.edgeBufferMeters)
+            }
+            if (placed.isEmpty()) {
+                Toast.makeText(applicationContext, R.string.field_auto_place_failed, Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            saveConfig(config.copy(objectives = placed))
+            drawSpawns()
+            showObjectiveHint()
+        }
+    }
+
+    private fun clearObjectives() {
+        saveConfig(config.copy(objectives = emptyList()))
+        drawSpawns()
+        showObjectiveHint()
+        Toast.makeText(applicationContext, R.string.field_objectives_cleared, Toast.LENGTH_LONG).show()
+    }
+
+    private fun drawObjectives() {
+        val overlay = objectiveOverlay ?: return
+        overlay.update(config.objectives.map { ObjectiveState(it.id, it.point, 0, 0, 0.0, contested = false, active = true, next = false) },
+            config.objectiveRules.radiusMeters)
+        map?.let { overlay.place(it.projection) }
     }
 
     private fun clearBorder() {
@@ -667,9 +755,13 @@ class FieldMapActivity : AppCompatActivity() {
             val loaded = withContext(Dispatchers.IO) {
                 try {
                     val (pack, saved) = container.fieldPresets.load(name) ?: return@withContext null
+                    // A field preset is the place: border, spawns, points and photo. The game's mode and
+                    // rules stay as set on the server's main screen (or by a game preset).
+                    val kept = saved.copy(rules = config.rules, spawnRules = config.spawnRules, loadout = config.loadout,
+                        mode = config.mode, objectiveRules = config.objectiveRules)
                     if (pack != null) container.serverFieldStore.save(pack) else container.serverFieldStore.clear()
-                    container.serverFieldConfig.save(saved)
-                    saved
+                    container.serverFieldConfig.save(kept)
+                    kept
                 } catch (e: IOException) {
                     null
                 }
@@ -752,6 +844,9 @@ class FieldMapActivity : AppCompatActivity() {
 
         /** A walk that ends this close to where it started is closed there. */
         const val CLOSE_LOOP_METERS = 15.0
+
+        /** A–E. */
+        const val MAX_OBJECTIVES = 5
 
         /** A whole number for a number field: plain digits, which it reads back as typed. */
         fun number(value: Int): String = String.format(Locale.ROOT, "%d", value)

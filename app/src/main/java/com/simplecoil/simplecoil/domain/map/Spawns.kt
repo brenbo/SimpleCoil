@@ -158,6 +158,8 @@ object SpawnPlanner {
         /** Where the spawns were before a move: new ones land well away from these. */
         previous: List<Spawn> = emptyList(),
         random: Random = Random.Default,
+        /** Spots to keep clear of, each with how far (capture points): spawns never land on them. */
+        keepClear: List<Pair<LatLon, Double>> = emptyList(),
     ): Result {
         val bounds = border.bounds
         val center = bounds.center
@@ -170,12 +172,12 @@ object SpawnPlanner {
 
         var scale = 1.0
         repeat(RELAX_STEPS + 1) { step ->
-            val placed = tryPlace(border, teams, rules, edgeBufferMeters * scale, width, center, candidates, enemies, previous, scale, random)
+            val placed = tryPlace(border, teams, rules, edgeBufferMeters * scale, width, center, candidates, enemies, previous, scale, random, keepClear)
             if (placed != null) return Result(placed, step > 0)
             scale *= RELAX_STEP
         }
         // Still nothing: spread them out with no distance rules at all
-        return Result(tryPlace(border, teams, rules, 0.0, width, center, candidates, emptyMap(), emptyList(), 0.0, random) ?: emptyList(), true)
+        return Result(tryPlace(border, teams, rules, 0.0, width, center, candidates, emptyMap(), emptyList(), 0.0, random, keepClear) ?: emptyList(), true)
     }
 
     /** The field's width: a circle's diameter, or the longer side of a polygon's box. */
@@ -200,9 +202,14 @@ object SpawnPlanner {
         previous: List<Spawn>,
         scale: Double,
         random: Random,
+        keepClear: List<Pair<LatLon, Double>>,
     ): List<Spawn>? {
         val placed = ArrayList<Spawn>()
-        val usable = candidates.filter { border.distanceToEdgeMeters(it) >= edgeBuffer + rules.radiusMeters * scale }
+        // A capture point always stays clear, however far the other rules loosen
+        val usable = candidates.filter { spot ->
+            border.distanceToEdgeMeters(spot) >= edgeBuffer + rules.radiusMeters * scale &&
+                keepClear.all { (point, clear) -> GeoMath.distanceMeters(spot, point) >= clear + rules.radiusMeters }
+        }
         // Each team leans toward its own side: 2 teams at opposite ends, 4 at the four sides
         val count = teams.size.coerceAtLeast(1)
         for (round in 0 until rules.perTeam) {
@@ -250,10 +257,14 @@ object SpawnPlanner {
         if (current.isEmpty()) return null
         val teams = current.map { it.team }.distinct().sorted()
         val perTeam = current.groupingBy { it.team }.eachCount().values.max().coerceIn(1, 4)
-        val result = place(border, teams, base.spawnRules.copy(perTeam = perTeam), base.rules.edgeBufferMeters, enemies, current, random)
+        val result = place(border, teams, base.spawnRules.copy(perTeam = perTeam), base.rules.edgeBufferMeters, enemies, current, random, objectiveClearance(base))
         if (result.spawns.isEmpty()) return null
         return base.copy(spawns = result.spawns, spawnGeneration = generation)
     }
+
+    /** Where spawns keep clear of: [base]'s capture points, by their radius and a gap for GPS error. */
+    fun objectiveClearance(base: FieldConfig): List<Pair<LatLon, Double>> =
+        base.objectives.map { it.point to base.objectiveRules.radiusMeters + com.simplecoil.simplecoil.domain.mode.ObjectivePlanner.GAP_METERS }
 
     /** The teams Auto-place serves for [teamCount] teams (0 = free for all). */
     fun teamsFor(teamCount: Int): List<Int> = if (teamCount <= 0) listOf(Spawn.ANYONE) else (1..teamCount).toList()

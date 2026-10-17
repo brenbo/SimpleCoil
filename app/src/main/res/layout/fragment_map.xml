@@ -13,6 +13,12 @@
 
     <!-- You: drawn over the map rather than in it, so it can turn every frame without the map
          rebuilding it (which kept it from ever showing on phones with a compass). -->
+    <!-- Capture points (Domination, Hardpoint), under the crates and players. -->
+    <FrameLayout
+        android:id="@+id/map_objectives_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <!-- Drops: crates with a countdown until they land. -->
     <FrameLayout
         android:id="@+id/map_drops_layer"
@@ -59,14 +65,21 @@
         android:scaleType="fitCenter"
         android:src="@drawable/ic_map_zoom_off" />
 
-    <TextView
-        android:id="@+id/map_out_of_bounds_tv"
+    <!-- At the top: the out-of-bounds warning, then an objective game's scores and your point. -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
         android:layout_marginStart="52dp"
         android:layout_marginTop="6dp"
         android:layout_marginEnd="52dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/map_out_of_bounds_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:background="#CCD32F2F"
         android:gravity="center"
         android:paddingStart="10dp"
@@ -77,6 +90,23 @@
         android:textSize="16sp"
         android:textStyle="bold"
         android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/map_mode_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="#CC000000"
+        android:gravity="center"
+        android:paddingStart="10dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="3dp"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+    </LinearLayout>
 
     <!-- After an elimination with walk-back respawn: how far to your spawn. -->
     <TextView

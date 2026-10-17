@@ -347,6 +347,74 @@
     </plurals>
     <string name="server_gps_some">GPS: %1$d of %2$d reporting · no fix from %3$s</string>
     <string name="field_map_title">Field map</string>
+
+    <!-- The server's home screen cards (map design: Dedicated server settings) -->
+    <string name="server_card_mode">Game mode</string>
+    <string name="server_card_field">Field</string>
+    <string name="server_card_teams">Teams and players</string>
+    <string name="server_card_extras">Extras</string>
+    <string name="server_card_open">›</string>
+    <string name="server_card_close">⌄</string>
+    <string name="server_summary_classic">Classic: score by eliminations</string>
+    <string name="server_summary_domination">Domination · %1$s · %2$d to win</string>
+    <string name="server_summary_hardpoint">Hardpoint · moves every %1$d s · %2$d to win</string>
+    <string name="server_summary_points_auto">points by field size</string>
+    <plurals name="server_summary_points">
+        <item quantity="one">%1$d point</item>
+        <item quantity="other">%1$d points</item>
+    </plurals>
+    <string name="server_summary_teams">%1$s · GPS: %2$s</string>
+    <string name="server_summary_ammo_limited">Limited ammo</string>
+    <string name="server_summary_ammo_scavenger">Scavenger ammo</string>
+    <string name="server_summary_ammo_unlimited">Unlimited ammo</string>
+    <string name="server_summary_drops">drops every %1$d min</string>
+    <string name="server_summary_killstreaks">killstreaks</string>
+    <string name="server_summary_longest">longest shot</string>
+    <string name="rules_title_extras">Extras</string>
+    <string name="game_presets_button">Presets</string>
+    <string name="game_presets_title">Game presets</string>
+    <string name="game_presets_save">Save this setup…</string>
+    <string name="game_presets_name_hint">Name, like Saturday Domination</string>
+    <string name="game_presets_saved">Saved the setup as %1$s.</string>
+    <string name="game_presets_loaded">Loaded %1$s.</string>
+
+    <!-- The game mode sheet -->
+    <string name="mode_title">Game mode</string>
+    <string name="mode_classic">Classic</string>
+    <string name="mode_domination">Domination</string>
+    <string name="mode_hardpoint">Hardpoint</string>
+    <string name="mode_about_classic">Score by eliminating players, with the game limits as always.</string>
+    <string name="mode_about_domination">Capture points A, B and C by standing in them. Every point your team holds scores. Needs a field border.</string>
+    <string name="mode_about_hardpoint">One point counts at a time and it moves on a timer. Hold it alone to score. Needs a field border.</string>
+    <string name="mode_score_to_win">Score to win (50–1000)</string>
+    <string name="mode_points">Points (0 = by field size, up to 5)</string>
+    <string name="mode_capture_seconds">Seconds to capture (5–60)</string>
+    <string name="mode_move_seconds">Point moves every (30–300 s)</string>
+    <string name="mode_advanced_closed">Advanced ›</string>
+    <string name="mode_advanced_open">Advanced ⌄</string>
+    <string name="mode_radius">Point radius (%1$s)</string>
+    <string name="mode_points_per_tick">Points scored each time (1–10)</string>
+    <string name="mode_tick_seconds">Scored every (1–10 s)</string>
+    <string name="mode_more_faster">More players capture faster</string>
+    <string name="mode_show_next">Show the next point this early (0–120 s, 0 = off)</string>
+    <string name="mode_small_field">One point on fields under (%1$s)</string>
+    <string name="mode_large_field">Three points on fields over (%1$s)</string>
+    <string name="mode_reset">Reset to mode defaults</string>
+    <string name="mode_changed">%1$s  •</string>
+    <string name="mode_needs_border">Domination and Hardpoint need a field border: draw one in the field map.</string>
+
+    <!-- Domination and Hardpoint on the play map -->
+    <string name="mode_to_win">to %1$d</string>
+    <string name="mode_moves_in">moves in %1$s</string>
+    <string name="mode_capturing">Capturing %1$s</string>
+    <string name="mode_holding">Holding %1$s</string>
+    <string name="mode_contested">%1$s contested</string>
+    <string name="mode_enemy_capturing">Hostiles taking %1$s</string>
+    <string name="mode_secured">%1$s secured</string>
+    <string name="mode_lost">%1$s lost</string>
+    <string name="mode_moved">Hardpoint moved to %1$s</string>
+    <string name="mode_victory">Victory</string>
+    <string name="mode_defeat">Defeat</string>
     <string name="field_map_hint">Find your field, draw its border, then download the photo. Phones get both when they join.</string>
     <string name="field_hint_circle">Tap the center of the field, then tap its edge.</string>
     <string name="field_hint_circle_edge">Now tap the edge of the field.</string>
@@ -487,6 +555,10 @@
     <string name="field_auto_place_relaxed">The field is small, so some spawns are closer than the rules ask.</string>
     <string name="field_auto_place_failed">Couldn\'t find room for the spawns. Try a bigger border or a smaller spawn.</string>
     <string name="field_spawns_cleared">Spawns cleared.</string>
+    <string name="field_tool_objectives">Points</string>
+    <string name="field_hint_objectives">Tap to add capture point %1$s. Tap a point to remove it. Leave none to have them placed by field size for each game.</string>
+    <string name="field_objectives_cleared">Capture points cleared. They will be placed by field size for each game.</string>
+    <string name="field_objectives_full">Five capture points at most.</string>
     <plurals name="field_status_spawns">
         <item quantity="one">%1$d spawn</item>
         <item quantity="other">%1$d spawns</item>

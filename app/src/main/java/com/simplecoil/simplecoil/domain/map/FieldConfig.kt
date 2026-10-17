@@ -18,6 +18,9 @@ package com.simplecoil.simplecoil.domain.map
 
 import com.simplecoil.simplecoil.domain.loadout.Drop
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
+import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.Objective
+import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -161,6 +164,11 @@ data class FieldConfig(
     val loadout: LoadoutRules = LoadoutRules(),
     /** The drops on the field right now, during a game. */
     val drops: List<Drop> = emptyList(),
+    /** The game mode (map design: Game modes). */
+    val mode: GameMode = GameMode.CLASSIC,
+    /** The capture points; empty means placed for each game by field size. */
+    val objectives: List<Objective> = emptyList(),
+    val objectiveRules: ObjectiveRules = ObjectiveRules(),
 ) {
     /** Changes whenever anything in the config does; phones compare it to skip a download. */
     val id: String by lazy {
@@ -175,6 +183,9 @@ data class FieldConfig(
             .put("spawnGeneration", spawnGeneration)
             .put("loadout", loadout.toJson())
             .put("drops", Drop.listToJson(drops))
+            .put("mode", mode.wireValue)
+            .put("objectives", Objective.listToJson(objectives))
+            .put("objectiveRules", objectiveRules.toJson())
         when (val b = border) {
             is Border.Circle -> json.put("border", JSONObject().put("type", "circle")
                 .put("lat", b.center.latitude).put("lon", b.center.longitude).put("radius", b.radiusMeters))
@@ -212,6 +223,9 @@ data class FieldConfig(
                 spawnGeneration = json.optInt("spawnGeneration", 0),
                 loadout = LoadoutRules.fromJson(json.optJSONObject("loadout")),
                 drops = Drop.listFromJson(json.optJSONArray("drops")),
+                mode = GameMode.fromWire(json.optString("mode")),
+                objectives = Objective.listFromJson(json.optJSONArray("objectives")),
+                objectiveRules = ObjectiveRules.fromJson(json.optJSONObject("objectiveRules")),
             )
         } catch (e: JSONException) {
             throw IOException("bad field config", e)

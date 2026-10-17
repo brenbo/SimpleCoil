@@ -164,6 +164,8 @@ class TcpServer : Service() {
             positions = ::playerFixes,
             teamOf = { id -> serverSettings.teamLayout.let { if (it.mode.isFreeForAll) id else it.teamOf(id) } },
             nameOf = { id -> server.snapshot.value.players.firstOrNull { it.playerId.toInt() == id }?.name },
+            // Domination or Hardpoint won: the game ends as when the host presses End
+            onWinner = { server.endGame() },
         )
         liveGame = game
         val eliminations = container.serverEvents.events

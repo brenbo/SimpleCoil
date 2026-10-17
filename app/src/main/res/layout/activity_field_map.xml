@@ -13,6 +13,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Capture points, drawn over the map at their real size; taps go through to the map. -->
+    <FrameLayout
+        android:id="@+id/field_objectives_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <TextView
         android:id="@+id/field_hint_tv"
         android:layout_width="match_parent"
@@ -92,6 +98,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/field_tool_spawns" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/field_tool_objectives_button"
+                style="@style/ServerSegment"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/field_tool_objectives" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <!-- With the Spawns tool: which team a tap adds a spawn for, and Auto-place. -->

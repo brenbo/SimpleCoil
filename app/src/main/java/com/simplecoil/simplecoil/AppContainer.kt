@@ -23,6 +23,7 @@ import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
 import com.simplecoil.simplecoil.domain.loadout.LoadoutController
+import com.simplecoil.simplecoil.domain.mode.ModeController
 import com.simplecoil.simplecoil.domain.map.BorderController
 import com.simplecoil.simplecoil.domain.map.SpawnController
 import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
@@ -47,6 +48,7 @@ import com.simplecoil.simplecoil.network.imagery.FieldImageryClient
 import com.simplecoil.simplecoil.network.imagery.FieldImageryServer
 import com.simplecoil.simplecoil.network.imagery.FieldPackStore
 import com.simplecoil.simplecoil.network.imagery.FieldPresetStore
+import com.simplecoil.simplecoil.network.imagery.GamePresetStore
 import com.simplecoil.simplecoil.network.server.PlayerGps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -135,6 +137,9 @@ class AppContainer(private val app: Application) {
     /** The dedicated server's saved fields. */
     val fieldPresets: FieldPresetStore by lazy { FieldPresetStore(File(app.filesDir, "field/presets")) }
 
+    /** The dedicated server's saved game setups: mode, rules and server settings (map design: Presets). */
+    val gamePresets: GamePresetStore by lazy { GamePresetStore(File(app.filesDir, "game/presets")) }
+
     /** Serves the server's field while the dedicated server runs. */
     val fieldImageryServer: FieldImageryServer by lazy { FieldImageryServer(serverFieldStore, serverFieldConfig) }
 
@@ -196,6 +201,30 @@ class AppContainer(private val app: Application) {
             scope = appScope,
             io = dispatchers.io,
             clock = clock,
+        )
+    }
+
+    /** Domination and Hardpoint on this phone: the server's state, and news of the points (map design: phase 5). */
+    val modeController: ModeController by lazy {
+        val client = fieldImageryClient
+        ModeController(
+            field = playerFieldConfig.config,
+            session = sessionEngine.state,
+            server = object : ModeController.Server {
+                override fun state(playerId: Int, alive: Boolean) = gameState.serverIP?.let { client.modeState(it, playerId, alive) }
+            },
+            me = {
+                val id = players.playerID.toInt()
+                val layout = settings.teamLayout
+                id to if (layout.mode.isFreeForAll) id else layout.teamOf(id)
+            },
+            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            feedback = object : ModeController.Feedback {
+                override fun play(sound: SessionSound) = soundEffects.play(sound)
+                override fun vibrate() = haptics.vibrate()
+            },
+            scope = appScope,
+            io = dispatchers.io,
         )
     }
 

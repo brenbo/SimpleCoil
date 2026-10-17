@@ -22,6 +22,8 @@ import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.loadout.UavPlayer
 import com.simplecoil.simplecoil.domain.map.FieldConfig
+import com.simplecoil.simplecoil.domain.mode.ModeState
+import org.json.JSONObject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -165,6 +167,12 @@ class FieldImageryClient(
     fun longestShot(server: InetAddress): LongestShot? = exchange(server,
         FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.STATS)) { _, body ->
         body?.let { LongestShot.fromJson(String(it, Charsets.UTF_8)) }
+    }
+
+    /** The objective game as it stands, telling the server whether this player is [alive]; null outside one. */
+    fun modeState(server: InetAddress, playerId: Int, alive: Boolean): ModeState? = exchange(server,
+        FieldImageryProtocol.modeLine(playerId, alive)) { _, body ->
+        body?.let { ModeState.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
 
     /** Every player's longest shot this game, longest first; empty with none yet, null if the server can't say. */

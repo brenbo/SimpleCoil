@@ -25,6 +25,10 @@ import com.simplecoil.simplecoil.domain.loadout.ShotStats
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.SpawnPlanner
+import com.simplecoil.simplecoil.domain.map.GeoMath
+import com.simplecoil.simplecoil.domain.mode.ModeEngine
+import com.simplecoil.simplecoil.domain.mode.Objective
+import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
 import com.simplecoil.simplecoil.network.imagery.FieldImageryServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
@@ -58,9 +62,18 @@ class LiveGame(
     /** Monotonic clock, as GPS reports are stamped. */
     private val monoClock: () -> Long = { System.nanoTime() / 1_000_000L },
     private val random: Random = Random.Default,
+    /** An objective game was won by [team]: the server ends it. */
+    private val onWinner: (team: Int) -> Unit = {},
 ) {
     val field = LiveField()
     val shots = ShotStats()
+
+    /** The objective game's state as the phones get it; null outside one. */
+    @Volatile
+    private var modeBytes: ByteArray? = null
+
+    /** Who says they are in the game (alive), by player id, and when they said it (monotonic). */
+    private val alive = java.util.concurrent.ConcurrentHashMap<Int, Pair<Boolean, Long>>()
 
     /** Runs until cancelled: one game's work each time [phases] says a game is running. */
     suspend fun run(phases: Flow<SessionPhase>, eliminations: Flow<Pair<Int, Int>>) = coroutineScope {
@@ -78,13 +91,18 @@ class LiveGame(
             val base = savedField()
             // Shots are measured on any server, with or without a field set up
             rules = base?.loadout ?: LoadoutRules()
+            modeBytes = null
+            alive.clear()
             base ?: return@collectLatest
-            field.start(base)
+            // Capture points left to the server are placed for this game, and every phone gets them
+            val playing = withObjectives(base)
+            field.start(playing)
             publish()
             coroutineScope {
-                launch { moveSpawns(base) }
-                launch { dropCrates(base) }
+                launch { moveSpawns(playing) }
+                launch { dropCrates(playing) }
                 launch { pruneDrops() }
+                launch { runMode(playing) }
             }
         }
     }
@@ -115,10 +133,56 @@ class LiveGame(
         while (true) {
             delay(rules.dropIntervalMinutes * 60_000L)
             val keepClear = field.currentSpawns().map { it.point to base.spawnRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
+                base.objectives.map { it.point to base.objectiveRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
                 (field.config()?.drops ?: emptyList()).map { it.point to LiveField.DROP_SPACING_METERS }
             val spot = LiveField.dropSpot(border, base.rules.edgeBufferMeters, keepClear, random) ?: continue
             field.drop(kinds[random.nextInt(kinds.size)], spot, wallClock())
             publish()
+        }
+    }
+
+    /** [base] with its capture points: the host's, or placed now by field size when it left them to the server. */
+    private fun withObjectives(base: FieldConfig): FieldConfig {
+        val border = base.border
+        if (!base.mode.hasObjectives || border == null || base.objectives.isNotEmpty()) return base
+        val count = ObjectivePlanner.count(base.mode, border, base.objectiveRules)
+        val placed = ObjectivePlanner.place(border, count, base.objectiveRules, base.spawns, base.spawnRules.radiusMeters,
+            base.rules.edgeBufferMeters, random)
+        return base.copy(objectives = placed)
+    }
+
+    /**
+     * Domination or Hardpoint (map design: Game modes): once a second, who stands on each point,
+     * then the scores; the phones fetch the result. The first team to the score wins and the
+     * server ends the game.
+     */
+    private suspend fun runMode(base: FieldConfig) {
+        if (!base.mode.hasObjectives || base.objectives.isEmpty()) return
+        val engine = ModeEngine(base.mode, base.objectives, base.objectiveRules, wallClock())
+        var won = false
+        while (true) {
+            val state = engine.tick(wallClock(), presence(base.objectives, base.objectiveRules.radiusMeters))
+            modeBytes = state.toJson().toString().toByteArray(Charsets.UTF_8)
+            if (state.winner != 0 && !won) {
+                won = true
+                onWinner(state.winner)
+            }
+            delay(MODE_TICK_MILLIS)
+        }
+    }
+
+    /** How many players of each team stand on each point: in the game, with a fresh position. */
+    private fun presence(objectives: List<Objective>, radiusMeters: Double): Map<String, Map<Int, Int>> {
+        val now = monoClock()
+        val playing = positions().filter { (id, fix) ->
+            val said = alive[id]
+            // A player who said they are out (in the last few seconds) can't hold a point
+            val out = said != null && !said.first && now - said.second <= ALIVE_STALE_MILLIS
+            now - fix.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS && !out
+        }
+        return objectives.associate { o ->
+            o.id to playing.entries.filter { GeoMath.distanceMeters(it.value.point, o.point) <= radiusMeters }
+                .groupingBy { teamOf(it.key) }.eachCount()
         }
     }
 
@@ -167,6 +231,11 @@ class LiveGame(
             return JSONObject().put("players", players).toString().toByteArray(Charsets.UTF_8)
         }
 
+        override fun mode(playerId: Int, alive: Boolean): ByteArray? {
+            this@LiveGame.alive[playerId] = alive to monoClock()
+            return modeBytes
+        }
+
         override fun stats(): ByteArray? {
             val shot = shots.longest() ?: return null
             val longest = JSONObject()
@@ -186,6 +255,12 @@ class LiveGame(
 
     companion object {
         const val PRUNE_MILLIS = 5_000L
+
+        /** How often an objective game moves on. */
+        const val MODE_TICK_MILLIS = 1_000L
+
+        /** A player's word that they are out counts for this long (they ask every second). */
+        const val ALIVE_STALE_MILLIS = 5_000L
 
         /** Starts [game] in [scope] for as long as the server runs. */
         fun launchIn(scope: CoroutineScope, game: LiveGame, phases: Flow<SessionPhase>, eliminations: Flow<Pair<Int, Int>>) =

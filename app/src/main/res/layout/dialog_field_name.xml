@@ -8,10 +8,12 @@
     android:padding="10dp">
 
     <TextView
+        android:id="@+id/field_name_title_tv"
         style="@style/DialogTitle"
         android:text="@string/field_presets_save" />
 
     <TextView
+        android:id="@+id/field_name_label_tv"
         style="@style/DialogLabel"
         android:labelFor="@+id/field_name_et"
         android:text="@string/field_presets_name_hint" />
