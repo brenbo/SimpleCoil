@@ -19,10 +19,22 @@ package com.simplecoil.simplecoil.ui.game
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.simplecoil.simplecoil.domain.loadout.ShotRank
+import com.simplecoil.simplecoil.domain.map.DistanceUnits
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.Locale
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.simplecoil.simplecoil.PlayerDisplayData
 import com.simplecoil.simplecoil.R
@@ -207,15 +219,22 @@ class ScoreboardDialog : GameDialogFragment() {
         if (matrixAvailable) {
             dialog.setOnShowListener {
                 val toggle = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                toggle.setText(if (vm.scoreMatrixVisible) R.string.scoreboard else R.string.score_matrix)
+                toggle.setText(nextFaceName())
                 toggle.setOnClickListener {
-                    vm.onScoreMatrixToggled()
+                    vm.onScoreboardFaceNext()
                     showFace()
-                    toggle.setText(if (vm.scoreMatrixVisible) R.string.scoreboard else R.string.score_matrix)
+                    toggle.setText(nextFaceName())
                 }
             }
         }
         return dialog
+    }
+
+    /** What the button switches to: list, matrix, longest shots, and round again. */
+    private fun nextFaceName() = when {
+        vm.longestShotsVisible -> R.string.scoreboard
+        vm.scoreMatrixVisible -> R.string.longest_shots
+        else -> R.string.score_matrix
     }
 
     fun setData(players: Array<PlayerDisplayData?>) {
@@ -226,9 +245,80 @@ class ScoreboardDialog : GameDialogFragment() {
     private fun showFace() {
         val b = binding ?: return
         val matrix = vm.scoreMatrixVisible
-        b.playerList.visibility = if (matrix) View.GONE else View.VISIBLE
+        val shots = vm.longestShotsVisible
+        b.playerList.visibility = if (matrix || shots) View.GONE else View.VISIBLE
         b.scoreMatrixFace.visibility = if (matrix) View.VISIBLE else View.GONE
+        b.longestShotsFace.visibility = if (shots) View.VISIBLE else View.GONE
         if (matrix) setMatrix(vm.scoreMatrixState ?: ScoreMatrixState.Loading)
+        shotsJob?.cancel()
+        if (shots) shotsJob = lifecycleScope.launch { pollLongestShots(b) }
+    }
+
+    private var shotsJob: Job? = null
+    private var shotsShown = false
+
+    /** Asks the server for the ranking every few seconds while that face shows (map design: Longest shot). */
+    private suspend fun pollLongestShots(b: PlayerDataDialogBinding) {
+        val container = (requireActivity().application as SimpleCoilApp).container
+        if (!shotsShown) {
+            b.longestShotsProgress.visibility = View.VISIBLE
+            b.longestShotsMessage.visibility = View.GONE
+        }
+        while (true) {
+            val server = container.gameState.serverIP
+            val ranking = server?.let { withContext(Dispatchers.IO) { container.fieldImageryClient.shotRanking(it) } }
+            val units = container.playerFieldConfig.config.value?.rules?.units ?: DistanceUnits.defaultFor(Locale.getDefault())
+            setLongestShots(b, ranking, units)
+            delay(SHOTS_REFRESH_MILLIS)
+        }
+    }
+
+    private fun setLongestShots(b: PlayerDataDialogBinding, ranking: List<ShotRank>?, units: DistanceUnits) {
+        shotsShown = true
+        b.longestShotsProgress.visibility = View.GONE
+        val message = when {
+            ranking == null -> R.string.longest_shots_unsupported
+            ranking.isEmpty() -> R.string.longest_shots_empty
+            else -> 0
+        }
+        b.longestShotsMessage.visibility = if (message != 0) View.VISIBLE else View.GONE
+        if (message != 0) b.longestShotsMessage.setText(message)
+        val list = b.longestShotsList
+        list.removeAllViews()
+        val density = resources.displayMetrics.density
+        ranking.orEmpty().forEachIndexed { index, rank ->
+            val row = LinearLayout(list.context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding((8 * density).toInt(), (6 * density).toInt(), (8 * density).toInt(), (6 * density).toInt())
+            }
+            val color = if (index == 0) 0xFFFFD54F.toInt() else 0xFFFFFFFF.toInt()
+            row.addView(TextView(list.context).apply {
+                text = getString(R.string.longest_shots_rank, index + 1)
+                setTextColor(color)
+                textSize = 18f
+                minWidth = (36 * density).toInt()
+            })
+            row.addView(LinearLayout(list.context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(list.context).apply {
+                    text = rank.name
+                    setTextColor(color)
+                    textSize = 18f
+                })
+                addView(TextView(list.context).apply {
+                    text = getString(R.string.longest_shots_victim, rank.victimName)
+                    setTextColor(0xFFAAAAAA.toInt())
+                    textSize = 13f
+                })
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(TextView(list.context).apply {
+                text = units.format(rank.meters)
+                setTextColor(color)
+                textSize = 18f
+            })
+            list.addView(row)
+        }
     }
 
     /** The matrix face's content: progress, a message, or the grid. */
@@ -260,6 +350,9 @@ class ScoreboardDialog : GameDialogFragment() {
 }
 
 private const val ARG_TEXT = "text"
+
+/** How often an open longest shots ranking asks the server again. */
+private const val SHOTS_REFRESH_MILLIS = 5_000L
 
 /** The score matrix grows to at most this much of the window's height, then scrolls. */
 private const val MATRIX_MAX_HEIGHT_FRACTION = 0.8f

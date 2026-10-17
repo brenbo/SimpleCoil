@@ -19,6 +19,7 @@ package com.simplecoil.simplecoil.network.imagery
 import android.util.Log
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.loadout.LongestShot
+import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.loadout.UavPlayer
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import kotlinx.coroutines.CoroutineDispatcher
@@ -164,6 +165,16 @@ class FieldImageryClient(
     fun longestShot(server: InetAddress): LongestShot? = exchange(server,
         FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.STATS)) { _, body ->
         body?.let { LongestShot.fromJson(String(it, Charsets.UTF_8)) }
+    }
+
+    /** Every player's longest shot this game, longest first; empty with none yet, null if the server can't say. */
+    fun shotRanking(server: InetAddress): List<ShotRank>? = exchange(server,
+        FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.STATS)) { reply, body ->
+        when {
+            body != null -> ShotRank.listFromJson(String(body, Charsets.UTF_8))
+            reply == FieldImageryProtocol.Reply.None -> emptyList()
+            else -> null
+        }
     }
 
     /** Sends [line], reads the reply (and its body, if it has one) and makes something of them; null on any failure. */

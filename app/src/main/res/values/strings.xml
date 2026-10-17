@@ -218,6 +218,11 @@
     <string name="scoreboard">SCOREBOARD</string>
     <string name="score_matrix_empty">No eliminations yet</string>
     <string name="score_matrix_unsupported">This server doesn\'t support the score matrix</string>
+    <string name="longest_shots">LONGEST SHOTS</string>
+    <string name="longest_shots_empty">No measured shots yet. Shot distance needs both players\' GPS.</string>
+    <string name="longest_shots_unsupported">This server doesn\'t measure shots</string>
+    <string name="longest_shots_rank">%1$d.</string>
+    <string name="longest_shots_victim">on %1$s</string>
     <!-- Heads the totals row and column. -->
     <string name="score_matrix_total">Σ</string>
     <string name="score_matrix_total_row_description">Totals: times each player was eliminated</string>

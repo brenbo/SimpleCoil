@@ -76,6 +76,9 @@ class LoadoutController(
         fun claim(dropId: String, playerId: Int): DropKind?
         fun uav(playerId: Int): List<UavPlayer>?
         fun longestShot(): LongestShot?
+
+        /** Fetch the field again now, so a claimed drop goes from every map soon. Main thread. */
+        fun refresh()
     }
 
     interface Feedback {
@@ -117,6 +120,9 @@ class LoadoutController(
     private var standingOn: String? = null
     private var standingSince = 0L
     private val triedAt = HashMap<String, Long>()
+
+    /** Drops this player got: off their map at once, before the server's next config says so. */
+    private val claimed = HashSet<String>()
     private var claimJob: Job? = null
     private var uavJob: Job? = null
 
@@ -141,9 +147,10 @@ class LoadoutController(
     /** The drops this player can see: all of them, or with "nearest team only", those nearest their team's spawn. */
     fun visibleDrops(): List<Drop> {
         val config = field.value ?: return emptyList()
-        if (!config.loadout.dropsNearestTeamOnly || config.spawns.isEmpty()) return config.drops
+        val drops = config.drops.filter { it.id !in claimed }
+        if (!config.loadout.dropsNearestTeamOnly || config.spawns.isEmpty()) return drops
         val team = me().second
-        return config.drops.filter { drop ->
+        return drops.filter { drop ->
             if (drop.kind == DropKind.SCAVENGE) return@filter true
             val nearest = config.spawns.minByOrNull { GeoMath.distanceMeters(it.point, drop.point) } ?: return@filter true
             nearest.team == team || nearest.team == 0
@@ -164,6 +171,7 @@ class LoadoutController(
             streak = 0
             seenDrops.clear()
             triedAt.clear()
+            claimed.clear()
             _longestShot.value = null
             blaster.setAmmoReserve(if (limited) rules.startingReserve else null)
         }
@@ -222,7 +230,12 @@ class LoadoutController(
             val kind = withContext(io) { server.claim(on.id, playerId) }
             _claiming.value = null
             standingOn = null
-            if (kind != null) apply(kind, rules)
+            if (kind != null) {
+                claimed += on.id
+                apply(kind, rules)
+            }
+            // Granted or not, the field has likely changed (it's gone, or someone else got it)
+            server.refresh()
         }
     }
 

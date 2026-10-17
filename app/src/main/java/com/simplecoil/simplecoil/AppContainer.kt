@@ -177,6 +177,7 @@ class AppContainer(private val app: Application) {
                 override fun claim(dropId: String, playerId: Int) = gameState.serverIP?.let { client.claim(it, dropId, playerId) }
                 override fun uav(playerId: Int) = gameState.serverIP?.let { client.uav(it, playerId) }
                 override fun longestShot() = gameState.serverIP?.let { client.longestShot(it) }
+                override fun refresh() = client.syncSoon(gameState.serverIP, force = true)
             },
             me = {
                 val id = players.playerID.toInt()

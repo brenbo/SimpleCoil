@@ -63,6 +63,8 @@ class LoadoutControllerTest {
         override fun claim(dropId: String, playerId: Int): DropKind? { claims += "$dropId/$playerId"; return grant }
         override fun uav(playerId: Int) = listOf(UavPlayer(9, 2, center), UavPlayer(8, 1, center))
         override fun longestShot() = longest
+        var refreshes = 0
+        override fun refresh() { refreshes++ }
     }
 
     private inner class Rig(scope: TestScope, rules: LoadoutRules, drops: List<Drop> = emptyList()) {
@@ -150,6 +152,9 @@ class LoadoutControllerTest {
         assertTrue("shotMode:${GameSettingsRepository.SHOT_MODE_FULL_AUTO}" in rig.blaster.calls)
         assertTrue(LoadoutController.Notice.Claimed(DropKind.SUPPLY) in notices)
         assertNull(rig.controller.claiming.value)
+        // Off this map at once, and the field is fetched again for everyone else's news
+        assertTrue(rig.controller.visibleDrops().isEmpty())
+        assertEquals(1, rig.server.refreshes)
     }
 
     @Test

@@ -135,6 +135,9 @@ class GameViewModel(
     /** The scoreboard dialog shows the score matrix rather than the list (kept across recreation). */
     var scoreMatrixVisible = false
         private set
+    /** The scoreboard dialog shows the longest shots ranking (map design: Longest shot). */
+    var longestShotsVisible = false
+        private set
     /** The latest score matrix, or what to show instead; null until one is asked for. */
     var scoreMatrixState: ScoreMatrixState? = null
         private set
@@ -1100,6 +1103,18 @@ class GameViewModel(
         requestScoreMatrix()
     }
 
+    /** The scoreboard's button: list, then score matrix, then longest shots, then the list again. */
+    fun onScoreboardFaceNext() {
+        when {
+            longestShotsVisible -> longestShotsVisible = false
+            scoreMatrixVisible -> {
+                onScoreMatrixToggled()
+                longestShotsVisible = true
+            }
+            else -> onScoreMatrixToggled()
+        }
+    }
+
     private val scoreMatrixShowing get() = scoreboardVisible && scoreMatrixVisible
 
     /**
@@ -1161,6 +1176,7 @@ class GameViewModel(
 
     private fun resetScoreMatrix() {
         scoreMatrixVisible = false
+        longestShotsVisible = false
         scoreMatrixState = null
         scoreMatrixPending = false
         scoreMatrixTimeout?.cancel()

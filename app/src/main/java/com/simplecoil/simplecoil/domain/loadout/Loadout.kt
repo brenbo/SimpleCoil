@@ -221,6 +221,20 @@ data class UavPlayer(val playerId: Int, val team: Int, val point: LatLon) {
     }
 }
 
+/** A player's longest shot this game, for the scoreboard's ranking. */
+data class ShotRank(val playerId: Int, val name: String, val meters: Double, val victimName: String) {
+    companion object {
+        /** The ranking in a stats reply, longest first; empty if it has none. */
+        fun listFromJson(json: String): List<ShotRank> {
+            val players = JSONObject(json).optJSONArray("players") ?: return emptyList()
+            return (0 until players.length()).map {
+                val p = players.getJSONArray(it)
+                ShotRank(p.getInt(0), p.getString(1), p.getDouble(2), p.getString(3))
+            }.sortedByDescending { it.meters }
+        }
+    }
+}
+
 /** The game's longest shot (map design: Longest shot): who, whom, how far, and from where to where. */
 data class LongestShot(val shooterName: String, val victimName: String, val meters: Double, val from: LatLon, val to: LatLon) {
     companion object {

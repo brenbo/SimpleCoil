@@ -143,11 +143,35 @@ class LoadoutTest {
         val border = Border.Circle(center, 100.0)
         val random = Random(3)
         repeat(50) {
-            val spot = LiveField.dropSpot(border, 15.0, random)!!
+            val spot = LiveField.dropSpot(border, 15.0, random = random)!!
             assertTrue(border.contains(spot))
             assertTrue(border.distanceToEdgeMeters(spot) >= 15.0)
         }
-        assertNull(LiveField.dropSpot(Border.Circle(center, 10.0), 50.0, random))
+        assertNull(LiveField.dropSpot(Border.Circle(center, 10.0), 50.0, random = random))
+    }
+
+    @Test
+    fun dropsLandClearOfSpawnsAndEachOther() {
+        val border = Border.Circle(center, 100.0)
+        val random = Random(4)
+        val spawn = at(0.0, 50.0) to 35.0
+        val placed = mutableListOf<LatLon>()
+        repeat(5) {
+            val keepClear = listOf(spawn) + placed.map { it to LiveField.DROP_SPACING_METERS }
+            val spot = LiveField.dropSpot(border, 10.0, keepClear, random)!!
+            assertTrue(GeoMath.distanceMeters(spot, spawn.first) >= 35.0)
+            placed.forEach { assertTrue(GeoMath.distanceMeters(spot, it) >= LiveField.DROP_SPACING_METERS) }
+            placed += spot
+        }
+    }
+
+    @Test
+    fun aCrowdedFieldStillGetsTheClearestSpot() {
+        // Too small to stay 100 m from the spawn: the drop goes as far from it as it can
+        val border = Border.Circle(center, 40.0)
+        val spot = LiveField.dropSpot(border, 5.0, listOf(center to 100.0), Random(5))!!
+        assertTrue(border.contains(spot))
+        assertTrue(GeoMath.distanceMeters(spot, center) > 25.0)
     }
 
     // Shot distances
@@ -161,6 +185,23 @@ class LoadoutTest {
         stats.record(3, 2, Fix(center, 0), Fix(at(90.0, 0.0), 0), 5_000, 152.0)
         assertEquals(3, stats.longest()!!.shooterId)
         assertEquals(2, stats.all().size)
+    }
+
+    @Test
+    fun eachPlayersLongestShotIsRanked() {
+        val stats = ShotStats()
+        stats.record(1, 2, Fix(center, 0), Fix(at(40.0, 0.0), 0), 0, 152.0)
+        stats.record(1, 3, Fix(center, 0), Fix(at(70.0, 0.0), 0), 0, 152.0)
+        stats.record(2, 1, Fix(center, 0), Fix(at(90.0, 0.0), 0), 0, 152.0)
+        val best = stats.bestByShooter()
+        assertEquals(listOf(2, 1), best.map { it.shooterId })
+        assertEquals(3, best[1].victimId)
+
+        val json = JSONObject().put("players", JSONArray()
+            .put(JSONArray().put(1).put("Ann").put(70.0).put("Cat"))
+            .put(JSONArray().put(2).put("Bob").put(90.0).put("Ann")))
+        assertEquals(listOf("Bob", "Ann"), ShotRank.listFromJson(json.toString()).map { it.name })
+        assertEquals(emptyList<ShotRank>(), ShotRank.listFromJson("{}"))
     }
 
     @Test

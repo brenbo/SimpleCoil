@@ -118,17 +118,39 @@ class LiveField {
 
     companion object {
         /**
-         * A random spot for a drop: inside [border] and [edgeBufferMeters] in from it. Null if
-         * none turns up (a border too small for the buffer).
+         * A random spot for a drop: inside [border], [edgeBufferMeters] in from it, and at least
+         * each [keepClear] distance from its point (spawns, other drops), so crates don't pile up
+         * on each other or on a spawn. On a field too small for that, the clearest spot found.
+         * Null if none turns up (a border too small for the buffer).
          */
-        fun dropSpot(border: Border, edgeBufferMeters: Double, random: Random = Random.Default): LatLon? {
+        fun dropSpot(
+            border: Border,
+            edgeBufferMeters: Double,
+            keepClear: List<Pair<LatLon, Double>> = emptyList(),
+            random: Random = Random.Default,
+        ): LatLon? {
             val b = border.bounds
+            var best: LatLon? = null
+            var bestScore = Double.NEGATIVE_INFINITY
             repeat(TRIES) {
                 val spot = LatLon(b.south + random.nextDouble() * (b.north - b.south), b.west + random.nextDouble() * (b.east - b.west))
-                if (border.contains(spot) && border.distanceToEdgeMeters(spot) >= edgeBufferMeters) return spot
+                if (!border.contains(spot) || border.distanceToEdgeMeters(spot) < edgeBufferMeters) return@repeat
+                // How far past the nearest thing's clearance: 0 or more is clear of everything
+                val score = keepClear.minOfOrNull { (point, clear) -> GeoMath.distanceMeters(spot, point) - clear } ?: 0.0
+                if (score >= 0) return spot
+                if (score > bestScore) {
+                    best = spot
+                    bestScore = score
+                }
             }
-            return null
+            return best
         }
+
+        /** How far apart two drops land, where the field allows. */
+        const val DROP_SPACING_METERS = 30.0
+
+        /** How far a drop lands outside a spawn's edge, where the field allows. */
+        const val SPAWN_CLEARANCE_METERS = 20.0
 
         private const val TRIES = 300
     }
@@ -165,6 +187,11 @@ class ShotStats(private val maxFixAgeMillis: Long = MAX_FIX_AGE_MILLIS) {
 
     @Synchronized
     fun all(): List<Shot> = shots.toList()
+
+    /** Each shooter's longest shot, longest first. */
+    @Synchronized
+    fun bestByShooter(): List<Shot> =
+        shots.groupBy { it.shooterId }.values.map { mine -> mine.maxBy { it.meters } }.sortedByDescending { it.meters }
 
     companion object {
         /** Positions come about once a second while players move; older than this is stale. */

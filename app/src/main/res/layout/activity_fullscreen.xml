@@ -319,13 +319,20 @@
             android:text="@string/count_zero"
             android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
 
-        <!-- Magazines left with limited ammo, and power-ups (map design: Ammo, drops and power-ups) -->
+        <!-- Magazines left with limited ammo, and power-ups (map design: Ammo, drops and power-ups):
+             on the health label's row, across from the game timer -->
         <TextView
             android:id="@+id/loadout_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/shots_remaining_tv"
-            android:layout_alignStart="@+id/shots_label_tv"
+            android:layout_alignBaseline="@+id/health_label_tv"
+            android:layout_toEndOf="@+id/health_label_tv"
+            android:layout_alignParentEnd="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="15dp"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:maxLines="1"
             android:textColor="#FFB74D"
             android:textSize="13sp"
             android:visibility="gone" />

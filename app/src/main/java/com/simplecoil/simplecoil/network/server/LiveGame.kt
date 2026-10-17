@@ -109,7 +109,9 @@ class LiveGame(
         if (!rules.dropsEnabled || kinds.isEmpty()) return
         while (true) {
             delay(rules.dropIntervalMinutes * 60_000L)
-            val spot = LiveField.dropSpot(border, base.rules.edgeBufferMeters, random) ?: continue
+            val keepClear = field.currentSpawns().map { it.point to base.spawnRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
+                (field.config()?.drops ?: emptyList()).map { it.point to LiveField.DROP_SPACING_METERS }
+            val spot = LiveField.dropSpot(border, base.rules.edgeBufferMeters, keepClear, random) ?: continue
             field.drop(kinds[random.nextInt(kinds.size)], spot, wallClock())
             publish()
         }
@@ -164,7 +166,12 @@ class LiveGame(
                 .put("meters", shot.meters)
                 .put("from", JSONArray().put(shot.shooter.latitude).put(shot.shooter.longitude))
                 .put("to", JSONArray().put(shot.victim.latitude).put(shot.victim.longitude))
-            return JSONObject().put("longest", longest).toString().toByteArray(Charsets.UTF_8)
+            // Every player's longest, for the scoreboard's ranking
+            val players = JSONArray()
+            shots.bestByShooter().forEach {
+                players.put(JSONArray().put(it.shooterId).put(nameOf(it.shooterId) ?: "").put(it.meters).put(nameOf(it.victimId) ?: ""))
+            }
+            return JSONObject().put("longest", longest).put("players", players).toString().toByteArray(Charsets.UTF_8)
         }
     }
 

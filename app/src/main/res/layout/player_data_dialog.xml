@@ -48,4 +48,41 @@
             android:visibility="gone" />
     </FrameLayout>
 
+    <!-- The longest shots face: each player's longest shot this game, ranked. -->
+    <FrameLayout
+        android:id="@+id/longest_shots_face"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/score_matrix_min_height"
+        android:visibility="gone" >
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <LinearLayout
+                android:id="@+id/longest_shots_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <ProgressBar
+            android:id="@+id/longest_shots_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <TextView
+            style="@style/DialogBody"
+            android:id="@+id/longest_shots_message"
+            android:layout_marginTop="0dp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="16dp"
+            android:visibility="gone" />
+    </FrameLayout>
+
 </LinearLayout>
