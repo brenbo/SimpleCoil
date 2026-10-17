@@ -95,6 +95,11 @@ class ModeController(
         }
     }
 
+    /** The host pressed Reset: the last game's result and scores go. */
+    fun clear() {
+        _state.value = null
+    }
+
     private suspend fun poll() {
         val playing = inGame()
         val objective = field.value?.mode?.hasObjectives == true

@@ -93,6 +93,8 @@ class GameViewModel(
     private val settingsRepo: GameSettingsRepository,
     private val gameStateRepo: GameStateRepository,
     private val playerRepo: PlayerRepository,
+    /** The server went from after a game back to the lobby (the host pressed Reset). */
+    private val onSessionReset: () -> Unit = {},
 ) : ViewModel() {
 
     /** The screen, while one exists. */
@@ -1366,6 +1368,7 @@ class GameViewModel(
             net.teamScore = 0
             screen?.showScore(0)
             screen?.showTeamScore(0)
+            onSessionReset()
         }
         serverPhase = phase
         screen?.rebuildAdminMenu()

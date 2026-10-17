@@ -61,6 +61,15 @@ class ConfettiView @JvmOverloads constructor(context: Context, attrs: AttributeS
         }
     }
 
+    /**
+     * No size of its own: it fills what the banner beside it takes. (By default a view asks for
+     * all the room it is offered, which made the scoreboard's banner screen-tall and pushed the
+     * player list out of sight.)
+     */
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        setMeasuredDimension(resolveSize(0, widthMeasureSpec), resolveSize(0, heightMeasureSpec))
+    }
+
     override fun onDetachedFromWindow() {
         animator?.cancel()
         super.onDetachedFromWindow()
