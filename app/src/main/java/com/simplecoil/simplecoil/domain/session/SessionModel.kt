@@ -131,8 +131,8 @@ enum class SessionSound {
     /** Capture the Flag: your flag taken; a flag captured. */
     FLAG_TAKEN, FLAG_CAPTURED,
 
-    /** Search & Destroy: a round starting, the bomb planted, defused. */
-    ROUND_START, BOMB_PLANTED, BOMB_DEFUSED,
+    /** Search & Destroy: a round starting, the bomb planted, defused, going off. */
+    ROUND_START, BOMB_PLANTED, BOMB_DEFUSED, BOMB_EXPLODED,
 
     /** Infection: you were infected. */
     INFECTED,

@@ -8,7 +8,7 @@ Every game sound plays through `SoundCues` (app/src/main/java/com/simplecoil/sim
 
 - **Real gun recordings**, in `res/raw`: *Snake's Authentic Gun Sounds* and its sequel by SnakeF8 (free for commercial use, no credit needed; the author calls them public domain). Shots are a 5.56 and a 7.62x39 rifle, close and with the field's echo (four takes); reload is an AR mag change, empty is a dry fire, spawn a bolt release or an AK rack, connecting the blaster an AR charging handle, the last mag and a power-up are magazine sounds.
 - **Radio callouts**, in `res-licensed/raw`: the *VOiD1 Gaming Military Voice Pack*. Its license allows them in the app (no credit needed) but not sharing the files, so that folder is git-ignored and the public repo doesn't carry them. A build without it plays the effects alone. The pack's lines don't match the original script, so each callout uses the closest line it has (the table below shows what is said).
-- Hits, eliminations, score, the beep and the whistle are still the GameBurp effects; the gun packs have nothing for them.
+- **Interface and event sounds** (hits, eliminations, score, the beep and every `sfx_` cue that isn't a gun sound), in `res/raw`: made for this app with Claude from code (Web Audio), so they are ours to keep. Only the end-of-game whistle is still GameBurp.
 
 ## Variety
 
@@ -38,7 +38,7 @@ Effects never play quite the same twice: each play moves the pitch up to 6% eith
 | `sfx_last_mag` | limited ammo, the last magazine in |
 | `sfx_capturing`, `sfx_secured`, `sfx_lost`, `sfx_enemy_capturing`, `sfx_point_moved` | capture points |
 | `sfx_flag_taken`, `sfx_flag_captured` | Capture the Flag |
-| `sfx_round_start`, `sfx_bomb_planted`, `sfx_bomb_defused` | Search & Destroy |
+| `sfx_round_start`, `sfx_bomb_planted`, `sfx_bomb_defused`, `sfx_bomb_exploded` | Search & Destroy (the last: the bomb going off) |
 | `sfx_infected` | Infection: you were infected |
 | `sfx_loot`, `sfx_loot_banked` | Extraction |
 | `sfx_victory`, `sfx_defeat` | an objective game won or lost |

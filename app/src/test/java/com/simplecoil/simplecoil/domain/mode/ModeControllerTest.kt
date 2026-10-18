@@ -24,6 +24,7 @@ import com.simplecoil.simplecoil.domain.session.SpawnPhase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -91,5 +92,50 @@ class ModeControllerTest {
         reply = state(2, winner = 2)
         advanceTimeBy(1_000)
         assertEquals(2, controller.state.value!!.winner)
+    }
+
+    private fun bomb(phase: RoundPhase, lastWinner: Int = 0) = ModeState(GameMode.SEARCH_AND_DESTROY, emptyList(),
+        mapOf(1 to 0, 2 to 0), 3, 10.0, 0, 0, round = 1,
+        bomb = BombState(1, attackers = 2, phase, 0L, 0, null, if (phase == RoundPhase.PLANTED) "A" else null, lastWinner, emptySet()))
+
+    /** The sounds heard as the server's replies go by, one a second. */
+    private fun soundsFor(vararg replies: ModeState): List<SessionSound> {
+        val sounds = mutableListOf<SessionSound>()
+        runTest { soundsInto(sounds, replies) }
+        return sounds
+    }
+
+    private suspend fun TestScope.soundsInto(sounds: MutableList<SessionSound>, replies: Array<out ModeState>) {
+        var reply = replies.first()
+        ModeController(
+            field = MutableStateFlow(FieldConfig(mode = GameMode.SEARCH_AND_DESTROY)),
+            session = MutableStateFlow(SessionState(health = 10, maxHealth = 10, shotMode = 0, grenadePaired = false)),
+            server = object : ModeController.Server {
+                override fun state(playerId: Int, alive: Boolean): ModeState = reply
+            },
+            me = { 5 to 1 }, inGame = { true },
+            feedback = object : ModeController.Feedback {
+                override fun play(sound: SessionSound) { sounds += sound }
+                override fun vibrate() {}
+            },
+            scope = backgroundScope, io = StandardTestDispatcher(testScheduler),
+        )
+        advanceTimeBy(1_100)
+        for (next in replies.drop(1)) {
+            reply = next
+            advanceTimeBy(1_000)
+        }
+    }
+
+    @Test
+    fun theBombGoesOff_whenTheAttackersWinTheRoundWhileItIsDown() {
+        val sounds = soundsFor(bomb(RoundPhase.LIVE), bomb(RoundPhase.PLANTED), bomb(RoundPhase.BETWEEN, lastWinner = 2))
+        assertEquals(listOf(SessionSound.BOMB_PLANTED, SessionSound.BOMB_EXPLODED), sounds)
+    }
+
+    @Test
+    fun theBombIsDefused_whenTheDefendersWinTheRoundWhileItIsDown() {
+        val sounds = soundsFor(bomb(RoundPhase.LIVE), bomb(RoundPhase.PLANTED), bomb(RoundPhase.BETWEEN, lastWinner = 1))
+        assertEquals(listOf(SessionSound.BOMB_PLANTED, SessionSound.BOMB_DEFUSED), sounds)
     }
 }

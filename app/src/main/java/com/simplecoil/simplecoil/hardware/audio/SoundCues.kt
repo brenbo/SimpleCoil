@@ -86,6 +86,7 @@ object SoundCues {
         SessionSound.ROUND_START -> SoundCue("sfx_round_start", "spawn", 1f, voice = "voice_round_start", priority = 6, essential = true)
         SessionSound.BOMB_PLANTED -> SoundCue("sfx_bomb_planted", "beep", 0.6f, 3, voice = "voice_charge_set", priority = 9, essential = true)
         SessionSound.BOMB_DEFUSED -> SoundCue("sfx_bomb_defused", "score", 0.9f, voice = "voice_charge_defused", priority = 9, essential = true)
+        SessionSound.BOMB_EXPLODED -> SoundCue("sfx_bomb_exploded", "eliminated", 0.6f, priority = 9)
         SessionSound.INFECTED -> SoundCue("sfx_infected", "eliminated", 0.7f, voice = "voice_infected", priority = 8, essential = true)
         SessionSound.LOOT -> SoundCue("sfx_loot", "score", 1.4f)
         SessionSound.LOOT_BANKED -> SoundCue("sfx_loot_banked", "score", 0.95f, 2, voice = "voice_loot_banked", priority = 5)

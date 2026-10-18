@@ -157,6 +157,8 @@ class ModeController(
                     b.phase == RoundPhase.PLANTED && was.phase == RoundPhase.LIVE -> cue(SessionSound.BOMB_PLANTED)
                     // A round won while the bomb was down: defused
                     b.phase == RoundPhase.BETWEEN && was.phase == RoundPhase.PLANTED && b.lastRoundWinner != b.attackers -> cue(SessionSound.BOMB_DEFUSED)
+                    // Won by the attackers while it was down: it went off
+                    b.phase == RoundPhase.BETWEEN && was.phase == RoundPhase.PLANTED -> cue(SessionSound.BOMB_EXPLODED)
                     b.phase == RoundPhase.BETWEEN && was.phase != RoundPhase.BETWEEN ->
                         cue(if (b.lastRoundWinner == team) SessionSound.SECURED else SessionSound.LOST)
                 }
