@@ -94,6 +94,29 @@ class RoundsAndInfectionTest {
     }
 
     @Test
+    fun playersStillInTheirCountdown_dontLoseTheRound() {
+        val e = BombEngine(rules, listOf(siteA), 0, Random(6))
+        // The start (and each new round's) countdown: nobody is in the game yet
+        val counting = players(attackerAlive = false).mapValues { it.value.copy(alive = false) }
+        var state = e.tick(1_000, counting)
+        state = e.tick(5_000, counting)
+        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
+        assertEquals(0, state.scores[1])
+        assertEquals(0, state.scores[2])
+        // Only an elimination wipes a team out: one round, one point
+        e.tick(11_000, players())
+        e.onEliminated(1)
+        state = e.tick(12_000, players(attackerAlive = false))
+        assertEquals(1, state.scores[2])
+        // The next round starts with the attacker counting down again: no round given away
+        state = e.tick(22_500, players(attackerAlive = false))
+        assertEquals(2, state.round)
+        state = e.tick(30_000, players(attackerAlive = false))
+        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
+        assertEquals(1, state.scores[2])
+    }
+
+    @Test
     fun theTeamsSwapAtHalfTime() {
         val e = BombEngine(rules, listOf(siteA), 0, Random(5))
         assertEquals(1, e.attackers(1))

@@ -137,7 +137,7 @@ class GameSounds(
         val id = ++announcement
         announcing.clear()
         var length = 0L
-        if (voice == null || cue.effectUnderVoice) length = playEffect(cue, s.effectsVolume, announcing)
+        length = playEffect(cue, s.effectsVolume, announcing)
         if (voice != null) {
             lastSaid[voice] = now
             val startIn = if (length > 0) length + AnnouncementQueue.GAP_MILLIS else 0L

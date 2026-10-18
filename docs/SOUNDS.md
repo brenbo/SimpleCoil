@@ -7,7 +7,7 @@ Every game sound plays through `SoundCues` (app/src/main/java/com/simplecoil/sim
 `tools/sounds/build-sounds.sh` makes them from three free packs on itch.io (the script lists the links and which file becomes which sound). It trims each one, makes it mono, cuts the deep bass phone speakers can't play, and evens out the loudness; callouts also get the narrow radio treatment and squelch.
 
 - **Real gun recordings**, in `res/raw`: *Snake's Authentic Gun Sounds* and its sequel by SnakeF8 (free for commercial use, no credit needed; the author calls them public domain). Empty is a dry fire, spawn a bolt release or an AK rack, connecting the blaster an AR charging handle, the last mag and a power-up are magazine sounds.
-- **Radio callouts**, in `res-licensed/raw`: the *VOiD1 Gaming Military Voice Pack*. Its license allows them in the app (no credit needed) but not sharing the files, so that folder is git-ignored and the public repo doesn't carry them. A build without it plays the effects alone. The pack's lines don't match the original script, so each callout uses the closest line it has (the table below shows what is said).
+- **Radio callouts** (not used at the moment), in `res-licensed/raw`: the *VOiD1 Gaming Military Voice Pack*. Its license allows them in the app (no credit needed) but not sharing the files, so that folder is git-ignored and the public repo doesn't carry them. A build without it plays the effects alone. The pack's lines don't match the original script, so each callout uses the closest line it has (the table below shows what is said).
 - **Shot, reload and the bomb going off** (`shootingshort.ogg`, played for every fire mode; `reload`; `sfx_bomb_exploded`), in `res/raw`: CC0 recordings the project owner supplied; the reload is cut to its mag-in and charging part, the explosion to its first 3.5 s.
 - **Event sounds** (the `sfx_` cues that aren't gun sounds), in `res/raw`: made for this app with Claude. The countdown beep, `sfx_damage_tick` and `sfx_loot` are from an earlier batch.
 - **Hit, kill and death sounds** (`hit`, `hit_confirm`, `hit_shielded`, `hit_eliminated`, `eliminated`, `score`) and the end-of-game whistle are the original GameBurp effects.
@@ -46,6 +46,8 @@ Effects never play quite the same twice: each play moves the pitch up to 6% eith
 | `sfx_victory`, `sfx_defeat` | an objective game won or lost |
 
 ## Radio callouts
+
+**Not used at the moment:** the owner preferred the effects alone, so no event has a callout (`SoundCues` maps none, the Sound settings hide the callout controls, and `res-licensed` is no longer built into the app). The lines below are what each event would say, kept so they can come back.
 
 Played once the file exists, after its effect (the supply drop plays only its callout), the same line no more than every 8 seconds. The blaster's own sounds (shots, hits, reload, beeps) play at once and duck under a callout; every other sound takes its turn: one at a time in the order things happened, kills and deaths ahead of the rest, and the end of a game cuts off whatever plays and clears the line. Something that waited too long (2.5 s for a kill, 6 s, or 12 s if essential) is skipped rather than played late. Players can turn callouts off, or to essential only (marked ✓), in Sound settings.
 

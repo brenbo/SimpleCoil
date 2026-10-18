@@ -141,6 +141,9 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
         val inGame = players.filter { (id, p) -> p.alive && id !in out }
         val attackersLeft = inGame.filterValues { it.team == attackers() }
         val defendersLeft = inGame.filterValues { it.team == defenders() }
+        // A team is wiped out when every one of its players was eliminated this round. Not by
+        // "not in the game": a player still in the start or respawn countdown says that too
+        fun wiped(team: Int) = players.any { it.value.team == team } && players.filter { it.value.team == team }.keys.all { it in out }
         // The bomb goes to an attacker at the start of the round
         if (carrier == 0 && !dropped && phase == RoundPhase.LIVE && attackersLeft.isNotEmpty()) {
             carrier = attackersLeft.keys.toList()[random.nextInt(attackersLeft.size)]
@@ -176,8 +179,8 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
                 }
                 when {
                     phase == RoundPhase.PLANTED -> {}
-                    attackersLeft.isEmpty() && players.values.any { it.team == attackers() } -> endRound(defenders(), now)
-                    defendersLeft.isEmpty() && players.values.any { it.team == defenders() } -> endRound(attackers(), now)
+                    wiped(attackers()) -> endRound(defenders(), now)
+                    wiped(defenders()) -> endRound(attackers(), now)
                     now >= endsAt -> endRound(defenders(), now)
                 }
             }
@@ -189,7 +192,7 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
                 when {
                     defuser != null && dwell(defuser.key, now) >= rules.defuseSeconds * 1000L -> endRound(defenders(), now)
                     now >= endsAt -> endRound(attackers(), now)
-                    defendersLeft.isEmpty() && players.values.any { it.team == defenders() } -> endRound(attackers(), now)
+                    wiped(defenders()) -> endRound(attackers(), now)
                     defuser == null -> dwellPlayer = 0
                 }
             }

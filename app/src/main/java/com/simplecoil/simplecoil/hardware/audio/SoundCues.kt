@@ -45,9 +45,8 @@ enum class Lane {
  * times, so every event still sounds different. [vary] nudges pitch and volume a little each
  * time, as a real shot never sounds quite the same twice.
  *
- * [voice] is its radio callout ("voice_zone_closing"), said after the effect once recorded.
- * [essential] callouts play even with "essential only". With [effectUnderVoice] false the effect
- * plays only when the callout doesn't.
+ * [voice] is its radio callout ("voice_zone_closing"), said after the effect; none has one at
+ * the moment (the effects say it all). [essential] callouts play even with "essential only".
  */
 data class SoundCue(
     val file: String,
@@ -58,7 +57,6 @@ data class SoundCue(
     val voice: String? = null,
     val essential: Boolean = false,
     val lane: Lane = Lane.NORMAL,
-    val effectUnderVoice: Boolean = true,
 )
 
 object SoundCues {
@@ -87,35 +85,37 @@ object SoundCues {
         SessionSound.SCORE -> SoundCue("score", "score", lane = Lane.URGENT)
         // The whistle at the end of a game stays exactly as it is
         SessionSound.GAME_END -> SoundCue("game_end", "game_end", vary = false, lane = Lane.FINAL)
-        SessionSound.VICTORY -> SoundCue("sfx_victory", "score", 0.8f, 2, vary = false, voice = "voice_victory", essential = true, lane = Lane.FINAL)
-        SessionSound.DEFEAT -> SoundCue("sfx_defeat", "eliminated", 0.6f, vary = false, voice = "voice_defeat", essential = true, lane = Lane.FINAL)
+        SessionSound.VICTORY -> SoundCue("sfx_victory", "score", 0.8f, 2, vary = false, essential = true, lane = Lane.FINAL)
+        SessionSound.DEFEAT -> SoundCue("sfx_defeat", "eliminated", 0.6f, vary = false, essential = true, lane = Lane.FINAL)
 
-        SessionSound.OUT_OF_BOUNDS -> SoundCue("sfx_out_of_bounds", "empty", 0.7f, 2, voice = "voice_leaving_area", essential = true)
-        SessionSound.BACK_IN_BOUNDS -> SoundCue("sfx_back_in_bounds", "spawn", 1.3f, voice = "voice_back_in_area")
-        SessionSound.ZONE_WARNING -> SoundCue("sfx_zone_warning", "beep", 0.7f, 2, voice = "voice_outside_zone", essential = true)
-        SessionSound.ZONE_CLOSING -> SoundCue("sfx_zone_closing", "beep", 0.6f, 3, voice = "voice_zone_closing", essential = true)
-        SessionSound.SPAWN_MOVING -> SoundCue("sfx_spawn_moving", "spawn", 0.8f, voice = "voice_spawn_moving")
-        // Just the callout when there is one: the effect under it made it hard to follow
-        SessionSound.DROP_INCOMING -> SoundCue("sfx_drop_incoming", "beep", 1.5f, 2, voice = "voice_drop_inbound", effectUnderVoice = false)
-        SessionSound.POWER_UP -> SoundCue("sfx_power_up", "score", 1.25f, voice = "voice_power_up")
-        SessionSound.KILLSTREAK -> SoundCue("sfx_killstreak", "hit_eliminated", 1.2f, 2, voice = "voice_killstreak")
-        SessionSound.UAV -> SoundCue("sfx_uav", "beep", 1.8f, 3, voice = "voice_uav_online")
-        SessionSound.LAST_MAG -> SoundCue("sfx_last_mag", "empty", 1.3f, voice = "voice_last_mag")
-        SessionSound.CAPTURING -> SoundCue("sfx_capturing", "beep", 1.2f, voice = "voice_capturing")
-        SessionSound.SECURED -> SoundCue("sfx_secured", "score", 1f, voice = "voice_secured", essential = true)
-        SessionSound.LOST -> SoundCue("sfx_lost", "hit_shielded", 0.8f, voice = "voice_lost", essential = true)
-        SessionSound.ENEMY_CAPTURING -> SoundCue("sfx_enemy_capturing", "beep", 0.8f, 2, voice = "voice_hostiles_capturing", essential = true)
-        SessionSound.POINT_MOVED -> SoundCue("sfx_point_moved", "spawn", 0.9f, 2, voice = "voice_point_moved", essential = true)
-        SessionSound.FLAG_TAKEN -> SoundCue("sfx_flag_taken", "hit_shielded", 1.1f, 2, voice = "voice_flag_taken", essential = true)
-        SessionSound.FLAG_CAPTURED -> SoundCue("sfx_flag_captured", "score", 1.1f, 2, voice = "voice_flag_captured", essential = true)
-        SessionSound.ROUND_START -> SoundCue("sfx_round_start", "spawn", 1f, voice = "voice_round_start", essential = true)
-        SessionSound.BOMB_PLANTED -> SoundCue("sfx_bomb_planted", "beep", 0.6f, 3, voice = "voice_charge_set", essential = true)
-        SessionSound.BOMB_DEFUSED -> SoundCue("sfx_bomb_defused", "score", 0.9f, voice = "voice_charge_defused", essential = true)
+        SessionSound.OUT_OF_BOUNDS -> SoundCue("sfx_out_of_bounds", "empty", 0.7f, 2, essential = true)
+        SessionSound.BACK_IN_BOUNDS -> SoundCue("sfx_back_in_bounds", "spawn", 1.3f)
+        SessionSound.ZONE_WARNING -> SoundCue("sfx_zone_warning", "beep", 0.7f, 2, essential = true)
+        SessionSound.ZONE_CLOSING -> SoundCue("sfx_zone_closing", "beep", 0.6f, 3, essential = true)
+        SessionSound.SPAWN_MOVING -> SoundCue("sfx_spawn_moving", "spawn", 0.8f)
+        SessionSound.DROP_INCOMING -> SoundCue("sfx_drop_incoming", "beep", 1.5f, 2)
+        SessionSound.POWER_UP -> SoundCue("sfx_power_up", "score", 1.25f)
+        SessionSound.KILLSTREAK -> SoundCue("sfx_killstreak", "hit_eliminated", 1.2f, 2)
+        SessionSound.UAV -> SoundCue("sfx_uav", "beep", 1.8f, 3)
+        SessionSound.LAST_MAG -> SoundCue("sfx_last_mag", "empty", 1.3f)
+        SessionSound.CAPTURING -> SoundCue("sfx_capturing", "beep", 1.2f)
+        SessionSound.SECURED -> SoundCue("sfx_secured", "score", 1f, essential = true)
+        SessionSound.LOST -> SoundCue("sfx_lost", "hit_shielded", 0.8f, essential = true)
+        SessionSound.ENEMY_CAPTURING -> SoundCue("sfx_enemy_capturing", "beep", 0.8f, 2, essential = true)
+        SessionSound.POINT_MOVED -> SoundCue("sfx_point_moved", "spawn", 0.9f, 2, essential = true)
+        SessionSound.FLAG_TAKEN -> SoundCue("sfx_flag_taken", "hit_shielded", 1.1f, 2, essential = true)
+        SessionSound.FLAG_CAPTURED -> SoundCue("sfx_flag_captured", "score", 1.1f, 2, essential = true)
+        SessionSound.ROUND_START -> SoundCue("sfx_round_start", "spawn", 1f, essential = true)
+        SessionSound.BOMB_PLANTED -> SoundCue("sfx_bomb_planted", "beep", 0.6f, 3, essential = true)
+        SessionSound.BOMB_DEFUSED -> SoundCue("sfx_bomb_defused", "score", 0.9f, essential = true)
         SessionSound.BOMB_EXPLODED -> SoundCue("sfx_bomb_exploded", "eliminated", 0.6f, essential = true)
-        SessionSound.INFECTED -> SoundCue("sfx_infected", "eliminated", 0.7f, voice = "voice_infected", essential = true)
+        SessionSound.INFECTED -> SoundCue("sfx_infected", "eliminated", 0.7f, essential = true)
         SessionSound.LOOT -> SoundCue("sfx_loot", "score", 1.4f)
-        SessionSound.LOOT_BANKED -> SoundCue("sfx_loot_banked", "score", 0.95f, 2, voice = "voice_loot_banked")
+        SessionSound.LOOT_BANKED -> SoundCue("sfx_loot_banked", "score", 0.95f, 2)
     }
+
+    /** True if any sound has a radio callout; with none, the sound settings leave the callout controls out. */
+    val hasCallouts: Boolean get() = SessionSound.entries.any { of(it).voice != null }
 
     /** Every resource name a cue might use: files, fallbacks and voices. */
     fun names(): Set<String> = SessionSound.entries.map { of(it) }.flatMap { listOfNotNull(it.file, it.fallback, it.voice) }.toSet()

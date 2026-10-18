@@ -26,6 +26,7 @@ import com.simplecoil.simplecoil.databinding.DialogSoundBinding
 import com.simplecoil.simplecoil.databinding.SoundSettingsSectionBinding
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.hardware.audio.AudioSettings
+import com.simplecoil.simplecoil.hardware.audio.SoundCues
 
 /**
  * A player's sound settings (map design: Audio): how loud the effects and the radio callouts
@@ -54,9 +55,12 @@ class SoundSettingsSection(
     }
 
     private fun showVoice() {
-        d.soundVoiceTitle.isVisible = d.soundVoiceSwitch.isChecked
-        d.soundVoiceSeek.isVisible = d.soundVoiceSwitch.isChecked
-        d.soundEssentialSwitch.isVisible = d.soundVoiceSwitch.isChecked
+        // No callouts at the moment: nothing to turn on or off
+        d.soundVoiceSwitch.isVisible = SoundCues.hasCallouts
+        val on = SoundCues.hasCallouts && d.soundVoiceSwitch.isChecked
+        d.soundVoiceTitle.isVisible = on
+        d.soundVoiceSeek.isVisible = on
+        d.soundEssentialSwitch.isVisible = on
     }
 
     fun read() = AudioSettings(
