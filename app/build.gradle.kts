@@ -45,6 +45,12 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    sourceSets {
+        // The radio callouts: licensed for the app but not to share, so kept out of git
+        // (tools/sounds/build-sounds.sh makes them). Without them, the effects play alone.
+        getByName("main").res.srcDir("src/main/res-licensed")
+    }
+
     lint {
         // What was left after the platform cleanup, map-owned warnings included (platform design §8.2)
         baseline = file("lint-baseline.xml")

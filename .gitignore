@@ -11,3 +11,6 @@
 /captures
 .externalNativeBuild
 app/debug
+
+# Licensed radio callouts: usable in the app, not to be shared (tools/sounds/build-sounds.sh)
+/app/src/main/res-licensed/

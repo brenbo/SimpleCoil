@@ -2,6 +2,14 @@
 
 Every game sound plays through `SoundCues` (app/src/main/java/com/simplecoil/simplecoil/hardware/audio/SoundCues.kt). Each event has its own effect file and, for the important ones, a radio callout. **To add a sound, put the file in `app/src/main/res/raw/` under the name below** (OGG or WAV); the app picks it up on the next build. Until a file is there, the event plays one of the shipped GameBurp effects at a different pitch (and sometimes twice), so it still sounds distinct.
 
+## Where the sounds come from
+
+`tools/sounds/build-sounds.sh` makes them from three free packs on itch.io (the script lists the links and which file becomes which sound). It trims each one, makes it mono, cuts the deep bass phone speakers can't play, and evens out the loudness; callouts also get the narrow radio treatment and squelch.
+
+- **Real gun recordings**, in `res/raw`: *Snake's Authentic Gun Sounds* and its sequel by SnakeF8 (free for commercial use, no credit needed; the author calls them public domain). Shots are a 5.56 and a 7.62x39 rifle, close and with the field's echo (four takes); reload is an AR mag change, empty is a dry fire, spawn a bolt release or an AK rack, connecting the blaster an AR charging handle, the last mag and a power-up are magazine sounds.
+- **Radio callouts**, in `res-licensed/raw`: the *VOiD1 Gaming Military Voice Pack*. Its license allows them in the app (no credit needed) but not sharing the files, so that folder is git-ignored and the public repo doesn't carry them. A build without it plays the effects alone. The pack's lines don't match the original script, so each callout uses the closest line it has (the table below shows what is said).
+- Hits, eliminations, score, the beep and the whistle are still the GameBurp effects; the gun packs have nothing for them.
+
 ## Variety
 
 Effects never play quite the same twice: each play moves the pitch up to 6% either way and the volume a little. For real variety, add more takes of a sound with `_2`, `_3`, ... up to `_6` after its name (for example `shootingshort_2.ogg`, `shootingshort_3.ogg`): one is picked at random, never the same twice running. The end-of-game whistle (`game_end`) is never varied.
@@ -19,6 +27,7 @@ Effects never play quite the same twice: each play moves the pitch up to 6% eith
 | `shootingshort` | a shot (add takes) |
 | `hit`, `hit_confirm`, `hit_eliminated`, `hit_shielded` | being hit; your hit landing, eliminating, on a shield |
 | `eliminated`, `spawn`, `reload`, `empty`, `beep`, `score` | as today |
+| `sfx_connected` | the blaster connecting, outside a game |
 | `game_end` | the whistle at the end of a game (not varied) |
 | `sfx_out_of_bounds`, `sfx_back_in_bounds` | leaving the field; back on it |
 | `sfx_damage_tick` | health lost outside the border or the zone |
@@ -41,28 +50,28 @@ Played once the file exists, one at a time by priority (higher first), the same 
 
 | File | Line | Priority | Essential |
 |---|---|---|---|
-| `voice_leaving_area` | "You are leaving the area. Turn back." | 9 | ✓ |
-| `voice_back_in_area` | "Back in the area." | 3 | |
-| `voice_outside_zone` | "Outside the zone. Move in." | 9 | ✓ |
-| `voice_zone_closing` | "Zone closing." | 8 | ✓ |
-| `voice_spawn_moving` | "Spawn relocating." | 5 | |
-| `voice_drop_inbound` | "Supply drop inbound." | 6 | |
-| `voice_power_up` | "Package secured." | 4 | |
-| `voice_killstreak` | "Killstreak." | 4 | |
-| `voice_uav_online` | "UAV online." | 5 | |
-| `voice_last_mag` | "Last mag." | 3 | |
-| `voice_capturing` | "Capturing the point." | 4 | |
-| `voice_secured` | "Point secured." | 7 | ✓ |
-| `voice_lost` | "Point lost." | 7 | ✓ |
-| `voice_hostiles_capturing` | "Hostiles taking our point." | 8 | ✓ |
-| `voice_point_moved` | "Hardpoint moving." | 6 | ✓ |
-| `voice_flag_taken` | "Our flag is taken." | 8 | ✓ |
-| `voice_flag_captured` | "Flag captured." | 7 | ✓ |
-| `voice_round_start` | "Round start." | 6 | ✓ |
-| `voice_charge_set` | "Charge is set." | 9 | ✓ |
-| `voice_charge_defused` | "Charge defused." | 9 | ✓ |
-| `voice_infected` | "You are infected." | 8 | ✓ |
-| `voice_loot_banked` | "Loot extracted." | 5 | |
-| `voice_victory` | "Mission accomplished." | 10 | ✓ |
-| `voice_defeat` | "Mission failed." | 10 | ✓ |
-| `voice_longest_shot` | "Longest shot on record." | 2 | |
+| `voice_leaving_area` | "Fall back." | 9 | ✓ |
+| `voice_back_in_area` | "Affirmative." | 3 | |
+| `voice_outside_zone` | "All in, now." | 9 | ✓ |
+| `voice_zone_closing` | "Stay alert." | 8 | ✓ |
+| `voice_spawn_moving` | "Alright, let's move out." | 5 | |
+| `voice_drop_inbound` | "Airdrop inbound." | 6 | |
+| `voice_power_up` | "Locked and loaded." | 4 | |
+| `voice_killstreak` | "Enemy down." | 4 | |
+| `voice_uav_online` | "Enemy spotted." | 5 | |
+| `voice_last_mag` | "I need ammo." | 3 | |
+| `voice_capturing` | "Hold this position." | 4 | |
+| `voice_secured` | "Protect the spot." | 7 | ✓ |
+| `voice_lost` | "Negative." | 7 | ✓ |
+| `voice_hostiles_capturing` | "Need backup." | 8 | ✓ |
+| `voice_point_moved` | "Get in position." | 6 | ✓ |
+| `voice_flag_taken` | "Ambushed." | 8 | ✓ |
+| `voice_flag_captured` | "Let's go." | 7 | ✓ |
+| `voice_round_start` | "Go, go, go." | 6 | ✓ |
+| `voice_charge_set` | "Fire in the hole." | 9 | ✓ |
+| `voice_charge_defused` | "Roger that." | 9 | ✓ |
+| `voice_infected` | "I'm hit." | 8 | ✓ |
+| `voice_loot_banked` | "Reached." | 5 | |
+| `voice_victory` | "Good job." | 10 | ✓ |
+| `voice_defeat` | "Retreat." | 10 | ✓ |
+| `voice_longest_shot` | "Good shot." | 2 | |

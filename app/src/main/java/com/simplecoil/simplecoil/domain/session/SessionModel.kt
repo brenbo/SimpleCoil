@@ -90,6 +90,9 @@ data class SessionState(
 enum class SessionSound {
     BEEP, ELIMINATED, EMPTY, HIT, RELOAD, SCORE, SHOT, SPAWN,
 
+    /** The blaster connected, outside a game. */
+    CONNECTED,
+
     /** Our shot hit another player (HIT, OUT or SHIELDHIT from the server). */
     HIT_CONFIRM, HIT_ELIMINATED, HIT_SHIELDED,
 

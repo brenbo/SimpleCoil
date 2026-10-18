@@ -147,7 +147,7 @@ class BlasterSessionEngine(
             is BlasterEvent.Connected -> isCommunicating = false // switch layouts on the first packet
             BlasterEvent.ServicesDiscovered -> {
                 if (config.gameState == GameStateRepository.GAME_STATE_NONE) {
-                    emit(SessionEffect.Sound(SessionSound.SPAWN))
+                    emit(SessionEffect.Sound(SessionSound.CONNECTED))
                 } else if (config.gameState == GameStateRepository.GAME_STATE_RUNNING) {
                     startReload()
                 }

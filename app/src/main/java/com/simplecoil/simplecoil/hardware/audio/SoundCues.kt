@@ -56,6 +56,7 @@ object SoundCues {
         SessionSound.HIT -> SoundCue("hit", "hit")
         SessionSound.ELIMINATED -> SoundCue("eliminated", "eliminated")
         SessionSound.SPAWN -> SoundCue("spawn", "spawn")
+        SessionSound.CONNECTED -> SoundCue("sfx_connected", "spawn")
         SessionSound.BEEP -> SoundCue("beep", "beep", vary = false)
         SessionSound.SCORE -> SoundCue("score", "score")
         SessionSound.HIT_CONFIRM -> SoundCue("hit_confirm", "hit_confirm")

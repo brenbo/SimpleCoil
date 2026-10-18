@@ -687,9 +687,9 @@ class BlasterSessionEngineTest {
     }
 
     @Test
-    fun servicesDiscovered_spawnSoundIdle_reloadWhileRunning() {
+    fun servicesDiscovered_connectedSoundIdle_reloadWhileRunning() {
         h.engine.onBlasterEvent(BlasterEvent.ServicesDiscovered)
-        assertEquals(listOf(SessionSound.SPAWN), h.sounds())
+        assertEquals(listOf(SessionSound.CONNECTED), h.sounds())
         h.connected()
         h.startedAndSpawned()
         h.engine.onBlasterEvent(BlasterEvent.ServicesDiscovered)
