@@ -35,33 +35,22 @@ interface HapticsPlayer {
 }
 
 /**
- * Sounds and haptics through AudioHapticsManager: the same raw resources, preloaded in a
- * SoundPool instead of a new MediaPlayer per sound (P6: MediaPlayer.create() at full-auto rates,
- * and a null return crashed).
+ * Sounds through [GameSounds] (every event's cue, varied, with callouts) and haptics through
+ * AudioHapticsManager's vibrator, which the player can turn off.
  */
-class AudioHapticsPlayer(private val manager: AudioHapticsManager) : SoundEffectPlayer, HapticsPlayer {
-    override fun play(sound: SessionSound) = manager.playSound(effect(sound))
+class AudioHapticsPlayer(
+    private val sounds: GameSounds,
+    private val manager: AudioHapticsManager,
+    private val settings: () -> AudioSettings,
+) : SoundEffectPlayer, HapticsPlayer {
+    override fun play(sound: SessionSound) = sounds.play(sound)
 
-    override fun vibrate() = manager.vibrate(HIT_VIBRATE_DURATION_MILLIS)
+    override fun vibrate() {
+        if (settings().vibration) manager.vibrate(HIT_VIBRATE_DURATION_MILLIS)
+    }
 
     companion object {
         const val HIT_VIBRATE_DURATION_MILLIS = 250L
-
-        @JvmStatic
-        fun effect(sound: SessionSound): AudioHapticsManager.SoundEffect = when (sound) {
-            SessionSound.BEEP -> AudioHapticsManager.SoundEffect.BEEP
-            SessionSound.ELIMINATED -> AudioHapticsManager.SoundEffect.ELIMINATED
-            SessionSound.EMPTY -> AudioHapticsManager.SoundEffect.EMPTY
-            SessionSound.HIT -> AudioHapticsManager.SoundEffect.HIT
-            SessionSound.RELOAD -> AudioHapticsManager.SoundEffect.RELOAD
-            SessionSound.SCORE -> AudioHapticsManager.SoundEffect.SCORE
-            SessionSound.SHOT -> AudioHapticsManager.SoundEffect.SHOT
-            SessionSound.SPAWN -> AudioHapticsManager.SoundEffect.SPAWN
-            SessionSound.HIT_CONFIRM -> AudioHapticsManager.SoundEffect.HIT_CONFIRM
-            SessionSound.HIT_ELIMINATED -> AudioHapticsManager.SoundEffect.HIT_ELIMINATED
-            SessionSound.HIT_SHIELDED -> AudioHapticsManager.SoundEffect.HIT_SHIELDED
-            SessionSound.GAME_END -> AudioHapticsManager.SoundEffect.GAME_END
-        }
     }
 }
 

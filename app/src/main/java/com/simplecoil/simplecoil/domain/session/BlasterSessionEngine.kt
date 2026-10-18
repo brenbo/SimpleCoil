@@ -388,7 +388,11 @@ class BlasterSessionEngine(
             return
         }
         // A reload the player asked for uses a magazine from a limited reserve; a respawn doesn't
-        if (reloading == RELOADING_STARTED) reserve?.let { setAmmoReserve((it - 1).coerceAtLeast(0)) }
+        if (reloading == RELOADING_STARTED) reserve?.let {
+            setAmmoReserve((it - 1).coerceAtLeast(0))
+            // That was the last spare: this magazine is all there is
+            if (it == 1) emit(SessionEffect.Sound(SessionSound.LAST_MAG))
+        }
         reloading = RELOADING_FINISHING
         emptyTriggerCount = 0
         Log.d(TAG, "Finishing reload")

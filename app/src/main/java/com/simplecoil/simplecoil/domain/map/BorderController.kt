@@ -126,7 +126,7 @@ class BorderController(
             when (event) {
                 BorderTracker.Event.WARNING_STARTED -> {
                     feedback.vibrate()
-                    feedback.play(SessionSound.EMPTY)
+                    feedback.play(SessionSound.OUT_OF_BOUNDS)
                 }
                 BorderTracker.Event.COUNTDOWN_TICK -> feedback.play(SessionSound.BEEP)
                 BorderTracker.Event.PENALTY_STARTED -> {
@@ -143,13 +143,16 @@ class BorderController(
                         OutOfBoundsPenalty.DISABLE_BLASTER, OutOfBoundsPenalty.WARNING_ONLY -> {}
                     }
                 }
-                BorderTracker.Event.DAMAGE_TICK -> penalties.damage(rules.healthPerTick)
+                BorderTracker.Event.DAMAGE_TICK -> {
+                    feedback.play(SessionSound.DAMAGE_TICK)
+                    penalties.damage(rules.healthPerTick)
+                }
                 BorderTracker.Event.BACK_INSIDE -> {
                     if (disabled) {
                         disabled = false
                         penalties.setOutOfBounds(false)
                     }
-                    feedback.play(SessionSound.SPAWN)
+                    feedback.play(SessionSound.BACK_IN_BOUNDS)
                 }
             }
         }

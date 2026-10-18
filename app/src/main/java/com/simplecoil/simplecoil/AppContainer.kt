@@ -34,6 +34,8 @@ import com.simplecoil.simplecoil.domain.session.RespawnHold
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsManager
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsPlayer
+import com.simplecoil.simplecoil.hardware.audio.AudioSettings
+import com.simplecoil.simplecoil.hardware.audio.GameSounds
 import com.simplecoil.simplecoil.hardware.audio.HapticsPlayer
 import com.simplecoil.simplecoil.hardware.audio.SessionFeedback
 import com.simplecoil.simplecoil.hardware.audio.SoundEffectPlayer
@@ -110,8 +112,28 @@ class AppContainer(private val app: Application) {
         }
     }
 
+    /** The player's sound choices, kept in memory: every shot reads them. Set through [saveAudioSettings]. */
+    @Volatile
+    var audioSettings: AudioSettings = AudioSettings()
+        private set
+    private var audioSettingsLoaded = false
+
+    private fun audioSettingsNow(): AudioSettings {
+        if (!audioSettingsLoaded) {
+            audioSettingsLoaded = true
+            audioSettings = userPreferences.audioSettings()
+        }
+        return audioSettings
+    }
+
+    fun saveAudioSettings(settings: AudioSettings) {
+        audioSettings = settings
+        audioSettingsLoaded = true
+        userPreferences.saveAudioSettings(settings)
+    }
+
     private val audioHaptics: AudioHapticsPlayer by lazy {
-        AudioHapticsPlayer(AudioHapticsManager().also { it.initialize(app) })
+        AudioHapticsPlayer(GameSounds(app, ::audioSettingsNow), AudioHapticsManager().also { it.initialize(app) }, ::audioSettingsNow)
     }
 
     /** Game sounds (preloaded SoundPool). */
@@ -167,6 +189,10 @@ class AppContainer(private val app: Application) {
             // With "start at spawn", the game starts for nobody until everyone is at theirs
             startGate = { gameState.serverIP?.let { fieldImageryClient.readiness(it) } },
             io = dispatchers.io,
+            onMoved = {
+                soundEffects.play(SessionSound.SPAWN_MOVING)
+                haptics.vibrate()
+            },
         )
     }
 

@@ -73,7 +73,7 @@ class ModeControllerTest {
         reply = state(1)
         advanceTimeBy(1_000)
         assertEquals(listOf(ModeController.Notice.Secured("B")), notices)
-        assertTrue(SessionSound.SCORE in sounds)
+        assertTrue(SessionSound.SECURED in sounds)
 
         reply = state(1, capturing = 2)
         advanceTimeBy(1_000)

@@ -47,6 +47,8 @@ class SpawnController(
     /** With "start at spawn": asks the server whether everyone has reached their spawn (blocks; null if it can't say). */
     private val startGate: (() -> Readiness?)? = null,
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    /** The spawns just moved in a game (a sound and a buzz). */
+    private val onMoved: () -> Unit = {},
 ) {
     /** What the blaster session does for spawns. */
     interface Actions {
@@ -164,6 +166,7 @@ class SpawnController(
             current = spawns
             // A move from nothing (the first load) just appears; a real move fades
             movedAt = if (previous.isEmpty()) Long.MIN_VALUE else clock()
+            if (previous.isNotEmpty() && spawns.isNotEmpty() && inGame()) onMoved()
         }
         update()
     }

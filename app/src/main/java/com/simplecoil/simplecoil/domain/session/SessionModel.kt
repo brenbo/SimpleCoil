@@ -95,6 +95,53 @@ enum class SessionSound {
 
     /** A running game ended, offline or networked. */
     GAME_END,
+
+    // Map events (map design: Audio): each has its own sound, and a radio callout once recorded
+
+    /** Leaving the field; back on it. */
+    OUT_OF_BOUNDS, BACK_IN_BOUNDS,
+
+    /** Health lost outside the border or the Battle Royale zone. */
+    DAMAGE_TICK,
+
+    /** Battle Royale: outside the zone, and the zone about to close. */
+    ZONE_WARNING, ZONE_CLOSING,
+
+    /** Spawns moving to new spots. */
+    SPAWN_MOVING,
+
+    /** A drop announced; a drop or power-up claimed. */
+    DROP_INCOMING, POWER_UP,
+
+    /** A killstreak reward, and a UAV coming online. */
+    KILLSTREAK, UAV,
+
+    /** Limited ammo: the last magazine is in. */
+    LAST_MAG,
+
+    /** Capture points: your team taking one, taking it, losing it, and the enemy taking one of yours. */
+    CAPTURING, SECURED, LOST, ENEMY_CAPTURING,
+
+    /** Hardpoint: the point moved. */
+    POINT_MOVED,
+
+    /** Capture the Flag: your flag taken; a flag captured. */
+    FLAG_TAKEN, FLAG_CAPTURED,
+
+    /** Search & Destroy: a round starting, the bomb planted, defused. */
+    ROUND_START, BOMB_PLANTED, BOMB_DEFUSED,
+
+    /** Infection: you were infected. */
+    INFECTED,
+
+    /** Extraction: loot picked up, and banked. */
+    LOOT, LOOT_BANKED,
+
+    /** The game is won or lost (an objective game). */
+    VICTORY, DEFEAT,
+
+    /** A new longest shot this game. */
+    LONGEST_SHOT,
 }
 
 enum class SessionToast { GRENADE_PAIRED, OUT_OF_LIVES, RECOIL_FORCED_ENABLED, RECOIL_FORCED_DISABLED, GAME_TIME_EXPIRED, OUT_OF_AMMO, EXTRA_LIFE_USED }

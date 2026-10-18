@@ -198,7 +198,7 @@ class LoadoutController(
         for (drop in drops) {
             if (seenDrops.add(drop.id) && drop.kind != DropKind.SCAVENGE) {
                 feedback.vibrate()
-                feedback.play(SessionSound.BEEP)
+                feedback.play(SessionSound.DROP_INCOMING)
                 _notices.tryEmit(Notice.DropIncoming(drop.kind))
             }
         }
@@ -273,13 +273,15 @@ class LoadoutController(
                 if (now != null) blaster.setAmmoReserve(now + rules.scavengeMagazines)
             }
         }
-        feedback.play(SessionSound.SCORE)
+        // A killstreak reward has its own sound; the UAV plays its own as it comes online
+        if (kind != DropKind.UAV) feedback.play(if (quietly) SessionSound.KILLSTREAK else if (kind == DropKind.SCAVENGE) SessionSound.LOOT else SessionSound.POWER_UP)
         feedback.vibrate()
         if (!quietly) _notices.tryEmit(Notice.Claimed(kind))
     }
 
     private fun startUav(rules: LoadoutRules) {
         uavJob?.cancel()
+        feedback.play(SessionSound.UAV)
         val playerId = me().first
         val until = clock() + rules.uavSeconds * 1000L
         uavJob = scope.launch {
@@ -302,7 +304,9 @@ class LoadoutController(
         scope.launch {
             // Give the server a moment to count the last elimination
             delay(STATS_DELAY_MILLIS)
-            _longestShot.value = withContext(io) { server.longestShot() }
+            val shot = withContext(io) { server.longestShot() }
+            _longestShot.value = shot
+            if (shot != null) feedback.play(SessionSound.LONGEST_SHOT)
         }
     }
 

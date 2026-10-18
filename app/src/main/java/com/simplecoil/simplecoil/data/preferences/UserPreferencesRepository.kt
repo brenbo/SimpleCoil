@@ -21,6 +21,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.simplecoil.simplecoil.domain.session.SessionPreferences
 import com.simplecoil.simplecoil.domain.team.TeamMode
+import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 
 /**
  * The player's saved settings: SharedPreferences "SimpleCoil" with exactly the keys and types the
@@ -94,6 +95,23 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun saveMapHeadingUp(headingUp: Boolean) = prefs.edit { putBoolean(MAP_HEADING_UP, headingUp) }
 
     /** The map's auto zoom button (AutoZoom's name); null until the player picks one. */
+    /** The player's sound choices (map design: Audio settings). */
+    fun audioSettings(): AudioSettings = AudioSettings(
+        effectsVolume = prefs.getInt(EFFECTS_VOLUME, 100) / 100f,
+        voiceVolume = prefs.getInt(VOICE_VOLUME, 100) / 100f,
+        voiceOn = prefs.getBoolean(VOICE_ON, true),
+        essentialOnly = prefs.getBoolean(VOICE_ESSENTIAL_ONLY, false),
+        vibration = prefs.getBoolean(VIBRATION_ON, true),
+    )
+
+    fun saveAudioSettings(settings: AudioSettings) = prefs.edit {
+        putInt(EFFECTS_VOLUME, (settings.effectsVolume * 100).toInt())
+        putInt(VOICE_VOLUME, (settings.voiceVolume * 100).toInt())
+        putBoolean(VOICE_ON, settings.voiceOn)
+        putBoolean(VOICE_ESSENTIAL_ONLY, settings.essentialOnly)
+        putBoolean(VIBRATION_ON, settings.vibration)
+    }
+
     fun mapAutoZoom(): String? = prefs.getString(MAP_AUTO_ZOOM, null)
     fun saveMapAutoZoom(mode: String) = prefs.edit { putString(MAP_AUTO_ZOOM, mode) }
 
@@ -126,5 +144,10 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val MAP_AUTO_ZOOM = "MapAutoZoom"
         const val FIELD_MAP_CAMERA = "FieldMapCamera"
         const val TEAM_MODE_FOR = "TeamModeFor_"
+        const val EFFECTS_VOLUME = "EffectsVolume"
+        const val VOICE_VOLUME = "VoiceVolume"
+        const val VOICE_ON = "VoiceCallouts"
+        const val VOICE_ESSENTIAL_ONLY = "VoiceEssentialOnly"
+        const val VIBRATION_ON = "VibrationCues"
     }
 }

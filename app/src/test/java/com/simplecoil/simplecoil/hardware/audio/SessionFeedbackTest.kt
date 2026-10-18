@@ -16,11 +16,13 @@
 
 package com.simplecoil.simplecoil.hardware.audio
 
-import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.domain.session.SessionEffect
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.domain.session.SessionToast
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SessionFeedbackTest {
@@ -38,16 +40,40 @@ class SessionFeedbackTest {
     }
 
     @Test
-    fun everySound_mapsToTheSameRawResourceAsBefore() {
+    fun theBlastersSoundsPlayTheSameFilesAsBefore_varied_butTheWhistleIsNot() {
         val expected = mapOf(
-            SessionSound.BEEP to R.raw.beep, SessionSound.ELIMINATED to R.raw.eliminated, SessionSound.EMPTY to R.raw.empty,
-            SessionSound.HIT to R.raw.hit, SessionSound.RELOAD to R.raw.reload, SessionSound.SCORE to R.raw.score,
-            SessionSound.SHOT to R.raw.shootingshort, SessionSound.SPAWN to R.raw.spawn,
-            SessionSound.HIT_CONFIRM to R.raw.hit_confirm, SessionSound.HIT_ELIMINATED to R.raw.hit_eliminated,
-            SessionSound.HIT_SHIELDED to R.raw.hit_shielded, SessionSound.GAME_END to R.raw.game_end)
-        for (sound in SessionSound.values()) {
-            assertEquals(sound.name, expected[sound], AudioHapticsPlayer.effect(sound).rawResId)
-        }
+            SessionSound.BEEP to "beep", SessionSound.ELIMINATED to "eliminated", SessionSound.EMPTY to "empty",
+            SessionSound.HIT to "hit", SessionSound.RELOAD to "reload", SessionSound.SCORE to "score",
+            SessionSound.SHOT to "shootingshort", SessionSound.SPAWN to "spawn",
+            SessionSound.HIT_CONFIRM to "hit_confirm", SessionSound.HIT_ELIMINATED to "hit_eliminated",
+            SessionSound.HIT_SHIELDED to "hit_shielded", SessionSound.GAME_END to "game_end")
+        expected.forEach { (sound, file) -> assertEquals(sound.name, file, SoundCues.of(sound).file) }
+        assertTrue(SoundCues.of(SessionSound.SHOT).vary)
+        assertFalse(SoundCues.of(SessionSound.GAME_END).vary)
         assertEquals(250L, AudioHapticsPlayer.HIT_VIBRATE_DURATION_MILLIS)
+    }
+
+    @Test
+    fun everyNewSoundFallsBackToOneTheAppShips() {
+        val shipped = setOf("beep", "eliminated", "empty", "hit", "reload", "score", "shootingshort", "spawn", "hit_confirm",
+            "hit_eliminated", "hit_shielded", "game_end")
+        for (sound in SessionSound.entries) assertTrue(sound.name, SoundCues.of(sound).fallback in shipped)
+    }
+
+    @Test
+    fun calloutsTakeTurnsMostImportantFirst() {
+        val queue = CalloutQueue(cooldownMillis = 8_000)
+        assertEquals("a", queue.offer("a", 1, 0))
+        queue.playing("a", 2_000, 0)
+        // While it plays, the more important waiting line is kept
+        assertNull(queue.offer("b", 1, 500))
+        assertNull(queue.offer("c", 5, 600))
+        assertTrue(queue.isBusy(1_000))
+        assertNull(queue.next(1_000))
+        assertEquals("c", queue.next(2_400))
+        queue.playing("c", 1_000, 2_400)
+        // The same line again too soon: not said
+        assertNull(queue.offer("a", 9, 5_000))
+        assertEquals("a", queue.offer("a", 9, 9_000))
     }
 }

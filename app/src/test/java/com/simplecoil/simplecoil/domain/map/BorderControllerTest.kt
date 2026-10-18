@@ -63,7 +63,7 @@ class BorderControllerTest {
     fun warnsThenDisablesThenLifts() {
         controller.onFix(outside, 5f)
         advance(2_000)
-        assertTrue(calls.containsAll(listOf("vibrate", "sound:EMPTY")))
+        assertTrue(calls.containsAll(listOf("vibrate", "sound:OUT_OF_BOUNDS")))
         assertEquals(BorderTracker.Phase.WARNING, controller.status.value!!.phase)
         calls.clear()
 
@@ -73,7 +73,7 @@ class BorderControllerTest {
         calls.clear()
 
         controller.onFix(inside, 5f)
-        assertEquals(listOf("disabled:false", "sound:SPAWN", "held:false"), calls)
+        assertEquals(listOf("disabled:false", "sound:BACK_IN_BOUNDS", "held:false"), calls)
         assertEquals(BorderTracker.Phase.INSIDE, controller.status.value!!.phase)
     }
 

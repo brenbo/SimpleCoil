@@ -113,9 +113,10 @@ class ZoneController(
             outsideSince = now
             lastDamageAt = now
             feedback.vibrate()
-            feedback.play(SessionSound.BEEP)
+            feedback.play(SessionSound.ZONE_WARNING)
         } else if (now - lastDamageAt >= zone.tickSeconds * 1000L) {
             lastDamageAt = now
+            feedback.play(SessionSound.DAMAGE_TICK)
             penalties.damage(zone.damage)
         }
         _outside.value = Outside(toEdge, zone.damage)

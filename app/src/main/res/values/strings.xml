@@ -440,6 +440,14 @@
     <string name="marksman_to_win">Total distance to win (%1$s, 0 = play to the game limits)</string>
     <string name="map_waiting_for_everyone">Waiting for everyone to reach their spawn (at spawn: %1$d of %2$d)</string>
     <string name="map_waiting_for_everyone_short">Waiting for everyone to reach their spawn</string>
+    <string name="sound_button">Sound</string>
+    <string name="sound_title">Sound</string>
+    <string name="sound_effects_volume">Effects volume</string>
+    <string name="sound_voice">Radio callouts</string>
+    <string name="sound_voice_volume">Callout volume</string>
+    <string name="sound_essential">Only the essential callouts</string>
+    <string name="sound_vibration">Vibration</string>
+    <string name="sound_test">Test</string>
     <string name="team_mode_set_for_mode">Teams set to %1$s for %2$s</string>
     <string name="team_mode_not_for_mode">%1$s is played as %2$s</string>
     <string name="mode_score_to_win">Score to win (50–1000)</string>

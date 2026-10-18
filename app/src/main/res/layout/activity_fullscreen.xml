@@ -111,6 +111,15 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="@string/dedicated_server_button" />
+
+                    <!-- Sound: volumes, radio callouts and vibration -->
+                    <Button
+                        android:id="@+id/sound_settings_button"
+                        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/sound_button" />
                 </LinearLayout>
             </ScrollView>
 

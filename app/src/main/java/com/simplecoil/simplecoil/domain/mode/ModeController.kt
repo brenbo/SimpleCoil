@@ -125,42 +125,74 @@ class ModeController(
 
     /** What changed for this player's team between [before] and [after]. */
     fun announce(before: ModeState, after: ModeState) {
-        val team = me().second
-        if (after.mode == GameMode.CAPTURE_THE_FLAG || after.mode == GameMode.EXTRACTION) {
-            // A capture or banked loot for your team
-            if ((after.scores[team] ?: 0) > (before.scores[team] ?: 0)) {
-                feedback.play(SessionSound.SCORE)
-                feedback.vibrate()
-            }
-            // Your flag just taken
-            val mine = after.flags.firstOrNull { it.team == team }
-            val was = before.flags.firstOrNull { it.team == team }
-            if (mine != null && was != null && mine.carrier != 0 && was.carrier == 0) {
-                feedback.play(SessionSound.HIT)
-                feedback.vibrate()
-            }
+        val (id, layoutTeam) = me()
+        val team = after.sideOf(id, layoutTeam)
+        fun cue(sound: SessionSound, buzz: Boolean = true) {
+            feedback.play(sound)
+            if (buzz) feedback.vibrate()
+        }
+        // The game won or lost
+        if (after.winner != 0 && before.winner == 0) {
+            cue(if (after.winner == team) SessionSound.VICTORY else SessionSound.DEFEAT)
             return
+        }
+        when (after.mode) {
+            GameMode.CAPTURE_THE_FLAG -> {
+                if ((after.scores[team] ?: 0) > (before.scores[team] ?: 0)) cue(SessionSound.FLAG_CAPTURED)
+                val mine = after.flags.firstOrNull { it.team == team }
+                val was = before.flags.firstOrNull { it.team == team }
+                if (mine != null && was != null && mine.carrier != 0 && was.carrier == 0) cue(SessionSound.FLAG_TAKEN)
+                return
+            }
+            GameMode.EXTRACTION -> {
+                if ((after.scores[team] ?: 0) > (before.scores[team] ?: 0)) cue(SessionSound.LOOT_BANKED)
+                else if ((after.extraction?.carrying?.get(id) ?: 0) > (before.extraction?.carrying?.get(id) ?: 0)) cue(SessionSound.LOOT, buzz = false)
+                return
+            }
+            GameMode.SEARCH_AND_DESTROY -> {
+                val b = after.bomb ?: return
+                val was = before.bomb ?: return
+                when {
+                    b.round > was.round -> cue(SessionSound.ROUND_START)
+                    b.phase == RoundPhase.PLANTED && was.phase == RoundPhase.LIVE -> cue(SessionSound.BOMB_PLANTED)
+                    // A round won while the bomb was down: defused
+                    b.phase == RoundPhase.BETWEEN && was.phase == RoundPhase.PLANTED && b.lastRoundWinner != b.attackers -> cue(SessionSound.BOMB_DEFUSED)
+                    b.phase == RoundPhase.BETWEEN && was.phase != RoundPhase.BETWEEN ->
+                        cue(if (b.lastRoundWinner == team) SessionSound.SECURED else SessionSound.LOST)
+                }
+                return
+            }
+            GameMode.INFECTION -> {
+                if (id in after.infected && id !in before.infected) cue(SessionSound.INFECTED)
+                return
+            }
+            GameMode.BATTLE_ROYALE -> {
+                val z = after.zone ?: return
+                if (z.shrinking && before.zone?.shrinking == false) cue(SessionSound.ZONE_CLOSING)
+                return
+            }
+            GameMode.DOMINATION, GameMode.HARDPOINT -> {}
+            GameMode.MARKSMAN, GameMode.CLASSIC -> return
         }
         for (now in after.objectives) {
             val was = before.objectives.firstOrNull { it.id == now.id } ?: continue
             when {
                 now.owner == team && was.owner != team -> {
-                    feedback.play(SessionSound.SCORE)
-                    feedback.vibrate()
+                    cue(SessionSound.SECURED)
                     _notices.tryEmit(Notice.Secured(now.id))
                 }
                 was.owner == team && now.owner != team && after.mode == GameMode.DOMINATION -> {
-                    feedback.play(SessionSound.HIT)
-                    feedback.vibrate()
+                    cue(SessionSound.LOST)
                     _notices.tryEmit(Notice.Lost(now.id))
                 }
                 now.owner == team && now.capturing != 0 && now.capturing != team && was.capturing != now.capturing -> {
-                    feedback.play(SessionSound.BEEP)
-                    feedback.vibrate()
+                    cue(SessionSound.ENEMY_CAPTURING)
                     _notices.tryEmit(Notice.UnderAttack(now.id))
                 }
+                // Your team starting to take one
+                now.capturing == team && was.capturing != team -> cue(SessionSound.CAPTURING, buzz = false)
                 now.active && !was.active && after.mode == GameMode.HARDPOINT -> {
-                    feedback.play(SessionSound.BEEP)
+                    cue(SessionSound.POINT_MOVED)
                     _notices.tryEmit(Notice.Moved(now.id))
                 }
             }

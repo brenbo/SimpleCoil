@@ -109,6 +109,9 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         binding.connectQrWeaponButton.setOnClickListener { permissions.scanQr() }
         binding.qrLearnMoreTv.setOnClickListener { dialogs.showQrInfo() }
         binding.dedicatedServerButton.setOnClickListener { permissions.hostServer() }
+        binding.soundSettingsButton.setOnClickListener {
+            com.simplecoil.simplecoil.ui.dialogs.SoundDialog.show(this, (application as SimpleCoilApp).container)
+        }
         binding.teamMinusButton.visibility = View.VISIBLE
         binding.teamMinusButton.setOnClickListener { vm.onTeamMinusPressed() }
         binding.teamPlusButton.visibility = View.VISIBLE
