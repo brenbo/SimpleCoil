@@ -48,6 +48,16 @@
         </LinearLayout>
     </FrameLayout>
 
+    <!-- After a game on a dedicated server: the kills, a heat map and a replay. -->
+    <Button
+        android:id="@+id/post_map_button"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/post_open"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/player_list"
         android:layout_width="match_parent"

@@ -23,6 +23,7 @@ import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.loadout.UavPlayer
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.mode.ModeState
+import com.simplecoil.simplecoil.domain.postgame.GameRecord
 import org.json.JSONObject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -167,6 +168,12 @@ class FieldImageryClient(
     fun longestShot(server: InetAddress): LongestShot? = exchange(server,
         FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.STATS)) { _, body ->
         body?.let { LongestShot.fromJson(String(it, Charsets.UTF_8)) }
+    }
+
+    /** The last game for the post-game map; null if the server keeps none (or can't say). */
+    fun replay(server: InetAddress): GameRecord? = exchange(server,
+        FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.REPLAY)) { _, body ->
+        body?.let { GameRecord.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
 
     /** The objective game as it stands, telling the server whether this player is [alive]; null outside one. */

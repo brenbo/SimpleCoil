@@ -326,3 +326,13 @@ In Extraction the reply adds `extraction`: `{"loot":[[id, lat, lon, value], ...]
 In Search & Destroy the `MODE` reply sets `noRespawn`, `round` (it goes up when a new round starts, and every phone then revives a player who was out), `objectives` (the sites), `actor` (the player planting or defusing) and `bomb`: `{"round","attackers","phase":"live"|"planted"|"between","endsAt","carrier","at":[lat, lon] or null,"planted","lastWinner","out":[ids]}`. `scores` counts rounds won by teams 1 and 2; team 1 attacks first and the teams swap at half time.
 
 In Infection, `infected` lists the infected players, `scores` is keyed by the sides -5 (survivors) and -4 (infected), `movesAt` is when the round ends, and `revealed` (`[[id, lat, lon], ...]`) holds the survivors the infected see right now. An elimination by an infected player infects the victim.
+
+### 8.6 The post-game map
+
+The config's `loadout` carries `postGameMap`: `off`, `kills` or `full`. During a game the server records each measured elimination and, with `full`, every player's position every 3 seconds; it keeps the record until the next game starts.
+
+| Phone sends | Server replies |
+|---|---|
+| `SCFIELD1 REPLAY -` | `SCFIELD1 PACK <length>` of `{"length":<seconds>,"players":[[id, name, team], ...],"kills":[[shooter, victim, fromLat, fromLon, toLat, toLon, meters, atSeconds], ...],"track":[[atSeconds, id, lat, lon], ...]}`, or `NONE` with the map off or before any game |
+
+`track` is empty with `kills`. The phone draws it after the game: the kills as lines, a heat map of the track, and a replay with a time slider.

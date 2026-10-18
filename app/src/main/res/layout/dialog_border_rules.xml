@@ -504,6 +504,31 @@
             android:id="@+id/rules_longest_shot_switch"
             android:text="@string/rules_longest_shot" />
 
+        <TextView
+            style="@style/DialogLabel"
+            android:text="@string/rules_post_game_map" />
+
+        <RadioGroup
+            android:id="@+id/rules_post_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_post_off"
+                android:text="@string/rules_post_off" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_post_kills"
+                android:text="@string/rules_post_kills" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/rules_post_full"
+                android:text="@string/rules_post_full" />
+        </RadioGroup>
+
         </LinearLayout>
 
         <LinearLayout

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The post-game map (map design: Longest shot and post-game stats): every kill as a line, a
+     heatmap of where players spent their time, and a replay with a time slider. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <org.maplibre.android.maps.MapView
+        android:id="@+id/post_map_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/post_info_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#99000000"
+        android:padding="8dp"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp" />
+
+    <ProgressBar
+        android:id="@+id/post_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#CC000000"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/post_view_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/post_kills_button"
+                style="@style/FieldToolSegment"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="@string/post_kills" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/post_heat_button"
+                style="@style/FieldToolSegment"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="@string/post_heat" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/post_replay_button"
+                style="@style/FieldToolSegment"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="@string/post_replay" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <Spinner
+            android:id="@+id/post_player_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:popupBackground="#202020" />
+
+        <!-- Replay: play or pause, and the time -->
+        <LinearLayout
+            android:id="@+id/post_replay_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/post_play_button"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="56dp"
+                android:text="@string/post_play" />
+
+            <SeekBar
+                android:id="@+id/post_seek"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/post_time_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dp"
+                android:gravity="end"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

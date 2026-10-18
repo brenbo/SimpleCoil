@@ -28,6 +28,8 @@ import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleEngine
+import com.simplecoil.simplecoil.domain.loadout.PostGameMap
+import com.simplecoil.simplecoil.domain.postgame.GameRecorder
 import com.simplecoil.simplecoil.domain.mode.BombEngine
 import com.simplecoil.simplecoil.domain.mode.ExtractionEngine
 import com.simplecoil.simplecoil.domain.mode.InfectionEngine
@@ -82,6 +84,13 @@ class LiveGame(
     val field = LiveField()
     val shots = ShotStats()
 
+    /** The game as played, for the post-game map. */
+    val recorder = GameRecorder()
+
+    /** What the last game's post-game map shows (kept after it ends). */
+    @Volatile
+    private var postGameMap = PostGameMap.FULL
+
     /** The objective game's state as the phones get it; null outside one. */
     @Volatile
     private var modeBytes: ByteArray? = null
@@ -97,14 +106,17 @@ class LiveGame(
             if (phase != SessionPhase.RUNNING) {
                 // Back to the host's field; the shots stay for the post-game stats
                 rules = null
+                recorder.stop(wallClock())
                 field.stop()
                 publish()
                 return@collectLatest
             }
             shots.clear()
+            recorder.start(wallClock())
             val base = savedField()
             // Shots are measured on any server, with or without a field set up
             rules = base?.loadout ?: LoadoutRules()
+            postGameMap = rules?.postGameMap ?: PostGameMap.FULL
             mode = base?.mode ?: GameMode.CLASSIC
             battleRoyale = null
             flags = null
@@ -113,7 +125,10 @@ class LiveGame(
             infection = null
             modeBytes = null
             alive.clear()
-            base ?: return@collectLatest
+            if (base == null) {
+                trackPlayers()
+                return@collectLatest
+            }
             // Capture points left to the server are placed for this game, and every phone gets them
             val playing = withObjectives(base)
             field.start(playing)
@@ -123,6 +138,7 @@ class LiveGame(
                 launch { dropCrates(playing) }
                 launch { pruneDrops() }
                 launch { runMode(playing) }
+                launch { trackPlayers() }
             }
         }
     }
@@ -307,13 +323,29 @@ class LiveGame(
         infection?.onEliminated(victimId, shooterId)
         // Marksman scores by distance, so it always measures
         if (rules.trackShots || mode == GameMode.MARKSMAN) {
-            shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), rules.maxShotMeters)
+            shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), rules.maxShotMeters)?.let {
+                recorder.kill(it.shooterId, it.victimId, it.shooter, it.victim, it.meters, wallClock())
+            }
         }
         // Scavenger ammo where they fell, if we know where that was
         if (field.isActive && rules.ammo == AmmoMode.SCAVENGER && victim != null &&
             monoClock() - victim.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS) {
             field.scavenge(victim.point, wallClock())
             publish()
+        }
+    }
+
+    /** The post-game map (map design: post-game stats): everyone's name and side, and with the full map their position, every few seconds. */
+    private suspend fun trackPlayers() {
+        while (true) {
+            val now = monoClock()
+            val fixes = positions()
+            val withPaths = postGameMap == PostGameMap.FULL
+            recorder.sample(wallClock(), players().mapValues { (id, team) ->
+                val point = if (withPaths) fixes[id]?.takeIf { now - it.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS }?.point else null
+                Triple(nameOf(id) ?: "", team, point)
+            })
+            delay(TRACK_MILLIS)
         }
     }
 
@@ -334,6 +366,11 @@ class LiveGame(
                 if (id != playerId) players.put(JSONArray().put(id).put(teamOf(id)).put(fix.point.latitude).put(fix.point.longitude))
             }
             return JSONObject().put("players", players).toString().toByteArray(Charsets.UTF_8)
+        }
+
+        override fun replay(): ByteArray? {
+            if (postGameMap == PostGameMap.OFF) return null
+            return recorder.record(wallClock(), withTrack = postGameMap == PostGameMap.FULL)?.toJson()?.toString()?.toByteArray(Charsets.UTF_8)
         }
 
         override fun mode(playerId: Int, alive: Boolean): ByteArray? {
@@ -363,6 +400,9 @@ class LiveGame(
 
         /** How often an objective game moves on. */
         const val MODE_TICK_MILLIS = 1_000L
+
+        /** How often the post-game map samples everyone's position. */
+        const val TRACK_MILLIS = 3_000L
 
         /** A player's word that they are out counts for this long (they ask every second). */
         const val ALIVE_STALE_MILLIS = 5_000L

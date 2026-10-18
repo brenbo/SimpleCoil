@@ -135,6 +135,8 @@ data class LoadoutRules(
     /** Longer than this can't be a real shot (bad GPS): left out. The blaster reaches about 400 ft. */
     val maxShotMeters: Double = 152.0,
     val longestShotAward: Boolean = true,
+    /** What the post-game map shows: nothing, the kills, or the kills, a heatmap and a replay. */
+    val postGameMap: PostGameMap = PostGameMap.FULL,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("ammo", ammo.wireValue)
@@ -158,6 +160,7 @@ data class LoadoutRules(
         .put("trackShots", trackShots)
         .put("maxShot", maxShotMeters)
         .put("longestShot", longestShotAward)
+        .put("postGameMap", postGameMap.wireValue)
 
     /** These rules with every value inside the range the server offers. */
     fun clamped(): LoadoutRules = copy(
@@ -203,8 +206,22 @@ data class LoadoutRules(
                 trackShots = json.optBoolean("trackShots", d.trackShots),
                 maxShotMeters = json.optDouble("maxShot", d.maxShotMeters),
                 longestShotAward = json.optBoolean("longestShot", d.longestShotAward),
+                postGameMap = PostGameMap.fromWire(json.optString("postGameMap", d.postGameMap.wireValue)),
             ).clamped()
         }
+    }
+}
+
+/** The post-game map (map design: Longest shot and post-game stats). */
+enum class PostGameMap(val wireValue: String) {
+    OFF("off"),
+    KILLS("kills"),
+
+    /** Kills, heatmap and replay: the server records everyone's path. */
+    FULL("full");
+
+    companion object {
+        fun fromWire(value: String?): PostGameMap = entries.firstOrNull { it.wireValue == value } ?: FULL
     }
 }
 

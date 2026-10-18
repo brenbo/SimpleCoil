@@ -474,6 +474,29 @@
     <string name="br_outside">Outside the zone! %1$s to safety</string>
     <string name="br_you_are_out">You are out</string>
     <string name="mode_to_win_text">to %1$s</string>
+    <string name="post_title">Game map</string>
+    <string name="post_open">Game map</string>
+    <string name="post_kills">Kills</string>
+    <string name="post_heat">Heat map</string>
+    <string name="post_replay">Replay</string>
+    <string name="post_everyone">Everyone</string>
+    <string name="post_play">▶</string>
+    <string name="post_pause">❚❚</string>
+    <string name="post_none">No game map from this server. It needs a dedicated server with the post-game map on (Extras), and at least one game played.</string>
+    <string name="post_no_kills">No measured eliminations. Shot distance needs both players\' GPS.</string>
+    <plurals name="post_kills_info">
+        <item quantity="one">%1$d elimination · longest by %2$s, %3$s</item>
+        <item quantity="other">%1$d eliminations · longest by %2$s, %3$s</item>
+    </plurals>
+    <string name="post_heat_info">Where players spent their time: the brighter, the longer</string>
+    <plurals name="post_replay_info">
+        <item quantity="one">%2$s · %1$d player on the field</item>
+        <item quantity="other">%2$s · %1$d players on the field</item>
+    </plurals>
+    <string name="rules_post_game_map">Post-game map</string>
+    <string name="rules_post_off">Off</string>
+    <string name="rules_post_kills">Kills only</string>
+    <string name="rules_post_full">Kills, heat map and replay (records everyone\'s path)</string>
     <string name="snd_round">round %1$d · %2$s</string>
     <string name="snd_round_won">Round won!</string>
     <string name="snd_round_lost">Round lost</string>

@@ -67,6 +67,9 @@ class FieldImageryServer(
 
         /** The objective game's state as JSON, hearing that [playerId] is [alive]; null outside one. */
         fun mode(playerId: Int, alive: Boolean): ByteArray?
+
+        /** The last game (kills, and paths if kept) as JSON; null if the post-game map is off. */
+        fun replay(): ByteArray?
     }
 
     @Volatile
@@ -87,6 +90,7 @@ class FieldImageryServer(
                 body = when (request.kind) {
                     FieldImageryProtocol.Kind.UAV -> request.knownId.toIntOrNull()?.let { extras?.uav(it) }
                     FieldImageryProtocol.Kind.MODE -> FieldImageryProtocol.parseMode(request.knownId)?.let { (id, alive) -> extras?.mode(id, alive) }
+                    FieldImageryProtocol.Kind.REPLAY -> extras?.replay()
                     else -> extras?.stats()
                 }
                 reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
@@ -186,7 +190,8 @@ class FieldImageryServer(
             val out = BufferedOutputStream(client.getOutputStream())
             val address = client.inetAddress?.hostAddress ?: "?"
             when (request.kind) {
-                FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE -> {
+                FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE,
+                FieldImageryProtocol.Kind.REPLAY -> {
                     serveExtra(request, out)
                     out.flush()
                     return
@@ -305,6 +310,9 @@ object FieldImageryProtocol {
 
         /** An objective game as it stands: `SCFIELD1 MODE <player id>,<1 if alive, else 0>`; PACK of JSON or NONE. */
         MODE("MODE"),
+
+        /** The last game for the post-game map: `SCFIELD1 REPLAY -`; PACK of JSON or NONE. */
+        REPLAY("REPLAY"),
     }
 
     /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */

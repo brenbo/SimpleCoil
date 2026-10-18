@@ -26,6 +26,7 @@ import com.simplecoil.simplecoil.databinding.DialogBorderRulesBinding
 import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
+import com.simplecoil.simplecoil.domain.loadout.PostGameMap
 import com.simplecoil.simplecoil.domain.map.BorderRules
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
@@ -124,6 +125,11 @@ object FieldRulesDialog {
         dialog.rulesAutoKillsEt.setText(number(loadout.fullAutoKills))
         dialog.rulesTrackShotsSwitch.isChecked = loadout.trackShots
         dialog.rulesLongestShotSwitch.isChecked = loadout.longestShotAward
+        dialog.rulesPostGroup.check(when (loadout.postGameMap) {
+            PostGameMap.OFF -> R.id.rules_post_off
+            PostGameMap.KILLS -> R.id.rules_post_kills
+            PostGameMap.FULL -> R.id.rules_post_full
+        })
         dialog.rulesUnitsGroup.check(if (units == DistanceUnits.FEET) R.id.rules_units_feet else R.id.rules_units_meters)
         showDistances(defaults)
         dialog.rulesUnitsGroup.setOnCheckedChangeListener { _, id ->
@@ -194,6 +200,11 @@ object FieldRulesDialog {
                     trackShots = dialog.rulesTrackShotsSwitch.isChecked,
                     maxShotMeters = distances[7],
                     longestShotAward = dialog.rulesLongestShotSwitch.isChecked,
+                    postGameMap = when (dialog.rulesPostGroup.checkedRadioButtonId) {
+                        R.id.rules_post_off -> PostGameMap.OFF
+                        R.id.rules_post_kills -> PostGameMap.KILLS
+                        else -> PostGameMap.FULL
+                    },
                 ).clamped()
                 onSave(config.copy(rules = updated, spawnRules = updatedSpawns, loadout = updatedLoadout))
             }

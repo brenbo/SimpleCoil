@@ -216,6 +216,13 @@ class ScoreboardDialog : GameDialogFragment() {
         showFace()
         // A Domination or Hardpoint result arrives a moment after the game ends
         lifecycleScope.launch { appContainer.modeController.state.collect { showResult(it) } }
+        // After a game on a dedicated server, its map: kills, heat map and replay
+        val gameOver = appContainer.gameState.gameState == GameStateRepository.GAME_STATE_NONE
+        binding.postMapButton.visibility =
+            if (gameOver && vm.networkMenuType == GameViewModel.NETWORK_TYPE_JOINED) View.VISIBLE else View.GONE
+        binding.postMapButton.setOnClickListener {
+            startActivity(android.content.Intent(requireContext(), com.simplecoil.simplecoil.ui.map.PostGameMapActivity::class.java))
+        }
         val builder = alertBuilder()
             .setNegativeButton(R.string.ok) { dialog, _ -> dialog.cancel() }
             .setView(binding.root)

@@ -100,6 +100,13 @@
             android:label="@string/field_map_title"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
+
+        <!-- After a game: the kills, a heatmap and a replay -->
+        <activity
+            android:name=".ui.map.PostGameMapActivity"
+            android:exported="false"
+            android:label="@string/post_title"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>
