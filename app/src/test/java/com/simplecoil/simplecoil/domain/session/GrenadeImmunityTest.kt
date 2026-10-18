@@ -77,6 +77,69 @@ class GrenadeImmunityTest {
         assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
     }
 
+    @Test
+    fun eachEliminationStartsTheWaitAgain_inANetworkGame() {
+        h.rec.useNetwork = true
+        eachEliminationStartsTheWaitAgain()
+    }
+
+    @Test
+    fun eachEliminationStartsTheWaitAgain() {
+        h.config.fullHealth = 1
+        h.connected()
+        h.startedAndSpawned()
+        hitBy(grenade(3))
+        respawn()
+        h.advance(BlasterSessionEngine.GRENADE_IMMUNITY_MILLIS)
+        // The same grenade, set off again a minute and a half later: it eliminates once more...
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+        respawn()
+        // ...and then can't again for another minute and a half
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+    }
+
+    /** A grenade going off for [seconds]: its damage in every packet, ten packets a second. */
+    private fun blast(id: Int, seconds: Int) {
+        repeat(seconds * 10) {
+            h.telemetry(grenade(id))
+            h.advance(100)
+        }
+        h.telemetry(Packet().noHit())
+    }
+
+    private fun eliminatedCount() = h.sounds().count { it == SessionSound.ELIMINATED }
+
+    @Test
+    fun oneBlastEliminatesOnce_firstTimeAndAfterTheWait() {
+        // A quick respawn: back in while the grenade is still going off
+        h.config.fullHealth = 3
+        h.config.respawnTimeSeconds = 2
+        h.config.respawnShieldTimeSeconds = 0
+        h.rec.useNetwork = true
+        h.connected()
+        h.startedAndSpawned()
+        blast(3, 15)
+        assertEquals(1, eliminatedCount())
+        h.advance(BlasterSessionEngine.GRENADE_IMMUNITY_MILLIS)
+        blast(3, 15)
+        assertEquals(2, eliminatedCount())
+    }
+
+    @Test
+    fun grenadeZeroIsAGrenadeToo() {
+        // A grenade's id can be 0: that one is ignored after it eliminates you, like any other
+        h.config.fullHealth = 3
+        h.config.respawnTimeSeconds = 2
+        h.config.respawnShieldTimeSeconds = 0
+        h.rec.useNetwork = true
+        h.connected()
+        h.startedAndSpawned()
+        blast(0, 15)
+        assertEquals(1, eliminatedCount())
+    }
+
     private companion object {
         const val RESPAWN_AND_SHIELD_MILLIS = 30_000L
     }

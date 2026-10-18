@@ -439,13 +439,13 @@ class BlasterSessionEngine(
     /** Eliminations by a hit so far: a change tells a packet's hit eliminated the player. */
     private var hitEliminations = 0
 
-    /** The grenade that last eliminated this player, and until when it can't again (0: none). */
-    private var immuneGrenade = 0
+    /** The grenade that last eliminated this player (null: none; 0 is a grenade id too), and until when it can't again. */
+    private var immuneGrenade: Int? = null
     private var immuneUntil = 0L
 
-    /** The grenade a hit slot carries, if it is a grenade's damage; 0 otherwise. */
-    private fun damagingGrenade(hitBy: Int, shot: Byte): Int =
-        if (hitBy == PlayerRepository.GRENADE_PLAYER_ID && !GrenadeDecoder.isGrenadeControlEvent(hitBy, shot)) GrenadeDecoder.grenadeId(shot) else 0
+    /** The grenade a hit slot carries, if it is a grenade's damage; null otherwise. */
+    private fun damagingGrenade(hitBy: Int, shot: Byte): Int? =
+        if (hitBy == PlayerRepository.GRENADE_PLAYER_ID && !GrenadeDecoder.isGrenadeControlEvent(hitBy, shot)) GrenadeDecoder.grenadeId(shot) else null
 
     /** Battle Royale once respawns are over: an eliminated player is out for the rest of the game. */
     private var noRespawn = false
@@ -762,14 +762,14 @@ class BlasterSessionEngine(
         var hitBy2 = telemetry.hitByPlayer2
         var shot2 = telemetry.rawShotIdByte2
         val now = clock()
-        fun immune(hitBy: Int, shot: Byte) = immuneGrenade != 0 && now < immuneUntil && damagingGrenade(hitBy, shot) == immuneGrenade
+        fun immune(hitBy: Int, shot: Byte) = immuneGrenade != null && now < immuneUntil && damagingGrenade(hitBy, shot) == immuneGrenade
         if (immune(hitBy2, shot2)) hitBy2 = 0
         if (immune(hitBy1, shot1)) {
             hitBy1 = hitBy2
             shot1 = shot2
             hitBy2 = 0
         }
-        val grenade = damagingGrenade(hitBy2, shot2).takeIf { it != 0 } ?: damagingGrenade(hitBy1, shot1)
+        val grenade = damagingGrenade(hitBy2, shot2) ?: damagingGrenade(hitBy1, shot1)
         val eliminationsBefore = hitEliminations
         val layout = config.teamLayout
         val hit = hitResolver.resolve(hitBy1, shot1, hitBy2, shot2,
@@ -798,7 +798,7 @@ class BlasterSessionEngine(
             }
         }
         // Eliminated by a grenade: that one grenade can't eliminate this player again for a while
-        if (hitEliminations != eliminationsBefore && grenade != 0) {
+        if (hitEliminations != eliminationsBefore && grenade != null) {
             immuneGrenade = grenade
             immuneUntil = now + GRENADE_IMMUNITY_MILLIS
         }
