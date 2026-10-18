@@ -30,6 +30,8 @@ import com.simplecoil.simplecoil.databinding.DialogGameModeBinding
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
+import com.simplecoil.simplecoil.domain.mode.ExtractionRules
+import com.simplecoil.simplecoil.domain.mode.FlagRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.MarksmanRules
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
@@ -121,6 +123,39 @@ object GameModeDialog {
         d.marksmanMinimumLabel.text = context.getString(R.string.marksman_minimum, unit)
         d.marksmanToWinLabel.text = context.getString(R.string.marksman_to_win, unit)
 
+        fun fillFlag(r: FlagRules) {
+            put(d.ctfToWinEt, r.capturesToWin)
+            put(d.ctfShownEt, r.carrierShownEverySeconds)
+            put(d.ctfReturnsEt, r.droppedReturnsSeconds)
+            d.ctfOwnHomeSwitch.isChecked = r.ownFlagHomeToScore
+            put(d.ctfRadiusEt, units.fromMeters(r.baseRadiusMeters).roundToInt())
+        }
+        fun readFlag(): FlagRules = FlagRules(
+            capturesToWin = int(d.ctfToWinEt, config.flag.capturesToWin),
+            carrierShownEverySeconds = int(d.ctfShownEt, config.flag.carrierShownEverySeconds),
+            droppedReturnsSeconds = int(d.ctfReturnsEt, config.flag.droppedReturnsSeconds),
+            ownFlagHomeToScore = d.ctfOwnHomeSwitch.isChecked,
+            baseRadiusMeters = d.ctfRadiusEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.flag.baseRadiusMeters,
+        ).clamped()
+        fun fillExtraction(r: ExtractionRules) {
+            put(d.exLootEt, r.lootPoints)
+            put(d.exCollectEt, r.collectSeconds)
+            put(d.exOpensEt, r.opensAfterMinutes)
+            put(d.exZonesEt, r.zones)
+            put(d.exToWinEt, r.lootToWin)
+            put(d.exRadiusEt, units.fromMeters(r.radiusMeters).roundToInt())
+        }
+        fun readExtraction(): ExtractionRules = ExtractionRules(
+            lootPoints = int(d.exLootEt, config.extraction.lootPoints),
+            collectSeconds = int(d.exCollectEt, config.extraction.collectSeconds),
+            opensAfterMinutes = int(d.exOpensEt, config.extraction.opensAfterMinutes),
+            zones = int(d.exZonesEt, config.extraction.zones),
+            lootToWin = int(d.exToWinEt, config.extraction.lootToWin),
+            radiusMeters = d.exRadiusEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.extraction.radiusMeters,
+        ).clamped()
+        d.ctfRadiusLabel.text = context.getString(R.string.ctf_radius, unit)
+        d.exRadiusLabel.text = context.getString(R.string.ex_radius, unit)
+
         // Each setting's label, and how to tell if it differs from the mode's default
         class Row(val label: TextView, val base: String, val changed: (ObjectiveRules, ObjectiveRules) -> Boolean)
         val rows = listOf(
@@ -156,10 +191,14 @@ object GameModeDialog {
                 GameMode.HARDPOINT -> R.string.mode_about_hardpoint
                 GameMode.BATTLE_ROYALE -> R.string.mode_about_battle_royale
                 GameMode.MARKSMAN -> R.string.mode_about_marksman
+                GameMode.CAPTURE_THE_FLAG -> R.string.mode_about_ctf
+                GameMode.EXTRACTION -> R.string.mode_about_extraction
             })
             d.modeSettings.isVisible = mode.hasObjectives
             d.brSettings.isVisible = mode == GameMode.BATTLE_ROYALE
             d.marksmanSettings.isVisible = mode == GameMode.MARKSMAN
+            d.ctfSettings.isVisible = mode == GameMode.CAPTURE_THE_FLAG
+            d.extractionSettings.isVisible = mode == GameMode.EXTRACTION
             d.modeResetButton.isVisible = mode != GameMode.CLASSIC
             // Hardpoint moves between spots chosen by field size: one is live at a time
             d.modePointsLabel.isVisible = domination
@@ -179,10 +218,14 @@ object GameModeDialog {
             GameMode.HARDPOINT -> R.id.mode_hardpoint
             GameMode.BATTLE_ROYALE -> R.id.mode_battle_royale
             GameMode.MARKSMAN -> R.id.mode_marksman
+            GameMode.CAPTURE_THE_FLAG -> R.id.mode_ctf
+            GameMode.EXTRACTION -> R.id.mode_extraction
         })
         fill(start)
         fillBattleRoyale(brStart)
         fillMarksman(config.marksman)
+        fillFlag(config.flag)
+        fillExtraction(config.extraction)
         showMode()
         markChanged()
         d.modeGroup.setOnCheckedChangeListener { _, id ->
@@ -193,6 +236,8 @@ object GameModeDialog {
                 R.id.mode_hardpoint -> GameMode.HARDPOINT
                 R.id.mode_battle_royale -> GameMode.BATTLE_ROYALE
                 R.id.mode_marksman -> GameMode.MARKSMAN
+                R.id.mode_ctf -> GameMode.CAPTURE_THE_FLAG
+                R.id.mode_extraction -> GameMode.EXTRACTION
                 else -> GameMode.CLASSIC
             }
             if (mode.hasObjectives) fill(remembered[mode] ?: ObjectiveRules.defaultsFor(mode))
@@ -221,7 +266,7 @@ object GameModeDialog {
                 val rules = if (mode.hasObjectives) read() else config.objectiveRules
                 if (mode.hasObjectives) remembered[mode] = rules
                 onSave(config.copy(mode = mode, objectiveRules = rules, modeRules = remembered.toMap(),
-                    battleRoyale = readBattleRoyale(), marksman = readMarksman()))
+                    battleRoyale = readBattleRoyale(), marksman = readMarksman(), flag = readFlag(), extraction = readExtraction()))
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .create()
@@ -229,6 +274,8 @@ object GameModeDialog {
             when (mode) {
                 GameMode.BATTLE_ROYALE -> fillBattleRoyale(BattleRoyaleRules())
                 GameMode.MARKSMAN -> fillMarksman(MarksmanRules())
+                GameMode.CAPTURE_THE_FLAG -> fillFlag(FlagRules())
+                GameMode.EXTRACTION -> fillExtraction(ExtractionRules())
                 else -> fill(ObjectiveRules.defaultsFor(mode))
             }
             markChanged()

@@ -69,6 +69,8 @@ import com.simplecoil.simplecoil.ui.map.MapCredit
 import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
 import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
+import com.simplecoil.simplecoil.ui.map.GlyphOverlay
+import com.simplecoil.simplecoil.domain.mode.ObjectiveState
 import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.ZoneLayers
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
@@ -142,6 +144,7 @@ class MapFragment : Fragment() {
 
     /** The capture points over the map, and the last news of them with when it came. */
     private var objectiveOverlay: ObjectiveOverlay? = null
+    private var glyphOverlay: GlyphOverlay? = null
     private var lastModeNotice: ModeController.Notice? = null
     private var lastModeNoticeAt = 0L
 
@@ -180,6 +183,7 @@ class MapFragment : Fragment() {
             placePlayers()
             map?.projection?.let {
                 objectiveOverlay?.place(it)
+                glyphOverlay?.place(it)
                 dropOverlay?.place(it)
             }
             Choreographer.getInstance().postFrameCallback(this)
@@ -240,6 +244,7 @@ class MapFragment : Fragment() {
         b.mapCompassButton.setOnClickListener { toggleHeadingUp() }
         dropOverlay = DropOverlay(requireContext(), b.mapDropsLayer)
         objectiveOverlay = ObjectiveOverlay(requireContext(), b.mapObjectivesLayer) { objectiveColor(it) }
+        glyphOverlay = GlyphOverlay(requireContext(), b.mapGlyphsLayer)
         b.mapZoomButton.setOnClickListener {
             setAutoZoom(autoZoom.next())
             preferences.saveMapAutoZoom(autoZoom.name)
@@ -331,6 +336,7 @@ class MapFragment : Fragment() {
         youTeam = -1
         dropOverlay = null
         objectiveOverlay = null
+        glyphOverlay = null
         playerViews.clear()
         map = null
         style = null
@@ -704,17 +710,66 @@ class MapFragment : Fragment() {
 
     /** The drops on the field, with their countdowns (map design: Drops). */
     /** A team's colour on the capture points; in free for all, yours and everyone else's. */
-    private fun objectiveColor(team: Int): Int = if (settings.teamLayout.mode.isFreeForAll) {
-        if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
-    } else {
-        MapIcons.teamColor(team, ENEMY_COLOR)
+    private fun objectiveColor(team: Int): Int = when {
+        team == LOOT_TEAM -> LOOT_COLOR
+        team == EXTRACTION_TEAM -> EXTRACTION_COLOR
+        settings.teamLayout.mode.isFreeForAll -> if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
+        else -> MapIcons.teamColor(team, ENEMY_COLOR)
     }
 
     private fun renderMode(state: ModeState?) {
         renderZone(state)
-        if (state == null || !state.mode.hasObjectives || !inGame()) objectiveOverlay?.clear()
-        else objectiveOverlay?.update(state.objectives, state.radiusMeters, letters = state.mode != GameMode.HARDPOINT)
+        val points = objectiveOverlay
+        val glyphs = glyphOverlay
+        if (state == null || !inGame()) {
+            points?.clear()
+            glyphs?.clear()
+            showModeBanner()
+            return
+        }
+        when (state.mode) {
+            GameMode.DOMINATION, GameMode.HARDPOINT -> {
+                points?.update(state.objectives, state.radiusMeters, letters = state.mode != GameMode.HARDPOINT)
+                glyphs?.clear()
+            }
+            GameMode.CAPTURE_THE_FLAG -> {
+                // Each base in its team's colour, and the flags where they are
+                points?.update(state.flags.map { ObjectiveState("", it.base, it.team, 0, 0.0, contested = false, active = true, next = false) },
+                    state.radiusMeters, letters = false)
+                glyphs?.update(flagGlyphs(state))
+            }
+            GameMode.EXTRACTION -> {
+                val e = state.extraction
+                val open = e != null && container.fieldImageryClient.serverNow() >= e.opensAt
+                // Extraction zones (dashed until they open) and the loot, each pile showing its worth
+                val areas = e?.zones?.mapIndexed { i, z ->
+                    ObjectiveState(getString(R.string.ex_zone_label) + if (e.zones.size > 1) (i + 1).toString() else "", z, EXTRACTION_TEAM, 0, 0.0,
+                        contested = false, active = open, next = !open)
+                }.orEmpty() + e?.loot?.map { ObjectiveState(it.value.toString(), it.point, LOOT_TEAM, 0, 0.0, contested = false, active = true, next = false) }.orEmpty()
+                points?.update(areas, state.radiusMeters, letters = true)
+                glyphs?.clear()
+            }
+            else -> {
+                points?.clear()
+                glyphs?.clear()
+            }
+        }
         showModeBanner()
+    }
+
+    /**
+     * The flags: at home or on the ground for everyone; with a carrier, always for the carrier's
+     * team, and for the flag's own team only while the server reveals the carrier.
+     */
+    private fun flagGlyphs(state: ModeState): List<GlyphOverlay.Glyph> {
+        val myTeam = myTeam()
+        return state.flags.filter { it.carrier == 0 || it.team != myTeam || it.revealed }.map {
+            GlyphOverlay.Glyph("flag${it.team}", it.point, FLAG, objectiveColor(it.team))
+        }
+    }
+
+    private fun myTeam(): Int = container.players.playerID.toInt().let { id ->
+        if (settings.teamLayout.mode.isFreeForAll) id else settings.teamLayout.teamOf(id)
     }
 
     /**
@@ -756,6 +811,12 @@ class MapFragment : Fragment() {
                 })
             }
             GameMode.MARKSMAN -> if (state.scoreToWin > 0) text.append("   ").append(getString(R.string.mode_to_win_text, units.format(state.scoreToWin.toDouble())))
+            GameMode.EXTRACTION -> {
+                if (state.scoreToWin > 0) text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
+                state.extraction?.takeIf { state.winner == 0 && inGame() }?.let { e ->
+                    text.append(" · ").append(if (now >= e.opensAt) getString(R.string.ex_open) else getString(R.string.ex_opens_in, clock(e.opensAt)))
+                }
+            }
             else -> {
                 text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
                 if (state.movesAt != 0L && state.winner == 0) text.append(" · ").append(getString(R.string.mode_moves_in, clock(state.movesAt)))
@@ -784,6 +845,8 @@ class MapFragment : Fragment() {
                 if (container.players.playerID.toInt() in state.out) return getString(R.string.br_you_are_out)
                 return container.zoneController.outside.value?.let { getString(R.string.br_outside, units.format(it.metersToSafety)) }
             }
+            GameMode.CAPTURE_THE_FLAG -> return flagStatus(state, myTeam)
+            GameMode.EXTRACTION -> return extractionStatus(state)
             GameMode.MARKSMAN, GameMode.CLASSIC -> return null
             GameMode.DOMINATION -> {}
         }
@@ -800,6 +863,31 @@ class MapFragment : Fragment() {
             on.contested -> getString(R.string.mode_contested, on.id)
             on.capturing == myTeam -> getString(R.string.mode_capturing, on.id)
             on.owner == myTeam -> getString(R.string.mode_holding, on.id)
+            else -> null
+        }
+    }
+
+    private fun flagStatus(state: ModeState, myTeam: Int): String? {
+        val me = container.players.playerID.toInt()
+        if (state.flags.any { it.carrier == me }) return getString(R.string.ctf_you_have_flag)
+        val mine = state.flags.firstOrNull { it.team == myTeam } ?: return null
+        return when {
+            mine.carrier != 0 -> getString(R.string.ctf_flag_taken)
+            mine.dropped -> getString(R.string.ctf_flag_down)
+            else -> null
+        }
+    }
+
+    private fun extractionStatus(state: ModeState): String? {
+        val e = state.extraction ?: return null
+        val me = container.players.playerID.toInt()
+        val carrying = e.carrying[me] ?: 0
+        val open = container.fieldImageryClient.serverNow() >= e.opensAt
+        val here = you()
+        val inZone = here != null && e.zones.any { GeoMath.distanceMeters(here, it) <= state.radiusMeters }
+        return when {
+            e.progress[me] != null -> getString(if (open && carrying > 0 && inZone) R.string.ex_extracting else R.string.ex_collecting)
+            carrying > 0 -> resources.getQuantityString(R.plurals.ex_carrying, carrying, carrying)
             else -> null
         }
     }
@@ -933,6 +1021,13 @@ class MapFragment : Fragment() {
 
         /** Scores on the banner: yours and the leaders, four teams at most. */
         const val MAX_SCORES_SHOWN = 4
+
+        /** Not teams: the colours of loot piles and extraction zones on the capture point circles. */
+        const val LOOT_TEAM = -2
+        const val EXTRACTION_TEAM = -3
+        const val LOOT_COLOR = 0xFFFFC107.toInt()
+        const val EXTRACTION_COLOR = 0xFF69F0AE.toInt()
+        const val FLAG = "2691"
 
         /** About 5 km across on a phone, to a few metres. */
         const val MIN_ZOOM = 13.0

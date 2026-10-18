@@ -21,6 +21,8 @@ import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.MarksmanRules
+import com.simplecoil.simplecoil.domain.mode.FlagRules
+import com.simplecoil.simplecoil.domain.mode.ExtractionRules
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import org.json.JSONArray
@@ -175,6 +177,8 @@ data class FieldConfig(
     val modeRules: Map<GameMode, ObjectiveRules> = emptyMap(),
     val battleRoyale: BattleRoyaleRules = BattleRoyaleRules(),
     val marksman: MarksmanRules = MarksmanRules(),
+    val flag: FlagRules = FlagRules(),
+    val extraction: ExtractionRules = ExtractionRules(),
 ) {
     /** Changes whenever anything in the config does; phones compare it to skip a download. */
     val id: String by lazy {
@@ -195,6 +199,8 @@ data class FieldConfig(
             .put("modeRules", JSONObject().apply { modeRules.forEach { (mode, r) -> put(mode.wireValue, r.toJson()) } })
             .put("battleRoyale", battleRoyale.toJson())
             .put("marksman", marksman.toJson())
+            .put("flag", flag.toJson())
+            .put("extraction", extraction.toJson())
         when (val b = border) {
             is Border.Circle -> json.put("border", JSONObject().put("type", "circle")
                 .put("lat", b.center.latitude).put("lon", b.center.longitude).put("radius", b.radiusMeters))
@@ -240,6 +246,8 @@ data class FieldConfig(
                 } ?: emptyMap(),
                 battleRoyale = BattleRoyaleRules.fromJson(json.optJSONObject("battleRoyale")),
                 marksman = MarksmanRules.fromJson(json.optJSONObject("marksman")),
+                flag = FlagRules.fromJson(json.optJSONObject("flag")),
+                extraction = ExtractionRules.fromJson(json.optJSONObject("extraction")),
             )
         } catch (e: JSONException) {
             throw IOException("bad field config", e)

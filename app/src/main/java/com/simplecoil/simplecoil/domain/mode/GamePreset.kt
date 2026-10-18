@@ -37,6 +37,8 @@ data class GamePreset(
     val loadout: LoadoutRules,
     val battleRoyale: BattleRoyaleRules = BattleRoyaleRules(),
     val marksman: MarksmanRules = MarksmanRules(),
+    val flag: FlagRules = FlagRules(),
+    val extraction: ExtractionRules = ExtractionRules(),
     val teamMode: TeamMode,
     /** GameSettingsRepository.GPS_*: off, teammates or all. */
     val gpsMode: Int,
@@ -51,7 +53,7 @@ data class GamePreset(
     fun applyTo(field: FieldConfig): FieldConfig = field.copy(
         mode = mode, objectiveRules = objectiveRules, rules = borderRules, spawnRules = spawnRules, loadout = loadout,
         modeRules = if (mode.hasObjectives) field.modeRules + (mode to objectiveRules) else field.modeRules,
-        battleRoyale = battleRoyale, marksman = marksman,
+        battleRoyale = battleRoyale, marksman = marksman, flag = flag, extraction = extraction,
     )
 
     fun toJson(): JSONObject = JSONObject()
@@ -64,6 +66,8 @@ data class GamePreset(
         .put("loadout", loadout.toJson())
         .put("battleRoyale", battleRoyale.toJson())
         .put("marksman", marksman.toJson())
+        .put("flag", flag.toJson())
+        .put("extraction", extraction.toJson())
         .put("teamMode", teamMode.name)
         .put("gpsMode", gpsMode)
         .put("timeLimit", timeLimit)
@@ -84,6 +88,8 @@ data class GamePreset(
             loadout = LoadoutRules.fromJson(json.optJSONObject("loadout")),
             battleRoyale = BattleRoyaleRules.fromJson(json.optJSONObject("battleRoyale")),
             marksman = MarksmanRules.fromJson(json.optJSONObject("marksman")),
+            flag = FlagRules.fromJson(json.optJSONObject("flag")),
+            extraction = ExtractionRules.fromJson(json.optJSONObject("extraction")),
             teamMode = TeamMode.entries.firstOrNull { it.name == json.optString("teamMode") } ?: TeamMode.TWO_TEAMS,
             gpsMode = json.optInt("gpsMode", 0),
             timeLimit = json.optInt("timeLimit", 0),

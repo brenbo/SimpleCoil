@@ -761,7 +761,7 @@ class FieldMapActivity : AppCompatActivity() {
                     // rules stay as set on the server's main screen (or by a game preset).
                     val kept = saved.copy(rules = config.rules, spawnRules = config.spawnRules, loadout = config.loadout,
                         mode = config.mode, objectiveRules = config.objectiveRules, modeRules = config.modeRules,
-                        battleRoyale = config.battleRoyale, marksman = config.marksman)
+                        battleRoyale = config.battleRoyale, marksman = config.marksman, flag = config.flag, extraction = config.extraction)
                     if (pack != null) container.serverFieldStore.save(pack) else container.serverFieldStore.clear()
                     container.serverFieldConfig.save(kept)
                     kept

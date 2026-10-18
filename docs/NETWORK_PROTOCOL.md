@@ -310,3 +310,11 @@ The server runs the game: once a second it counts who stands on each point (play
 `mode` can also be `battleroyale` or `marksman`. The config carries their rules as `battleRoyale` (`phases`, `firstWait`, `shrink` and `pause` in seconds, `finalDiameter` in metres, `damage`, `tick` in seconds, `rises`, `respawnUntil`, the phase from which eliminations are final, 0 for always) and `marksman` (`minimum` and `toWin`, in metres, `toWin` 0 for none).
 
 The `MODE` reply works as in 8.2. In Battle Royale, `scores` holds how many players each team has left, `out` lists the player ids out for good, and `zone` is `{"current":[lat, lon, radius],"next":[lat, lon, radius] or null,"phase","phases","shrinking","changesAt","damage","tick","noRespawn"}`, with `changesAt` the server's wall clock when the zone next starts or stops shrinking. The server plans every circle when the game starts; each phone checks its own position against `current` and takes `damage` every `tick` seconds outside it, and once `noRespawn` is set an elimination keeps that player out. The last team with anyone left wins. In Marksman, `scores` is each team's total elimination distance in whole metres.
+
+### 8.4 Capture the Flag and Extraction
+
+`mode` can also be `ctf` or `extraction`, with rules in `flag` (`toWin`, `shownEvery` in seconds, 0 never and 1 always, `returns` in seconds, `ownHome`, `baseRadius` in metres) and `extraction` (`loot`, `collect` in seconds, `opens` in minutes, `zones`, `toWin`, 0 for none, `radius` in metres).
+
+In Capture the Flag the bases are the teams' first spawns (or two placed at opposite ends), and the `MODE` reply adds `flags` as `[[team, baseLat, baseLon, lat, lon, carrier, dropped, revealed], ...]`; `scores` counts captures. Phones show a carried flag to the carrier's side always, and to the flag's own team only while `revealed`.
+
+In Extraction the reply adds `extraction`: `{"loot":[[id, lat, lon, value], ...],"zones":[[lat, lon], ...],"opensAt","carrying":[[playerId, loot], ...],"progress":[[playerId, 0 to 1], ...]}`; `scores` counts banked loot. The server decides every pickup and bank from the players' positions, so phones only show it.

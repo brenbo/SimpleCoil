@@ -45,6 +45,16 @@
                 style="@style/DialogRadio"
                 android:id="@+id/mode_marksman"
                 android:text="@string/mode_marksman" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_ctf"
+                android:text="@string/mode_ctf" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_extraction"
+                android:text="@string/mode_extraction" />
         </RadioGroup>
 
         <TextView
@@ -381,6 +391,171 @@
                 android:importantForAutofill="no"
                 android:inputType="number"
                 android:maxLength="6" />
+
+        </LinearLayout>
+
+        <!-- Capture the Flag -->
+        <LinearLayout
+            android:id="@+id/ctf_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ctf_to_win_label"
+                android:labelFor="@+id/ctf_to_win_et"
+                android:text="@string/ctf_to_win" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ctf_to_win_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ctf_shown_label"
+                android:labelFor="@+id/ctf_shown_et"
+                android:text="@string/ctf_shown" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ctf_shown_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ctf_returns_label"
+                android:labelFor="@+id/ctf_returns_et"
+                android:text="@string/ctf_returns" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ctf_returns_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                style="@style/DialogSwitch"
+                android:id="@+id/ctf_own_home_switch"
+                android:text="@string/ctf_own_home" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ctf_radius_label"
+                android:labelFor="@+id/ctf_radius_et"
+                android:text="@string/ctf_radius" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ctf_radius_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+        </LinearLayout>
+
+        <!-- Extraction -->
+        <LinearLayout
+            android:id="@+id/extraction_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ex_loot_label"
+                android:labelFor="@+id/ex_loot_et"
+                android:text="@string/ex_loot" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ex_loot_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ex_collect_label"
+                android:labelFor="@+id/ex_collect_et"
+                android:text="@string/ex_collect" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ex_collect_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ex_opens_label"
+                android:labelFor="@+id/ex_opens_et"
+                android:text="@string/ex_opens" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ex_opens_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ex_zones_label"
+                android:labelFor="@+id/ex_zones_et"
+                android:text="@string/ex_zones" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ex_zones_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ex_to_win_label"
+                android:labelFor="@+id/ex_to_win_et"
+                android:text="@string/ex_to_win" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ex_to_win_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/ex_radius_label"
+                android:labelFor="@+id/ex_radius_et"
+                android:text="@string/ex_radius" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/ex_radius_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
 
         </LinearLayout>
 

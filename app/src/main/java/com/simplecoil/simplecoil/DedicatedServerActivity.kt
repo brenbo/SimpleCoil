@@ -51,6 +51,8 @@ import com.simplecoil.simplecoil.ui.map.GameModeDialog
 import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
+import com.simplecoil.simplecoil.domain.mode.ExtractionRules
+import com.simplecoil.simplecoil.domain.mode.FlagRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import androidx.core.view.isVisible
@@ -220,7 +222,7 @@ class DedicatedServerActivity : AppCompatActivity() {
                 val field = container.serverFieldConfig.refresh() ?: FieldConfig(rules = BorderRules(units = DistanceUnits.defaultFor(Locale.getDefault())))
                 val preset = GamePreset(
                     name = name, mode = field.mode, objectiveRules = field.objectiveRules, borderRules = field.rules,
-                    spawnRules = field.spawnRules, loadout = field.loadout, battleRoyale = field.battleRoyale, marksman = field.marksman,
+                    spawnRules = field.spawnRules, loadout = field.loadout, battleRoyale = field.battleRoyale, marksman = field.marksman, flag = field.flag, extraction = field.extraction,
                     teamMode = state.teamMode,
                     gpsMode = if (state.useGps) state.gpsMode else GameSettingsRepository.GPS_DISABLED,
                     timeLimit = state.limits.shown(LimitKind.TIME), livesLimit = state.limits.shown(LimitKind.LIVES),
@@ -292,6 +294,8 @@ class DedicatedServerActivity : AppCompatActivity() {
                     getString(R.string.server_summary_battle_royale, br.phases, br.firstWaitSeconds / 60)
                 }
                 GameMode.MARKSMAN -> getString(R.string.server_summary_marksman)
+                GameMode.CAPTURE_THE_FLAG -> getString(R.string.server_summary_ctf, (config?.flag ?: FlagRules()).capturesToWin)
+                GameMode.EXTRACTION -> getString(R.string.server_summary_extraction, (config?.extraction ?: ExtractionRules()).opensAfterMinutes)
             }
             val loadout = config?.loadout ?: LoadoutRules()
             val parts = listOfNotNull(

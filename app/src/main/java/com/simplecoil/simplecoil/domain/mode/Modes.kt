@@ -38,7 +38,13 @@ enum class GameMode(val wireValue: String, val hasObjectives: Boolean, val needs
     BATTLE_ROYALE("battleroyale", false, needsBorder = true),
 
     /** Score is the distance of each elimination. */
-    MARKSMAN("marksman", false);
+    MARKSMAN("marksman", false),
+
+    /** Take the other team's flag from its base to yours. */
+    CAPTURE_THE_FLAG("ctf", false, needsBorder = true),
+
+    /** Collect loot around the field and bank it at an extraction zone. */
+    EXTRACTION("extraction", false, needsBorder = true);
 
     /** The server runs it and the phones fetch its state. */
     val onServer: Boolean get() = this != CLASSIC
@@ -181,6 +187,10 @@ data class ModeState(
     val zone: ZoneState? = null,
     /** Battle Royale: the players out for good. */
     val out: Set<Int> = emptySet(),
+    /** Capture the Flag: each team's flag. */
+    val flags: List<FlagState> = emptyList(),
+    /** Extraction: the loot, the zones and who carries what. */
+    val extraction: ExtractionState? = null,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("mode", mode.wireValue)
@@ -204,6 +214,20 @@ data class ModeState(
                     .put("changesAt", z.changesAt).put("damage", z.damage).put("tick", z.tickSeconds).put("noRespawn", z.noRespawn))
             }
             if (out.isNotEmpty()) put("out", JSONArray().apply { out.sorted().forEach { put(it) } })
+            if (flags.isNotEmpty()) put("flags", JSONArray().apply {
+                flags.forEach { f ->
+                    put(JSONArray().put(f.team).put(f.base.latitude).put(f.base.longitude).put(f.point.latitude).put(f.point.longitude)
+                        .put(f.carrier).put(if (f.dropped) 1 else 0).put(if (f.revealed) 1 else 0))
+                }
+            })
+            extraction?.let { e ->
+                put("extraction", JSONObject()
+                    .put("loot", JSONArray().apply { e.loot.forEach { put(JSONArray().put(it.id).put(it.point.latitude).put(it.point.longitude).put(it.value)) } })
+                    .put("zones", JSONArray().apply { e.zones.forEach { put(JSONArray().put(it.latitude).put(it.longitude)) } })
+                    .put("opensAt", e.opensAt)
+                    .put("carrying", JSONArray().apply { e.carrying.toSortedMap().forEach { (id, n) -> put(JSONArray().put(id).put(n)) } })
+                    .put("progress", JSONArray().apply { e.progress.toSortedMap().forEach { (id, f) -> put(JSONArray().put(id).put(f)) } }))
+            }
         }
 
     companion object {
@@ -232,6 +256,25 @@ data class ModeState(
                         z.optInt("damage", 1), z.optInt("tick", 3), z.optBoolean("noRespawn", true))
                 },
                 out = json.optJSONArray("out")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet(),
+                flags = json.optJSONArray("flags")?.let { a ->
+                    (0 until a.length()).map {
+                        val f = a.getJSONArray(it)
+                        FlagState(f.getInt(0), LatLon(f.getDouble(1), f.getDouble(2)), LatLon(f.getDouble(3), f.getDouble(4)), f.getInt(5), f.getInt(6) == 1, f.getInt(7) == 1)
+                    }
+                } ?: emptyList(),
+                extraction = json.optJSONObject("extraction")?.let { e ->
+                    val loot = e.getJSONArray("loot")
+                    val zones = e.getJSONArray("zones")
+                    val carrying = e.getJSONArray("carrying")
+                    val progress = e.getJSONArray("progress")
+                    ExtractionState(
+                        (0 until loot.length()).map { loot.getJSONArray(it).let { l -> LootState(l.getInt(0), LatLon(l.getDouble(1), l.getDouble(2)), l.getInt(3)) } },
+                        (0 until zones.length()).map { zones.getJSONArray(it).let { z -> LatLon(z.getDouble(0), z.getDouble(1)) } },
+                        e.getLong("opensAt"),
+                        (0 until carrying.length()).associate { carrying.getJSONArray(it).let { c -> c.getInt(0) to c.getInt(1) } },
+                        (0 until progress.length()).associate { progress.getJSONArray(it).let { p -> p.getInt(0) to p.getDouble(1) } },
+                    )
+                },
             )
         }
     }

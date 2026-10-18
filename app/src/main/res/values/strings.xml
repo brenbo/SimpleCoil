@@ -392,6 +392,23 @@
     <string name="mode_marksman">Marksman</string>
     <string name="mode_about_battle_royale">A safe zone shrinks in phases. Outside it you lose health. Once respawns are over, an elimination puts you out; the last team standing wins. Needs a field border.</string>
     <string name="mode_about_marksman">Score is the distance of each elimination instead of the count. Needs GPS on every phone.</string>
+    <string name="mode_ctf">Capture the Flag</string>
+    <string name="mode_extraction">Extraction</string>
+    <string name="mode_about_ctf">Each team\'s flag sits at its base (its first spawn, or one end of the field). Walk into the enemy base to take theirs, and back to yours to score. A carrier who is eliminated drops it. Needs a field border.</string>
+    <string name="mode_about_extraction">Stand on loot to pick it up. It only counts once you stand in an extraction zone after it opens; if you are eliminated you drop it all. Needs a field border.</string>
+    <string name="ctf_to_win">Captures to win (1–10)</string>
+    <string name="ctf_shown">Show the carrier to the other team every (s; 0 = never, 1 = always)</string>
+    <string name="ctf_returns">A dropped flag goes home after (10–120 s)</string>
+    <string name="ctf_own_home">Your own flag must be home to score</string>
+    <string name="ctf_radius">Base radius (%1$s)</string>
+    <string name="ex_loot">Loot piles on the field (3–20)</string>
+    <string name="ex_collect">Seconds to collect or bank (3–30)</string>
+    <string name="ex_opens">Extraction opens after (minutes)</string>
+    <string name="ex_zones">Extraction zones (1–3)</string>
+    <string name="ex_to_win">Loot to win (0 = play to the game limits)</string>
+    <string name="ex_radius">Loot and zone radius (%1$s)</string>
+    <string name="server_summary_ctf">Capture the Flag · %1$d to win</string>
+    <string name="server_summary_extraction">Extraction · opens at %1$d:00</string>
     <string name="br_phases">Zone phases (2–6)</string>
     <string name="br_first_wait">Minutes before the first shrink (1–10)</string>
     <string name="br_shrink">Seconds each shrink takes (30–300)</string>
@@ -439,6 +456,18 @@
     <string name="br_outside">Outside the zone! %1$s to safety</string>
     <string name="br_you_are_out">You are out</string>
     <string name="mode_to_win_text">to %1$s</string>
+    <string name="ctf_you_have_flag">You have the flag! Get it home</string>
+    <string name="ctf_flag_taken">Your flag is taken!</string>
+    <string name="ctf_flag_down">Your flag is down: touch it to send it home</string>
+    <string name="ex_zone_label">EX</string>
+    <string name="ex_collecting">Collecting loot…</string>
+    <string name="ex_extracting">Extracting…</string>
+    <plurals name="ex_carrying">
+        <item quantity="one">Carrying %1$d loot</item>
+        <item quantity="other">Carrying %1$d loot</item>
+    </plurals>
+    <string name="ex_open">extraction open</string>
+    <string name="ex_opens_in">extraction opens in %1$s</string>
     <string name="mode_hp_contested">Point contested</string>
     <string name="mode_hp_holding">Holding the point</string>
     <string name="mode_hp_secured">Point taken</string>

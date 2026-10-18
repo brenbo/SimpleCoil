@@ -25,6 +25,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Flags and such: small symbols over the map. -->
+    <FrameLayout
+        android:id="@+id/map_glyphs_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <!-- The other players, drawn over the map the same way. -->
     <FrameLayout
         android:id="@+id/map_players_layer"

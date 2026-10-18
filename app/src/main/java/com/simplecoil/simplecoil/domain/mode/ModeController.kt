@@ -126,6 +126,21 @@ class ModeController(
     /** What changed for this player's team between [before] and [after]. */
     fun announce(before: ModeState, after: ModeState) {
         val team = me().second
+        if (after.mode == GameMode.CAPTURE_THE_FLAG || after.mode == GameMode.EXTRACTION) {
+            // A capture or banked loot for your team
+            if ((after.scores[team] ?: 0) > (before.scores[team] ?: 0)) {
+                feedback.play(SessionSound.SCORE)
+                feedback.vibrate()
+            }
+            // Your flag just taken
+            val mine = after.flags.firstOrNull { it.team == team }
+            val was = before.flags.firstOrNull { it.team == team }
+            if (mine != null && was != null && mine.carrier != 0 && was.carrier == 0) {
+                feedback.play(SessionSound.HIT)
+                feedback.vibrate()
+            }
+            return
+        }
         for (now in after.objectives) {
             val was = before.objectives.firstOrNull { it.id == now.id } ?: continue
             when {

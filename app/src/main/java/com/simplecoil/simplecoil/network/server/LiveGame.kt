@@ -28,6 +28,10 @@ import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleEngine
+import com.simplecoil.simplecoil.domain.mode.ExtractionEngine
+import com.simplecoil.simplecoil.domain.mode.FlagEngine
+import com.simplecoil.simplecoil.domain.mode.PlayerInfo
+import com.simplecoil.simplecoil.domain.mode.flagBases
 import com.simplecoil.simplecoil.domain.mode.MarksmanEngine
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.mode.ZonePlan
@@ -100,6 +104,8 @@ class LiveGame(
             rules = base?.loadout ?: LoadoutRules()
             mode = base?.mode ?: GameMode.CLASSIC
             battleRoyale = null
+            flags = null
+            extraction = null
             modeBytes = null
             alive.clear()
             base ?: return@collectLatest
@@ -185,6 +191,19 @@ class LiveGame(
                 val engine = MarksmanEngine(base.marksman);
                 { engine.tick(shots.all(), teamOf) }
             }
+            GameMode.CAPTURE_THE_FLAG -> {
+                val border = base.border ?: return
+                val engine = FlagEngine(base.flag, flagBases(border, base.spawns, base.rules.edgeBufferMeters, random), wallClock())
+                flags = engine;
+                { engine.tick(wallClock(), playerInfos()) }
+            }
+            GameMode.EXTRACTION -> {
+                val border = base.border ?: return
+                val avoid = base.spawns.map { it.point to base.spawnRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS }
+                val engine = ExtractionEngine(base.extraction, border, avoid, wallClock(), random)
+                extraction = engine;
+                { engine.tick(wallClock(), playerInfos()) }
+            }
             GameMode.CLASSIC -> return
         }
         var won = false
@@ -232,11 +251,31 @@ class LiveGame(
     @Volatile
     private var battleRoyale: BattleRoyaleEngine? = null
 
+    @Volatile
+    private var flags: FlagEngine? = null
+
+    @Volatile
+    private var extraction: ExtractionEngine? = null
+
+    /** Every player in the game: team, a fresh position (or none), and whether they say they are in. */
+    private fun playerInfos(): Map<Int, PlayerInfo> {
+        val now = monoClock()
+        val fixes = positions()
+        return players().mapValues { (id, team) ->
+            val fix = fixes[id]?.takeIf { now - it.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS }
+            val said = alive[id]
+            val out = said != null && !said.first && now - said.second <= ALIVE_STALE_MILLIS
+            PlayerInfo(team, fix?.point, !out)
+        }
+    }
+
     private fun onEliminated(victimId: Int, shooterId: Int) {
         val rules = rules ?: return
         val fixes = positions()
         val victim = fixes[victimId]
         battleRoyale?.onEliminated(victimId, wallClock())
+        flags?.onEliminated(victimId, wallClock())
+        extraction?.onEliminated(victimId)
         // Marksman scores by distance, so it always measures
         if (rules.trackShots || mode == GameMode.MARKSMAN) {
             shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), rules.maxShotMeters)
