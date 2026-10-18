@@ -32,6 +32,7 @@ import android.view.animation.BounceInterpolator
 import android.view.animation.OvershootInterpolator
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.domain.mode.ModeState
+import com.simplecoil.simplecoil.domain.mode.sideOf
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import kotlinx.coroutines.Dispatchers
@@ -270,7 +271,8 @@ class ScoreboardDialog : GameDialogFragment() {
         resultShown = state
         val id = container.players.playerID.toInt()
         val layout = container.settings.teamLayout
-        val myTeam = if (layout.mode.isFreeForAll) id else layout.teamOf(id)
+        // In Infection, the side you ended on: survivors or infected
+        val myTeam = state.sideOf(id, if (layout.mode.isFreeForAll) id else layout.teamOf(id))
         val won = state.winner == myTeam
         val mine = state.scores[myTeam] ?: 0
         val theirs = state.scores.filterKeys { it != myTeam }.values.maxOrNull() ?: 0

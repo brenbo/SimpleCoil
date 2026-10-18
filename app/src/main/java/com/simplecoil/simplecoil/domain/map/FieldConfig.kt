@@ -23,6 +23,8 @@ import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.MarksmanRules
 import com.simplecoil.simplecoil.domain.mode.FlagRules
 import com.simplecoil.simplecoil.domain.mode.ExtractionRules
+import com.simplecoil.simplecoil.domain.mode.BombRules
+import com.simplecoil.simplecoil.domain.mode.InfectionRules
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import org.json.JSONArray
@@ -179,6 +181,8 @@ data class FieldConfig(
     val marksman: MarksmanRules = MarksmanRules(),
     val flag: FlagRules = FlagRules(),
     val extraction: ExtractionRules = ExtractionRules(),
+    val bomb: BombRules = BombRules(),
+    val infection: InfectionRules = InfectionRules(),
 ) {
     /** Changes whenever anything in the config does; phones compare it to skip a download. */
     val id: String by lazy {
@@ -201,6 +205,8 @@ data class FieldConfig(
             .put("marksman", marksman.toJson())
             .put("flag", flag.toJson())
             .put("extraction", extraction.toJson())
+            .put("bomb", bomb.toJson())
+            .put("infection", infection.toJson())
         when (val b = border) {
             is Border.Circle -> json.put("border", JSONObject().put("type", "circle")
                 .put("lat", b.center.latitude).put("lon", b.center.longitude).put("radius", b.radiusMeters))
@@ -248,6 +254,8 @@ data class FieldConfig(
                 marksman = MarksmanRules.fromJson(json.optJSONObject("marksman")),
                 flag = FlagRules.fromJson(json.optJSONObject("flag")),
                 extraction = ExtractionRules.fromJson(json.optJSONObject("extraction")),
+                bomb = BombRules.fromJson(json.optJSONObject("bomb")),
+                infection = InfectionRules.fromJson(json.optJSONObject("infection")),
             )
         } catch (e: JSONException) {
             throw IOException("bad field config", e)

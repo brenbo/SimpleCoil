@@ -318,3 +318,11 @@ The `MODE` reply works as in 8.2. In Battle Royale, `scores` holds how many play
 In Capture the Flag the bases are the teams' first spawns (or two placed at opposite ends), and the `MODE` reply adds `flags` as `[[team, baseLat, baseLon, lat, lon, carrier, dropped, revealed], ...]`; `scores` counts captures. Phones show a carried flag to the carrier's side always, and to the flag's own team only while `revealed`.
 
 In Extraction the reply adds `extraction`: `{"loot":[[id, lat, lon, value], ...],"zones":[[lat, lon], ...],"opensAt","carrying":[[playerId, loot], ...],"progress":[[playerId, 0 to 1], ...]}`; `scores` counts banked loot. The server decides every pickup and bank from the players' positions, so phones only show it.
+
+### 8.5 Search & Destroy and Infection
+
+`mode` can also be `snd` or `infection`, with rules in `bomb` (`toWin`, `round`, `plant`, `defuse`, `fuse` and `between` in seconds, `sites`, `swap`, `radius` in metres) and `infection` (`starting`, `reveal` in seconds, 0 for never, `round` in minutes).
+
+In Search & Destroy the `MODE` reply sets `noRespawn`, `round` (it goes up when a new round starts, and every phone then revives a player who was out), `objectives` (the sites), `actor` (the player planting or defusing) and `bomb`: `{"round","attackers","phase":"live"|"planted"|"between","endsAt","carrier","at":[lat, lon] or null,"planted","lastWinner","out":[ids]}`. `scores` counts rounds won by teams 1 and 2; team 1 attacks first and the teams swap at half time.
+
+In Infection, `infected` lists the infected players, `scores` is keyed by the sides -5 (survivors) and -4 (infected), `movesAt` is when the round ends, and `revealed` (`[[id, lat, lon], ...]`) holds the survivors the infected see right now. An elimination by an infected player infects the victim.

@@ -46,6 +46,9 @@ class ZoneController(
     interface Penalties {
         fun damage(amount: Int)
         fun setNoRespawn(on: Boolean)
+
+        /** A new round: out players come back. */
+        fun revive()
     }
 
     interface Feedback {
@@ -79,10 +82,18 @@ class ZoneController(
         position = point
     }
 
+    /** The round last seen, so a new one revives the players out of the last. */
+    private var round = 0
+
     fun update() {
-        val zone = state.value?.takeIf { it.mode == GameMode.BATTLE_ROYALE }?.zone
+        val mode = state.value
+        val zone = mode?.takeIf { it.mode == GameMode.BATTLE_ROYALE }?.zone
         val playing = inGame()
-        penalties.setNoRespawn(playing && zone?.noRespawn == true)
+        // Battle Royale once respawns are over, or a round of Search & Destroy: eliminations are final
+        penalties.setNoRespawn(playing && (zone?.noRespawn == true || mode?.noRespawn == true))
+        val newRound = mode?.round ?: 0
+        if (playing && newRound > round && round != 0) penalties.revive()
+        round = if (playing) newRound else 0
         val here = position
         val alive = session.value.spawn == SpawnPhase.None
         if (!playing || zone == null || here == null || !alive) {

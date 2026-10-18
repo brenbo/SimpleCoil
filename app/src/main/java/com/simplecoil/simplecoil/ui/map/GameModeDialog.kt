@@ -30,7 +30,9 @@ import com.simplecoil.simplecoil.databinding.DialogGameModeBinding
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
+import com.simplecoil.simplecoil.domain.mode.BombRules
 import com.simplecoil.simplecoil.domain.mode.ExtractionRules
+import com.simplecoil.simplecoil.domain.mode.InfectionRules
 import com.simplecoil.simplecoil.domain.mode.FlagRules
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.MarksmanRules
@@ -153,6 +155,39 @@ object GameModeDialog {
             lootToWin = int(d.exToWinEt, config.extraction.lootToWin),
             radiusMeters = d.exRadiusEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.extraction.radiusMeters,
         ).clamped()
+        fun fillBomb(r: BombRules) {
+            put(d.sndrToWinEt, r.roundsToWin)
+            put(d.sndrRoundEt, r.roundSeconds)
+            put(d.sndrPlantEt, r.plantSeconds)
+            put(d.sndrDefuseEt, r.defuseSeconds)
+            put(d.sndrFuseEt, r.fuseSeconds)
+            put(d.sndrSitesEt, r.sites)
+            d.sndrSwapSwitch.isChecked = r.swapSides
+            put(d.sndrBetweenEt, r.betweenRoundsSeconds)
+            put(d.sndrRadiusEt, units.fromMeters(r.siteRadiusMeters).roundToInt())
+        }
+        fun readBomb(): BombRules = BombRules(
+            roundsToWin = int(d.sndrToWinEt, config.bomb.roundsToWin),
+            roundSeconds = int(d.sndrRoundEt, config.bomb.roundSeconds),
+            plantSeconds = int(d.sndrPlantEt, config.bomb.plantSeconds),
+            defuseSeconds = int(d.sndrDefuseEt, config.bomb.defuseSeconds),
+            fuseSeconds = int(d.sndrFuseEt, config.bomb.fuseSeconds),
+            sites = int(d.sndrSitesEt, config.bomb.sites),
+            swapSides = d.sndrSwapSwitch.isChecked,
+            siteRadiusMeters = d.sndrRadiusEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.bomb.siteRadiusMeters,
+            betweenRoundsSeconds = int(d.sndrBetweenEt, config.bomb.betweenRoundsSeconds),
+        ).clamped()
+        fun fillInfection(r: InfectionRules) {
+            put(d.infrStartingEt, r.startingInfected)
+            put(d.infrRevealEt, r.revealEverySeconds)
+            put(d.infrMinutesEt, r.roundMinutes)
+        }
+        fun readInfection(): InfectionRules = InfectionRules(
+            startingInfected = int(d.infrStartingEt, config.infection.startingInfected),
+            revealEverySeconds = int(d.infrRevealEt, config.infection.revealEverySeconds),
+            roundMinutes = int(d.infrMinutesEt, config.infection.roundMinutes),
+        ).clamped()
+        d.sndrRadiusLabel.text = context.getString(R.string.sndr_radius, unit)
         d.ctfRadiusLabel.text = context.getString(R.string.ctf_radius, unit)
         d.exRadiusLabel.text = context.getString(R.string.ex_radius, unit)
 
@@ -193,12 +228,16 @@ object GameModeDialog {
                 GameMode.MARKSMAN -> R.string.mode_about_marksman
                 GameMode.CAPTURE_THE_FLAG -> R.string.mode_about_ctf
                 GameMode.EXTRACTION -> R.string.mode_about_extraction
+                GameMode.SEARCH_AND_DESTROY -> R.string.mode_about_snd
+                GameMode.INFECTION -> R.string.mode_about_infection
             })
             d.modeSettings.isVisible = mode.hasObjectives
             d.brSettings.isVisible = mode == GameMode.BATTLE_ROYALE
             d.marksmanSettings.isVisible = mode == GameMode.MARKSMAN
             d.ctfSettings.isVisible = mode == GameMode.CAPTURE_THE_FLAG
             d.extractionSettings.isVisible = mode == GameMode.EXTRACTION
+            d.sndSettings.isVisible = mode == GameMode.SEARCH_AND_DESTROY
+            d.infectionSettings.isVisible = mode == GameMode.INFECTION
             d.modeResetButton.isVisible = mode != GameMode.CLASSIC
             // Hardpoint moves between spots chosen by field size: one is live at a time
             d.modePointsLabel.isVisible = domination
@@ -220,12 +259,16 @@ object GameModeDialog {
             GameMode.MARKSMAN -> R.id.mode_marksman
             GameMode.CAPTURE_THE_FLAG -> R.id.mode_ctf
             GameMode.EXTRACTION -> R.id.mode_extraction
+            GameMode.SEARCH_AND_DESTROY -> R.id.mode_snd
+            GameMode.INFECTION -> R.id.mode_infection
         })
         fill(start)
         fillBattleRoyale(brStart)
         fillMarksman(config.marksman)
         fillFlag(config.flag)
         fillExtraction(config.extraction)
+        fillBomb(config.bomb)
+        fillInfection(config.infection)
         showMode()
         markChanged()
         d.modeGroup.setOnCheckedChangeListener { _, id ->
@@ -238,6 +281,8 @@ object GameModeDialog {
                 R.id.mode_marksman -> GameMode.MARKSMAN
                 R.id.mode_ctf -> GameMode.CAPTURE_THE_FLAG
                 R.id.mode_extraction -> GameMode.EXTRACTION
+                R.id.mode_snd -> GameMode.SEARCH_AND_DESTROY
+                R.id.mode_infection -> GameMode.INFECTION
                 else -> GameMode.CLASSIC
             }
             if (mode.hasObjectives) fill(remembered[mode] ?: ObjectiveRules.defaultsFor(mode))
@@ -266,7 +311,7 @@ object GameModeDialog {
                 val rules = if (mode.hasObjectives) read() else config.objectiveRules
                 if (mode.hasObjectives) remembered[mode] = rules
                 onSave(config.copy(mode = mode, objectiveRules = rules, modeRules = remembered.toMap(),
-                    battleRoyale = readBattleRoyale(), marksman = readMarksman(), flag = readFlag(), extraction = readExtraction()))
+                    battleRoyale = readBattleRoyale(), marksman = readMarksman(), flag = readFlag(), extraction = readExtraction(), bomb = readBomb(), infection = readInfection()))
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .create()
@@ -276,6 +321,8 @@ object GameModeDialog {
                 GameMode.MARKSMAN -> fillMarksman(MarksmanRules())
                 GameMode.CAPTURE_THE_FLAG -> fillFlag(FlagRules())
                 GameMode.EXTRACTION -> fillExtraction(ExtractionRules())
+                GameMode.SEARCH_AND_DESTROY -> fillBomb(BombRules())
+                GameMode.INFECTION -> fillInfection(InfectionRules())
                 else -> fill(ObjectiveRules.defaultsFor(mode))
             }
             markChanged()

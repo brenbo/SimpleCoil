@@ -153,6 +153,7 @@ class BattleRoyaleTest {
         val controller = ZoneController(mode, session, object : ZoneController.Penalties {
             override fun damage(amount: Int) { damage += amount }
             override fun setNoRespawn(on: Boolean) { noRespawn = on }
+            override fun revive() {}
         }, inGame = { true }, feedback = object : ZoneController.Feedback {
             override fun play(sound: SessionSound) {}
             override fun vibrate() {}

@@ -44,7 +44,13 @@ enum class GameMode(val wireValue: String, val hasObjectives: Boolean, val needs
     CAPTURE_THE_FLAG("ctf", false, needsBorder = true),
 
     /** Collect loot around the field and bank it at an extraction zone. */
-    EXTRACTION("extraction", false, needsBorder = true);
+    EXTRACTION("extraction", false, needsBorder = true),
+
+    /** Rounds with no respawns: plant the bomb at a site, or stop it. */
+    SEARCH_AND_DESTROY("snd", false, needsBorder = true),
+
+    /** The infected tag survivors, who join them; survivors win by lasting. */
+    INFECTION("infection", false);
 
     /** The server runs it and the phones fetch its state. */
     val onServer: Boolean get() = this != CLASSIC
@@ -191,6 +197,18 @@ data class ModeState(
     val flags: List<FlagState> = emptyList(),
     /** Extraction: the loot, the zones and who carries what. */
     val extraction: ExtractionState? = null,
+    /** Rounds: the round number (it goes up when everyone respawns). */
+    val round: Int = 0,
+    /** Eliminated players stay out (until the next round). */
+    val noRespawn: Boolean = false,
+    /** Search & Destroy: the round and the bomb. */
+    val bomb: BombState? = null,
+    /** The player planting or defusing right now; 0 if nobody. */
+    val actor: Int = 0,
+    /** Infection: who is infected. */
+    val infected: Set<Int> = emptySet(),
+    /** Infection: survivors shown on the infected's maps right now, by player id. */
+    val revealed: Map<Int, LatLon> = emptyMap(),
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("mode", mode.wireValue)
@@ -219,6 +237,20 @@ data class ModeState(
                     put(JSONArray().put(f.team).put(f.base.latitude).put(f.base.longitude).put(f.point.latitude).put(f.point.longitude)
                         .put(f.carrier).put(if (f.dropped) 1 else 0).put(if (f.revealed) 1 else 0))
                 }
+            })
+            if (round != 0) put("round", round)
+            if (noRespawn) put("noRespawn", true)
+            if (actor != 0) put("actor", actor)
+            bomb?.let { b ->
+                put("bomb", JSONObject().put("round", b.round).put("attackers", b.attackers).put("phase", b.phase.wireValue)
+                    .put("endsAt", b.endsAt).put("carrier", b.carrier)
+                    .put("at", b.bomb?.let { JSONArray().put(it.latitude).put(it.longitude) })
+                    .put("planted", b.plantedAt).put("lastWinner", b.lastRoundWinner)
+                    .put("out", JSONArray().apply { b.out.sorted().forEach { put(it) } }))
+            }
+            if (infected.isNotEmpty()) put("infected", JSONArray().apply { infected.sorted().forEach { put(it) } })
+            if (revealed.isNotEmpty()) put("revealed", JSONArray().apply {
+                revealed.toSortedMap().forEach { (id, p) -> put(JSONArray().put(id).put(p.latitude).put(p.longitude)) }
             })
             extraction?.let { e ->
                 put("extraction", JSONObject()
@@ -262,6 +294,20 @@ data class ModeState(
                         FlagState(f.getInt(0), LatLon(f.getDouble(1), f.getDouble(2)), LatLon(f.getDouble(3), f.getDouble(4)), f.getInt(5), f.getInt(6) == 1, f.getInt(7) == 1)
                     }
                 } ?: emptyList(),
+                round = json.optInt("round", 0),
+                noRespawn = json.optBoolean("noRespawn", false),
+                actor = json.optInt("actor", 0),
+                bomb = json.optJSONObject("bomb")?.let { b ->
+                    val out = b.getJSONArray("out")
+                    BombState(b.getInt("round"), b.getInt("attackers"), RoundPhase.fromWire(b.optString("phase")), b.getLong("endsAt"),
+                        b.getInt("carrier"), b.optJSONArray("at")?.let { LatLon(it.getDouble(0), it.getDouble(1)) },
+                        b.optString("planted").takeIf { it.isNotEmpty() && !b.isNull("planted") }, b.getInt("lastWinner"),
+                        (0 until out.length()).map { out.getInt(it) }.toSet())
+                },
+                infected = json.optJSONArray("infected")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet(),
+                revealed = json.optJSONArray("revealed")?.let { a ->
+                    (0 until a.length()).associate { a.getJSONArray(it).let { r -> r.getInt(0) to LatLon(r.getDouble(1), r.getDouble(2)) } }
+                } ?: emptyMap(),
                 extraction = json.optJSONObject("extraction")?.let { e ->
                     val loot = e.getJSONArray("loot")
                     val zones = e.getJSONArray("zones")

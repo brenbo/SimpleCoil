@@ -345,7 +345,7 @@
         <item quantity="one">GPS: the player is reporting</item>
         <item quantity="other">GPS: all %1$d players reporting</item>
     </plurals>
-    <string name="server_gps_some">GPS: %1$d of %2$d reporting · no fix from %3$s</string>
+    <string name="server_gps_some">GPS reporting: %1$d of %2$d · no fix from %3$s</string>
     <string name="field_map_title">Field map</string>
 
     <!-- The server's home screen cards (map design: Dedicated server settings) -->
@@ -396,6 +396,24 @@
     <string name="mode_extraction">Extraction</string>
     <string name="mode_about_ctf">Each team\'s flag sits at its base (its first spawn, or one end of the field). Walk into the enemy base to take theirs, and back to yours to score. A carrier who is eliminated drops it. Needs a field border.</string>
     <string name="mode_about_extraction">Stand on loot to pick it up. It only counts once you stand in an extraction zone after it opens; if you are eliminated you drop it all. Needs a field border.</string>
+    <string name="mode_snd">Search &amp; Destroy</string>
+    <string name="mode_infection">Infection</string>
+    <string name="mode_about_snd">Two teams, rounds with no respawns. One attacker carries the bomb: plant it at a site, or the defenders stop you. Everyone comes back for the next round, and the teams swap at half time. Needs a field border.</string>
+    <string name="mode_about_infection">A few players start infected. Anyone they eliminate is infected too. Survivors win by lasting the round. Play it as free for all.</string>
+    <string name="sndr_to_win">Rounds to win (3–15)</string>
+    <string name="sndr_round">Round time (60–600 s)</string>
+    <string name="sndr_plant">Seconds to plant (5–30)</string>
+    <string name="sndr_defuse">Seconds to defuse (5–30)</string>
+    <string name="sndr_fuse">Fuse (20–90 s)</string>
+    <string name="sndr_sites">Bomb sites (1–3)</string>
+    <string name="sndr_swap">Swap sides at half time</string>
+    <string name="sndr_between">Pause between rounds (5–60 s)</string>
+    <string name="sndr_radius">Site radius (%1$s)</string>
+    <string name="infr_starting">Players who start infected (1–3)</string>
+    <string name="infr_reveal">Show survivors to the infected every (s; 0 = never)</string>
+    <string name="infr_minutes">Round time (3–30 minutes)</string>
+    <string name="server_summary_snd">Search &amp; Destroy · rounds to win: %1$d</string>
+    <string name="server_summary_infection">Infection · %1$d min rounds</string>
     <string name="ctf_to_win">Captures to win (1–10)</string>
     <string name="ctf_shown">Show the carrier to the other team every (s; 0 = never, 1 = always)</string>
     <string name="ctf_returns">A dropped flag goes home after (10–120 s)</string>
@@ -456,6 +474,20 @@
     <string name="br_outside">Outside the zone! %1$s to safety</string>
     <string name="br_you_are_out">You are out</string>
     <string name="mode_to_win_text">to %1$s</string>
+    <string name="snd_round">round %1$d · %2$s</string>
+    <string name="snd_round_won">Round won!</string>
+    <string name="snd_round_lost">Round lost</string>
+    <string name="snd_out">You are out until the next round</string>
+    <string name="snd_planting">Planting…</string>
+    <string name="snd_defusing">Defusing…</string>
+    <string name="snd_you_have_bomb">You have the bomb: plant it at a site</string>
+    <string name="snd_defend_bomb">Bomb planted at %1$s: defend it</string>
+    <string name="snd_defuse">Bomb planted at %1$s! Defuse it</string>
+    <string name="snd_attack">Attack: plant the bomb at a site</string>
+    <string name="snd_defend">Defend the sites</string>
+    <string name="inf_you_are_infected">Infected: tag the survivors</string>
+    <string name="inf_survive">Survive!</string>
+    <string name="inf_time_left">%1$s left</string>
     <string name="ctf_you_have_flag">You have the flag! Get it home</string>
     <string name="ctf_flag_taken">Your flag is taken!</string>
     <string name="ctf_flag_down">Your flag is down: touch it to send it home</string>

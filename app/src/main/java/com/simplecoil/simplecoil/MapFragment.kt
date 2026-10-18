@@ -71,6 +71,9 @@ import com.simplecoil.simplecoil.ui.map.MapStyles
 import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
 import com.simplecoil.simplecoil.ui.map.GlyphOverlay
 import com.simplecoil.simplecoil.domain.mode.ObjectiveState
+import com.simplecoil.simplecoil.domain.mode.InfectionEngine
+import com.simplecoil.simplecoil.domain.mode.RoundPhase
+import com.simplecoil.simplecoil.domain.mode.sideOf
 import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.ZoneLayers
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
@@ -713,6 +716,8 @@ class MapFragment : Fragment() {
     private fun objectiveColor(team: Int): Int = when {
         team == LOOT_TEAM -> LOOT_COLOR
         team == EXTRACTION_TEAM -> EXTRACTION_COLOR
+        team == InfectionEngine.INFECTED -> INFECTED_COLOR
+        team == InfectionEngine.SURVIVORS -> SURVIVOR_COLOR
         settings.teamLayout.mode.isFreeForAll -> if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
         else -> MapIcons.teamColor(team, ENEMY_COLOR)
     }
@@ -731,6 +736,14 @@ class MapFragment : Fragment() {
             GameMode.DOMINATION, GameMode.HARDPOINT -> {
                 points?.update(state.objectives, state.radiusMeters, letters = state.mode != GameMode.HARDPOINT)
                 glyphs?.clear()
+            }
+            GameMode.SEARCH_AND_DESTROY -> {
+                points?.update(state.objectives, state.radiusMeters, letters = true)
+                glyphs?.update(bombGlyphs(state))
+            }
+            GameMode.INFECTION -> {
+                points?.clear()
+                glyphs?.update(survivorGlyphs(state))
             }
             GameMode.CAPTURE_THE_FLAG -> {
                 // Each base in its team's colour, and the flags where they are
@@ -768,6 +781,35 @@ class MapFragment : Fragment() {
         }
     }
 
+    /** The bomb: lying where it fell for the attackers, and planted for everyone. */
+    private fun bombGlyphs(state: ModeState): List<GlyphOverlay.Glyph> {
+        val b = state.bomb ?: return emptyList()
+        val at = b.bomb ?: return emptyList()
+        val attacker = myTeam() == b.attackers
+        return if (b.plantedAt != null || attacker) listOf(GlyphOverlay.Glyph("bomb", at, BOMB, 0xFFFFFFFF.toInt())) else emptyList()
+    }
+
+    /** Infection: survivors on the infected's maps while the server reveals them. */
+    private fun survivorGlyphs(state: ModeState): List<GlyphOverlay.Glyph> {
+        if (state.sideOf(container.players.playerID.toInt(), myTeam()) != InfectionEngine.INFECTED) return emptyList()
+        return state.revealed.map { (id, point) -> GlyphOverlay.Glyph("survivor$id", point, SURVIVOR, SURVIVOR_COLOR) }
+    }
+
+    /** Search & Destroy: what you should be doing this round. */
+    private fun bombStatus(state: ModeState, myTeam: Int): String? {
+        val b = state.bomb ?: return null
+        val me = container.players.playerID.toInt()
+        val attacking = myTeam == b.attackers
+        return when {
+            b.phase == RoundPhase.BETWEEN -> getString(if (b.lastRoundWinner == myTeam) R.string.snd_round_won else R.string.snd_round_lost)
+            me in b.out -> getString(R.string.snd_out)
+            state.actor == me -> getString(if (b.phase == RoundPhase.PLANTED) R.string.snd_defusing else R.string.snd_planting)
+            b.carrier == me -> getString(R.string.snd_you_have_bomb)
+            b.phase == RoundPhase.PLANTED -> getString(if (attacking) R.string.snd_defend_bomb else R.string.snd_defuse, b.plantedAt ?: "")
+            else -> getString(if (attacking) R.string.snd_attack else R.string.snd_defend)
+        }
+    }
+
     private fun myTeam(): Int = container.players.playerID.toInt().let { id ->
         if (settings.teamLayout.mode.isFreeForAll) id else settings.teamLayout.teamOf(id)
     }
@@ -783,7 +825,7 @@ class MapFragment : Fragment() {
             banner.isVisible = false
             return
         }
-        val myTeam = container.players.playerID.toInt().let { id -> if (settings.teamLayout.mode.isFreeForAll) id else settings.teamLayout.teamOf(id) }
+        val myTeam = state.sideOf(container.players.playerID.toInt(), myTeam())
         val units = field?.rules?.units ?: DistanceUnits.defaultFor(Locale.getDefault())
         val text = SpannableStringBuilder()
         // Your team first, then the others by score. Battle Royale: players left; Marksman: distance
@@ -811,6 +853,15 @@ class MapFragment : Fragment() {
                 })
             }
             GameMode.MARKSMAN -> if (state.scoreToWin > 0) text.append("   ").append(getString(R.string.mode_to_win_text, units.format(state.scoreToWin.toDouble())))
+            GameMode.SEARCH_AND_DESTROY -> {
+                text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
+                state.bomb?.takeIf { state.winner == 0 && inGame() }?.let { b ->
+                    text.append(" · ").append(getString(R.string.snd_round, b.round, clock(b.endsAt)))
+                }
+            }
+            GameMode.INFECTION -> if (state.winner == 0 && inGame() && state.movesAt != 0L) {
+                text.append(" · ").append(getString(R.string.inf_time_left, clock(state.movesAt)))
+            }
             GameMode.EXTRACTION -> {
                 if (state.scoreToWin > 0) text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
                 state.extraction?.takeIf { state.winner == 0 && inGame() }?.let { e ->
@@ -846,6 +897,8 @@ class MapFragment : Fragment() {
                 return container.zoneController.outside.value?.let { getString(R.string.br_outside, units.format(it.metersToSafety)) }
             }
             GameMode.CAPTURE_THE_FLAG -> return flagStatus(state, myTeam)
+            GameMode.SEARCH_AND_DESTROY -> return bombStatus(state, myTeam)
+            GameMode.INFECTION -> return getString(if (myTeam == InfectionEngine.INFECTED) R.string.inf_you_are_infected else R.string.inf_survive)
             GameMode.EXTRACTION -> return extractionStatus(state)
             GameMode.MARKSMAN, GameMode.CLASSIC -> return null
             GameMode.DOMINATION -> {}
@@ -1027,6 +1080,10 @@ class MapFragment : Fragment() {
         const val EXTRACTION_TEAM = -3
         const val LOOT_COLOR = 0xFFFFC107.toInt()
         const val EXTRACTION_COLOR = 0xFF69F0AE.toInt()
+        const val INFECTED_COLOR = 0xFF76FF03.toInt()
+        const val SURVIVOR_COLOR = 0xFF40C4FF.toInt()
+        const val BOMB = "D83DDCA3"
+        const val SURVIVOR = "25C9"
         const val FLAG = "2691"
 
         /** About 5 km across on a phone, to a few metres. */

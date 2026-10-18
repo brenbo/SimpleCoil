@@ -438,6 +438,13 @@ class BlasterSessionEngine(
         noRespawn = on
     }
 
+    /** A new round (Search & Destroy): a player out of this round comes back with the respawn countdown. */
+    fun revive() {
+        val out = _state.value.spawn as? SpawnPhase.OutOfLives ?: return
+        if (config.gameState != GameStateRepository.GAME_STATE_ELIMINATED) return
+        startSpawnCountdown(out.eliminatedBy)
+    }
+
     fun holdRespawn(reason: RespawnHold, held: Boolean) {
         val changed = if (held) respawnHolds.add(reason) else respawnHolds.remove(reason)
         if (!changed) return

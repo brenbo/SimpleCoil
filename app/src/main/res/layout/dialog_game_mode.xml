@@ -55,6 +55,16 @@
                 style="@style/DialogRadio"
                 android:id="@+id/mode_extraction"
                 android:text="@string/mode_extraction" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_snd"
+                android:text="@string/mode_snd" />
+
+            <RadioButton
+                style="@style/DialogRadio"
+                android:id="@+id/mode_infection"
+                android:text="@string/mode_infection" />
         </RadioGroup>
 
         <TextView
@@ -556,6 +566,185 @@
                 android:importantForAutofill="no"
                 android:inputType="number"
                 android:maxLength="3" />
+
+        </LinearLayout>
+
+        <!-- Search & Destroy -->
+        <LinearLayout
+            android:id="@+id/snd_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_to_win_label"
+                android:labelFor="@+id/sndr_to_win_et"
+                android:text="@string/sndr_to_win" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_to_win_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_round_label"
+                android:labelFor="@+id/sndr_round_et"
+                android:text="@string/sndr_round" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_round_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_plant_label"
+                android:labelFor="@+id/sndr_plant_et"
+                android:text="@string/sndr_plant" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_plant_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_defuse_label"
+                android:labelFor="@+id/sndr_defuse_et"
+                android:text="@string/sndr_defuse" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_defuse_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_fuse_label"
+                android:labelFor="@+id/sndr_fuse_et"
+                android:text="@string/sndr_fuse" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_fuse_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_sites_label"
+                android:labelFor="@+id/sndr_sites_et"
+                android:text="@string/sndr_sites" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_sites_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                style="@style/DialogSwitch"
+                android:id="@+id/sndr_swap_switch"
+                android:text="@string/sndr_swap" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_between_label"
+                android:labelFor="@+id/sndr_between_et"
+                android:text="@string/sndr_between" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_between_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/sndr_radius_label"
+                android:labelFor="@+id/sndr_radius_et"
+                android:text="@string/sndr_radius" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/sndr_radius_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+        </LinearLayout>
+
+        <!-- Infection -->
+        <LinearLayout
+            android:id="@+id/infection_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/infr_starting_label"
+                android:labelFor="@+id/infr_starting_et"
+                android:text="@string/infr_starting" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/infr_starting_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="1" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/infr_reveal_label"
+                android:labelFor="@+id/infr_reveal_et"
+                android:text="@string/infr_reveal" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/infr_reveal_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="3" />
+
+            <TextView
+                style="@style/DialogLabel"
+                android:id="@+id/infr_minutes_label"
+                android:labelFor="@+id/infr_minutes_et"
+                android:text="@string/infr_minutes" />
+
+            <EditText
+                style="@style/DialogField"
+                android:id="@+id/infr_minutes_et"
+                android:digits="0123456789"
+                android:importantForAutofill="no"
+                android:inputType="number"
+                android:maxLength="2" />
 
         </LinearLayout>
 

@@ -28,7 +28,10 @@ import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleEngine
+import com.simplecoil.simplecoil.domain.mode.BombEngine
 import com.simplecoil.simplecoil.domain.mode.ExtractionEngine
+import com.simplecoil.simplecoil.domain.mode.InfectionEngine
+import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import com.simplecoil.simplecoil.domain.mode.FlagEngine
 import com.simplecoil.simplecoil.domain.mode.PlayerInfo
 import com.simplecoil.simplecoil.domain.mode.flagBases
@@ -106,6 +109,8 @@ class LiveGame(
             battleRoyale = null
             flags = null
             extraction = null
+            bombs = null
+            infection = null
             modeBytes = null
             alive.clear()
             base ?: return@collectLatest
@@ -204,6 +209,22 @@ class LiveGame(
                 extraction = engine;
                 { engine.tick(wallClock(), playerInfos()) }
             }
+            GameMode.SEARCH_AND_DESTROY -> {
+                val border = base.border ?: return
+                val rules = base.bomb
+                // The host's points as sites, else sites placed by the rules, clear of the spawns
+                val sites = base.objectives.take(rules.sites).takeIf { it.size == rules.sites }
+                    ?: ObjectivePlanner.place(border, rules.sites, ObjectiveRules(radiusMeters = rules.siteRadiusMeters), base.spawns,
+                        base.spawnRules.radiusMeters, base.rules.edgeBufferMeters, random)
+                val engine = BombEngine(rules, sites, wallClock(), random)
+                bombs = engine;
+                { engine.tick(wallClock(), playerInfos()) }
+            }
+            GameMode.INFECTION -> {
+                val engine = InfectionEngine(base.infection, wallClock(), random)
+                infection = engine;
+                { engine.tick(wallClock(), playerInfos()) }
+            }
             GameMode.CLASSIC -> return
         }
         var won = false
@@ -257,6 +278,12 @@ class LiveGame(
     @Volatile
     private var extraction: ExtractionEngine? = null
 
+    @Volatile
+    private var bombs: BombEngine? = null
+
+    @Volatile
+    private var infection: InfectionEngine? = null
+
     /** Every player in the game: team, a fresh position (or none), and whether they say they are in. */
     private fun playerInfos(): Map<Int, PlayerInfo> {
         val now = monoClock()
@@ -276,6 +303,8 @@ class LiveGame(
         battleRoyale?.onEliminated(victimId, wallClock())
         flags?.onEliminated(victimId, wallClock())
         extraction?.onEliminated(victimId)
+        bombs?.onEliminated(victimId)
+        infection?.onEliminated(victimId, shooterId)
         // Marksman scores by distance, so it always measures
         if (rules.trackShots || mode == GameMode.MARKSMAN) {
             shots.record(shooterId, victimId, fixes[shooterId], victim, monoClock(), rules.maxShotMeters)
