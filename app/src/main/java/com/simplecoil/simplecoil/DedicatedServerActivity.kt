@@ -159,7 +159,44 @@ class DedicatedServerActivity : AppCompatActivity() {
         FieldRulesDialog.show(this, config, section, save)
     }
 
-    private fun showMode() = editField { config, save -> GameModeDialog.show(this, config, save) }
+    private fun showMode() = editField { config, save ->
+        GameModeDialog.show(this, config) { updated ->
+            save(updated)
+            if (updated.mode != config.mode) teamModeFor(updated.mode)
+        }
+    }
+
+    /**
+     * A new game mode: the team mode it needs (free for all for Infection, two teams for Capture
+     * the Flag and Search & Destroy), or the one it was last played with.
+     */
+    private fun teamModeFor(mode: GameMode) {
+        val prefs = (application as SimpleCoilApp).container.userPreferences
+        val current = vm.state.value?.teamMode ?: return
+        val target = mode.teamModeFor(prefs.teamModeFor(mode.wireValue), current)
+        if (target == current) return
+        vm.onTeamModeSelected(target)
+        Toast.makeText(applicationContext, getString(R.string.team_mode_set_for_mode, teamModeName(target), modeName(mode)),
+            Toast.LENGTH_SHORT).show()
+    }
+
+    private fun teamModeName(mode: TeamMode): String = getString(when (mode) {
+        TeamMode.TWO_TEAMS -> R.string.team_mode_2teams
+        TeamMode.FOUR_TEAMS -> R.string.team_mode_4teams
+        TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa_short
+    })
+
+    private fun modeName(mode: GameMode): String = getString(when (mode) {
+        GameMode.CLASSIC -> R.string.mode_classic
+        GameMode.DOMINATION -> R.string.mode_domination
+        GameMode.HARDPOINT -> R.string.mode_hardpoint
+        GameMode.BATTLE_ROYALE -> R.string.mode_battle_royale
+        GameMode.MARKSMAN -> R.string.mode_marksman
+        GameMode.CAPTURE_THE_FLAG -> R.string.mode_ctf
+        GameMode.EXTRACTION -> R.string.mode_extraction
+        GameMode.SEARCH_AND_DESTROY -> R.string.mode_snd
+        GameMode.INFECTION -> R.string.mode_infection
+    })
 
     /** Opens a sheet on the saved field (or a new one) with [sheet]; what it saves goes to the phones. */
     private fun editField(sheet: (FieldConfig, (FieldConfig) -> Unit) -> Unit) {
@@ -373,7 +410,19 @@ class DedicatedServerActivity : AppCompatActivity() {
 
     /** Tapping the chosen segment again changes nothing, so it doesn't reset the game. */
     private fun onTeamModeClicked(mode: TeamMode) {
-        if (vm.state.value?.teamMode != mode) vm.onTeamModeSelected(mode)
+        val state = vm.state.value ?: return
+        val container = (application as SimpleCoilApp).container
+        val gameMode = container.serverFieldConfig.config.value?.mode ?: GameMode.CLASSIC
+        if (mode !in gameMode.teamModes) {
+            // The game mode can't be played that way: say so, and put the segment back
+            Toast.makeText(applicationContext, getString(R.string.team_mode_not_for_mode, modeName(gameMode),
+                teamModeName(gameMode.teamModes.first())), Toast.LENGTH_LONG).show()
+            renderer.render(state)
+            return
+        }
+        // Remembered for this game mode, so picking it again brings it back
+        container.userPreferences.saveTeamModeFor(gameMode.wireValue, mode)
+        if (state.teamMode != mode) vm.onTeamModeSelected(mode)
     }
 
     private fun onGpsModeClicked(mode: Int) {

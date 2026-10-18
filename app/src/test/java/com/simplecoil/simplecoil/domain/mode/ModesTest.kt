@@ -137,6 +137,21 @@ class ModesTest {
         assertEquals(ObjectiveRules.MIN_RADIUS_METERS, ObjectiveRules(radiusMeters = 0.5).clamped().radiusMeters, 0.0)
     }
 
+    @Test
+    fun eachModeGetsTheTeamModeItNeeds() {
+        val ffa = com.simplecoil.simplecoil.domain.team.TeamMode.FREE_FOR_ALL
+        val two = com.simplecoil.simplecoil.domain.team.TeamMode.TWO_TEAMS
+        val four = com.simplecoil.simplecoil.domain.team.TeamMode.FOUR_TEAMS
+        // Infection is free for all; CTF and S&D two teams, whatever was set
+        assertEquals(ffa, GameMode.INFECTION.teamModeFor(null, two))
+        assertEquals(two, GameMode.CAPTURE_THE_FLAG.teamModeFor(null, ffa))
+        assertEquals(two, GameMode.SEARCH_AND_DESTROY.teamModeFor(four, four))
+        // The team mode it was last played with comes back
+        assertEquals(four, GameMode.DOMINATION.teamModeFor(four, ffa))
+        // Never played: a mode that takes any keeps what is set
+        assertEquals(ffa, GameMode.DOMINATION.teamModeFor(null, ffa))
+    }
+
     // Placement
 
     @Test

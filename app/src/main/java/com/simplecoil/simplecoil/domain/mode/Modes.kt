@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil.domain.mode
 
 import com.simplecoil.simplecoil.domain.map.GeoCircle
+import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.domain.map.LatLon
 import org.json.JSONArray
 import org.json.JSONObject
@@ -54,6 +55,28 @@ enum class GameMode(val wireValue: String, val hasObjectives: Boolean, val needs
 
     /** The server runs it and the phones fetch its state. */
     val onServer: Boolean get() = this != CLASSIC
+
+    /**
+     * The team modes it can be played with: Infection is everyone for themselves; Capture the
+     * Flag and Search & Destroy are one team against another.
+     */
+    val teamModes: Set<TeamMode>
+        get() = when (this) {
+            INFECTION -> setOf(TeamMode.FREE_FOR_ALL)
+            CAPTURE_THE_FLAG, SEARCH_AND_DESTROY -> setOf(TeamMode.TWO_TEAMS)
+            else -> TeamMode.entries.toSet()
+        }
+
+    /**
+     * The team mode to switch to when this mode is picked: the one it was last played with, if
+     * it fits; else, for a mode that needs one, free for all or two teams; else [current].
+     */
+    fun teamModeFor(remembered: TeamMode?, current: TeamMode): TeamMode = when {
+        remembered != null && remembered in teamModes -> remembered
+        current in teamModes && teamModes.size == TeamMode.entries.size -> current
+        TeamMode.TWO_TEAMS in teamModes -> TeamMode.TWO_TEAMS
+        else -> teamModes.first()
+    }
 
     companion object {
         fun fromWire(value: String?): GameMode = entries.firstOrNull { it.wireValue == value } ?: CLASSIC

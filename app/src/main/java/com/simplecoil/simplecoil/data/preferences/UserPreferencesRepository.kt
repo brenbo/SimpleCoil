@@ -58,6 +58,12 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun teamMode(): TeamMode = TeamMode.fromWireOrDefault(prefs.getInt(TEAM_MODE, TeamMode.DEFAULT.wireValue))
     fun saveTeamMode(teamMode: TeamMode) = prefs.edit { putInt(TEAM_MODE, teamMode.wireValue) }
 
+    /** The team mode a game mode (by its wire name) was last played with on this server; null if never. */
+    fun teamModeFor(gameMode: String): TeamMode? =
+        prefs.getInt(TEAM_MODE_FOR + gameMode, 0).takeIf { it != 0 }?.let { TeamMode.fromWire(it) }
+
+    fun saveTeamModeFor(gameMode: String, teamMode: TeamMode) = prefs.edit { putInt(TEAM_MODE_FOR + gameMode, teamMode.wireValue) }
+
     fun timeLimit(): Int = prefs.getInt(LIMIT_TIME, 0)
     fun livesLimit(): Int = prefs.getInt(LIMIT_LIVES, 0)
     fun scoreLimit(): Int = prefs.getInt(LIMIT_SCORE, 0)
@@ -119,5 +125,6 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val MAP_HEADING_UP = "MapHeadingUp"
         const val MAP_AUTO_ZOOM = "MapAutoZoom"
         const val FIELD_MAP_CAMERA = "FieldMapCamera"
+        const val TEAM_MODE_FOR = "TeamModeFor_"
     }
 }

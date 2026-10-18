@@ -438,6 +438,8 @@
     <string name="br_respawn">Respawns until phase (0 = no respawns)</string>
     <string name="marksman_minimum">Shots shorter than this score nothing (%1$s)</string>
     <string name="marksman_to_win">Total distance to win (%1$s, 0 = play to the game limits)</string>
+    <string name="team_mode_set_for_mode">Teams set to %1$s for %2$s</string>
+    <string name="team_mode_not_for_mode">%1$s is played as %2$s</string>
     <string name="mode_score_to_win">Score to win (50–1000)</string>
     <string name="mode_points">Points (0 = by field size, up to 5)</string>
     <string name="mode_capture_seconds">Seconds to capture (5–60)</string>

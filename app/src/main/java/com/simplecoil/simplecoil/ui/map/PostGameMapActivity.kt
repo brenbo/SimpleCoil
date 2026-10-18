@@ -157,6 +157,9 @@ class PostGameMapActivity : AppCompatActivity() {
 
     private fun onMapReady(map: MapLibreMap) {
         this.map = map
+        // As on the play map: about 5 km across down to a few metres
+        map.setMinZoomPreference(MIN_ZOOM)
+        map.setMaxZoomPreference(MAX_ZOOM)
         map.uiSettings.apply {
             isLogoEnabled = false
             isAttributionEnabled = false
@@ -235,11 +238,14 @@ class PostGameMapActivity : AppCompatActivity() {
         byColor.forEach { (color, points) ->
             dots("replay-$color", color, 7f).setGeoJson(FeatureCollection.fromFeatures(points.map { Feature.fromGeometry(point(it)) }))
         }
-        // The kills so far, as they happened
+        // The kills so far, as they happened, each in the shooter's colour, from shooter to a white victim dot
         val kills = record.kills.filter { it.atSeconds <= replaySeconds && (player == null || it.shooter == player || it.victim == player) }
-        line("replay-kills", VICTIM_COLOR, 1.5f).setGeoJson(FeatureCollection.fromFeatures(kills.map {
-            Feature.fromGeometry(LineString.fromLngLats(listOf(point(it.from), point(it.to))))
-        }))
+        kills.groupBy { colorOf(it.shooter) }.forEach { (color, mine) ->
+            line("replay-kill-$color", color, 2.5f).setGeoJson(FeatureCollection.fromFeatures(mine.map {
+                Feature.fromGeometry(LineString.fromLngLats(listOf(point(it.from), point(it.to))))
+            }))
+        }
+        dots("replay-victims", VICTIM_COLOR, 3f).setGeoJson(FeatureCollection.fromFeatures(kills.map { Feature.fromGeometry(point(it.to)) }))
         val clock = String.format(Locale.ROOT, "%d:%02d", replaySeconds / 60, replaySeconds % 60)
         binding.postTimeTv.text = clock
         binding.postInfoTv.text = resources.getQuantityString(R.plurals.post_replay_info, positions.size, positions.size, clock)
@@ -334,6 +340,8 @@ class PostGameMapActivity : AppCompatActivity() {
         const val BORDER_COLOR = 0xFFFF5252.toInt()
         const val VICTIM_COLOR = 0xFFFFFFFF.toInt()
         const val HEAT_COLOR = 0xFFFF6D00.toInt()
+        const val MIN_ZOOM = 13.0
+        const val MAX_ZOOM = 20.0
 
         /** The replay moves this much game time per frame. */
         const val REPLAY_STEP_SECONDS = 3
