@@ -53,6 +53,9 @@ sealed interface ClientEvent {
     data object FailedToJoin : ClientEvent
     data object ServerCancel : ClientEvent
 
+    /** The grenade this phone paired is paired to another player: let it go. */
+    data object GrenadeTaken : ClientEvent
+
     /** [assignedPlayerId] when the reply carries one. */
     data class ServerReply(val assignedPlayerId: Byte?) : ClientEvent
     data object NetworkConnected : ClientEvent

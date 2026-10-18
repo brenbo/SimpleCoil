@@ -110,9 +110,16 @@ class ClientMessageHandler(
     /** A JSON message from the server; [json] is the frame's JSON. */
     private fun handleMessage(message: ServerMessage, json: String) {
         when (message) {
-            is ServerMessage.GrenadePairings -> synchronized(players) {
-                players.clearGrenadePairings()
-                for (pairing in message.pairings) players.pairGrenade(pairing.grenadeId, pairing.playerId)
+            is ServerMessage.GrenadePairings -> {
+                val mine = synchronized(players) {
+                    players.clearGrenadePairings()
+                    for (pairing in message.pairings) players.pairGrenade(pairing.grenadeId, pairing.playerId)
+                    players.pairedGrenadeID.toInt()
+                }
+                // Our grenade is someone else's: every blaster near a pairing grenade sees it, and
+                // the server gave it to whoever claimed it first
+                val holder = message.pairings.firstOrNull { it.grenadeId == mine }?.playerId
+                if (mine != 0 && holder != null && holder != players.playerID.toInt()) events.publish(ClientEvent.GrenadeTaken)
             }
             is ServerMessage.GpsUpdate -> {
                 synchronized(players) {

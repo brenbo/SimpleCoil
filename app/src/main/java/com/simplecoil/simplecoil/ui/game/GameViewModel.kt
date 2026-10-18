@@ -1234,6 +1234,8 @@ class GameViewModel(
                 if (gameStateRepo.gameState == GameStateRepository.GAME_STATE_NONE) startGame()
             }
             ClientEvent.EndGame -> if (gameStateRepo.gameState != GameStateRepository.GAME_STATE_NONE) endGame()
+            // Another player's blaster paired the grenade first: it isn't ours
+            ClientEvent.GrenadeTaken -> engine.forgetGrenade()
             is ClientEvent.Error -> {
                 val message = event.message
                 if (!message.isNullOrEmpty()) screen?.showText(message) else Log.d(TAG, "No error message given")

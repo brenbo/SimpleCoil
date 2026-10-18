@@ -139,6 +139,22 @@ class TcpServerLoopbackTest {
     }
 
     @Test
+    fun aGrenadeClaimedByTwoPhonesAtOnce_staysWithTheFirst() {
+        // Every blaster near a pairing grenade sees its signal, so both phones claim it
+        val (a, idA) = join("Alpha", "AA:00")
+        val (b, idB) = join("Bravo", "BB:00")
+        a.json(org.json.JSONObject().put(WireKeys.PLAYERID, idA).put(WireKeys.PAIRED_GRENADE_ID, 3))
+        awaitTrue(3000, "A has it") { players.getGrenadePairing(3) == idA }
+        b.json(org.json.JSONObject().put(WireKeys.PLAYERID, idB).put(WireKeys.PAIRED_GRENADE_ID, 3))
+        // B hears that A has it, so B's phone lets it go
+        awaitTrue(3000, "B told A has it") {
+            val pairings = b.lastJson(WireKeys.GRENADE_PAIRINGS)?.getJSONArray(WireKeys.GRENADE_PAIRINGS) ?: return@awaitTrue false
+            pairings.length() == 1 && pairings.getJSONObject(0).toString().contains(idA.toString())
+        }
+        assertEquals(idA, players.getGrenadePairing(3))
+    }
+
+    @Test
     fun leaving_unpairsTheLeaversGrenade_forEveryone() {
         val (a, _) = join("Alpha", "AA:00")
         val (b, idB) = join("Bravo", "BB:00")

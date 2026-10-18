@@ -1,0 +1,83 @@
+/*
+ * Copyright (C) 2026 Ethan Yonker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.simplecoil.simplecoil.domain.session
+
+import com.simplecoil.simplecoil.data.repository.GameStateRepository
+import com.simplecoil.simplecoil.domain.session.SessionTestHarness.Packet
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/** A grenade that eliminated a player can't eliminate them again for a while; other grenades can. */
+class GrenadeImmunityTest {
+
+    private val h = SessionTestHarness()
+
+    /** Grenade [id]'s damage. */
+    private fun grenade(id: Int) = Packet().hit1(167, (id shl 4) or 0x01)
+
+    private fun hitBy(packet: Packet) {
+        h.telemetry(Packet().noHit())
+        h.telemetry(packet)
+    }
+
+    /** Back in after the respawn countdown and the respawn shield. */
+    private fun respawn() {
+        h.advance(RESPAWN_AND_SHIELD_MILLIS)
+        assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+    }
+
+    @Test
+    fun theSameGrenadeCannotEliminateAgainForAWhile() {
+        h.config.fullHealth = 1
+        h.connected()
+        h.startedAndSpawned()
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+        respawn()
+
+        // Grenade 3 again: nothing
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+
+        // Another grenade still counts
+        hitBy(grenade(4))
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+        respawn()
+
+        // Grenade 4 is now the one ignored; grenade 3 counts again
+        hitBy(grenade(4))
+        assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+    }
+
+    @Test
+    fun afterAMinuteAndAHalfItCountsAgain() {
+        h.config.fullHealth = 1
+        h.connected()
+        h.startedAndSpawned()
+        hitBy(grenade(3))
+        respawn()
+        h.advance(BlasterSessionEngine.GRENADE_IMMUNITY_MILLIS)
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+    }
+
+    private companion object {
+        const val RESPAWN_AND_SHIELD_MILLIS = 30_000L
+    }
+}

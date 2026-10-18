@@ -19,6 +19,7 @@ package com.simplecoil.simplecoil.domain.session
 import android.util.Log
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
+import com.simplecoil.simplecoil.data.repository.PlayerRepository
 import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.hardware.blaster.BlasterEvent
 import com.simplecoil.simplecoil.hardware.blaster.GattProtocolHandler
@@ -435,6 +436,17 @@ class BlasterSessionEngine(
      * Holds (or lets go of) the respawn for [reason]. A respawn countdown that ends while held
      * waits ([SpawnPhase.AwaitingReturn]) until nothing holds it, then the player spawns.
      */
+    /** Eliminations by a hit so far: a change tells a packet's hit eliminated the player. */
+    private var hitEliminations = 0
+
+    /** The grenade that last eliminated this player, and until when it can't again (0: none). */
+    private var immuneGrenade = 0
+    private var immuneUntil = 0L
+
+    /** The grenade a hit slot carries, if it is a grenade's damage; 0 otherwise. */
+    private fun damagingGrenade(hitBy: Int, shot: Byte): Int =
+        if (hitBy == PlayerRepository.GRENADE_PLAYER_ID && !GrenadeDecoder.isGrenadeControlEvent(hitBy, shot)) GrenadeDecoder.grenadeId(shot) else 0
+
     /** Battle Royale once respawns are over: an eliminated player is out for the rest of the game. */
     private var noRespawn = false
 
@@ -743,9 +755,24 @@ class BlasterSessionEngine(
             applyGrenadePairing(telemetry.hitByPlayer1, telemetry.rawShotIdByte1, useNetwork)
             applyGrenadePairing(telemetry.hitByPlayer2, telemetry.rawShotIdByte2, useNetwork)
         }
+        // The grenade that just eliminated this player can't do it again for a while: its hits
+        // are dropped (a second hit in the packet moves up to take the first's place)
+        var hitBy1 = telemetry.hitByPlayer1
+        var shot1 = telemetry.rawShotIdByte1
+        var hitBy2 = telemetry.hitByPlayer2
+        var shot2 = telemetry.rawShotIdByte2
+        val now = clock()
+        fun immune(hitBy: Int, shot: Byte) = immuneGrenade != 0 && now < immuneUntil && damagingGrenade(hitBy, shot) == immuneGrenade
+        if (immune(hitBy2, shot2)) hitBy2 = 0
+        if (immune(hitBy1, shot1)) {
+            hitBy1 = hitBy2
+            shot1 = shot2
+            hitBy2 = 0
+        }
+        val grenade = damagingGrenade(hitBy2, shot2).takeIf { it != 0 } ?: damagingGrenade(hitBy1, shot1)
+        val eliminationsBefore = hitEliminations
         val layout = config.teamLayout
-        val hit = hitResolver.resolve(telemetry.hitByPlayer1, telemetry.rawShotIdByte1,
-            telemetry.hitByPlayer2, telemetry.rawShotIdByte2,
+        val hit = hitResolver.resolve(hitBy1, shot1, hitBy2, shot2,
             HitResolver.Context(config.gameState != GameStateRepository.GAME_STATE_NONE, isShielded, useNetwork,
                 layout.mode.isFreeForAll, networkTeam, health),
             hitLookups(layout))
@@ -769,6 +796,11 @@ class BlasterSessionEngine(
             } else {
                 applyDamage(hit.healthRemoved, hit.hitById, useNetwork)
             }
+        }
+        // Eliminated by a grenade: that one grenade can't eliminate this player again for a while
+        if (hitEliminations != eliminationsBefore && grenade != 0) {
+            immuneGrenade = grenade
+            immuneUntil = now + GRENADE_IMMUNITY_MILLIS
         }
 
         /* Since setting player ID is somewhat unreliable, we use this to make sure that we are
@@ -891,6 +923,7 @@ class BlasterSessionEngine(
             return
         }
         emit(SessionEffect.Vibrate)
+        hitEliminations++
         emit(SessionEffect.Sound(SessionSound.ELIMINATED))
         if (hasLivesLimit) eliminationCount-- else eliminationCount++
         setEliminationDisplay(eliminationCount)
@@ -931,6 +964,9 @@ class BlasterSessionEngine(
 
     companion object {
         private const val TAG = "SessionEngine"
+
+        /** After a grenade eliminates a player, it can't again for this long (other grenades still can). */
+        const val GRENADE_IMMUNITY_MILLIS = 90_000L
         private const val EFFECT_BUFFER = 64
 
         private const val RELOADING_NONE = 0
