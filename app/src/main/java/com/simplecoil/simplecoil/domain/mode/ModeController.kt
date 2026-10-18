@@ -48,6 +48,8 @@ class ModeController(
     private val feedback: Feedback,
     private val scope: CoroutineScope,
     private val io: CoroutineDispatcher,
+    /** The server's wall clock, for times it sends (when the extraction zones open). */
+    private val serverNow: () -> Long = System::currentTimeMillis,
 ) {
     interface Server {
         /** Blocks; called off the main thread. */
@@ -86,6 +88,9 @@ class ModeController(
 
     private var wasInGame = false
 
+    /** This game's extraction zones were announced open. */
+    private var extractionOpened = false
+
     init {
         scope.launch {
             while (true) {
@@ -103,7 +108,10 @@ class ModeController(
     private suspend fun poll() {
         val playing = inGame()
         val objective = field.value?.mode?.onServer == true
-        if (playing && !wasInGame) _state.value = null // a new game
+        if (playing && !wasInGame) {
+            _state.value = null // a new game
+            extractionOpened = false
+        }
         val ended = !playing && wasInGame
         wasInGame = playing
         if (!objective) return
@@ -145,6 +153,12 @@ class ModeController(
                 return
             }
             GameMode.EXTRACTION -> {
+                // The extraction zones opening, once
+                val opensAt = after.extraction?.opensAt ?: 0L
+                if (opensAt > 0 && serverNow() >= opensAt && !extractionOpened) {
+                    extractionOpened = true
+                    cue(SessionSound.EXTRACTION_OPEN)
+                }
                 if ((after.scores[team] ?: 0) > (before.scores[team] ?: 0)) cue(SessionSound.LOOT_BANKED)
                 else if ((after.extraction?.carrying?.get(id) ?: 0) > (before.extraction?.carrying?.get(id) ?: 0)) cue(SessionSound.LOOT, buzz = false)
                 return
@@ -153,7 +167,8 @@ class ModeController(
                 val b = after.bomb ?: return
                 val was = before.bomb ?: return
                 when {
-                    b.round > was.round -> cue(SessionSound.ROUND_START)
+                    // The round going live, after everyone is back (and at their spawn)
+                    b.phase == RoundPhase.LIVE && (was.phase == RoundPhase.STARTING || b.round > was.round) -> cue(SessionSound.ROUND_START)
                     b.phase == RoundPhase.PLANTED && was.phase == RoundPhase.LIVE -> cue(SessionSound.BOMB_PLANTED)
                     // A round won while the bomb was down: defused
                     b.phase == RoundPhase.BETWEEN && was.phase == RoundPhase.PLANTED && b.lastRoundWinner != b.attackers -> cue(SessionSound.BOMB_DEFUSED)

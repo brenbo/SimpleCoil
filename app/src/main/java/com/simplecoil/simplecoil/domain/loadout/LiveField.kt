@@ -120,8 +120,8 @@ class LiveField {
         /**
          * A random spot for a drop: inside [border], [edgeBufferMeters] in from it, and at least
          * each [keepClear] distance from its point (spawns, other drops), so crates don't pile up
-         * on each other or on a spawn. On a field too small for that, the clearest spot found.
-         * Null if none turns up (a border too small for the buffer).
+         * on each other or on a spawn. On a field too small for that, the least crowded spot found.
+         * Null only if no spot inside the border turns up.
          */
         fun dropSpot(
             border: Border,
@@ -134,10 +134,15 @@ class LiveField {
             var bestScore = Double.NEGATIVE_INFINITY
             repeat(TRIES) {
                 val spot = LatLon(b.south + random.nextDouble() * (b.north - b.south), b.west + random.nextDouble() * (b.east - b.west))
-                if (!border.contains(spot) || border.distanceToEdgeMeters(spot) < edgeBufferMeters) return@repeat
-                // How far past the nearest thing's clearance: 0 or more is clear of everything
-                val score = keepClear.minOfOrNull { (point, clear) -> GeoMath.distanceMeters(spot, point) - clear } ?: 0.0
-                if (score >= 0) return spot
+                if (!border.contains(spot)) return@repeat
+                // Each thing's distance as a share of the room it needs, the edge's too: 1 or more
+                // is clear of everything. On a field too small for that, the best spot is the one
+                // least crowded by anything, so piles still spread out rather than share a spot
+                val edge = if (edgeBufferMeters > 0) border.distanceToEdgeMeters(spot) / edgeBufferMeters else Double.MAX_VALUE
+                val score = minOf(edge, keepClear.minOfOrNull { (point, clear) ->
+                    if (clear <= 0) Double.MAX_VALUE else GeoMath.distanceMeters(spot, point) / clear
+                } ?: Double.MAX_VALUE)
+                if (score >= 1) return spot
                 if (score > bestScore) {
                     best = spot
                     bestScore = score

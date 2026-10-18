@@ -42,7 +42,7 @@ Effects never play quite the same twice: each play moves the pitch up to 6% eith
 | `sfx_flag_taken`, `sfx_flag_captured` | Capture the Flag |
 | `sfx_round_start`, `sfx_bomb_planted`, `sfx_bomb_defused`, `sfx_bomb_exploded` | Search & Destroy (the last: the bomb going off) |
 | `sfx_infected` | Infection: you were infected |
-| `sfx_loot`, `sfx_loot_banked` | Extraction |
+| `sfx_loot`, `sfx_loot_banked` | Extraction; `sfx_extraction_open`: the extraction zones opening |
 | `sfx_victory`, `sfx_defeat` | an objective game won or lost |
 
 ## Radio callouts

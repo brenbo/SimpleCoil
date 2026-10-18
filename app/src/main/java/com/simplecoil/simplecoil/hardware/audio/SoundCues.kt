@@ -112,6 +112,7 @@ object SoundCues {
         SessionSound.INFECTED -> SoundCue("sfx_infected", "eliminated", 0.7f, essential = true)
         SessionSound.LOOT -> SoundCue("sfx_loot", "score", 1.4f)
         SessionSound.LOOT_BANKED -> SoundCue("sfx_loot_banked", "score", 0.95f, 2)
+        SessionSound.EXTRACTION_OPEN -> SoundCue("sfx_extraction_open", "beep", 1.2f, 2, essential = true)
     }
 
     /** True if any sound has a radio callout; with none, the sound settings leave the callout controls out. */

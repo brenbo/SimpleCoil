@@ -108,7 +108,7 @@ class ModeControllerTest {
     private suspend fun TestScope.soundsInto(sounds: MutableList<SessionSound>, replies: Array<out ModeState>) {
         var reply = replies.first()
         ModeController(
-            field = MutableStateFlow(FieldConfig(mode = GameMode.SEARCH_AND_DESTROY)),
+            field = MutableStateFlow(FieldConfig(mode = replies.first().mode)),
             session = MutableStateFlow(SessionState(health = 10, maxHealth = 10, shotMode = 0, grenadePaired = false)),
             server = object : ModeController.Server {
                 override fun state(playerId: Int, alive: Boolean): ModeState = reply
@@ -119,12 +119,22 @@ class ModeControllerTest {
                 override fun vibrate() {}
             },
             scope = backgroundScope, io = StandardTestDispatcher(testScheduler),
+            serverNow = { testScheduler.currentTime },
         )
         advanceTimeBy(1_100)
         for (next in replies.drop(1)) {
             reply = next
             advanceTimeBy(1_000)
         }
+    }
+
+    @Test
+    fun theExtractionZonesOpening_isHeardOnce() {
+        // The zones open 3 s in (test clock); the phone polls once a second
+        val extraction = ModeState(GameMode.EXTRACTION, emptyList(), mapOf(1 to 0), 0, 8.0, 0, 0,
+            extraction = ExtractionState(emptyList(), listOf(here), opensAt = 3_000, carrying = emptyMap(), progress = emptyMap()))
+        val sounds = soundsFor(*Array(6) { extraction })
+        assertEquals(listOf(SessionSound.EXTRACTION_OPEN), sounds)
     }
 
     @Test

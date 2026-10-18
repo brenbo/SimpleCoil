@@ -143,6 +143,9 @@ enum class SessionSound {
     /** Extraction: loot picked up, and banked. */
     LOOT, LOOT_BANKED,
 
+    /** Extraction: the extraction zones open. */
+    EXTRACTION_OPEN,
+
     /** The game is won or lost (an objective game). */
     VICTORY, DEFEAT,
 }

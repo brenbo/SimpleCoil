@@ -258,6 +258,7 @@ class AppContainer(private val app: Application) {
             },
             scope = appScope,
             io = dispatchers.io,
+            serverNow = fieldImageryClient::serverNow,
         )
     }
 

@@ -19,6 +19,7 @@ package com.simplecoil.simplecoil.domain.mode
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.LatLon
+import com.simplecoil.simplecoil.domain.map.Spawn
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -100,20 +101,64 @@ class RoundsAndInfectionTest {
         val counting = players(attackerAlive = false).mapValues { it.value.copy(alive = false) }
         var state = e.tick(1_000, counting)
         state = e.tick(5_000, counting)
-        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
+        // The round waits: no bomb, no clock, no points
+        assertEquals(RoundPhase.STARTING, state.bomb!!.phase)
+        assertEquals(0, state.bomb!!.carrier)
         assertEquals(0, state.scores[1])
         assertEquals(0, state.scores[2])
         // Only an elimination wipes a team out: one round, one point
-        e.tick(11_000, players())
+        state = e.tick(11_000, players())
+        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
         e.onEliminated(1)
         state = e.tick(12_000, players(attackerAlive = false))
         assertEquals(1, state.scores[2])
-        // The next round starts with the attacker counting down again: no round given away
+        // The next round waits for the attacker counting down again: no round given away
         state = e.tick(22_500, players(attackerAlive = false))
         assertEquals(2, state.round)
-        state = e.tick(30_000, players(attackerAlive = false))
+        assertEquals(RoundPhase.STARTING, state.bomb!!.phase)
+        state = e.tick(30_000, players())
         assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
         assertEquals(1, state.scores[2])
+    }
+
+    @Test
+    fun noBombBeforeTheStartCountdownEnds() {
+        val e = BombEngine(rules, listOf(siteA), 0, Random(7), liveAfterMillis = 10_000)
+        // A phone that hasn't said it's counting down still can't get the bomb, or plant
+        var state = e.tick(1_000, players(attacker = siteA.point))
+        state = e.tick(9_000, players(attacker = siteA.point))
+        assertEquals(RoundPhase.STARTING, state.bomb!!.phase)
+        assertEquals(0, state.bomb!!.carrier)
+        state = e.tick(10_000, players(attacker = siteA.point))
+        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
+        assertEquals(1, state.bomb!!.carrier)
+        // Nor while the game's own start waits for everyone at their spawn
+        val held = BombEngine(rules, listOf(siteA), 0, Random(7))
+        assertEquals(RoundPhase.STARTING, held.tick(5_000, players(), started = false).bomb!!.phase)
+    }
+
+    @Test
+    fun withWalkBack_eachRoundWaitsForEveryoneAtTheirSpawn() {
+        val spawns = listOf(Spawn(1, at(-200.0)), Spawn(2, at(200.0)))
+        val e = BombEngine(rules, listOf(siteA), 0, Random(8), spawns, spawnRadiusMeters = 10.0, walkBack = true)
+        val atSpawns = players(attacker = at(-200.0), defender = at(200.0))
+        // Not at the spawns: the round waits
+        assertEquals(RoundPhase.STARTING, e.tick(1_000, players()).bomb!!.phase)
+        assertEquals(RoundPhase.LIVE, e.tick(2_000, atSpawns).bomb!!.phase)
+        e.onEliminated(2)
+        e.tick(3_000, atSpawns)
+        // The next round: everyone walks back first, the survivor too
+        var state = e.tick(14_000, players())
+        assertEquals(2, state.round)
+        assertEquals(RoundPhase.STARTING, state.bomb!!.phase)
+        state = e.tick(20_000, atSpawns)
+        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
+        // Someone who never comes back holds it only so long
+        e.onEliminated(2)
+        e.tick(21_000, atSpawns)
+        e.tick(32_000, players())
+        state = e.tick(32_000 + BombEngine.STARTING_MAX_MILLIS, players())
+        assertEquals(RoundPhase.LIVE, state.bomb!!.phase)
     }
 
     @Test

@@ -525,6 +525,9 @@
     <string name="rules_post_kills">Kills only</string>
     <string name="rules_post_full">Kills, heat map and replay (records everyone\'s path)</string>
     <string name="snd_round">round %1$d · %2$s</string>
+    <string name="snd_round_starting">round %1$d · starting</string>
+    <string name="snd_to_spawn">Get to your spawn: the round starts when everyone is there</string>
+    <string name="snd_starting">The round starts when everyone is back in</string>
     <string name="snd_round_won">Round won!</string>
     <string name="snd_round_lost">Round lost</string>
     <string name="snd_out">You are out until the next round</string>

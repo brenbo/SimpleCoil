@@ -85,6 +85,8 @@ class LiveGame(
     /** Monotonic clock, as GPS reports are stamped. */
     private val monoClock: () -> Long = { System.nanoTime() / 1_000_000L },
     private val random: Random = Random.Default,
+    /** The phones' countdown before a game starts. */
+    private val startDelayMillis: () -> Long = { 0L },
     /** An objective game was won by [team]: the server ends it. */
     private val onWinner: (team: Int) -> Unit = {},
 ) {
@@ -297,9 +299,16 @@ class LiveGame(
                 val sites = base.objectives.take(rules.sites).takeIf { it.size == rules.sites }
                     ?: ObjectivePlanner.place(border, rules.sites, ObjectiveRules(radiusMeters = rules.siteRadiusMeters), base.spawns,
                         base.spawnRules.radiusMeters, base.rules.edgeBufferMeters, random)
-                val engine = BombEngine(rules, sites, wallClock(), random)
+                val start = wallClock()
+                val engine = BombEngine(rules, sites, start, random, base.spawns, base.spawnRules.radiusMeters, base.spawnRules.walkBack,
+                    liveAfterMillis = start + startDelayMillis())
                 bombs = engine;
-                { engine.tick(wallClock(), playerInfos()) }
+                {
+                    val players = playerInfos()
+                    // With "start at spawn", the first round waits for the game's own start
+                    val started = startGate?.check(wallClock(), startField, players, freeForAll())?.ready ?: true
+                    engine.tick(wallClock(), players, started)
+                }
             }
             GameMode.INFECTION -> {
                 val engine = InfectionEngine(base.infection, wallClock(), random)

@@ -18,6 +18,7 @@ package com.simplecoil.simplecoil.domain.mode
 
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.LatLon
+import com.simplecoil.simplecoil.domain.map.Spawn
 import org.json.JSONObject
 import kotlin.random.Random
 
@@ -62,6 +63,8 @@ data class BombRules(
 
 /** Where a Search & Destroy round stands. */
 enum class RoundPhase(val wireValue: String) {
+    /** Waiting for the start countdown and for everyone to be back (at their spawn, with walk-back on). */
+    STARTING("starting"),
     LIVE("live"), PLANTED("planted"), BETWEEN("between");
 
     companion object {
@@ -95,11 +98,24 @@ data class BombState(
  * going off or by eliminating every defender; defenders by defusing, by the round running out
  * before a plant, or by eliminating every attacker before one. Teams 1 and 2 swap at half time.
  */
-class BombEngine(private val rules: BombRules, private val sites: List<Objective>, startMillis: Long, private val random: Random = Random.Default) {
+class BombEngine(
+    private val rules: BombRules,
+    private val sites: List<Objective>,
+    startMillis: Long,
+    private val random: Random = Random.Default,
+    /** The teams' spawns, and whether each round waits for everyone to walk back to theirs. */
+    private val spawns: List<Spawn> = emptyList(),
+    private val spawnRadiusMeters: Double = 10.0,
+    private val walkBack: Boolean = false,
+    /** The first round can't go live before this: the phones' start countdown. */
+    private val liveAfterMillis: Long = startMillis,
+) {
 
     private var round = 1
-    private var phase = RoundPhase.LIVE
-    private var endsAt = startMillis + rules.roundSeconds * 1000L
+    private var phase = RoundPhase.STARTING
+
+    /** In STARTING, when the wait gives up on whoever isn't back; then the round's or the fuse's end. */
+    private var endsAt = maxOf(startMillis, liveAfterMillis) + STARTING_MAX_MILLIS
     private val out = HashSet<Int>()
     private var carrier = 0
     private var bomb: LatLon? = null
@@ -118,7 +134,7 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
     private fun defenders() = 3 - attackers()
 
     fun onEliminated(playerId: Int) {
-        if (phase == RoundPhase.BETWEEN) return
+        if (phase == RoundPhase.BETWEEN || phase == RoundPhase.STARTING) return
         out += playerId
         if (playerId == carrier) {
             carrier = 0
@@ -127,16 +143,26 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
         }
     }
 
-    fun tick(nowMillis: Long, players: Map<Int, PlayerInfo>): ModeState {
+    /** [started] is false while the game's own start still waits (everyone at a spawn, with "start at spawn"). */
+    fun tick(nowMillis: Long, players: Map<Int, PlayerInfo>, started: Boolean = true): ModeState {
         players.forEach { (id, p) -> p.point?.let { lastPoint[id] = it } }
-        if (winner == 0) step(nowMillis, players)
+        if (winner == 0) step(nowMillis, players, started)
         return state()
     }
 
-    private fun step(now: Long, players: Map<Int, PlayerInfo>) {
+    private fun step(now: Long, players: Map<Int, PlayerInfo>, started: Boolean) {
         if (phase == RoundPhase.BETWEEN) {
-            if (now >= endsAt) startRound(now)
-            return
+            if (now < endsAt) return
+            startRound(now)
+        }
+        if (phase == RoundPhase.STARTING) {
+            // Nobody plays (or plants) before everyone is back: out of the countdown and, with
+            // walk-back, at their team's spawn. Whoever never comes back holds it only so long
+            if (!started || now < liveAfterMillis) return
+            val back = players.all { (_, p) -> p.alive && (!walkBack || atSpawn(p)) }
+            if (!back && now < endsAt) return
+            phase = RoundPhase.LIVE
+            endsAt = now + rules.roundSeconds * 1000L
         }
         val inGame = players.filter { (id, p) -> p.alive && id !in out }
         val attackersLeft = inGame.filterValues { it.team == attackers() }
@@ -196,8 +222,16 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
                     defuser == null -> dwellPlayer = 0
                 }
             }
-            RoundPhase.BETWEEN -> {}
+            RoundPhase.STARTING, RoundPhase.BETWEEN -> {}
         }
+    }
+
+    /** True if [p] stands at one of their team's spawns (or the team has none). */
+    private fun atSpawn(p: PlayerInfo): Boolean {
+        val mine = spawns.filter { it.isFor(p.team, false) }
+        if (mine.isEmpty()) return true
+        val at = p.point ?: return false
+        return mine.any { GeoMath.distanceMeters(at, it.point) <= spawnRadiusMeters }
     }
 
     /** How long [playerId] has been at it; a new player starts over. */
@@ -220,8 +254,8 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
 
     private fun startRound(now: Long) {
         round++
-        phase = RoundPhase.LIVE
-        endsAt = now + rules.roundSeconds * 1000L
+        phase = RoundPhase.STARTING
+        endsAt = now + STARTING_MAX_MILLIS
         out.clear()
         carrier = 0
         bomb = null
@@ -250,5 +284,10 @@ class BombEngine(private val rules: BombRules, private val sites: List<Objective
                 planted?.id, lastRoundWinner, out.toSet()),
             actor = doing?.first ?: 0,
         )
+    }
+
+    companion object {
+        /** The longest a round waits for everyone to be back before it starts anyway. */
+        const val STARTING_MAX_MILLIS = 60_000L
     }
 }

@@ -147,7 +147,8 @@ class LoadoutTest {
             assertTrue(border.contains(spot))
             assertTrue(border.distanceToEdgeMeters(spot) >= 15.0)
         }
-        assertNull(LiveField.dropSpot(Border.Circle(center, 10.0), 50.0, random = random))
+        // A field smaller than the buffer still gets a spot inside it
+        assertTrue(Border.Circle(center, 10.0).contains(LiveField.dropSpot(Border.Circle(center, 10.0), 50.0, random = random)!!))
     }
 
     @Test

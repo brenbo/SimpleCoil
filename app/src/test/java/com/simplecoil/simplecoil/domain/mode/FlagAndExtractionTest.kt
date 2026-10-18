@@ -131,6 +131,22 @@ class FlagAndExtractionTest {
     }
 
     @Test
+    fun onASmallField_theLootStillSpreadsOut() {
+        // A house lot: about 30 by 60 m, two spawns at the ends, too small to keep everything clear
+        val lot = Border.Polygon(listOf(GeoMath.offset(center, -30.0, -15.0), GeoMath.offset(center, -30.0, 15.0),
+            GeoMath.offset(center, 30.0, 15.0), GeoMath.offset(center, 30.0, -15.0)))
+        val avoid = listOf(GeoMath.offset(center, -25.0, 0.0) to 30.0, GeoMath.offset(center, 25.0, 0.0) to 30.0)
+        repeat(5) { seed ->
+            val loot = ExtractionEngine(ExtractionRules(lootPoints = 6, zones = 1, radiusMeters = 5.0), lot, avoid, 0, Random(seed))
+                .tick(0, emptyMap()).extraction!!.loot
+            assertEquals(6, loot.size)
+            for (a in loot) for (b in loot) if (a.id < b.id) {
+                assertTrue("piles ${a.id} and ${b.id} share a spot", GeoMath.distanceMeters(a.point, b.point) > 5.0)
+            }
+        }
+    }
+
+    @Test
     fun anEliminatedCarrierDropsTheirLoot() {
         val field = Border.Circle(center, 100.0)
         val e = ExtractionEngine(ExtractionRules(lootPoints = 3, collectSeconds = 3), field, emptyList(), 0, Random(3))

@@ -845,6 +845,7 @@ class MapFragment : Fragment() {
         val attacking = myTeam == b.attackers
         return when {
             b.phase == RoundPhase.BETWEEN -> getString(if (b.lastRoundWinner == myTeam) R.string.snd_round_won else R.string.snd_round_lost)
+            b.phase == RoundPhase.STARTING -> getString(if (field?.spawnRules?.walkBack == true) R.string.snd_to_spawn else R.string.snd_starting)
             me in b.out -> getString(R.string.snd_out)
             state.actor == me -> getString(if (b.phase == RoundPhase.PLANTED) R.string.snd_defusing else R.string.snd_planting)
             b.carrier == me -> getString(R.string.snd_you_have_bomb)
@@ -899,7 +900,7 @@ class MapFragment : Fragment() {
             GameMode.SEARCH_AND_DESTROY -> {
                 text.append("   ").append(getString(R.string.mode_to_win, state.scoreToWin))
                 state.bomb?.takeIf { state.winner == 0 && inGame() }?.let { b ->
-                    text.append(" · ").append(getString(R.string.snd_round, b.round, clock(b.endsAt)))
+                    text.append(" · ").append(if (b.phase == RoundPhase.STARTING) getString(R.string.snd_round_starting, b.round) else getString(R.string.snd_round, b.round, clock(b.endsAt)))
                 }
             }
             GameMode.INFECTION -> if (state.winner == 0 && inGame() && state.movesAt != 0L) {
@@ -1126,9 +1127,9 @@ class MapFragment : Fragment() {
         const val EXTRACTION_COLOR = 0xFF69F0AE.toInt()
         const val INFECTED_COLOR = 0xFF76FF03.toInt()
         const val SURVIVOR_COLOR = 0xFF40C4FF.toInt()
-        const val BOMB = "D83DDCA3"
-        const val SURVIVOR = "25C9"
-        const val FLAG = "2691"
+        const val BOMB = "💣"
+        const val SURVIVOR = "◉"
+        const val FLAG = "⚑"
 
         /** About 5 km across on a phone, to a few metres. */
         const val MIN_ZOOM = 13.0
