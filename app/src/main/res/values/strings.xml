@@ -440,6 +440,22 @@
     <string name="marksman_to_win">Total distance to win (%1$s, 0 = play to the game limits)</string>
     <string name="map_waiting_for_everyone">Waiting for everyone to reach their spawn (at spawn: %1$d of %2$d)</string>
     <string name="map_waiting_for_everyone_short">Waiting for everyone to reach their spawn</string>
+    <string name="ref_title">Live map</string>
+    <string name="ref_live_map">Live map</string>
+    <string name="ref_drop_now">Drop now</string>
+    <string name="ref_close_zone">Close zone</string>
+    <string name="ref_end_game">End game</string>
+    <string name="ref_end_confirm">End the game for everyone now?</string>
+    <string name="ref_dropped">A crate is coming down.</string>
+    <string name="ref_no_drop">No crate: it needs a game running on a field with a border.</string>
+    <string name="ref_zone_closing">The zone is closing now.</string>
+    <string name="ref_zone_cant">The zone is already closing, or has nowhere left to go.</string>
+    <string name="ref_no_game">No game running.</string>
+    <string name="ref_info">Players on the map: %1$d of %2$d</string>
+    <string name="ref_team">Team %1$d</string>
+    <string name="ref_player">#%1$d</string>
+    <string name="ref_survivors">Survivors</string>
+    <string name="ref_infected">Infected</string>
     <string name="sound_button">Sound</string>
     <string name="sound_title">Sound</string>
     <string name="sound_effects_volume">Effects volume</string>

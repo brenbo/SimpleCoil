@@ -123,6 +123,20 @@ class BattleRoyaleTest {
     }
 
     @Test
+    fun theRefereeCanCloseTheZoneNow() {
+        val engine = BattleRoyaleEngine(ZonePlan(field, rules, 0, Random(7)))
+        // Waiting for the first shrink at 60 s; closed at 10 s instead
+        assertEquals(60_000L, engine.zone(10_000).changesAt)
+        assertTrue(engine.closeNow(10_000))
+        val zone = engine.zone(10_000)
+        assertTrue(zone.shrinking)
+        // The phones see the real clock: done shrinking 30 s from now
+        assertEquals(40_000L, zone.changesAt)
+        // Not while it is already closing
+        assertFalse(engine.closeNow(20_000))
+    }
+
+    @Test
     fun marksmanScoresTheDistance() {
         val engine = MarksmanEngine(MarksmanRules(minimumMeters = 10.0, distanceToWinMeters = 100.0))
         val shots = listOf(Shot(1, 2, center, center, 40.0), Shot(1, 2, center, center, 5.0), Shot(2, 1, center, center, 30.0))

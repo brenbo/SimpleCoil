@@ -30,7 +30,14 @@ import org.maplibre.android.maps.Projection
  * Small markers drawn over the play map, like the drops (map design: Capture the Flag): a symbol
  * in a colour on a spot, such as a team's flag.
  */
-class GlyphOverlay(private val context: Context, private val layer: FrameLayout) {
+class GlyphOverlay(
+    private val context: Context,
+    private val layer: FrameLayout,
+    /** The symbol's size. */
+    private val textSp: Float = GLYPH_SP,
+    /** A label under its point (a name), rather than a symbol standing on it. */
+    private val below: Boolean = false,
+) {
 
     data class Glyph(val id: String, val point: LatLon, val text: String, val color: Int)
 
@@ -41,7 +48,7 @@ class GlyphOverlay(private val context: Context, private val layer: FrameLayout)
         views.keys.filter { it !in ids }.forEach { layer.removeView(views.remove(it)?.first) }
         for (glyph in glyphs) {
             val view = views[glyph.id]?.first ?: TextView(context).apply {
-                textSize = GLYPH_SP
+                textSize = textSp
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
                 setShadowLayer(4f, 0f, 1f, 0xDD000000.toInt())
@@ -58,7 +65,7 @@ class GlyphOverlay(private val context: Context, private val layer: FrameLayout)
         for ((view, glyph) in views.values) {
             val spot = projection.toScreenLocation(LatLng(glyph.point.latitude, glyph.point.longitude))
             view.translationX = spot.x - view.width / 2f
-            view.translationY = spot.y - view.height * 0.85f
+            view.translationY = if (below) spot.y + LABEL_GAP_DP * context.resources.displayMetrics.density else spot.y - view.height * 0.85f
         }
     }
 
@@ -69,5 +76,6 @@ class GlyphOverlay(private val context: Context, private val layer: FrameLayout)
 
     private companion object {
         const val GLYPH_SP = 26f
+        const val LABEL_GAP_DP = 8f
     }
 }

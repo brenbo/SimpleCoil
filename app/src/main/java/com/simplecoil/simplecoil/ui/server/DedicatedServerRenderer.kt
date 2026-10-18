@@ -115,7 +115,8 @@ class DedicatedServerRenderer(
         gameLimitButton.isEnabled = !running
         startingTimerButton.isEnabled = !running
         // The field can't change under a running game
-        fieldMapButton.isEnabled = !running
+        // During a game the field can't change: the button opens the live referee map instead
+        fieldMapButton.setText(if (running) R.string.ref_live_map else R.string.field_map_button)
         fieldRulesButton.isEnabled = !running
         modeCardHeader.isEnabled = !running
         extrasCardHeader.isEnabled = !running

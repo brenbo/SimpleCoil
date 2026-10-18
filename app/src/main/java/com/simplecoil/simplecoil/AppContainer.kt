@@ -309,6 +309,10 @@ class AppContainer(private val app: Application) {
     /** What the dedicated server reports to its screen. */
     val serverEvents = EventBus<ServerEvent>(name = "ServerEvents")
 
+    /** While this phone runs a dedicated server: its game, for the referee map. */
+    @Volatile
+    var liveGame: com.simplecoil.simplecoil.network.server.LiveGame? = null
+
     /** The host pressed Reset on the server this phone plays on: the last game's screens close. */
     val sessionResets = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 

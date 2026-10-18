@@ -101,6 +101,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
 
+        <!-- The dedicated server's live referee map, during a game -->
+        <activity
+            android:name=".ui.server.RefereeMapActivity"
+            android:exported="false"
+            android:label="@string/ref_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <!-- After a game: the kills, a heatmap and a replay -->
         <activity
             android:name=".ui.map.PostGameMapActivity"

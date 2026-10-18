@@ -146,6 +146,7 @@ class TcpServer : Service() {
         container.serverGps.value = emptyList()
         container.fieldImageryServer.liveConfig = null
         container.fieldImageryServer.extras = null
+        container.liveGame = null
         container.fieldImageryServer.stop()
         server.stop() // closes each connection once the SERVERCANCEL is written
         notificationUpdates?.cancel()
@@ -170,6 +171,7 @@ class TcpServer : Service() {
             onWinner = { server.endGame() },
         )
         liveGame = game
+        container.liveGame = game
         val eliminations = container.serverEvents.events
             .filterIsInstance<ServerEvent.Eliminated>()
             .map { it.victimId.toInt() to it.shooterId.toInt() }

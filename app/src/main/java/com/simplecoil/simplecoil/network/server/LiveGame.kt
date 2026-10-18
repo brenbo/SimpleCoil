@@ -186,17 +186,49 @@ class LiveGame(
         if (!rules.dropsEnabled || kinds.isEmpty()) return
         while (true) {
             delay(rules.dropIntervalMinutes * 60_000L)
-            val keepClear = field.currentSpawns().map { it.point to base.spawnRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
-                base.objectives.map { it.point to base.objectiveRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
-                (field.config()?.drops ?: emptyList()).map { it.point to LiveField.DROP_SPACING_METERS }
-            // Battle Royale: inside the zone it is shrinking to, where players will be
-            val zone = battleRoyale?.zone(wallClock())
-            val spot = (zone?.let { z -> spotInside(border, z.next ?: z.current, keepClear) }
-                ?: LiveField.dropSpot(border, base.rules.edgeBufferMeters, keepClear, random)) ?: continue
-            field.drop(kinds[random.nextInt(kinds.size)], spot, wallClock())
-            publish()
+            dropOne(base, border, kinds)
         }
     }
+
+    /** One drop of one of [kinds], somewhere clear on the field; false if no spot turned up. */
+    private fun dropOne(base: FieldConfig, border: Border, kinds: List<DropKind>): Boolean {
+        val keepClear = field.currentSpawns().map { it.point to base.spawnRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
+            base.objectives.map { it.point to base.objectiveRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
+            (field.config()?.drops ?: emptyList()).map { it.point to LiveField.DROP_SPACING_METERS }
+        // Battle Royale: inside the zone it is shrinking to, where players will be
+        val zone = battleRoyale?.zone(wallClock())
+        val spot = (zone?.let { z -> spotInside(border, z.next ?: z.current, keepClear) }
+            ?: LiveField.dropSpot(border, base.rules.edgeBufferMeters, keepClear, random)) ?: return false
+        field.drop(kinds[random.nextInt(kinds.size)], spot, wallClock())
+        publish()
+        return true
+    }
+
+    // The referee (map design: Dedicated server settings, "during a game")
+
+    /** A player as the referee map shows them. */
+    data class RefereePlayer(val id: Int, val name: String, val team: Int, val point: LatLon?, val alive: Boolean)
+
+    /** Everything the referee map shows, now. */
+    data class RefereeView(val field: FieldConfig?, val players: List<RefereePlayer>, val mode: ModeState?)
+
+    fun referee(): RefereeView {
+        val mode = modeBytes?.let { runCatching { ModeState.fromJson(org.json.JSONObject(String(it, Charsets.UTF_8))) }.getOrNull() }
+        val players = playerInfos().map { (id, p) -> RefereePlayer(id, nameOf(id) ?: "", p.team, p.point, p.alive) }
+        return RefereeView(field.config(), players.sortedBy { it.team }, mode)
+    }
+
+    /** The referee drops a crate now: one of the field's drop kinds (or any, with drops off). False outside a game. */
+    fun dropNow(): Boolean {
+        val base = startField ?: return false
+        val border = base.border ?: return false
+        if (!field.isActive) return false
+        val kinds = base.loadout.dropKinds.filter { it in DropKind.TIMED }.ifEmpty { DropKind.TIMED }
+        return dropOne(base, border, kinds)
+    }
+
+    /** The referee closes the Battle Royale zone now. */
+    fun closeZoneNow(): Boolean = battleRoyale?.closeNow(wallClock()) ?: false
 
     /** [base] with its capture points: the host's, or placed now by field size when it left them to the server. */
     private fun withObjectives(base: FieldConfig): FieldConfig {

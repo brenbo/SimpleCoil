@@ -213,8 +213,21 @@ class ZonePlan(border: Border, private val rules: BattleRoyaleRules, private val
  * server once a second.
  */
 class BattleRoyaleEngine(private val plan: ZonePlan) {
-    /** The zone at [nowMillis]. */
-    fun zone(nowMillis: Long): ZoneState = plan.at(nowMillis)
+    /** How far the referee has moved the zone's clock on (Close the zone now). */
+    private var shift = 0L
+
+    /** The zone at [nowMillis], its times on the real clock. */
+    fun zone(nowMillis: Long): ZoneState = plan.at(nowMillis + shift).let { z ->
+        if (z.changesAt == 0L) z else z.copy(changesAt = z.changesAt - shift)
+    }
+
+    /** The referee closes the zone now: the next shrink starts at once. False if none is left, or one is under way. */
+    fun closeNow(nowMillis: Long): Boolean {
+        val z = plan.at(nowMillis + shift)
+        if (z.shrinking || z.changesAt == 0L) return false
+        shift += z.changesAt - (nowMillis + shift)
+        return true
+    }
 
     private val out = HashSet<Int>()
     private var winner = 0
@@ -222,12 +235,12 @@ class BattleRoyaleEngine(private val plan: ZonePlan) {
 
     /** [playerId] was eliminated at [nowMillis]; out for good if respawns are over. */
     fun onEliminated(playerId: Int, nowMillis: Long) {
-        if (plan.at(nowMillis).noRespawn) out += playerId
+        if (zone(nowMillis).noRespawn) out += playerId
     }
 
     /** The game at [nowMillis], for [players] (id to team) in it. */
     fun tick(nowMillis: Long, players: Map<Int, Int>): ModeState {
-        val zone = plan.at(nowMillis)
+        val zone = zone(nowMillis)
         val left = players.filterKeys { it !in out }.values.groupingBy { it }.eachCount()
         teamsSeen = maxOf(teamsSeen, players.values.toSet().size)
         // The last team standing, once there were two to start with

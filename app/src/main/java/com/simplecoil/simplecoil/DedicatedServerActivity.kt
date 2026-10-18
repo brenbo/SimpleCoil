@@ -43,6 +43,7 @@ import com.simplecoil.simplecoil.ui.dialogs.TeamRatioDialog
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsDialog
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardAdapter
 import com.simplecoil.simplecoil.ui.server.DedicatedServerRenderer
+import com.simplecoil.simplecoil.ui.server.RefereeMapActivity
 import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
 import com.simplecoil.simplecoil.ui.server.ServerUiEffect
 import com.simplecoil.simplecoil.ui.map.FieldMapActivity
@@ -82,6 +83,9 @@ class DedicatedServerActivity : AppCompatActivity() {
     private lateinit var renderer: DedicatedServerRenderer
     private val vm: DedicatedServerViewModel by viewModels { DedicatedServerViewModel.Factory(application as SimpleCoilApp) }
 
+    /** The phase last shown, so a game starting opens the referee map once. */
+    private var lastPhase: com.simplecoil.simplecoil.network.server.SessionPhase? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDedicatedServerBinding.inflate(layoutInflater)
@@ -106,7 +110,18 @@ class DedicatedServerActivity : AppCompatActivity() {
         attachPlayerSheet()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { vm.state.collect { state -> state?.let { renderer.render(it) } } }
+                launch {
+                    vm.state.collect { state ->
+                        state ?: return@collect
+                        renderer.render(state)
+                        // A game starting: the home screen becomes the live referee map
+                        val running = state.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
+                        if (running && lastPhase != null && lastPhase != state.phase) {
+                            startActivity(Intent(this@DedicatedServerActivity, RefereeMapActivity::class.java))
+                        }
+                        lastPhase = state.phase
+                    }
+                }
                 launch { vm.effects.collect { onEffect(it) } }
                 launch { showFieldMapStatus() }
                 launch { showGps() }
@@ -381,7 +396,10 @@ class DedicatedServerActivity : AppCompatActivity() {
             val current = vm.state.value?.startTimeSeconds ?: GameSettingsRepository.START_TIME_SECONDS
             showDialog(StartingTimerDialog.newInstance(current, DedicatedServerViewModel.MAX_START_TIME_SECONDS), StartingTimerDialog.REQUEST_KEY)
         }
-        fieldMapButton.setOnClickListener { startActivity(Intent(this@DedicatedServerActivity, FieldMapActivity::class.java)) }
+        fieldMapButton.setOnClickListener {
+            val running = vm.state.value?.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
+            startActivity(Intent(this@DedicatedServerActivity, if (running) RefereeMapActivity::class.java else FieldMapActivity::class.java))
+        }
         fieldRulesButton.setOnClickListener { showRules(FieldRulesDialog.Section.FIELD) }
         extrasCardHeader.setOnClickListener { showRules(FieldRulesDialog.Section.EXTRAS) }
         modeCardHeader.setOnClickListener { showMode() }
