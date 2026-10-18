@@ -163,6 +163,9 @@ class AppContainer(private val app: Application) {
             inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
             scope = appScope,
             clock = clock,
+            // With "start at spawn", the game starts for nobody until everyone is at theirs
+            startGate = { gameState.serverIP?.let { fieldImageryClient.readiness(it) } },
+            io = dispatchers.io,
         )
     }
 

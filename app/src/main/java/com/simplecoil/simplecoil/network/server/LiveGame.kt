@@ -25,6 +25,8 @@ import com.simplecoil.simplecoil.domain.loadout.ShotStats
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.SpawnPlanner
+import com.simplecoil.simplecoil.domain.map.Readiness
+import com.simplecoil.simplecoil.domain.map.StartGate
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleEngine
@@ -73,6 +75,8 @@ class LiveGame(
     private val nameOf: (Int) -> String?,
     /** The players in the game, by id, with their team (Battle Royale counts who is left). */
     private val players: () -> Map<Int, Int> = { emptyMap() },
+    /** True when the server plays free for all (any spawn is anyone's). */
+    private val freeForAll: () -> Boolean = { false },
     /** Server wall clock, for drop times. */
     private val wallClock: () -> Long = System::currentTimeMillis,
     /** Monotonic clock, as GPS reports are stamped. */
@@ -83,6 +87,13 @@ class LiveGame(
 ) {
     val field = LiveField()
     val shots = ShotStats()
+
+    /** The start, with "start at spawn" on: nobody goes until everyone is at their spawn. */
+    @Volatile
+    private var startGate: StartGate? = null
+
+    @Volatile
+    private var startField: FieldConfig? = null
 
     /** The game as played, for the post-game map. */
     val recorder = GameRecorder()
@@ -113,6 +124,8 @@ class LiveGame(
             }
             shots.clear()
             recorder.start(wallClock())
+            startGate = null
+            startField = null
             val base = savedField()
             // Shots are measured on any server, with or without a field set up
             rules = base?.loadout ?: LoadoutRules()
@@ -132,6 +145,8 @@ class LiveGame(
             // Capture points left to the server are placed for this game, and every phone gets them
             val playing = withObjectives(base)
             field.start(playing)
+            startGate = StartGate(wallClock())
+            startField = playing
             publish()
             coroutineScope {
                 launch { moveSpawns(playing) }
@@ -366,6 +381,11 @@ class LiveGame(
                 if (id != playerId) players.put(JSONArray().put(id).put(teamOf(id)).put(fix.point.latitude).put(fix.point.longitude))
             }
             return JSONObject().put("players", players).toString().toByteArray(Charsets.UTF_8)
+        }
+
+        override fun ready(): ByteArray? {
+            val gate = startGate ?: return Readiness(true, 0, 0).toJson().toString().toByteArray(Charsets.UTF_8)
+            return gate.check(wallClock(), startField, playerInfos(), freeForAll()).toJson().toString().toByteArray(Charsets.UTF_8)
         }
 
         override fun replay(): ByteArray? {

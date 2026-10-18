@@ -18,7 +18,10 @@ package com.simplecoil.simplecoil.domain.map
 
 import com.simplecoil.simplecoil.domain.session.SessionState
 import com.simplecoil.simplecoil.domain.session.SpawnPhase
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +44,9 @@ class SpawnController(
     private val inGame: () -> Boolean,
     scope: CoroutineScope,
     private val clock: () -> Long,
+    /** With "start at spawn": asks the server whether everyone has reached their spawn (blocks; null if it can't say). */
+    private val startGate: (() -> Readiness?)? = null,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /** What the blaster session does for spawns. */
     interface Actions {
@@ -64,6 +70,15 @@ class SpawnController(
     /** True while the player should walk to a spawn but the phone has no GPS fix to check it by. */
     val noFix: StateFlow<Boolean> = _noFix.asStateFlow()
 
+    private val _waiting = MutableStateFlow<Readiness?>(null)
+
+    /** Set while the start waits for everyone to reach their spawn: how many are there. */
+    val waiting: StateFlow<Readiness?> = _waiting.asStateFlow()
+
+    /** The server's last word on the start, and whether it is being asked. */
+    private var readiness: Readiness? = null
+    private var asking = false
+
     private var current: List<Spawn> = emptyList()
     private var previous: List<Spawn> = emptyList()
     private var movedAt = Long.MIN_VALUE
@@ -79,6 +94,16 @@ class SpawnController(
             while (true) {
                 delay(TICK_MILLIS)
                 update()
+            }
+        }
+        val gate = startGate
+        if (gate != null) scope.launch {
+            while (true) {
+                delay(TICK_MILLIS)
+                if (asking) {
+                    readiness = withContext(io) { gate() }
+                    update()
+                }
             }
         }
     }
@@ -174,10 +199,12 @@ class SpawnController(
         val walking = rules.walkBack && spawns.isNotEmpty() && needsSpawn(state.spawn, rules)
         // Say so, rather than quietly letting them respawn anywhere
         _noFix.value = walking && !located
+        // The start, with "start at spawn": nobody goes until the server says everyone is at theirs
+        val starting = startGate != null && rules.startAtSpawn && spawns.isNotEmpty() && isStarting(state.spawn)
         if (!walking || !located) {
             inSpawnSince = null
-            setHeld(false)
             _guide.value = null
+            waitForEveryone(starting)
             return
         }
         val inside = spawns.any { GeoMath.distanceMeters(here, it.point) <= rules.radiusMeters }
@@ -190,11 +217,29 @@ class SpawnController(
         // Manual respawn: being in the spawn is enough, the player then holds reload
         val manual = state.spawn is SpawnPhase.AwaitingRespawn
         val arrived = since != null && (manual || now - since >= rules.secondsInSpawn * 1000L)
-        setHeld(!arrived)
+        if (arrived) waitForEveryone(starting) else {
+            asking = false
+            _waiting.value = null
+            setHeld(true)
+        }
         _guide.value = if (arrived) null else {
             val nearest = spawns.minBy { GeoMath.distanceMeters(here, it.point) }
             Guide(nearest.point, (GeoMath.distanceMeters(here, nearest.point) - rules.radiusMeters).coerceAtLeast(0.0))
         }
+    }
+
+    /** Here (or with no GPS to check): hold the start until everyone is at their spawn, else let go. */
+    private fun waitForEveryone(starting: Boolean) {
+        asking = starting
+        val open = !starting || readiness?.ready == true
+        _waiting.value = if (open) null else readiness ?: Readiness(false, 0, 0)
+        setHeld(!open)
+    }
+
+    private fun isStarting(phase: SpawnPhase): Boolean = when (phase) {
+        is SpawnPhase.Spawning -> phase.startingGame
+        is SpawnPhase.AwaitingReturn -> phase.startingGame
+        else -> false
     }
 
     /** Eliminated (or starting, with start at spawn on): the player has to get to a spawn. */
@@ -212,6 +257,9 @@ class SpawnController(
     }
 
     private fun reset() {
+        asking = false
+        readiness = null
+        _waiting.value = null
         inSpawnSince = null
         setHeld(false)
         _guide.value = null

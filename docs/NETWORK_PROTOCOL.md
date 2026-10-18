@@ -336,3 +336,7 @@ The config's `loadout` carries `postGameMap`: `off`, `kills` or `full`. During a
 | `SCFIELD1 REPLAY -` | `SCFIELD1 PACK <length>` of `{"length":<seconds>,"players":[[id, name, team], ...],"kills":[[shooter, victim, fromLat, fromLon, toLat, toLon, meters, atSeconds], ...],"track":[[atSeconds, id, lat, lon], ...]}`, or `NONE` with the map off or before any game |
 
 `track` is empty with `kills`. The phone draws it after the game: the kills as lines, a heat map of the track, and a replay with a time slider.
+
+### 8.7 Waiting for everyone at the start
+
+With `spawnRules.startAtSpawn` on, a phone that has reached its spawn at the start asks `SCFIELD1 READY -` every second; the reply is `PACK` of `{"ready","at","of"}`. The game starts for nobody until `ready`: every player is standing in one of their own spawns. A player whose phone hasn't reported a position 30 seconds into the game is left out, so one missing GPS can't hold the start forever. Once ready, it stays ready for that game.

@@ -70,6 +70,9 @@ class FieldImageryServer(
 
         /** The last game (kills, and paths if kept) as JSON; null if the post-game map is off. */
         fun replay(): ByteArray?
+
+        /** With "start at spawn" on: whether everyone is at their spawn yet, as JSON. */
+        fun ready(): ByteArray?
     }
 
     @Volatile
@@ -91,6 +94,7 @@ class FieldImageryServer(
                     FieldImageryProtocol.Kind.UAV -> request.knownId.toIntOrNull()?.let { extras?.uav(it) }
                     FieldImageryProtocol.Kind.MODE -> FieldImageryProtocol.parseMode(request.knownId)?.let { (id, alive) -> extras?.mode(id, alive) }
                     FieldImageryProtocol.Kind.REPLAY -> extras?.replay()
+                    FieldImageryProtocol.Kind.READY -> extras?.ready()
                     else -> extras?.stats()
                 }
                 reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
@@ -191,7 +195,7 @@ class FieldImageryServer(
             val address = client.inetAddress?.hostAddress ?: "?"
             when (request.kind) {
                 FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE,
-                FieldImageryProtocol.Kind.REPLAY -> {
+                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY -> {
                     serveExtra(request, out)
                     out.flush()
                     return
@@ -313,6 +317,9 @@ object FieldImageryProtocol {
 
         /** The last game for the post-game map: `SCFIELD1 REPLAY -`; PACK of JSON or NONE. */
         REPLAY("REPLAY"),
+
+        /** With "start at spawn": is everyone at their spawn yet? `SCFIELD1 READY -`; PACK of JSON. */
+        READY("READY"),
     }
 
     /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */

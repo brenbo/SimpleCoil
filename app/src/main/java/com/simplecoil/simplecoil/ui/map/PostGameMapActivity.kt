@@ -164,6 +164,8 @@ class PostGameMapActivity : AppCompatActivity() {
             isLogoEnabled = false
             isAttributionEnabled = false
             isTiltGesturesEnabled = false
+            // The compass sits below the info bar at the top
+            setCompassMargins(0, (COMPASS_TOP_DP * resources.displayMetrics.density).toInt(), (8 * resources.displayMetrics.density).toInt(), 0)
         }
         map.setStyle(MapStyles.playStyle()) { loaded ->
             style = loaded
@@ -187,6 +189,8 @@ class PostGameMapActivity : AppCompatActivity() {
         val map = map ?: return
         val points = container.playerFieldConfig.config.value?.border?.ring()
             ?: record?.let { r -> r.track.map { it.point } + r.kills.flatMap { listOf(it.from, it.to) } }.orEmpty()
+        // And no further than the field and a margin
+        CameraLimits.keepNear(map, points)
         if (points.size < 2) return
         val bounds = LatLngBounds.Builder().apply { points.forEach { include(LatLng(it.latitude, it.longitude)) } }.build()
         map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, (40 * resources.displayMetrics.density).toInt()))
@@ -341,6 +345,7 @@ class PostGameMapActivity : AppCompatActivity() {
         const val VICTIM_COLOR = 0xFFFFFFFF.toInt()
         const val HEAT_COLOR = 0xFFFF6D00.toInt()
         const val MIN_ZOOM = 13.0
+        const val COMPASS_TOP_DP = 64f
         const val MAX_ZOOM = 20.0
 
         /** The replay moves this much game time per frame. */

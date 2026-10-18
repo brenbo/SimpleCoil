@@ -22,6 +22,7 @@ import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.loadout.UavPlayer
 import com.simplecoil.simplecoil.domain.map.FieldConfig
+import com.simplecoil.simplecoil.domain.map.Readiness
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.postgame.GameRecord
 import org.json.JSONObject
@@ -168,6 +169,12 @@ class FieldImageryClient(
     fun longestShot(server: InetAddress): LongestShot? = exchange(server,
         FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.STATS)) { _, body ->
         body?.let { LongestShot.fromJson(String(it, Charsets.UTF_8)) }
+    }
+
+    /** With "start at spawn": whether everyone has reached their spawn; null if the server can't say. */
+    fun readiness(server: InetAddress): Readiness? = exchange(server,
+        FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.READY)) { _, body ->
+        body?.let { Readiness.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
 
     /** The last game for the post-game map; null if the server keeps none (or can't say). */

@@ -74,6 +74,7 @@ import com.simplecoil.simplecoil.domain.mode.ObjectiveState
 import com.simplecoil.simplecoil.domain.mode.InfectionEngine
 import com.simplecoil.simplecoil.domain.mode.RoundPhase
 import com.simplecoil.simplecoil.domain.mode.sideOf
+import com.simplecoil.simplecoil.ui.map.CameraLimits
 import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.ZoneLayers
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
@@ -279,6 +280,7 @@ class MapFragment : Fragment() {
                 launch { container.borderController.status.collect { showBorderStatus(it) } }
                 launch { container.spawnController.guide.collect { showGuide(it) } }
                 launch { container.spawnController.noFix.collect { showGuide(container.spawnController.guide.value) } }
+                launch { container.spawnController.waiting.collect { showGuide(container.spawnController.guide.value) } }
                 launch { container.loadoutController.claiming.collect { showDropBanner() } }
                 launch { container.loadoutController.notices.collect { lastNotice = it; lastNoticeAt = container.clock(); showDropBanner() } }
                 launch { container.loadoutController.longestShot.collect { showLongestShot(it) } }
@@ -379,6 +381,7 @@ class MapFragment : Fragment() {
         map.setStyle(MapStyles.playStyle()) { loaded ->
             style = loaded
             addFieldLayers(loaded)
+            limitCamera()
             photo?.let { showPhoto(it) }
             showField(field)
             renderPlayers()
@@ -511,6 +514,7 @@ class MapFragment : Fragment() {
     /** Shows the field's photo, loading it off the main thread; null takes it away. */
     private fun showPhoto(info: FieldPackInfo?) {
         photo = info
+        limitCamera()
         binding?.mapCreditTv?.isVisible = info != null
         val style = style ?: return
         if (info == null) {
@@ -533,9 +537,16 @@ class MapFragment : Fragment() {
         }
     }
 
+    /** Keeps the camera near the field: its border and photo, and a margin round them. */
+    private fun limitCamera() {
+        val map = map ?: return
+        CameraLimits.keepNear(map, field?.border?.ring().orEmpty() + photo?.bounds?.corners.orEmpty())
+    }
+
     /** Draws the field's border (or takes it away). */
     private fun showField(config: FieldConfig?) {
         field = config
+        limitCamera()
         if (isResumed) enableGps(wantsGps())
         renderSpawns()
         val style = style ?: return
@@ -566,11 +577,14 @@ class MapFragment : Fragment() {
             } else null)))
         val banner = binding?.mapSpawnTv ?: return
         val units = field?.rules?.units
+        val waiting = container.spawnController.waiting.value
         when {
             guide != null && units != null -> banner.text = getString(R.string.map_go_to_spawn, units.format(guide.meters))
+            waiting != null -> banner.text = if (waiting.of > 0) getString(R.string.map_waiting_for_everyone, waiting.atSpawn, waiting.of)
+                else getString(R.string.map_waiting_for_everyone_short)
             container.spawnController.noFix.value -> banner.setText(R.string.map_spawn_no_gps)
         }
-        banner.isVisible = (guide != null && units != null) || container.spawnController.noFix.value
+        banner.isVisible = (guide != null && units != null) || waiting != null || container.spawnController.noFix.value
     }
 
     private fun showBorderStatus(status: BorderTracker.Status?) {
