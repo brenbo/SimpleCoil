@@ -62,6 +62,5 @@ voice_infected|I'm Hit
 voice_loot_banked|Reached
 voice_victory|Good Job
 voice_defeat|Retreat
-voice_longest_shot|Good Shot
 EOF
 rm -rf "$tmp"

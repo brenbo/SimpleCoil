@@ -208,6 +208,34 @@ class LoadoutControllerTest {
     }
 
     @Test
+    fun aUavKillstreak_playsTheKillstreakThenTheUav() = runTest {
+        val rig = Rig(this, LoadoutRules(killstreaks = true, uavKills = 1, fullAutoKills = 0, uavSeconds = 10))
+        runCurrent()
+        rig.start()
+        rig.kills.emit(Unit)
+        runCurrent()
+        assertTrue(rig.sounds.isEmpty())
+        advanceTimeBy(LoadoutController.KILLSTREAK_SOUND_DELAY_MILLIS + 10)
+        runCurrent()
+        assertEquals(listOf(SessionSound.KILLSTREAK, SessionSound.UAV), rig.sounds)
+        assertEquals(listOf(9), rig.controller.uav.value.map { it.playerId })
+    }
+
+    @Test
+    fun theKillThatEndsTheGame_playsNoKillstreak() = runTest {
+        val rig = Rig(this, LoadoutRules(killstreaks = true, uavKills = 0, fullAutoKills = 1))
+        runCurrent()
+        rig.start()
+        rig.kills.emit(Unit)
+        runCurrent()
+        // The game ends right after
+        rig.playing = false
+        advanceTimeBy(LoadoutController.KILLSTREAK_SOUND_DELAY_MILLIS + 10)
+        runCurrent()
+        assertTrue(SessionSound.KILLSTREAK !in rig.sounds)
+    }
+
+    @Test
     fun dyingEndsTheStreak() = runTest {
         val rig = Rig(this, LoadoutRules(killstreaks = true, uavKills = 0, fullAutoKills = 2))
         runCurrent()

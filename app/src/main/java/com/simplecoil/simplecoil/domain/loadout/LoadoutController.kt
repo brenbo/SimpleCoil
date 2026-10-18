@@ -248,18 +248,26 @@ class LoadoutController(
         val rules = field.value?.loadout ?: return
         if (!inGame() || !rules.killstreaks) return
         streak++
-        if (rules.uavKills > 0 && streak == rules.uavKills) {
-            _notices.tryEmit(Notice.Killstreak(DropKind.UAV))
-            apply(DropKind.UAV, rules, quietly = true)
+        val earned = ArrayList<DropKind>()
+        if (rules.uavKills > 0 && streak == rules.uavKills) earned += DropKind.UAV
+        if (rules.fullAutoKills > 0 && streak == rules.fullAutoKills) earned += DropKind.SUPPLY
+        if (earned.isEmpty()) return
+        for (kind in earned) {
+            _notices.tryEmit(Notice.Killstreak(kind))
+            apply(kind, rules, quietly = true, sound = false)
         }
-        if (rules.fullAutoKills > 0 && streak == rules.fullAutoKills) {
-            _notices.tryEmit(Notice.Killstreak(DropKind.SUPPLY))
-            apply(DropKind.SUPPLY, rules, quietly = true)
+        // The killstreak, then the UAV coming online. A moment later, and only if the game goes
+        // on: the kill that ends a game is followed by the end of the game, not a reward
+        scope.launch {
+            delay(KILLSTREAK_SOUND_DELAY_MILLIS)
+            if (!inGame()) return@launch
+            feedback.play(SessionSound.KILLSTREAK)
+            if (DropKind.UAV in earned) feedback.play(SessionSound.UAV)
         }
     }
 
-    /** Gives the player what [kind] brings. */
-    fun apply(kind: DropKind, rules: LoadoutRules, quietly: Boolean = false) {
+    /** Gives the player what [kind] brings, with its sound unless [sound] is false (a killstreak plays its own). */
+    fun apply(kind: DropKind, rules: LoadoutRules, quietly: Boolean = false, sound: Boolean = true) {
         when (kind) {
             DropKind.SUPPLY -> blaster.grantShotMode(GameSettingsRepository.SHOT_MODE_FULL_AUTO)
             DropKind.BURST -> blaster.grantShotMode(GameSettingsRepository.SHOT_MODE_BURST)
@@ -267,21 +275,21 @@ class LoadoutController(
             DropKind.MEDKIT -> blaster.healFull()
             DropKind.EXTRA_LIFE -> blaster.addExtraLife()
             DropKind.OVERSHIELD -> blaster.addOvershield(rules.overshieldHits)
-            DropKind.UAV -> startUav(rules)
+            DropKind.UAV -> startUav(rules, sound)
             DropKind.SCAVENGE -> {
                 val now = session.value.reserve
                 if (now != null) blaster.setAmmoReserve(now + rules.scavengeMagazines)
             }
         }
-        // A killstreak reward has its own sound; the UAV plays its own as it comes online
-        if (kind != DropKind.UAV) feedback.play(if (quietly) SessionSound.KILLSTREAK else if (kind == DropKind.SCAVENGE) SessionSound.LOOT else SessionSound.POWER_UP)
+        // The UAV plays its own as it comes online
+        if (sound && kind != DropKind.UAV) feedback.play(if (kind == DropKind.SCAVENGE) SessionSound.LOOT else SessionSound.POWER_UP)
         feedback.vibrate()
         if (!quietly) _notices.tryEmit(Notice.Claimed(kind))
     }
 
-    private fun startUav(rules: LoadoutRules) {
+    private fun startUav(rules: LoadoutRules, sound: Boolean) {
         uavJob?.cancel()
-        feedback.play(SessionSound.UAV)
+        if (sound) feedback.play(SessionSound.UAV)
         val playerId = me().first
         val until = clock() + rules.uavSeconds * 1000L
         uavJob = scope.launch {
@@ -306,7 +314,6 @@ class LoadoutController(
             delay(STATS_DELAY_MILLIS)
             val shot = withContext(io) { server.longestShot() }
             _longestShot.value = shot
-            if (shot != null) feedback.play(SessionSound.LONGEST_SHOT)
         }
     }
 
@@ -315,5 +322,8 @@ class LoadoutController(
         const val RETRY_MILLIS = 5_000L
         const val UAV_REFRESH_MILLIS = 3_000L
         const val STATS_DELAY_MILLIS = 2_000L
+
+        /** Long enough for the end of the game to arrive after the kill that ends it. */
+        const val KILLSTREAK_SOUND_DELAY_MILLIS = 1_500L
     }
 }

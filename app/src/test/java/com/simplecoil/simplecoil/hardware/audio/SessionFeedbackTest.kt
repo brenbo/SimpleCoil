@@ -60,20 +60,53 @@ class SessionFeedbackTest {
         for (sound in SessionSound.entries) assertTrue(sound.name, SoundCues.of(sound).fallback in shipped)
     }
 
+    private val queue = AnnouncementQueue<String>(urgentMaxWaitMillis = 2_000, maxWaitMillis = 5_000, essentialMaxWaitMillis = 10_000)
+
     @Test
-    fun calloutsTakeTurnsMostImportantFirst() {
-        val queue = CalloutQueue(cooldownMillis = 8_000)
-        assertEquals("a", queue.offer("a", 1, 0))
-        queue.playing("a", 2_000, 0)
-        // While it plays, the more important waiting line is kept
-        assertNull(queue.offer("b", 1, 500))
-        assertNull(queue.offer("c", 5, 600))
-        assertTrue(queue.isBusy(1_000))
-        assertNull(queue.next(1_000))
-        assertEquals("c", queue.next(2_400))
-        queue.playing("c", 1_000, 2_400)
-        // The same line again too soon: not said
-        assertNull(queue.offer("a", 9, 5_000))
-        assertEquals("a", queue.offer("a", 9, 9_000))
+    fun announcementsTakeTurns_inTheOrderTheyHappened() {
+        // A drop and the zone closing at once: one, then the other, never both
+        assertEquals("drop", queue.offer("drop", Lane.NORMAL, false, 0).play)
+        assertNull(queue.offer("zone", Lane.NORMAL, true, 100).play)
+        assertNull(queue.offer("uav", Lane.NORMAL, false, 200).play)
+        assertTrue(queue.isBusy)
+        assertEquals("zone", queue.finished(1_500))
+        assertEquals("uav", queue.finished(3_000))
+        assertNull(queue.finished(4_000))
+        assertFalse(queue.isBusy)
+    }
+
+    @Test
+    fun killsGoAheadOfTheRest_butOnlyWhileFresh() {
+        queue.offer("zone", Lane.NORMAL, false, 0)
+        queue.offer("drop", Lane.NORMAL, false, 0)
+        queue.offer("kill", Lane.URGENT, false, 100)
+        queue.offer("score", Lane.URGENT, false, 100)
+        assertEquals("kill", queue.finished(1_000))
+        // The score waited too long: dropped rather than played late
+        assertEquals("drop", queue.finished(2_500))
+    }
+
+    @Test
+    fun theSameThingIsntQueuedTwice_andStaleOnesAreDropped() {
+        queue.offer("zone", Lane.NORMAL, false, 0)
+        queue.offer("warning", Lane.NORMAL, false, 100)
+        assertNull(queue.offer("warning", Lane.NORMAL, false, 200).play)
+        queue.offer("flag", Lane.NORMAL, true, 300)
+        // 6 s later: the warning is stale, the essential flag callout still counts
+        assertEquals("flag", queue.finished(6_000))
+        assertNull(queue.finished(7_000))
+    }
+
+    @Test
+    fun theEndOfTheGameCutsOffWhatPlays_andNothingElseFollows() {
+        queue.offer("killstreak", Lane.NORMAL, false, 0)
+        queue.offer("uav", Lane.NORMAL, false, 0)
+        val end = queue.offer("whistle", Lane.FINAL, false, 300)
+        assertEquals("whistle", end.play)
+        assertTrue(end.stopCurrent)
+        assertNull(queue.offer("victory", Lane.FINAL, true, 300).play)
+        assertNull(queue.offer("secured", Lane.NORMAL, true, 400).play)
+        assertEquals("victory", queue.finished(2_000))
+        assertNull(queue.finished(4_000))
     }
 }

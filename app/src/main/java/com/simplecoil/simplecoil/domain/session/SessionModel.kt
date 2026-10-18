@@ -145,9 +145,6 @@ enum class SessionSound {
 
     /** The game is won or lost (an objective game). */
     VICTORY, DEFEAT,
-
-    /** A new longest shot this game. */
-    LONGEST_SHOT,
 }
 
 enum class SessionToast { GRENADE_PAIRED, OUT_OF_LIVES, RECOIL_FORCED_ENABLED, RECOIL_FORCED_DISABLED, GAME_TIME_EXPIRED, OUT_OF_AMMO, EXTRA_LIFE_USED }

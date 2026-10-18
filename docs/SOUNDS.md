@@ -9,8 +9,8 @@ Every game sound plays through `SoundCues` (app/src/main/java/com/simplecoil/sim
 - **Real gun recordings**, in `res/raw`: *Snake's Authentic Gun Sounds* and its sequel by SnakeF8 (free for commercial use, no credit needed; the author calls them public domain). Empty is a dry fire, spawn a bolt release or an AK rack, connecting the blaster an AR charging handle, the last mag and a power-up are magazine sounds.
 - **Radio callouts**, in `res-licensed/raw`: the *VOiD1 Gaming Military Voice Pack*. Its license allows them in the app (no credit needed) but not sharing the files, so that folder is git-ignored and the public repo doesn't carry them. A build without it plays the effects alone. The pack's lines don't match the original script, so each callout uses the closest line it has (the table below shows what is said).
 - **Shot, reload and the bomb going off** (`shootingshort.ogg`, played for every fire mode; `reload`; `sfx_bomb_exploded`), in `res/raw`: CC0 recordings the project owner supplied; the reload is cut to its mag-in and charging part, the explosion to its first 3.5 s.
-- **Event sounds** (eliminations, score and the `sfx_` cues that aren't gun sounds), in `res/raw`: made for this app with Claude. The countdown beep, `sfx_damage_tick` and `sfx_loot` are from an earlier batch.
-- **Hit sounds** (`hit`, `hit_confirm`, `hit_shielded`) and the end-of-game whistle are still the original GameBurp effects; `hit_eliminated` is from the new batch.
+- **Event sounds** (the `sfx_` cues that aren't gun sounds), in `res/raw`: made for this app with Claude. The countdown beep, `sfx_damage_tick` and `sfx_loot` are from an earlier batch.
+- **Hit, kill and death sounds** (`hit`, `hit_confirm`, `hit_shielded`, `hit_eliminated`, `eliminated`, `score`) and the end-of-game whistle are the original GameBurp effects.
 
 ## Variety
 
@@ -44,36 +44,34 @@ Effects never play quite the same twice: each play moves the pitch up to 6% eith
 | `sfx_infected` | Infection: you were infected |
 | `sfx_loot`, `sfx_loot_banked` | Extraction |
 | `sfx_victory`, `sfx_defeat` | an objective game won or lost |
-| `sfx_longest_shot` | the Longest Shot award after a game |
 
 ## Radio callouts
 
-Played once the file exists, one at a time by priority (higher first), the same line no more than every 8 seconds, with effects ducked under them. Players can turn callouts off, or to essential only (marked ✓), in Sound settings.
+Played once the file exists, after its effect (the supply drop plays only its callout), the same line no more than every 8 seconds. The blaster's own sounds (shots, hits, reload, beeps) play at once and duck under a callout; every other sound takes its turn: one at a time in the order things happened, kills and deaths ahead of the rest, and the end of a game cuts off whatever plays and clears the line. Something that waited too long (2.5 s for a kill, 6 s, or 12 s if essential) is skipped rather than played late. Players can turn callouts off, or to essential only (marked ✓), in Sound settings.
 
-| File | Line | Priority | Essential |
-|---|---|---|---|
-| `voice_leaving_area` | "Fall back." | 9 | ✓ |
-| `voice_back_in_area` | "Affirmative." | 3 | |
-| `voice_outside_zone` | "All in, now." | 9 | ✓ |
-| `voice_zone_closing` | "Stay alert." | 8 | ✓ |
-| `voice_spawn_moving` | "Alright, let's move out." | 5 | |
-| `voice_drop_inbound` | "Airdrop inbound." | 6 | |
-| `voice_power_up` | "Locked and loaded." | 4 | |
-| `voice_killstreak` | "Enemy down." | 4 | |
-| `voice_uav_online` | "Enemy spotted." | 5 | |
-| `voice_last_mag` | "I need ammo." | 3 | |
-| `voice_capturing` | "Hold this position." | 4 | |
-| `voice_secured` | "Protect the spot." | 7 | ✓ |
-| `voice_lost` | "Negative." | 7 | ✓ |
-| `voice_hostiles_capturing` | "Need backup." | 8 | ✓ |
-| `voice_point_moved` | "Get in position." | 6 | ✓ |
-| `voice_flag_taken` | "Ambushed." | 8 | ✓ |
-| `voice_flag_captured` | "Let's go." | 7 | ✓ |
-| `voice_round_start` | "Go, go, go." | 6 | ✓ |
-| `voice_charge_set` | "Fire in the hole." | 9 | ✓ |
-| `voice_charge_defused` | "Roger that." | 9 | ✓ |
-| `voice_infected` | "I'm hit." | 8 | ✓ |
-| `voice_loot_banked` | "Reached." | 5 | |
-| `voice_victory` | "Good job." | 10 | ✓ |
-| `voice_defeat` | "Retreat." | 10 | ✓ |
-| `voice_longest_shot` | "Good shot." | 2 | |
+| File | Line | Essential |
+|---|---|---|
+| `voice_leaving_area` | "Fall back." | ✓ |
+| `voice_back_in_area` | "Affirmative." | |
+| `voice_outside_zone` | "All in, now." | ✓ |
+| `voice_zone_closing` | "Stay alert." | ✓ |
+| `voice_spawn_moving` | "Alright, let's move out." | |
+| `voice_drop_inbound` | "Airdrop inbound." | |
+| `voice_power_up` | "Locked and loaded." | |
+| `voice_killstreak` | "Enemy down." | |
+| `voice_uav_online` | "Enemy spotted." | |
+| `voice_last_mag` | "I need ammo." | |
+| `voice_capturing` | "Hold this position." | |
+| `voice_secured` | "Protect the spot." | ✓ |
+| `voice_lost` | "Negative." | ✓ |
+| `voice_hostiles_capturing` | "Need backup." | ✓ |
+| `voice_point_moved` | "Get in position." | ✓ |
+| `voice_flag_taken` | "Ambushed." | ✓ |
+| `voice_flag_captured` | "Let's go." | ✓ |
+| `voice_round_start` | "Go, go, go." | ✓ |
+| `voice_charge_set` | "Fire in the hole." | ✓ |
+| `voice_charge_defused` | "Roger that." | ✓ |
+| `voice_infected` | "I'm hit." | ✓ |
+| `voice_loot_banked` | "Reached." | |
+| `voice_victory` | "Good job." | ✓ |
+| `voice_defeat` | "Retreat." | ✓ |

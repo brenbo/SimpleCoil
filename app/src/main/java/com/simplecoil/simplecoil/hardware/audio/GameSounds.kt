@@ -25,6 +25,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import com.simplecoil.simplecoil.domain.session.SessionSound
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
 /** The player's sound choices (map design: Audio settings). */
@@ -40,8 +41,10 @@ data class AudioSettings(
 
 /**
  * The game's sounds (map design: Audio): every [SessionSound] through its [SoundCue], from a
- * SoundPool loaded once. Effects vary a little each time and rotate through their takes;
- * callouts go through a [CalloutQueue], and effects duck under them.
+ * SoundPool loaded once. Effects vary a little each time and rotate through their takes. The
+ * blaster's sounds play at once; every other sound takes its turn in an [AnnouncementQueue],
+ * effect first and then its callout, so nothing talks over anything else. The blaster's sounds
+ * duck under a callout.
  */
 class GameSounds(
     context: Context,
@@ -61,11 +64,23 @@ class GameSounds(
     /** Each name's takes, as loaded sample ids. */
     private val takes = HashMap<String, List<Int>>()
 
-    /** How long each voice line plays. */
-    private val durations = HashMap<String, Long>()
+    /** How long each sample plays, by sample id; measured off the main thread as the app starts. */
+    private val durations = ConcurrentHashMap<Int, Long>()
     private val lastTake = HashMap<String, Int>()
-    private val queue = CalloutQueue()
+    private val queue = AnnouncementQueue<SessionSound>()
     private val handler = Handler(Looper.getMainLooper())
+
+    /** When each callout was last said. */
+    private val lastSaid = HashMap<String, Long>()
+
+    /** Counts announcements: a timer from one that was cut off finds it changed and does nothing. */
+    private var announcement = 0
+
+    /** The streams of the announcement playing, to cut it off when the game ends. */
+    private val announcing = ArrayList<Int>()
+
+    /** Until when a callout is talking. */
+    private var talkingUntil = 0L
 
     init {
         val app = context.applicationContext
@@ -73,13 +88,14 @@ class GameSounds(
         // res/raw is found without code: R.raw's own fields don't survive a release build's shrinking
         @Suppress("DiscouragedApi")
         fun raw(name: String): Int? = app.resources.getIdentifier(name, "raw", app.packageName).takeIf { it != 0 }
+        val resources = ArrayList<Pair<Int, Int>>()
         for (name in SoundCues.names()) {
             // The file, then any more takes of it: name_2, name_3...
             val ids = (listOf(name) + (2..MAX_TAKES).map { "${name}_$it" }).mapNotNull { raw(it) }
             if (ids.isEmpty()) continue
-            takes[name] = ids.map { pool.load(app, it, 1) }
-            if (name.startsWith(VOICE_PREFIX)) durations[name] = duration(app, ids.first())
+            takes[name] = ids.map { res -> pool.load(app, res, 1).also { resources += it to res } }
         }
+        Thread({ for ((sample, res) in resources) durations[sample] = duration(app, res) }, "SoundLengths").start()
     }
 
     private fun duration(context: Context, resId: Int): Long = try {
@@ -88,53 +104,97 @@ class GameSounds(
                 setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
                 val millis = extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
                 release()
-                millis ?: DEFAULT_VOICE_MILLIS
+                millis ?: DEFAULT_MILLIS
             }
         }
     } catch (e: Exception) {
-        Log.w(TAG, "No duration for a voice line: " + e.message)
-        DEFAULT_VOICE_MILLIS
+        Log.w(TAG, "No length for a sound: " + e.message)
+        DEFAULT_MILLIS
     }
 
     override fun play(sound: SessionSound) {
         val cue = SoundCues.of(sound)
+        if (cue.lane == Lane.INSTANT) {
+            // Under a callout, the blaster steps back
+            val ducked = if (clock() < talkingUntil) DUCKED else 1f
+            playEffect(cue, settings().effectsVolume * ducked)
+            return
+        }
+        val decision = queue.offer(sound, cue.lane, cue.essential, clock())
+        if (decision.stopCurrent) cutOff()
+        decision.play?.let { announce(it) }
+    }
+
+    /** Plays [sound]'s effect, then its callout; then whatever waited. */
+    private fun announce(sound: SessionSound) {
+        val cue = SoundCues.of(sound)
         val s = settings()
         val now = clock()
-        // Under a callout, effects step back
-        val volume = s.effectsVolume * if (queue.isBusy(now)) DUCKED else 1f
+        val voice = cue.voice?.takeIf { voice ->
+            s.voiceOn && (cue.essential || !s.essentialOnly) && takes.containsKey(voice) &&
+                lastSaid[voice].let { it == null || now - it >= AnnouncementQueue.VOICE_COOLDOWN_MILLIS }
+        }
+        val id = ++announcement
+        announcing.clear()
+        var length = 0L
+        if (voice == null || cue.effectUnderVoice) length = playEffect(cue, s.effectsVolume, announcing)
+        if (voice != null) {
+            lastSaid[voice] = now
+            val startIn = if (length > 0) length + AnnouncementQueue.GAP_MILLIS else 0L
+            val voiceLength = takes[voice]?.firstOrNull()?.let { durations[it] } ?: DEFAULT_MILLIS
+            handler.postDelayed({
+                if (id != announcement) return@postDelayed
+                talkingUntil = clock() + voiceLength
+                playTake(voice, 1f, settings().voiceVolume, vary = false)?.let { announcing += it.first }
+            }, startIn)
+            length = startIn + voiceLength
+        }
+        handler.postDelayed({
+            if (id == announcement) queue.finished(clock())?.let { announce(it) }
+        }, length + AnnouncementQueue.GAP_MILLIS)
+    }
+
+    /** The game ended: what was being announced stops. */
+    private fun cutOff() {
+        announcement++
+        announcing.forEach(pool::stop)
+        announcing.clear()
+        talkingUntil = 0
+    }
+
+    /** [cue]'s effect (or its stand-in) at [volume]; returns how long it plays. */
+    private fun playEffect(cue: SoundCue, volume: Float, streams: MutableList<Int>? = null): Long {
         if (takes.containsKey(cue.file)) {
-            playTake(cue.file, 1f, volume, cue.vary)
-        } else {
-            repeat(cue.repeats) { i ->
-                if (i == 0) playTake(cue.fallback, cue.fallbackRate, volume, cue.vary)
-                else handler.postDelayed({ playTake(cue.fallback, cue.fallbackRate, volume, cue.vary) }, i * REPEAT_GAP_MILLIS)
+            val (stream, length) = playTake(cue.file, 1f, volume, cue.vary) ?: return 0
+            streams?.add(stream)
+            return length
+        }
+        var length = 0L
+        repeat(cue.repeats) { i ->
+            if (i == 0) {
+                playTake(cue.fallback, cue.fallbackRate, volume, cue.vary)?.let { (stream, l) -> streams?.add(stream); length = l }
+            } else {
+                handler.postDelayed({ playTake(cue.fallback, cue.fallbackRate, volume, cue.vary)?.let { streams?.add(it.first) } }, i * REPEAT_GAP_MILLIS)
             }
         }
-        val voice = cue.voice ?: return
-        if (!s.voiceOn || (s.essentialOnly && !cue.essential) || !takes.containsKey(voice)) return
-        queue.offer(voice, cue.priority, now)?.let { say(it) }
+        return length + (cue.repeats - 1) * REPEAT_GAP_MILLIS
     }
 
-    private fun say(voice: String) {
-        val now = clock()
-        val millis = durations[voice] ?: DEFAULT_VOICE_MILLIS
-        queue.playing(voice, millis, now)
-        playTake(voice, 1f, settings().voiceVolume, vary = false)
-        // Then whatever waited
-        handler.postDelayed({ queue.next(clock())?.let { say(it) } }, millis + CalloutQueue.GAP_MILLIS + 20)
-    }
-
-    /** One take of [name]: a different one from last time when there are several, a little varied if [vary]. */
-    private fun playTake(name: String, rate: Float, volume: Float, vary: Boolean) {
-        val ids = takes[name] ?: return
+    /**
+     * One take of [name]: a different one from last time when there are several, a little varied
+     * if [vary]. Returns its stream and how long it plays, or null if it didn't.
+     */
+    private fun playTake(name: String, rate: Float, volume: Float, vary: Boolean): Pair<Int, Long>? {
+        val ids = takes[name] ?: return null
         var index = if (ids.size == 1) 0 else random.nextInt(ids.size)
         if (ids.size > 1 && index == lastTake[name]) index = (index + 1) % ids.size
         lastTake[name] = index
-        val pitch = if (vary) rate * (1f + (random.nextFloat() * 2 - 1) * SoundCues.PITCH_SPREAD) else rate
-        val loud = (if (vary) volume * (1f - random.nextFloat() * SoundCues.VOLUME_SPREAD) else volume).coerceIn(0f, 1f)
-        if (loud <= 0f) return
         // SoundPool plays from half to twice the speed
-        pool.play(ids[index], loud, loud, 1, 0, pitch.coerceIn(0.5f, 2f))
+        val pitch = (if (vary) rate * (1f + (random.nextFloat() * 2 - 1) * SoundCues.PITCH_SPREAD) else rate).coerceIn(0.5f, 2f)
+        val loud = (if (vary) volume * (1f - random.nextFloat() * SoundCues.VOLUME_SPREAD) else volume).coerceIn(0f, 1f)
+        val length = ((durations[ids[index]] ?: DEFAULT_MILLIS) / pitch).toLong()
+        if (loud <= 0f) return 0 to length
+        return pool.play(ids[index], loud, loud, 1, 0, pitch) to length
     }
 
     fun release() = pool.release()
@@ -143,8 +203,9 @@ class GameSounds(
         const val TAG = "GameSounds"
         const val MAX_STREAMS = 12
         const val MAX_TAKES = 6
-        const val VOICE_PREFIX = "voice_"
-        const val DEFAULT_VOICE_MILLIS = 1_800L
+
+        /** A sound whose length isn't known yet. */
+        const val DEFAULT_MILLIS = 1_200L
         const val DUCKED = 0.45f
         const val REPEAT_GAP_MILLIS = 150L
     }
