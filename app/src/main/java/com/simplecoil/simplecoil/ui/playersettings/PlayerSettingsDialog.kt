@@ -28,8 +28,10 @@ import android.widget.Toast
 import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
 import com.simplecoil.simplecoil.R
+import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.PlayerSettingsDialogBinding
+import com.simplecoil.simplecoil.ui.dialogs.SoundSettingsSection
 import com.simplecoil.simplecoil.ui.dialogs.TeamSwapDialog
 
 /**
@@ -45,6 +47,8 @@ class PlayerSettingsDialog : DialogFragment() {
     /** Who on the full [targetTeam] the player trades places with, or 0. */
     private var swapWith: Byte = 0
     private lateinit var binding: PlayerSettingsDialogBinding
+    /** This phone's sound, in the local dialog; null on the server, where the player is someone else. */
+    private var sound: SoundSettingsSection? = null
 
     private val isServer get() = requireArguments().getBoolean(ARG_SERVER)
     private val playerId get() = requireArguments().getByte(ARG_PLAYER_ID)
@@ -75,14 +79,20 @@ class PlayerSettingsDialog : DialogFragment() {
         show(initial)
         showFiringMode()
         if (isServer) showServerControls(initial) else hideServerControls()
+        if (isServer) binding.soundSection.root.visibility = View.GONE
+        else sound = SoundSettingsSection(binding.soundSection, (requireActivity().application as SimpleCoilApp).container)
         wireControls()
         return builder
             .setView(binding.root)
             .setPositiveButton(R.string.ok) { dialog, _ ->
                 save()
+                sound?.save()
                 dialog.dismiss()
             }
-            .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
+            .setNegativeButton(R.string.cancel) { dialog, _ ->
+                sound?.cancel()
+                dialog.dismiss()
+            }
             .create()
     }
 

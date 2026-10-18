@@ -151,7 +151,11 @@ class DialogCoordinator(
     override fun showMessage(message: GameMessage, arg: Int) {
         when (message) {
             GameMessage.NOT_ENOUGH_PLAYERS -> toast(appContext.getString(R.string.not_enough_players_toast))
-            GameMessage.PLAYER_SETTINGS_NOT_ALLOWED -> toast(appContext.getString(R.string.player_settings_not_allowed_toast))
+            GameMessage.PLAYER_SETTINGS_NOT_ALLOWED -> {
+                // The game settings are the server's; this phone's sound is still the player's
+                toast(appContext.getString(R.string.player_settings_not_allowed_toast))
+                com.simplecoil.simplecoil.ui.dialogs.SoundDialog.show(activity, (activity.application as com.simplecoil.simplecoil.SimpleCoilApp).container)
+            }
             GameMessage.UDP_VERSION_ERROR -> toast(appContext.getString(R.string.error_udp_version))
             GameMessage.KICKED_BY_SERVER -> toast(appContext.getString(R.string.kicked_by_server_toast))
             GameMessage.INAPPROPRIATE_NAME -> toast("Please choose an appropriate player name!")

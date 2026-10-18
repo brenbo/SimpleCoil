@@ -35,6 +35,7 @@ import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.InfectionEngine
 import com.simplecoil.simplecoil.domain.mode.ObjectiveState
 import com.simplecoil.simplecoil.network.server.LiveGame
+import com.simplecoil.simplecoil.network.server.SessionPhase
 import com.simplecoil.simplecoil.ui.map.CameraLimits
 import com.simplecoil.simplecoil.ui.map.DropOverlay
 import com.simplecoil.simplecoil.ui.map.GlyphOverlay
@@ -126,6 +127,12 @@ class RefereeMapActivity : AppCompatActivity() {
                 .show()
         }
 
+        // The game ended (or was reset, or the server stopped): back to the server's home
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                container.serverController.snapshot.collect { if (it?.phase != SessionPhase.RUNNING) finish() }
+            }
+        }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {

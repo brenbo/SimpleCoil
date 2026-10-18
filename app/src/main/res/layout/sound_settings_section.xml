@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This phone's sound settings (map design: Audio), in the player settings and on their own:
+     effects and callout volumes, callouts on or off or essential only, and vibration. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        style="@style/DialogSection"
+        android:text="@string/sound_title" />
+
+    <View style="@style/DialogDivider" />
+
+    <TextView
+        style="@style/DialogLabel"
+        android:labelFor="@+id/sound_effects_seek"
+        android:text="@string/sound_effects_volume" />
+
+    <SeekBar
+        android:id="@+id/sound_effects_seek"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        style="@style/DialogSwitch"
+        android:id="@+id/sound_voice_switch"
+        android:text="@string/sound_voice" />
+
+    <TextView
+        style="@style/DialogLabel"
+        android:id="@+id/sound_voice_title"
+        android:labelFor="@+id/sound_voice_seek"
+        android:text="@string/sound_voice_volume" />
+
+    <SeekBar
+        android:id="@+id/sound_voice_seek"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        style="@style/DialogSwitch"
+        android:id="@+id/sound_essential_switch"
+        android:text="@string/sound_essential" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        style="@style/DialogSwitch"
+        android:id="@+id/sound_vibration_switch"
+        android:text="@string/sound_vibration" />
+
+    <Button
+        android:id="@+id/sound_test_button"
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:text="@string/sound_test" />
+</LinearLayout>

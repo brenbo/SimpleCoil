@@ -456,8 +456,7 @@
     <string name="ref_player">#%1$d</string>
     <string name="ref_survivors">Survivors</string>
     <string name="ref_infected">Infected</string>
-    <string name="sound_button">Sound</string>
-    <string name="sound_title">Sound</string>
+    <string name="sound_title">Sound settings</string>
     <string name="sound_effects_volume">Effects volume</string>
     <string name="sound_voice">Radio callouts</string>
     <string name="sound_voice_volume">Callout volume</string>

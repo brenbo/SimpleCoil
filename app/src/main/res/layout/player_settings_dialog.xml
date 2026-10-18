@@ -196,6 +196,11 @@
             android:inputType="number" >
         </EditText>
 
+        <!-- This phone's own sound: local only -->
+        <include
+            android:id="@+id/sound_section"
+            layout="@layout/sound_settings_section" />
+
         <!-- Server only -->
         <LinearLayout
             android:id="@+id/player_section"
