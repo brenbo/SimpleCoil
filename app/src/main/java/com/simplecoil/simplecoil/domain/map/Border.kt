@@ -39,6 +39,9 @@ sealed interface Border {
     /** The edge as a closed ring of points (first = last), for drawing. */
     fun ring(): List<LatLon>
 
+    /** The point on the edge nearest [point]: where to head to get back on the field. */
+    fun nearestEdgePoint(point: LatLon): LatLon
+
     data class Circle(val center: LatLon, val radiusMeters: Double) : Border {
         init {
             require(radiusMeters > 0) { "radius must be positive" }
@@ -50,6 +53,13 @@ sealed interface Border {
             kotlin.math.abs(GeoMath.distanceMeters(center, point) - radiusMeters)
 
         override val bounds: GeoBounds get() = GeoMath.squareAround(center, radiusMeters * 2)
+
+        override fun nearestEdgePoint(point: LatLon): LatLon {
+            val (east, north) = GeoMath.toLocal(center, point)
+            val d = hypot(east, north)
+            if (d == 0.0) return GeoMath.offset(center, radiusMeters, 0.0)
+            return GeoMath.offset(center, north / d * radiusMeters, east / d * radiusMeters)
+        }
 
         override fun ring(): List<LatLon> = (0..CIRCLE_SEGMENTS).map { i ->
             val a = 2 * PI * i / CIRCLE_SEGMENTS
@@ -93,11 +103,37 @@ sealed interface Border {
             get() = GeoBounds(corners.maxOf { it.latitude }, corners.minOf { it.latitude },
                 corners.maxOf { it.longitude }, corners.minOf { it.longitude })
 
+        override fun nearestEdgePoint(point: LatLon): LatLon {
+            val p = GeoMath.toLocal(origin, point)
+            var best = Double.MAX_VALUE
+            var bestPoint = p
+            for (i in local.indices) {
+                val a = local[i]
+                val b = local[(i + 1) % local.size]
+                val q = segmentPoint(p, a, b)
+                val d = hypot(p.first - q.first, p.second - q.second)
+                if (d < best) {
+                    best = d
+                    bestPoint = q
+                }
+            }
+            return GeoMath.offset(origin, bestPoint.second, bestPoint.first)
+        }
+
         override fun ring(): List<LatLon> = corners + corners.first()
     }
 
     companion object {
         const val CIRCLE_SEGMENTS = 72
+
+        /** The point on segment [a]-[b] nearest [p] (local metres). */
+        private fun segmentPoint(p: Pair<Double, Double>, a: Pair<Double, Double>, b: Pair<Double, Double>): Pair<Double, Double> {
+            val dx = b.first - a.first
+            val dy = b.second - a.second
+            val lengthSq = dx * dx + dy * dy
+            val t = if (lengthSq == 0.0) 0.0 else (((p.first - a.first) * dx + (p.second - a.second) * dy) / lengthSq).coerceIn(0.0, 1.0)
+            return (a.first + t * dx) to (a.second + t * dy)
+        }
 
         private fun segmentDistance(p: Pair<Double, Double>, a: Pair<Double, Double>, b: Pair<Double, Double>): Double {
             val dx = b.first - a.first

@@ -44,6 +44,7 @@ import com.simplecoil.simplecoil.domain.mode.flagBases
 import com.simplecoil.simplecoil.domain.mode.MarksmanEngine
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.mode.ZonePlan
+import com.simplecoil.simplecoil.domain.mode.ZoneMembership
 import com.simplecoil.simplecoil.domain.mode.ModeEngine
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
@@ -220,7 +221,9 @@ class LiveGame(
             GameMode.DOMINATION, GameMode.HARDPOINT -> {
                 if (base.objectives.isEmpty()) return
                 val engine = ModeEngine(base.mode, base.objectives, base.objectiveRules, wallClock());
-                { engine.tick(wallClock(), presence(base.objectives, base.objectiveRules.radiusMeters)) }
+                // Standing in a point counts after the grace time, and leaving it only past the margin
+                val members = ZoneMembership(base.rules.graceSeconds * 1000L, base.rules.leaveMarginMeters);
+                { engine.tick(wallClock(), presence(base.objectives, base.objectiveRules.radiusMeters, members)) }
             }
             GameMode.BATTLE_ROYALE -> {
                 val border = base.border ?: return
@@ -308,17 +311,21 @@ class LiveGame(
     }
 
     /** How many players of each team stand on each point: in the game, with a fresh position. */
-    private fun presence(objectives: List<Objective>, radiusMeters: Double): Map<String, Map<Int, Int>> {
+    private fun presence(objectives: List<Objective>, radiusMeters: Double, members: ZoneMembership): Map<String, Map<Int, Int>> {
         val now = monoClock()
-        val playing = positions().filter { (id, fix) ->
+        val fixes = positions()
+        val ids = fixes.keys + players().keys
+        // Fresh positions of players in the game; a player who said they are out (lately) can't hold a point
+        val usable = ids.associateWith { id ->
+            val fix = fixes[id]
             val said = alive[id]
-            // A player who said they are out (in the last few seconds) can't hold a point
             val out = said != null && !said.first && now - said.second <= ALIVE_STALE_MILLIS
-            now - fix.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS && !out
+            fix?.takeIf { now - it.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS && !out }?.point
         }
         return objectives.associate { o ->
-            o.id to playing.entries.filter { GeoMath.distanceMeters(it.value.point, o.point) <= radiusMeters }
-                .groupingBy { teamOf(it.key) }.eachCount()
+            o.id to usable.filter { (id, point) ->
+                members.update(id, o.id, point?.let { GeoMath.distanceMeters(it, o.point) }, radiusMeters, now)
+            }.keys.groupingBy { teamOf(it) }.eachCount()
         }
     }
 

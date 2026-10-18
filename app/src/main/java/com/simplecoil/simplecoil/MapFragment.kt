@@ -401,6 +401,13 @@ class MapFragment : Fragment() {
             PropertyFactory.lineWidth(3f),
             PropertyFactory.lineDasharray(arrayOf(1.5f, 1.5f)),
         ))
+        // Out of bounds: the way back to the field
+        style.addSource(GeoJsonSource(BACK_SOURCE))
+        style.addLayer(LineLayer(BACK_SOURCE, BACK_SOURCE).withProperties(
+            PropertyFactory.lineColor(BORDER_COLOR.toColorInt()),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineDasharray(arrayOf(1.5f, 1.5f)),
+        ))
         style.addSource(GeoJsonSource(LONGEST_SOURCE))
         style.addLayer(LineLayer(LONGEST_LAYER, LONGEST_SOURCE).withProperties(
             PropertyFactory.lineColor(LONGEST_COLOR.toColorInt()),
@@ -594,8 +601,21 @@ class MapFragment : Fragment() {
         banner.isVisible = (guide != null && units != null) || waiting != null || container.spawnController.noFix.value
     }
 
+    /** Out of bounds: a dashed line from you to the nearest point of the border (map design: Border). */
+    private fun showWayBack(status: BorderTracker.Status?) {
+        val source = style?.getSourceAs<GeoJsonSource>(BACK_SOURCE) ?: return
+        val border = field?.border
+        val me = you()
+        val outside = status != null && status.phase != BorderTracker.Phase.INSIDE && border != null && me != null && !border.contains(me)
+        source.setGeoJson(FeatureCollection.fromFeatures(listOfNotNull(if (outside) {
+            val edge = border!!.nearestEdgePoint(me!!)
+            Feature.fromGeometry(LineString.fromLngLats(listOf(Point.fromLngLat(me.longitude, me.latitude), Point.fromLngLat(edge.longitude, edge.latitude))))
+        } else null)))
+    }
+
     private fun showBorderStatus(status: BorderTracker.Status?) {
         updateBorderVisibility()
+        showWayBack(status)
         val banner = binding?.mapOutOfBoundsTv ?: return
         val rules = field?.rules
         if (status == null || rules == null || status.phase == BorderTracker.Phase.INSIDE) {
@@ -1080,6 +1100,7 @@ class MapFragment : Fragment() {
         const val GUIDE_LAYER = "spawn-guide"
         const val GUIDE_COLOR = "#69F0AE"
         const val LONGEST_SOURCE = "longest-shot"
+        const val BACK_SOURCE = "way-back"
         const val LONGEST_LAYER = "longest-shot"
         const val LONGEST_COLOR = "#FFD54F"
 

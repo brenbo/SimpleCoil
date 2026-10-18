@@ -674,6 +674,7 @@
     <string name="field_auto_place_failed">Couldn\'t find room for the spawns. Try a bigger border or a smaller spawn.</string>
     <string name="field_spawns_cleared">Spawns cleared.</string>
     <string name="field_tool_objectives">Points</string>
+    <string name="field_small_warning">This field is under 100 ft across. Phone GPS is only good to about 10–25 ft, so spawns, capture points and drops may not work well here. Classic, or Domination with one point, plays best on a field this small.</string>
     <string name="field_hint_objectives">Tap to add capture point %1$s. Tap a point to remove it. Leave none to have them placed by field size for each game.</string>
     <string name="field_objectives_cleared">Capture points cleared. They will be placed by field size for each game.</string>
     <string name="field_objectives_full">Five capture points at most.</string>

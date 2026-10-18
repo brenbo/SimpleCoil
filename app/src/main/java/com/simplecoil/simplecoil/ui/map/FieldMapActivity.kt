@@ -117,6 +117,9 @@ class FieldMapActivity : AppCompatActivity() {
     private var walkListener: LocationListener? = null
     private var spawnTeam = 1
 
+    /** The last border warned about being small. */
+    private var warnedSmall: Border? = null
+
     /** The capture points drawn over the map. */
     private var objectiveOverlay: ObjectiveOverlay? = null
 
@@ -334,6 +337,7 @@ class FieldMapActivity : AppCompatActivity() {
 
     /** The tool was switched off: a walk becomes the border; the others already saved as they went. */
     private fun finishTool() {
+        if (tool == Tool.POLYGON) warnIfSmall(config.border)
         if (tool == Tool.WALK) {
             stopWalk()
             val outline = PathSimplifier.simplify(walked, WALK_TOLERANCE_METERS)
@@ -569,6 +573,18 @@ class FieldMapActivity : AppCompatActivity() {
 
     private fun saveBorder(border: Border?) {
         saveConfig(config.copy(border = border), R.string.field_border_saved.takeIf { border != null && tool == Tool.WALK })
+        // A polygon grows a corner at a time: it is checked when the tool is put down
+        if (tool != Tool.POLYGON) warnIfSmall(border)
+    }
+
+    /** Under about 100 ft across, GPS zones aren't reliable (map design: Border): say so, once per field. */
+    private fun warnIfSmall(border: Border?) {
+        if (border == null || SpawnPlanner.fieldWidth(border) >= SMALL_FIELD_METERS || warnedSmall == border) return
+        warnedSmall = border
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setMessage(R.string.field_small_warning)
+            .setPositiveButton(R.string.ok, null)
+            .show()
     }
 
     private fun saveConfig(updated: FieldConfig, message: Int? = null) {
@@ -850,6 +866,9 @@ class FieldMapActivity : AppCompatActivity() {
 
         /** A–E. */
         const val MAX_OBJECTIVES = 5
+
+        /** About 100 ft: smaller fields are too small for GPS zones. */
+        const val SMALL_FIELD_METERS = 30.0
 
         /** A whole number for a number field: plain digits, which it reads back as typed. */
         fun number(value: Int): String = String.format(Locale.ROOT, "%d", value)
