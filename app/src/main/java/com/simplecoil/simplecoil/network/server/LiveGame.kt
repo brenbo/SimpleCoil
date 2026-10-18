@@ -22,7 +22,9 @@ import com.simplecoil.simplecoil.domain.loadout.Fix
 import com.simplecoil.simplecoil.domain.loadout.LiveField
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import com.simplecoil.simplecoil.domain.loadout.ShotStats
+import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.FieldConfig
+import com.simplecoil.simplecoil.domain.map.GeoCircle
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.Readiness
@@ -186,7 +188,10 @@ class LiveGame(
             val keepClear = field.currentSpawns().map { it.point to base.spawnRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
                 base.objectives.map { it.point to base.objectiveRules.radiusMeters + LiveField.SPAWN_CLEARANCE_METERS } +
                 (field.config()?.drops ?: emptyList()).map { it.point to LiveField.DROP_SPACING_METERS }
-            val spot = LiveField.dropSpot(border, base.rules.edgeBufferMeters, keepClear, random) ?: continue
+            // Battle Royale: inside the zone it is shrinking to, where players will be
+            val zone = battleRoyale?.zone(wallClock())
+            val spot = (zone?.let { z -> spotInside(border, z.next ?: z.current, keepClear) }
+                ?: LiveField.dropSpot(border, base.rules.edgeBufferMeters, keepClear, random)) ?: continue
             field.drop(kinds[random.nextInt(kinds.size)], spot, wallClock())
             publish()
         }
@@ -220,8 +225,18 @@ class LiveGame(
             GameMode.BATTLE_ROYALE -> {
                 val border = base.border ?: return
                 val engine = BattleRoyaleEngine(ZonePlan(border, base.battleRoyale, wallClock(), random))
-                battleRoyale = engine;
-                { engine.tick(wallClock(), players()) }
+                battleRoyale = engine
+                var lastPhase = 0;
+                {
+                    val state = engine.tick(wallClock(), players())
+                    val zone = state.zone
+                    // Each shrink: spawns move inside the circle it shrinks to, while respawns last
+                    if (zone != null && zone.phase > lastPhase) {
+                        lastPhase = zone.phase
+                        if (!zone.noRespawn) zone.next?.let { moveSpawnsInto(base, it) }
+                    }
+                    state
+                }
             }
             GameMode.MARKSMAN -> {
                 val engine = MarksmanEngine(base.marksman);
@@ -268,6 +283,28 @@ class LiveGame(
             }
             delay(MODE_TICK_MILLIS)
         }
+    }
+
+    /** A drop spot inside [circle] and on the field, clear of [keepClear]. */
+    private fun spotInside(border: Border, circle: GeoCircle, keepClear: List<Pair<LatLon, Double>>): LatLon? {
+        val area = Border.Circle(circle.center, circle.radiusMeters)
+        repeat(TRIES) {
+            LiveField.dropSpot(area, circle.radiusMeters * 0.15, keepClear, random)?.takeIf { border.contains(it) }?.let { return it }
+        }
+        return circle.center.takeIf { border.contains(it) }
+    }
+
+    /** Battle Royale: the spawns move inside [circle], where the next shrink leaves room. */
+    private fun moveSpawnsInto(base: FieldConfig, circle: GeoCircle) {
+        val current = field.currentSpawns()
+        if (current.isEmpty()) return
+        val teams = current.map { it.team }.distinct().sorted()
+        val perTeam = current.groupingBy { it.team }.eachCount().values.max().coerceIn(1, 4)
+        val placed = SpawnPlanner.place(Border.Circle(circle.center, circle.radiusMeters), teams,
+            base.spawnRules.copy(perTeam = perTeam), 0.0, positionsByTeam(), current, random).spawns
+        if (placed.isEmpty()) return
+        field.moveSpawns(placed)
+        publish()
     }
 
     /** How many players of each team stand on each point: in the game, with a fresh position. */
@@ -420,6 +457,9 @@ class LiveGame(
 
         /** How often an objective game moves on. */
         const val MODE_TICK_MILLIS = 1_000L
+
+        /** Tries for a drop spot inside the Battle Royale zone. */
+        private const val TRIES = 20
 
         /** How often the post-game map samples everyone's position. */
         const val TRACK_MILLIS = 3_000L

@@ -53,6 +53,7 @@ import com.simplecoil.simplecoil.network.imagery.GamePresetStore
 import com.simplecoil.simplecoil.network.server.PlayerGps
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
@@ -281,6 +282,9 @@ class AppContainer(private val app: Application) {
 
     /** What the dedicated server reports to its screen. */
     val serverEvents = EventBus<ServerEvent>(name = "ServerEvents")
+
+    /** The host pressed Reset on the server this phone plays on: the last game's screens close. */
+    val sessionResets = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     /** While a dedicated server runs: each connected player's GPS, for its main screen. */
     val serverGps = MutableStateFlow<List<PlayerGps>>(emptyList())

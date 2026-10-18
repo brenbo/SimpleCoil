@@ -17,7 +17,13 @@
 package com.simplecoil.simplecoil.ui.map
 
 import android.content.Context
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.CompoundButton
+import android.widget.TextView
 import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.appcompat.app.AlertDialog
@@ -138,6 +144,60 @@ object FieldRulesDialog {
             units = if (id == R.id.rules_units_feet) DistanceUnits.FEET else DistanceUnits.METERS
             showDistances(meters)
         }
+
+        // Only what applies (map design: Dedicated server settings): each setting shows when the
+        // one it depends on is on, and hides with its label otherwise
+        fun show(field: View, visible: Boolean) {
+            field.isVisible = visible
+            val parent = field.parent as? ViewGroup ?: return
+            // A field's label sits just before it
+            (parent.getChildAt(parent.indexOfChild(field) - 1) as? TextView)?.takeIf { it !is CompoundButton }?.isVisible = visible
+        }
+        fun number(field: EditText) = field.text?.toString()?.toIntOrNull() ?: 0
+        fun refresh() {
+            val penalty = dialog.rulesPenaltyGroup.checkedRadioButtonId
+            show(dialog.rulesHealthEt, penalty == R.id.rules_penalty_health)
+            show(dialog.rulesTickEt, penalty == R.id.rules_penalty_health)
+            show(dialog.rulesSecondsInSpawnEt, dialog.rulesWalkBackSwitch.isChecked || dialog.rulesStartAtSpawnSwitch.isChecked)
+            val moving = number(dialog.rulesMoveMinutesEt) > 0
+            show(dialog.rulesEnemyClearEt, moving)
+            show(dialog.rulesCrossfadeEt, moving)
+            show(dialog.rulesOldGraceEt, moving)
+            val ammo = dialog.rulesAmmoGroup.checkedRadioButtonId
+            val limited = ammo == R.id.rules_ammo_limited || ammo == R.id.rules_ammo_scavenger
+            show(dialog.rulesReserveEt, limited)
+            dialog.rulesRefillSwitch.isVisible = limited
+            show(dialog.rulesScavengeSecondsEt, ammo == R.id.rules_ammo_scavenger)
+            show(dialog.rulesScavengeMagsEt, ammo == R.id.rules_ammo_scavenger)
+            val drops = dialog.rulesDropsSwitch.isChecked
+            dropBoxes.values.forEach { it.isVisible = drops }
+            show(dialog.rulesDropSupply, drops)
+            listOf(dialog.rulesDropIntervalEt, dialog.rulesDropWarningEt, dialog.rulesClaimSecondsEt, dialog.rulesDropLastsEt,
+                dialog.rulesClaimRadiusEt).forEach { show(it, drops) }
+            dialog.rulesNearestTeamSwitch.isVisible = drops
+            show(dialog.rulesShieldHitsEt, drops && dialog.rulesDropShield.isChecked)
+            val streaks = dialog.rulesKillstreaksSwitch.isChecked
+            show(dialog.rulesUavKillsEt, streaks)
+            show(dialog.rulesAutoKillsEt, streaks)
+            show(dialog.rulesUavSecondsEt, (drops && dialog.rulesDropUav.isChecked) || (streaks && number(dialog.rulesUavKillsEt) > 0))
+            val shots = dialog.rulesTrackShotsSwitch.isChecked
+            show(dialog.rulesMaxShotEt, shots)
+            dialog.rulesLongestShotSwitch.isVisible = shots
+            show(dialog.rulesNearEt, dialog.rulesOnlyNearSwitch.isChecked)
+        }
+        val watcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) = refresh()
+        }
+        dialog.rulesMoveMinutesEt.addTextChangedListener(watcher)
+        dialog.rulesUavKillsEt.addTextChangedListener(watcher)
+        dialog.rulesPenaltyGroup.setOnCheckedChangeListener { _, _ -> refresh() }
+        dialog.rulesAmmoGroup.setOnCheckedChangeListener { _, _ -> refresh() }
+        listOf(dialog.rulesWalkBackSwitch, dialog.rulesStartAtSpawnSwitch, dialog.rulesDropsSwitch, dialog.rulesKillstreaksSwitch,
+            dialog.rulesTrackShotsSwitch, dialog.rulesOnlyNearSwitch, dialog.rulesDropShield, dialog.rulesDropUav)
+            .forEach { it.setOnCheckedChangeListener { _, _ -> refresh() } }
+        refresh()
 
         AlertDialog.Builder(context, R.style.AppDialogTheme)
             .setView(dialog.root)

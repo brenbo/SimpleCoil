@@ -40,7 +40,7 @@ data class BattleRoyaleRules(
     /** Each phase hurts more: the damage times the phase. */
     val damageRises: Boolean = true,
     /** Eliminated players respawn until this phase starts shrinking; 0 = never. */
-    val respawnUntilPhase: Int = 0,
+    val respawnUntilPhase: Int = 3,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("phases", phases)
@@ -213,6 +213,9 @@ class ZonePlan(border: Border, private val rules: BattleRoyaleRules, private val
  * server once a second.
  */
 class BattleRoyaleEngine(private val plan: ZonePlan) {
+    /** The zone at [nowMillis]. */
+    fun zone(nowMillis: Long): ZoneState = plan.at(nowMillis)
+
     private val out = HashSet<Int>()
     private var winner = 0
     private var teamsSeen = 0

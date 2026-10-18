@@ -122,6 +122,8 @@ class PostGameMapActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
         load()
+        // The host pressed Reset: this game is over and done with
+        lifecycleScope.launch { container.sessionResets.collect { finish() } }
     }
 
     private fun load() {

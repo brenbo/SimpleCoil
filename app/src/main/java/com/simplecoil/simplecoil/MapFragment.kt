@@ -561,10 +561,17 @@ class MapFragment : Fragment() {
     /** Draws the spawns, the moving ones fading (map design: Moving spawns). */
     private fun renderSpawns() {
         val style = style ?: return
-        val layers = container.spawnController.layers()
+        // Battle Royale once respawns are over: spawns are no use to anyone, so they go
+        val layers = container.spawnController.layers()?.takeIf { spawnsMatter() }
         val latitude = layers?.let { (it.steady + it.incoming + it.outgoing).firstOrNull()?.point?.latitude } ?: 0.0
         SpawnLayers.update(style, layers?.steady ?: emptyList(), layers?.incoming ?: emptyList(), layers?.outgoing ?: emptyList(),
             layers?.progress ?: 1.0, layers?.radiusMeters ?: 10.0, latitude)
+    }
+
+    /** Spawns are worth showing: not in a Battle Royale whose respawns are over. */
+    private fun spawnsMatter(): Boolean {
+        val state = container.modeController.state.value ?: return true
+        return !(state.mode == GameMode.BATTLE_ROYALE && inGame() && state.zone?.noRespawn == true)
     }
 
     /** After an elimination with walk-back respawn: a dashed line and the distance to your nearest spawn. */
@@ -670,7 +677,9 @@ class MapFragment : Fragment() {
         val photoBounds = photo?.bounds
         val me = you()
         val others = others().map { LatLon(it.latitude, it.longitude) }
-        target = AutoZoom.target(autoZoom, border, photoBounds, me, others)
+        // Battle Royale: fitting the field means fitting the safe zone, closer as it shrinks
+        val zone = container.modeController.state.value?.takeIf { it.mode == GameMode.BATTLE_ROYALE && inGame() }?.zone?.current
+        target = if (zone != null && autoZoom == AutoZoom.FIELD) zone else AutoZoom.target(autoZoom, border, photoBounds, me, others)
         if (!placed) {
             val start = AutoZoom.target(AutoZoom.FIELD, border, photoBounds, me, emptyList()) ?: return
             val map = map ?: return

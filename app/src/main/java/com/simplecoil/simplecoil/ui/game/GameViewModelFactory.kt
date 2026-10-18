@@ -42,7 +42,10 @@ class GameViewModelFactory(private val app: SimpleCoilApp) : ViewModelProvider.F
         gameStateRepo = container.gameState,
         playerRepo = container.players,
         // The host pressed Reset: the last objective game's result goes
-        onSessionReset = { container.modeController.clear() },
+        onSessionReset = {
+            container.modeController.clear()
+            container.sessionResets.tryEmit(Unit)
+        },
     ) as T
 
     companion object {

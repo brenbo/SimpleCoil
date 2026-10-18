@@ -39,7 +39,8 @@ class BattleRoyaleTest {
 
     private val center = LatLon(39.0, -77.0)
     private val field = Border.Circle(center, 100.0)
-    private val rules = BattleRoyaleRules(phases = 3, firstWaitSeconds = 60, shrinkSeconds = 30, pauseSeconds = 30, finalDiameterMeters = 20.0)
+    private val rules = BattleRoyaleRules(phases = 3, firstWaitSeconds = 60, shrinkSeconds = 30, pauseSeconds = 30, finalDiameterMeters = 20.0,
+        respawnUntilPhase = 0)
 
     @Test
     fun eachCircleShrinksInsideTheLast() {
