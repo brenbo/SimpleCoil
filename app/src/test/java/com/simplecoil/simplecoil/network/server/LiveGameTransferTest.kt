@@ -21,6 +21,7 @@ import com.simplecoil.simplecoil.domain.loadout.Fix
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
 import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.FieldConfig
+import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.network.imagery.FieldConfigStore
 import com.simplecoil.simplecoil.network.imagery.FieldImageryClient
@@ -99,6 +100,20 @@ class LiveGameTransferTest {
         b.sync(loopback)
         assertTrue(aConfig.config.value!!.drops.isEmpty())
         assertTrue(bConfig.config.value!!.drops.isEmpty())
+    }
+
+    @Test
+    fun theRefereeDropsWhatTheyPick_whereTheyTap_onTheFieldOnly() {
+        val (aConfig, a) = phone("a")
+        a.sync(loopback)
+        val before = aConfig.config.value!!.drops.size
+        val spot = GeoMath.offset(center, 30.0, 0.0)
+        assertEquals(LiveGame.Placed.OUTSIDE, game.dropAt(DropKind.UAV, GeoMath.offset(center, 300.0, 0.0)))
+        assertEquals(LiveGame.Placed.DROPPED, game.dropAt(DropKind.UAV, spot))
+        a.sync(loopback)
+        val drops = aConfig.config.value!!.drops
+        assertEquals(before + 1, drops.size)
+        assertTrue(drops.any { it.kind == DropKind.UAV && it.point == spot })
     }
 }
 

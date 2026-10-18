@@ -220,13 +220,17 @@ class LiveGame(
         return RefereeView(field.config(), players.sortedBy { it.team }, mode)
     }
 
-    /** The referee drops a crate now: one of the field's drop kinds (or any, with drops off). False outside a game. */
-    fun dropNow(): Boolean {
-        val base = startField ?: return false
-        val border = base.border ?: return false
-        if (!field.isActive) return false
-        val kinds = base.loadout.dropKinds.filter { it in DropKind.TIMED }.ifEmpty { DropKind.TIMED }
-        return dropOne(base, border, kinds)
+    /** What came of the referee placing a drop. */
+    enum class Placed { DROPPED, OUTSIDE, NO_GAME }
+
+    /** The referee drops a [kind] crate at [point]: only on the field, while a game runs. */
+    fun dropAt(kind: DropKind, point: LatLon): Placed {
+        val border = startField?.border ?: return Placed.NO_GAME
+        if (!field.isActive) return Placed.NO_GAME
+        if (!border.contains(point)) return Placed.OUTSIDE
+        field.drop(kind, point, wallClock()) ?: return Placed.NO_GAME
+        publish()
+        return Placed.DROPPED
     }
 
     /** The referee closes the Battle Royale zone now. */

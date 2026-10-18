@@ -447,6 +447,10 @@
     <string name="ref_end_game">End game</string>
     <string name="ref_end_confirm">End the game for everyone now?</string>
     <string name="ref_dropped">A crate is coming down.</string>
+    <string name="ref_drop_what">Drop what?</string>
+    <string name="ref_drop_where">Tap the field where the %1$s lands</string>
+    <string name="ref_drop_cancel">Cancel drop</string>
+    <string name="ref_drop_outside">Outside the field: tap inside the border</string>
     <string name="ref_no_drop">No crate: it needs a game running on a field with a border.</string>
     <string name="ref_zone_closing">The zone is closing now.</string>
     <string name="ref_zone_cant">The zone is already closing, or has nowhere left to go.</string>

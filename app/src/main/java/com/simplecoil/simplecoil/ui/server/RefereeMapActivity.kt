@@ -30,6 +30,7 @@ import com.simplecoil.simplecoil.AppContainer
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.databinding.ActivityRefereeMapBinding
+import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.InfectionEngine
@@ -111,9 +112,22 @@ class RefereeMapActivity : AppCompatActivity() {
         dots = GlyphOverlay(this, binding.refPlayersLayer, textSp = DOT_SP)
         names = GlyphOverlay(this, binding.refNamesLayer, textSp = NAME_SP, below = true)
 
+        // Drop now: pick what, then tap the field where it lands (tap Drop now again to cancel)
         binding.refDropButton.setOnClickListener {
-            val dropped = container.liveGame?.dropNow() == true
-            Toast.makeText(applicationContext, if (dropped) R.string.ref_dropped else R.string.ref_no_drop, Toast.LENGTH_SHORT).show()
+            if (placing != null) {
+                stopPlacing()
+                return@setOnClickListener
+            }
+            val kinds = DropKind.TIMED
+            AlertDialog.Builder(this, R.style.AppDialogTheme)
+                .setTitle(R.string.ref_drop_what)
+                .setItems(kinds.map { DropOverlay.name(this, it) }.toTypedArray()) { _, which ->
+                    placing = kinds[which]
+                    binding.refDropButton.setText(R.string.ref_drop_cancel)
+                    Toast.makeText(applicationContext, getString(R.string.ref_drop_where, DropOverlay.name(this, kinds[which])), Toast.LENGTH_LONG).show()
+                }
+                .setNegativeButton(R.string.field_dialog_cancel, null)
+                .show()
         }
         binding.refZoneButton.setOnClickListener {
             val closed = container.liveGame?.closeZoneNow() == true
@@ -144,8 +158,36 @@ class RefereeMapActivity : AppCompatActivity() {
         }
     }
 
+    /** The crate the referee picked, waiting for a tap on the field; null when not placing one. */
+    private var placing: DropKind? = null
+
+    private fun stopPlacing() {
+        placing = null
+        binding.refDropButton.setText(R.string.ref_drop_now)
+    }
+
+    /** A tap on the map: with a crate picked, it lands there, if that's on the field. */
+    private fun onMapTapped(point: LatLon): Boolean {
+        val kind = placing ?: return false
+        val text = when (container.liveGame?.dropAt(kind, point) ?: LiveGame.Placed.NO_GAME) {
+            LiveGame.Placed.DROPPED -> {
+                stopPlacing()
+                R.string.ref_dropped
+            }
+            // Keep placing: tap again, inside the border
+            LiveGame.Placed.OUTSIDE -> R.string.ref_drop_outside
+            LiveGame.Placed.NO_GAME -> {
+                stopPlacing()
+                R.string.ref_no_drop
+            }
+        }
+        Toast.makeText(applicationContext, text, Toast.LENGTH_SHORT).show()
+        return true
+    }
+
     private fun onMapReady(map: MapLibreMap) {
         this.map = map
+        map.addOnMapClickListener { onMapTapped(LatLon(it.latitude, it.longitude)) }
         map.setMinZoomPreference(MIN_ZOOM)
         map.setMaxZoomPreference(MAX_ZOOM)
         map.uiSettings.apply {
