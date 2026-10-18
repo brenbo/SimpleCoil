@@ -93,6 +93,9 @@ enum class SessionSound {
     /** The blaster connected, outside a game. */
     CONNECTED,
 
+    /** A shot in burst or full auto (SHOT is single fire). */
+    SHOT_AUTO,
+
     /** Our shot hit another player (HIT, OUT or SHIELDHIT from the server). */
     HIT_CONFIRM, HIT_ELIMINATED, HIT_SHIELDED,
 

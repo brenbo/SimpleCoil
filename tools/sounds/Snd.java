@@ -6,7 +6,8 @@ import java.util.*;
 /**
  * Tiny WAV tool for the game sounds.
  *   info <wav>...                      format, length, peak, where the sound starts and ends
- *   fx <in> <out> <maxSec> [hpHz]      mono 44.1 kHz, trimmed, high-passed, cut to maxSec with a fade, peak -1 dBFS
+ *   fx <in> <out> <maxSec> [hpHz] [fadeMs]  mono 44.1 kHz, trimmed, high-passed, cut to maxSec with a fade, peak -1 dBFS
+ *   crop <in> <out> <start> <end>     just that part of the file, mono
  *   voice <in> <out>                   mono 22.05 kHz radio: band-passed 300-3400 Hz, a little drive, squelch clicks
  */
 public class Snd {
@@ -109,14 +110,21 @@ public class Snd {
                     System.out.printf("%-40s %s len=%.2fs peak=%.2f sound=%.2f-%.2fs%n", Paths.get(a[i]).getFileName(), info, data.length / (double) rate, peak(data), bd[0] / (double) rate, bd[1] / (double) rate); }
                 break;
             case "fx": {
-                read(a[1]); float max = Float.parseFloat(a[3]); double hp = a.length > 4 ? Double.parseDouble(a[4]) : 90;
+                read(a[1]); float max = Float.parseFloat(a[3]); double hp = a.length > 4 ? Double.parseDouble(a[4]) : 90; float fadeMs = a.length > 5 ? Float.parseFloat(a[5]) : -1;
                 int[] bd = bounds(data, rate); float[] x = Arrays.copyOfRange(data, bd[0], Math.min(bd[1], bd[0] + (int) (max * rate)));
                 x = resample(x, rate, 44100);
                 x = biquad(biquad(x, 44100, hp, 0, 0.707), 44100, hp, 0, 0.707); // phone speakers: no deep bass to waste power on
                 boolean cut = bd[1] - bd[0] > max * rate;
-                x = fades(x, 44100, 2, cut ? Math.min(150, max * 300) : 20);
+                x = fades(x, 44100, 2, fadeMs >= 0 ? fadeMs : cut ? Math.min(150, max * 300) : 20);
                 write(a[2], normalize(x, -1f), 44100);
                 System.out.printf("%s -> %.2fs%n", Paths.get(a[2]).getFileName(), x.length / 44100.0);
+                break;
+            }
+            case "crop": {
+                // crop <in> <out> <startSec> <endSec>: just that part, mono, before fx
+                read(a[1]);
+                int s = (int) (Float.parseFloat(a[3]) * rate), e = Math.min(data.length, (int) (Float.parseFloat(a[4]) * rate));
+                write(a[2], Arrays.copyOfRange(data, s, e), rate);
                 break;
             }
             case "voice": {

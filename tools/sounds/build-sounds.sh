@@ -25,12 +25,8 @@ B="$packs/snake2/Snake's SECOND Authentic Gun Sounds"
 R="$A/Reloads, Cycling & More/WAV"
 V="$packs/void1/Military Voice Pack"
 
-# Effects: a 5.56 and a 7.62x39 rifle, close (isolated) and with the field's echo
-snd fx "$A/Isolated/5.56/WAV/556 Single Isolated WAV.wav" "$out/shootingshort.wav" 0.6
-snd fx "$A/Full Sound/5.56/WAV/556 Single WAV.wav" "$out/shootingshort_2.wav" 0.75
-snd fx "$A/Isolated/7.62x39/WAV/762x39 Single Isolated WAV.wav" "$out/shootingshort_3.wav" 0.6
-snd fx "$A/Full Sound/7.62x39/WAV/762x39 Single WAV.wav" "$out/shootingshort_4.wav" 0.75
-snd fx "$R/AR Reload Full WAV.wav" "$out/reload.wav" 2.4
+# Effects from the gun packs. (The shots, reload and explosion are other recordings, added by hand:
+# shootingshort, reload, sfx_bomb_exploded; this script leaves them alone.)
 snd fx "$B/& More/Pistol/WAV/9mm Pistol Dry Fire.wav" "$out/empty.wav" 0.3
 snd fx "$R/AR Bolt Release WAV.wav" "$out/spawn.wav" 0.5
 snd fx "$R/AK Rack WAV.wav" "$out/spawn_2.wav" 0.8

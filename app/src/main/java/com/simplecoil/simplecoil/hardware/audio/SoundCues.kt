@@ -51,6 +51,7 @@ object SoundCues {
     fun of(sound: SessionSound): SoundCue = when (sound) {
         // The blaster: never quite the same twice
         SessionSound.SHOT -> SoundCue("shootingshort", "shootingshort")
+        SessionSound.SHOT_AUTO -> SoundCue("shootingauto", "shootingshort")
         SessionSound.EMPTY -> SoundCue("empty", "empty")
         SessionSound.RELOAD -> SoundCue("reload", "reload")
         SessionSound.HIT -> SoundCue("hit", "hit")

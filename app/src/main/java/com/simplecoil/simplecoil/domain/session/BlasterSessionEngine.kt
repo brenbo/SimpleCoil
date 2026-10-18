@@ -822,7 +822,7 @@ class BlasterSessionEngine(
         if (lastShotCount != shotsRemaining) {
             setShotsRemaining(shotsRemaining)
             if (shotsRemaining != config.fullReload && reloading == RELOADING_NONE) {
-                emit(SessionEffect.Sound(SessionSound.SHOT))
+                emit(SessionEffect.Sound(if (currentShotMode == GameSettingsRepository.SHOT_MODE_SINGLE) SessionSound.SHOT else SessionSound.SHOT_AUTO))
                 if (useNetwork && lastShotFired < wallClock()) {
                     lastShotFired = wallClock() + HIT_ANIMATION_DURATION_MILLISECONDS
                     network?.sendShotFired()

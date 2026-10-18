@@ -258,6 +258,19 @@ class BlasterSessionEngineTest {
     }
 
     @Test
+    fun burstAndFullAuto_playTheAutomaticShotSound() {
+        h.connected()
+        h.startedAndSpawned()
+        h.engine.setShotMode(GameSettingsRepository.SHOT_MODE_FULL_AUTO)
+        h.telemetry(Packet().shots(29))
+        h.engine.setShotMode(GameSettingsRepository.SHOT_MODE_BURST)
+        h.telemetry(Packet().shots(28))
+        h.engine.setShotMode(GameSettingsRepository.SHOT_MODE_SINGLE)
+        h.telemetry(Packet().shots(27))
+        assertEquals(listOf(SessionSound.SHOT_AUTO, SessionSound.SHOT_AUTO, SessionSound.SHOT), h.sounds())
+    }
+
+    @Test
     fun shotsFired_playShotSoundAndRateLimitShotFiredTo400ms() {
         h.rec.useNetwork = true
         h.connected()

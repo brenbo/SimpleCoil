@@ -6,9 +6,11 @@ Every game sound plays through `SoundCues` (app/src/main/java/com/simplecoil/sim
 
 `tools/sounds/build-sounds.sh` makes them from three free packs on itch.io (the script lists the links and which file becomes which sound). It trims each one, makes it mono, cuts the deep bass phone speakers can't play, and evens out the loudness; callouts also get the narrow radio treatment and squelch.
 
-- **Real gun recordings**, in `res/raw`: *Snake's Authentic Gun Sounds* and its sequel by SnakeF8 (free for commercial use, no credit needed; the author calls them public domain). Shots are a 5.56 and a 7.62x39 rifle, close and with the field's echo (four takes); reload is an AR mag change, empty is a dry fire, spawn a bolt release or an AK rack, connecting the blaster an AR charging handle, the last mag and a power-up are magazine sounds.
+- **Real gun recordings**, in `res/raw`: *Snake's Authentic Gun Sounds* and its sequel by SnakeF8 (free for commercial use, no credit needed; the author calls them public domain). Empty is a dry fire, spawn a bolt release or an AK rack, connecting the blaster an AR charging handle, the last mag and a power-up are magazine sounds.
 - **Radio callouts**, in `res-licensed/raw`: the *VOiD1 Gaming Military Voice Pack*. Its license allows them in the app (no credit needed) but not sharing the files, so that folder is git-ignored and the public repo doesn't carry them. A build without it plays the effects alone. The pack's lines don't match the original script, so each callout uses the closest line it has (the table below shows what is said).
-- **Interface and event sounds** (hits, eliminations, score, the beep and every `sfx_` cue that isn't a gun sound), in `res/raw`: made for this app with Claude from code (Web Audio), so they are ours to keep. Only the end-of-game whistle is still GameBurp.
+- **Shot, reload and the bomb going off** (`shootingshort.ogg`, played for every fire mode; `reload`; `sfx_bomb_exploded`), in `res/raw`: CC0 recordings the project owner supplied; the reload is cut to its mag-in and charging part, the explosion to its first 3.5 s.
+- **Event sounds** (eliminations, score and the `sfx_` cues that aren't gun sounds), in `res/raw`: made for this app with Claude. The countdown beep, `sfx_damage_tick` and `sfx_loot` are from an earlier batch.
+- **Hit sounds** (`hit`, `hit_confirm`, `hit_shielded`) and the end-of-game whistle are still the original GameBurp effects; `hit_eliminated` is from the new batch.
 
 ## Variety
 
@@ -24,7 +26,7 @@ Effects never play quite the same twice: each play moves the pitch up to 6% eith
 
 | File | When |
 |---|---|
-| `shootingshort` | a shot (add takes) |
+| `shootingshort`, `shootingauto` | a shot in single fire; in burst or full auto (until `shootingauto` exists, burst and auto play `shootingshort`) |
 | `hit`, `hit_confirm`, `hit_eliminated`, `hit_shielded` | being hit; your hit landing, eliminating, on a shield |
 | `eliminated`, `spawn`, `reload`, `empty`, `beep`, `score` | as today |
 | `sfx_connected` | the blaster connecting, outside a game |
