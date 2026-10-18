@@ -340,3 +340,7 @@ The config's `loadout` carries `postGameMap`: `off`, `kills` or `full`. During a
 ### 8.7 Waiting for everyone at the start
 
 With `spawnRules.startAtSpawn` on, a phone that has reached its spawn at the start asks `SCFIELD1 READY -` every second; the reply is `PACK` of `{"ready","at","of"}`. The game starts for nobody until `ready`: every player is standing in one of their own spawns. A player whose phone hasn't reported a position 30 seconds into the game is left out, so one missing GPS can't hold the start forever. Once ready, it stays ready for that game.
+
+### 8.8 Sound settings set by the server
+
+The server operator can set a player's sound in that player's settings. Because the game protocol is frozen, the phone asks for it here, `SCFIELD1 SOUND <player id>`, whenever the server sends it player settings (on joining, and each time the operator saves them). The reply is `PACK` of `{"rev","fx","voice","voiceOn","essential","vibrate"}` (volumes 0 to 1), or `NONE` if the server set nothing for that player. The phone applies each `rev` once, so changes the player makes afterwards stay until the operator sets the sound again. The server forgets them when it stops.

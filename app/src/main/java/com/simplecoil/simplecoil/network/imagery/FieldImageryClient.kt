@@ -177,6 +177,12 @@ class FieldImageryClient(
         body?.let { Readiness.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
 
+    /** The sound settings the server set for [playerId]; null if it set none (or can't say). */
+    fun sound(server: InetAddress, playerId: Int): RemoteSounds.Assigned? = exchange(server,
+        FieldImageryProtocol.requestLine(playerId.toString(), FieldImageryProtocol.Kind.SOUND)) { _, body ->
+        body?.let { RemoteSounds.Assigned.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
+    }
+
     /** The last game for the post-game map; null if the server keeps none (or can't say). */
     fun replay(server: InetAddress): GameRecord? = exchange(server,
         FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.REPLAY)) { _, body ->

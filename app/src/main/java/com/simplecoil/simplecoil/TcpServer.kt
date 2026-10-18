@@ -147,6 +147,7 @@ class TcpServer : Service() {
         container.fieldImageryServer.liveConfig = null
         container.fieldImageryServer.extras = null
         container.liveGame = null
+        container.fieldImageryServer.sounds.clear()
         container.fieldImageryServer.stop()
         server.stop() // closes each connection once the SERVERCANCEL is written
         notificationUpdates?.cancel()

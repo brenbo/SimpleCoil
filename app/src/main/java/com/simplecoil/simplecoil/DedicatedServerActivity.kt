@@ -479,7 +479,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             is ServerUiEffect.ShowTeamRatio ->
                 showDialog(TeamRatioDialog.newInstance(effect.teamCount, effect.sizes), TeamRatioDialog.REQUEST_KEY)
             is ServerUiEffect.ShowPlayerSettings -> showDialog(PlayerSettingsDialog.server(effect.playerId, effect.playerName, effect.values,
-                effect.teamCount, effect.team, effect.indexInTeam, effect.fullTeams), PlayerSettingsDialog.REQUEST_KEY)
+                effect.teamCount, effect.team, effect.indexInTeam, effect.fullTeams, effect.sound), PlayerSettingsDialog.REQUEST_KEY)
             ServerUiEffect.Finish -> finish()
         }
     }

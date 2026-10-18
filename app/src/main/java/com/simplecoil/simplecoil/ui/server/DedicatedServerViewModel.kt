@@ -30,7 +30,9 @@ import com.simplecoil.simplecoil.domain.rules.GameLimitRules
 import com.simplecoil.simplecoil.domain.rules.LimitKind
 import com.simplecoil.simplecoil.domain.rules.Limits
 import com.simplecoil.simplecoil.domain.team.TeamMode
+import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 import com.simplecoil.simplecoil.network.ServerEvent
+import com.simplecoil.simplecoil.network.imagery.RemoteSounds
 import com.simplecoil.simplecoil.network.server.ClockState
 import com.simplecoil.simplecoil.network.server.ServerSnapshot
 import com.simplecoil.simplecoil.network.server.SessionPhase
@@ -86,6 +88,8 @@ sealed interface ServerUiEffect {
         val indexInTeam: Int,
         /** The other teams with no open slot, and who is on each (id to name), to switch with. */
         val fullTeams: Map<Int, List<Pair<Byte, String>>> = emptyMap(),
+        /** The sound the server last set for the player, or the defaults. */
+        val sound: AudioSettings = AudioSettings(),
     ) : ServerUiEffect
 
     /** The server stopped: the screen closes. */
@@ -101,6 +105,8 @@ class DedicatedServerViewModel(
     private val controller: ServerController,
     private val prefs: UserPreferencesRepository,
     serverEvents: Flow<ServerEvent>,
+    /** The sound settings the operator sets for players, served to their phones. */
+    private val sounds: RemoteSounds = RemoteSounds(),
 ) : ViewModel() {
 
     private val _effects = Channel<ServerUiEffect>(Channel.BUFFERED)
@@ -244,7 +250,7 @@ class DedicatedServerViewModel(
         val indexInTeam = if (teamCount == 0) playerId.toInt() else playerId - layout.teamStartId(team) + 1
         val name = current.players.firstOrNull { it.playerId == playerId }?.name ?: ""
         _effects.trySend(ServerUiEffect.ShowPlayerSettings(playerId, name, controller.playerSettings(playerId), teamCount, team,
-            indexInTeam, fullTeams(current, team)))
+            indexInTeam, fullTeams(current, team), sounds[playerId.toInt()] ?: AudioSettings()))
     }
 
     /** The teams other than [team] with no open slot and who is on them; players only switch in the lobby. */
@@ -263,6 +269,17 @@ class DedicatedServerViewModel(
             return
         }
         val values = result.values ?: return
+        result.sound?.let { sound ->
+            // Before the settings go out: the phones ask for their sound when they get them
+            val layout = snapshot?.settings?.teamLayout
+            val ids = when {
+                result.applyToAll -> snapshot?.players?.map { it.playerId.toInt() }.orEmpty()
+                result.applyToTeam && layout != null -> snapshot?.players
+                    ?.filter { layout.teamOf(it.playerId) == layout.teamOf(result.playerId) }?.map { it.playerId.toInt() }.orEmpty()
+                else -> emptyList()
+            } + result.playerId.toInt()
+            sounds.set(ids.toSet(), sound)
+        }
         if (!controller.applyPlayerSettings(result.playerId, values, result.applyToAll, result.applyToTeam, result.targetTeam, result.swapWith)) {
             toast(R.string.error_team_full, result.targetTeam)
         }
@@ -331,7 +348,7 @@ class DedicatedServerViewModel(
     class Factory(private val app: SimpleCoilApp) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = with(app.container) {
-            DedicatedServerViewModel(serverController, userPreferences, serverEvents.events) as T
+            DedicatedServerViewModel(serverController, userPreferences, serverEvents.events, fieldImageryServer.sounds) as T
         }
     }
 }

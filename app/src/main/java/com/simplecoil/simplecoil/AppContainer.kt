@@ -59,6 +59,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -330,5 +332,25 @@ class AppContainer(private val app: Application) {
     /** The notifications' Quit: leaves the server, drops the blaster, stops everything and exits. */
     val appQuitter: AppQuitter by lazy {
         AppQuitter(app, appScope, dispatchers.io, networkGateway, bleConnectionManager, serverController)
+    }
+
+    /** The newest sound setting the server set for this player that was applied; each applies once. */
+    private var remoteSoundRevision = 0L
+
+    init {
+        // The server operator can set this player's sound (field service SOUND): asked for when
+        // the server sends player settings, as it does on joining and when the operator saves them
+        appScope.launch {
+            clientEvents.events.collect { event ->
+                if (event != ClientEvent.PlayerSettingsUpdate && event !is ClientEvent.ServerReply) return@collect
+                val server = gameState.serverIP ?: return@collect
+                val playerId = players.playerID.toInt().takeIf { it != 0 } ?: return@collect
+                val assigned = withContext(dispatchers.io) { fieldImageryClient.sound(server, playerId) } ?: return@collect
+                if (assigned.revision > remoteSoundRevision) {
+                    remoteSoundRevision = assigned.revision
+                    saveAudioSettings(assigned.settings)
+                }
+            }
+        }
     }
 }

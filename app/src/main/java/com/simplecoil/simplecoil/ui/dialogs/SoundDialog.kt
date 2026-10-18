@@ -28,32 +28,29 @@ import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 
 /**
- * This phone's sound settings (map design: Audio): how loud the effects and the radio callouts
+ * A player's sound settings (map design: Audio): how loud the effects and the radio callouts
  * are, callouts on, off or essential only, and vibration. Test plays a shot, a drop coming in
- * and a capture, with what is set. Shown in the player settings, or on its own ([show]) when the
- * server doesn't allow player settings.
+ * and a capture, with what is set. Shown in the player settings (on the server, for the player
+ * being edited), or on its own ([SoundDialog]) when the server doesn't allow player settings.
  */
-class SoundSettingsSection(private val d: SoundSettingsSectionBinding, private val container: AppContainer) {
-
-    /** What was saved when the section opened: Cancel puts it back (Test saves as it goes). */
-    private val start = container.audioSettings.takeIf { it != AudioSettings() } ?: container.userPreferences.audioSettings()
+class SoundSettingsSection(
+    private val d: SoundSettingsSectionBinding,
+    /** What the section opens with. */
+    val initial: AudioSettings,
+    /** Test, with what is set; null hides it (on the server, the player's phone isn't this one). */
+    onTest: ((AudioSettings) -> Unit)?,
+) {
 
     init {
-        d.soundEffectsSeek.progress = (start.effectsVolume * 100).toInt()
-        d.soundVoiceSeek.progress = (start.voiceVolume * 100).toInt()
-        d.soundVoiceSwitch.isChecked = start.voiceOn
-        d.soundEssentialSwitch.isChecked = start.essentialOnly
-        d.soundVibrationSwitch.isChecked = start.vibration
+        d.soundEffectsSeek.progress = (initial.effectsVolume * 100).toInt()
+        d.soundVoiceSeek.progress = (initial.voiceVolume * 100).toInt()
+        d.soundVoiceSwitch.isChecked = initial.voiceOn
+        d.soundEssentialSwitch.isChecked = initial.essentialOnly
+        d.soundVibrationSwitch.isChecked = initial.vibration
         showVoice()
         d.soundVoiceSwitch.setOnCheckedChangeListener { _, _ -> showVoice() }
-        d.soundTestButton.setOnClickListener {
-            // Heard as set: saved first, then a few sounds
-            save()
-            listOf(SessionSound.SHOT, SessionSound.DROP_INCOMING, SessionSound.SECURED).forEachIndexed { i, sound ->
-                d.root.postDelayed({ container.soundEffects.play(sound) }, i * TEST_GAP_MILLIS)
-            }
-            container.haptics.vibrate()
-        }
+        d.soundTestButton.isVisible = onTest != null
+        d.soundTestButton.setOnClickListener { onTest?.invoke(read()) }
     }
 
     private fun showVoice() {
@@ -62,15 +59,30 @@ class SoundSettingsSection(private val d: SoundSettingsSectionBinding, private v
         d.soundEssentialSwitch.isVisible = d.soundVoiceSwitch.isChecked
     }
 
-    fun save() = container.saveAudioSettings(AudioSettings(
+    fun read() = AudioSettings(
         effectsVolume = d.soundEffectsSeek.progress / 100f,
         voiceVolume = d.soundVoiceSeek.progress / 100f,
         voiceOn = d.soundVoiceSwitch.isChecked,
         essentialOnly = d.soundEssentialSwitch.isChecked,
         vibration = d.soundVibrationSwitch.isChecked,
-    ))
+    )
 
-    fun cancel() = container.saveAudioSettings(start)
+    /** This phone's sound settings: what [save] keeps and [cancel] puts back (Test saves as it goes). */
+    class Local(d: SoundSettingsSectionBinding, private val container: AppContainer) {
+        private val start = container.audioSettings.takeIf { it != AudioSettings() } ?: container.userPreferences.audioSettings()
+        private val section = SoundSettingsSection(d, start) { settings ->
+            // Heard as set: saved first, then a few sounds
+            container.saveAudioSettings(settings)
+            listOf(SessionSound.SHOT, SessionSound.DROP_INCOMING, SessionSound.SECURED).forEachIndexed { i, sound ->
+                d.root.postDelayed({ container.soundEffects.play(sound) }, i * TEST_GAP_MILLIS)
+            }
+            if (settings.vibration) container.haptics.vibrate()
+        }
+
+        fun save() = container.saveAudioSettings(section.read())
+
+        fun cancel() = container.saveAudioSettings(start)
+    }
 
     companion object {
         private const val TEST_GAP_MILLIS = 900L
@@ -82,7 +94,7 @@ object SoundDialog {
 
     fun show(context: Context, container: AppContainer) {
         val d = DialogSoundBinding.inflate(LayoutInflater.from(context))
-        val section = SoundSettingsSection(d.soundSection, container)
+        val section = SoundSettingsSection.Local(d.soundSection, container)
         AlertDialog.Builder(context, R.style.AppDialogTheme)
             .setView(d.root)
             .setPositiveButton(R.string.field_dialog_save) { _, _ -> section.save() }

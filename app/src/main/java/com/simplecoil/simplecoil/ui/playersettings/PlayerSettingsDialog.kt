@@ -31,6 +31,7 @@ import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.PlayerSettingsDialogBinding
+import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 import com.simplecoil.simplecoil.ui.dialogs.SoundSettingsSection
 import com.simplecoil.simplecoil.ui.dialogs.TeamSwapDialog
 
@@ -47,8 +48,10 @@ class PlayerSettingsDialog : DialogFragment() {
     /** Who on the full [targetTeam] the player trades places with, or 0. */
     private var swapWith: Byte = 0
     private lateinit var binding: PlayerSettingsDialogBinding
-    /** This phone's sound, in the local dialog; null on the server, where the player is someone else. */
-    private var sound: SoundSettingsSection? = null
+    /** This phone's sound, in the local dialog. */
+    private var localSound: SoundSettingsSection.Local? = null
+    /** On the server: the edited player's sound, sent to their phone if changed. */
+    private var playerSound: SoundSettingsSection? = null
 
     private val isServer get() = requireArguments().getBoolean(ARG_SERVER)
     private val playerId get() = requireArguments().getByte(ARG_PLAYER_ID)
@@ -79,18 +82,18 @@ class PlayerSettingsDialog : DialogFragment() {
         show(initial)
         showFiringMode()
         if (isServer) showServerControls(initial) else hideServerControls()
-        if (isServer) binding.soundSection.root.visibility = View.GONE
-        else sound = SoundSettingsSection(binding.soundSection, (requireActivity().application as SimpleCoilApp).container)
+        if (isServer) playerSound = SoundSettingsSection(binding.soundSection, soundOf(args.getBundle(ARG_SOUND)!!), onTest = null)
+        else localSound = SoundSettingsSection.Local(binding.soundSection, (requireActivity().application as SimpleCoilApp).container)
         wireControls()
         return builder
             .setView(binding.root)
             .setPositiveButton(R.string.ok) { dialog, _ ->
                 save()
-                sound?.save()
+                localSound?.save()
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.cancel) { dialog, _ ->
-                sound?.cancel()
+                localSound?.cancel()
                 dialog.dismiss()
             }
             .create()
@@ -288,6 +291,7 @@ class PlayerSettingsDialog : DialogFragment() {
                     RESULT_APPLY_TEAM to applyToTeamSwitch.isChecked,
                     RESULT_TARGET_TEAM to targetTeam,
                     RESULT_SWAP_WITH to swapWith,
+                    RESULT_SOUND to playerSound?.read()?.takeIf { it != playerSound?.initial }?.let { bundleOf(it) },
                 ),
             )
         }
@@ -305,6 +309,8 @@ class PlayerSettingsDialog : DialogFragment() {
         val targetTeam: Int,
         /** If [targetTeam] is full, the player on it to trade places with; 0 for nobody. */
         val swapWith: Byte = 0,
+        /** The player's sound settings, if the operator changed them; null otherwise. */
+        val sound: AudioSettings? = null,
     )
 
     companion object {
@@ -318,6 +324,7 @@ class PlayerSettingsDialog : DialogFragment() {
         private const val ARG_INDEX_IN_TEAM = "indexInTeam"
         private const val ARG_FULL_TEAM_IDS = "fullTeamIds"
         private const val ARG_FULL_TEAM_NAMES = "fullTeamNames"
+        private const val ARG_SOUND = "sound"
         private const val STATE_FIRING_MODE = "firingMode"
         private const val STATE_RECOIL = "recoilSetting"
         private const val STATE_TARGET_TEAM = "targetTeam"
@@ -329,6 +336,7 @@ class PlayerSettingsDialog : DialogFragment() {
         private const val RESULT_APPLY_TEAM = "applyTeam"
         private const val RESULT_TARGET_TEAM = "targetTeam"
         private const val RESULT_SWAP_WITH = "swapWith"
+        private const val RESULT_SOUND = "sound"
 
         /** This phone's player. */
         @JvmStatic
@@ -351,6 +359,7 @@ class PlayerSettingsDialog : DialogFragment() {
             team: Int,
             indexInTeam: Int,
             fullTeams: Map<Int, List<Pair<Byte, String>>> = emptyMap(),
+            sound: AudioSettings = AudioSettings(),
         ) = PlayerSettingsDialog().apply {
             arguments = bundleOf(
                 ARG_SERVER to true,
@@ -360,6 +369,7 @@ class PlayerSettingsDialog : DialogFragment() {
                 ARG_TEAM_COUNT to teamCount,
                 ARG_TEAM to team,
                 ARG_INDEX_IN_TEAM to indexInTeam,
+                ARG_SOUND to bundleOf(sound),
             ).apply {
                 for ((t, players) in fullTeams) {
                     putByteArray(ARG_FULL_TEAM_IDS + t, players.map { it.first }.toByteArray())
@@ -377,6 +387,7 @@ class PlayerSettingsDialog : DialogFragment() {
             applyToTeam = bundle.getBoolean(RESULT_APPLY_TEAM),
             targetTeam = bundle.getInt(RESULT_TARGET_TEAM),
             swapWith = bundle.getByte(RESULT_SWAP_WITH),
+            sound = bundle.getBundle(RESULT_SOUND)?.let { soundOf(it) },
         )
 
         private fun bundleOf(v: PlayerSettingsValues) = bundleOf(
@@ -385,6 +396,16 @@ class PlayerSettingsDialog : DialogFragment() {
             "respawnShieldTime" to v.respawnShieldTimeSeconds, "damage" to v.damage, "overrideLives" to v.overrideLives,
             "lives" to v.lives, "single" to v.allowSingle, "burst3" to v.allowBurst3, "auto" to v.allowAuto,
             "firingMode" to v.firingMode, "recoilSetting" to v.recoilSetting, "isAdmin" to v.isAdmin,
+        )
+
+        private fun bundleOf(s: AudioSettings) = bundleOf(
+            "fx" to s.effectsVolume, "voice" to s.voiceVolume, "voiceOn" to s.voiceOn,
+            "essential" to s.essentialOnly, "vibrate" to s.vibration,
+        )
+
+        private fun soundOf(b: Bundle) = AudioSettings(
+            effectsVolume = b.getFloat("fx"), voiceVolume = b.getFloat("voice"), voiceOn = b.getBoolean("voiceOn"),
+            essentialOnly = b.getBoolean("essential"), vibration = b.getBoolean("vibrate"),
         )
 
         private fun valuesOf(b: Bundle) = PlayerSettingsValues(

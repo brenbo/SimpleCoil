@@ -21,6 +21,7 @@ import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
 import com.simplecoil.simplecoil.domain.map.Spawn
+import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -29,6 +30,7 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -288,5 +290,25 @@ class FieldImageryTransferTest {
         assertNull(FieldImageryProtocol.parseReply("SCFIELD1 PACK -5"))
         assertNull(FieldImageryProtocol.parseReply("SCFIELD1 PACK ${Int.MAX_VALUE}"))
         assertNull(FieldImageryProtocol.parseReply("HTTP/1.1 200 OK"))
+    }
+
+    @Test
+    fun aPlayerGetsTheSoundTheServerSetForThem_andOnlyThey() {
+        val (_, client) = phone("phone")
+        assertNull(client.sound(loopback, 3))
+
+        val quiet = AudioSettings(effectsVolume = 0.25f, voiceVolume = 0.5f, voiceOn = true, essentialOnly = true, vibration = false)
+        server.sounds.set(listOf(3), quiet)
+        val first = client.sound(loopback, 3)!!
+        assertEquals(quiet, first.settings)
+        assertNull(client.sound(loopback, 4))
+
+        // Set again: a newer revision, so the phone applies it even if it matches
+        server.sounds.set(listOf(3, 4), quiet)
+        assertTrue(client.sound(loopback, 3)!!.revision > first.revision)
+        assertEquals(quiet, client.sound(loopback, 4)!!.settings)
+
+        server.sounds.clear()
+        assertNull(client.sound(loopback, 3))
     }
 }

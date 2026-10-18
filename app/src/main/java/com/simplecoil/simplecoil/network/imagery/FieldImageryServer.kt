@@ -78,6 +78,9 @@ class FieldImageryServer(
     @Volatile
     var extras: Extras? = null
 
+    /** The sound settings the operator set for players; served in the lobby too. */
+    val sounds = RemoteSounds(clock)
+
     private fun serveExtra(request: FieldImageryProtocol.Request, out: java.io.OutputStream) {
         val extras = extras
         val reply: String
@@ -95,6 +98,7 @@ class FieldImageryServer(
                     FieldImageryProtocol.Kind.MODE -> FieldImageryProtocol.parseMode(request.knownId)?.let { (id, alive) -> extras?.mode(id, alive) }
                     FieldImageryProtocol.Kind.REPLAY -> extras?.replay()
                     FieldImageryProtocol.Kind.READY -> extras?.ready()
+                    FieldImageryProtocol.Kind.SOUND -> request.knownId.toIntOrNull()?.let { sounds.body(it) }
                     else -> extras?.stats()
                 }
                 reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
@@ -195,7 +199,7 @@ class FieldImageryServer(
             val address = client.inetAddress?.hostAddress ?: "?"
             when (request.kind) {
                 FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE,
-                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY -> {
+                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY, FieldImageryProtocol.Kind.SOUND -> {
                     serveExtra(request, out)
                     out.flush()
                     return
@@ -320,6 +324,9 @@ object FieldImageryProtocol {
 
         /** With "start at spawn": is everyone at their spawn yet? `SCFIELD1 READY -`; PACK of JSON. */
         READY("READY"),
+
+        /** The sound settings the server set for a player: `SCFIELD1 SOUND <player id>`; PACK of JSON or NONE. */
+        SOUND("SOUND"),
     }
 
     /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */
