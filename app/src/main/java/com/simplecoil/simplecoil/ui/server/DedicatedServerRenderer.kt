@@ -23,6 +23,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.ActivityDedicatedServerBinding
+import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.session.ClockFormat
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.network.server.ClockState
@@ -36,6 +37,12 @@ class DedicatedServerRenderer(
     private val scoreboard: ScoreboardAdapter,
 ) {
     private val resources get() = binding.root.resources
+
+    /** The selected field's game mode, which rules out some team modes. */
+    var gameMode: GameMode = GameMode.CLASSIC
+
+    /** The game needs positions: a field map with a game mode played on them (not classic). GPS can't be off. */
+    var gpsRequired = false
 
     /** The clock as last drawn. */
     private var clock: ClockState? = null
@@ -110,7 +117,10 @@ class DedicatedServerRenderer(
         startGameButton.isEnabled = phase == SessionPhase.LOBBY
         endGameButton.isEnabled = running
         resetGameButton.isEnabled = postGame
-        teamModeGroup.children.forEach { it.isEnabled = !running }
+        // Only the team modes the game mode can be played in
+        teamMode2teamsButton.isEnabled = !running && TeamMode.TWO_TEAMS in gameMode.teamModes
+        teamMode4teamsButton.isEnabled = !running && TeamMode.FOUR_TEAMS in gameMode.teamModes
+        teamModeFfaButton.isEnabled = !running && TeamMode.FREE_FOR_ALL in gameMode.teamModes
         sortTeamsButton.isEnabled = !running
         gameLimitButton.isEnabled = !running
         startingTimerButton.isEnabled = !running
@@ -122,6 +132,8 @@ class DedicatedServerRenderer(
         extrasCardHeader.isEnabled = !running
         presetsButton.isEnabled = !running
         gpsModeGroup.children.forEach { it.isEnabled = !running }
+        // A game played on positions can't have GPS off
+        gpsModeDisabledButton.isEnabled = !running && !gpsRequired
         // Free for all has no teammates: the server treats teammate GPS as off (shown as Off)
         gpsModeTeammateButton.isEnabled = !running && !teamMode.isFreeForAll
         gameStatusTv.setText(when {
