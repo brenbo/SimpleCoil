@@ -69,9 +69,11 @@ class VoiceRelay(
         val s = try {
             DatagramSocket(null).apply {
                 reuseAddress = true
-                bind(InetSocketAddress(port))
+                // The relay's port, not the unconnected socket's own (-1)
+                bind(InetSocketAddress(this@VoiceRelay.port))
             }
-        } catch (e: SocketException) {
+        } catch (e: Exception) {
+            // No voice chat, but the server runs on
             Log.w(TAG, "No voice relay: " + e.message)
             return
         }

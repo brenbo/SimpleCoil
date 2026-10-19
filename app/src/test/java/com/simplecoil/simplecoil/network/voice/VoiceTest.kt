@@ -77,6 +77,16 @@ class VoiceTest {
     }
 
     @Test
+    fun theRelayStartsOnItsPort_andStops() {
+        // Any free port (0): it binds there, not to the unconnected socket's -1
+        val relay = VoiceRelay(VoiceSettings(), { peers }, { false }, port = 0)
+        relay.start()
+        assertTrue(relay.localPort > 0)
+        relay.stop()
+        assertEquals(-1, relay.localPort)
+    }
+
+    @Test
     fun theServersVoiceSettings_offUntilTurnedOn() {
         val settings = VoiceSettings()
         assertFalse(settings.allowed(1))
