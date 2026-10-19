@@ -124,6 +124,7 @@ class DedicatedServerActivity : AppCompatActivity() {
                 }
                 launch { vm.effects.collect { onEffect(it) } }
                 launch { showFieldMapStatus() }
+                launch { requireGpsWithAField() }
                 launch { showGps() }
                 launch { showCardSummaries() }
             }
@@ -151,6 +152,21 @@ class DedicatedServerActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * With a field map selected the game runs on positions, so GPS stays on: Off is greyed out
+     * (Teammates too in free for all, where it shares with nobody), and turned on if it was off.
+     */
+    private suspend fun requireGpsWithAField() {
+        val container = (application as SimpleCoilApp).container
+        combine(container.serverFieldConfig.config, vm.state) { config, state -> (config?.border != null) to state }
+            .collect { (field, state) ->
+                state ?: return@collect
+                binding.gpsModeDisabledButton.isEnabled = !field
+                binding.gpsModeTeammateButton.isEnabled = !(field && state.teamMode.isFreeForAll)
+                if (field) vm.onFieldNeedsGps()
+            }
     }
 
     /** "GPS: 3 of 4 reporting · no fix from Bob": whose positions the server hears (shot distance, drops, spawns). */

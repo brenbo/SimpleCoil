@@ -186,6 +186,17 @@ class DedicatedServerViewModel(
         toast(R.string.dedicated_teams_sorted)
     }
 
+    /**
+     * A field map is selected: the game runs on positions (border, spawns, drops, modes), so GPS
+     * must be on. Off (or teammates only in free for all, where nobody shares) turns to everyone.
+     */
+    fun onFieldNeedsGps() {
+        val settings = snapshot?.settings ?: return
+        if (settings.useGps) return
+        onGpsModeSelected(GameSettingsRepository.GPS_ALL)
+        toast(R.string.dedicated_gps_forced)
+    }
+
     fun onGpsModeSelected(mode: Int) {
         toastIfReset(controller.changeGpsMode(mode))
         prefs.saveGpsMode(mode)

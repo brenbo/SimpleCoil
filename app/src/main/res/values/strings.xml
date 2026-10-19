@@ -171,6 +171,7 @@
     <string name="reset_game_button">Reset</string>
     <string name="reset_game_admin">Reset game</string>
     <string name="dedicated_game_reset_toast">Game reset</string>
+    <string name="dedicated_gps_forced">GPS is on for everyone: the field map needs it</string>
     <string name="dedicated_allow_join">Allow players to join after game has started?</string>
     <string name="dedicated_server_settings_only">Only allow server settings?</string>
     <string name="gps_mode_label">GPS</string>

@@ -202,6 +202,22 @@ class DedicatedServerViewModelTest {
     }
 
     @Test
+    fun aFieldMapTurnsGpsOnForEveryone_once() {
+        publish(SessionPhase.LOBBY)
+        controller.snapshot.value = controller.snapshot.value!!.let {
+            it.copy(settings = it.settings.copy(gpsMode = GameSettingsRepository.GPS_DISABLED, useGps = false))
+        }
+        vm.onFieldNeedsGps()
+        assertEquals("gps ${GameSettingsRepository.GPS_ALL}", controller.calls.last())
+        assertEquals(listOf(R.string.dedicated_gps_forced), toasts())
+        // Already on: nothing to do
+        publish(SessionPhase.LOBBY)
+        controller.calls.clear()
+        vm.onFieldNeedsGps()
+        assertTrue(controller.calls.isEmpty())
+    }
+
+    @Test
     fun afterAGame_switchingAPlayersTeamOrAnySettingResetsFirst() {
         val values = PlayerSettingsValues.of(PlayerSettings())
         publish(SessionPhase.POST_GAME, listOf(player(1), player(2)))
