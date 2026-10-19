@@ -156,7 +156,7 @@ class DedicatedServerActivity : AppCompatActivity() {
 
     /**
      * What the selected field rules out (the renderer greys those buttons out). The game mode's
-     * team modes: free for all for Infection, two teams for Capture the Flag and Search &
+     * team modes: free for all for Infection and Battle Royale, two teams for Capture the Flag and Search &
      * Destroy; a team mode it can't use changes to one it can. A game mode played on positions
      * (any but classic, on a field map) needs GPS: if it was off, it turns on for everyone.
      */
@@ -206,7 +206,7 @@ class DedicatedServerActivity : AppCompatActivity() {
     }
 
     /**
-     * A new game mode: the team mode it needs (free for all for Infection, two teams for Capture
+     * A new game mode: the team mode it needs (free for all for Infection and Battle Royale, two teams for Capture
      * the Flag and Search & Destroy), or the one it was last played with.
      */
     private fun teamModeFor(mode: GameMode) {

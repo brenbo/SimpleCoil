@@ -87,6 +87,8 @@ class LiveGame(
     private val random: Random = Random.Default,
     /** The phones' countdown before a game starts. */
     private val startDelayMillis: () -> Long = { 0L },
+    /** True while the server shares GPS (its GPS setting isn't Off). */
+    private val gpsOn: () -> Boolean = { true },
     /** An objective game was won by [team]: the server ends it. */
     private val onWinner: (team: Int) -> Unit = {},
 ) {
@@ -122,6 +124,7 @@ class LiveGame(
             if (phase != SessionPhase.RUNNING) {
                 // Back to the host's field; the shots stay for the post-game stats
                 rules = null
+                imagery.noField = false
                 recorder.stop(wallClock())
                 field.stop()
                 publish()
@@ -131,7 +134,12 @@ class LiveGame(
             recorder.start(wallClock())
             startGate = null
             startField = null
-            val base = savedField()
+            // Classic with GPS off is a game without positions: no border, spawns, drops or shot
+            // distances, and the phones get no field while it runs (they track nothing)
+            val saved = savedField()
+            val withoutGps = saved != null && saved.mode == GameMode.CLASSIC && !gpsOn()
+            imagery.noField = withoutGps
+            val base = saved.takeUnless { withoutGps }
             // Shots are measured on any server, with or without a field set up
             rules = base?.loadout ?: LoadoutRules()
             postGameMap = rules?.postGameMap ?: PostGameMap.FULL

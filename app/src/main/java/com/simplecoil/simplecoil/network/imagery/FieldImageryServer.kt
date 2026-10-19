@@ -166,6 +166,10 @@ class FieldImageryServer(
             onFieldChanged()
         }
 
+    /** A game played without GPS (classic, GPS off): no field at all while it runs, so CONFIG says NONE. */
+    @Volatile
+    var noField = false
+
     /** The field changed (photo, border or rules): count who has it again. */
     fun onFieldChanged() {
         synchronized(delivered) { recount() }
@@ -212,7 +216,7 @@ class FieldImageryServer(
                 currentId = store.refresh()?.id
                 bytes = if (currentId == null || currentId == request.knownId) null else store.bytes()
             } else {
-                val config = liveConfig ?: configs?.refresh()
+                val config = if (noField) null else liveConfig ?: configs?.refresh()
                 currentId = config?.id
                 bytes = if (config == null || currentId == request.knownId) null else config.toBytes()
             }

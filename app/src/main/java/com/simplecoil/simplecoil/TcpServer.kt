@@ -169,6 +169,7 @@ class TcpServer : Service() {
             players = { server.snapshot.value.players.filter { it.connected }.associate { it.playerId.toInt() to liveTeamOf(it.playerId.toInt()) } },
             freeForAll = { serverSettings.teamLayout.mode.isFreeForAll },
             startDelayMillis = { serverSettings.startTime * 1000L },
+            gpsOn = { serverSettings.isUseGPS },
             // Domination or Hardpoint won: the game ends as when the host presses End
             onWinner = { server.endGame() },
         )

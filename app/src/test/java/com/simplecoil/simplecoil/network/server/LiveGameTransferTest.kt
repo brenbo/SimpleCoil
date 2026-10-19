@@ -156,6 +156,54 @@ class LiveGameLateJoinTest {
     }
 }
 
+class LiveGameWithoutGpsTest {
+    @get:Rule
+    val tmp = TemporaryFolder()
+
+    @Test
+    fun aClassicGameWithGpsOff_hasNoField_untilItEnds() {
+        val scope = TestScope(StandardTestDispatcher())
+        val center = LatLon(39.0, -77.0)
+        val dir = File(tmp.root, "server")
+        val configs = FieldConfigStore(dir).apply {
+            save(FieldConfig(border = Border.Circle(center, 100.0), loadout = LoadoutRules(dropsEnabled = true)))
+        }
+        val server = FieldImageryServer(FieldPackStore(dir), configs, port = 0, clock = { 1_000L })
+        server.start()
+        var gps = false
+        val phase = MutableStateFlow(SessionPhase.LOBBY)
+        val game = LiveGame(server, savedField = { configs.refresh() }, positions = { emptyMap<Int, Fix>() },
+            teamOf = { 1 }, nameOf = { null }, wallClock = { 1_000L }, monoClock = { 0L }, gpsOn = { gps })
+        LiveGame.launchIn(scope, game, phase, emptyFlow())
+        val phoneConfigs = FieldConfigStore(File(tmp.root, "phone"))
+        val phone = FieldImageryClient(FieldPackStore(File(tmp.root, "phone")), TestScope(), Dispatchers.IO, { 0L },
+            port = server.localPort, configs = phoneConfigs)
+        val loopback = InetAddress.getLoopbackAddress()
+        // In the lobby the phone gets the host's field (to see the map)
+        phone.sync(loopback)
+        assertTrue(phoneConfigs.config.value?.border != null)
+        // A game with GPS off: no field, so nothing tracks positions
+        phase.value = SessionPhase.RUNNING
+        scope.testScheduler.runCurrent()
+        phone.sync(loopback)
+        assertNull(phoneConfigs.config.value)
+        assertNull(game.referee().field)
+        // Over: the field is back
+        phase.value = SessionPhase.POST_GAME
+        scope.testScheduler.runCurrent()
+        phone.sync(loopback)
+        assertTrue(phoneConfigs.config.value?.border != null)
+        // With GPS on, a game keeps it
+        gps = true
+        phase.value = SessionPhase.RUNNING
+        scope.testScheduler.runCurrent()
+        phone.sync(loopback)
+        assertTrue(phoneConfigs.config.value?.border != null)
+        server.stop()
+        scope.cancel()
+    }
+}
+
 class LiveGameShotsTest {
     @Test
     fun shotsAreMeasuredOnAServerWithoutAField() {
