@@ -52,7 +52,29 @@ sealed interface NetworkMenuEntry {
 data class SwitchTeamEntry(val team: Int, val color: Int)
 
 /** Entries of the admin popup menu. */
-enum class AdminAction { START_GAME, END_GAME, TWO_TEAMS, FOUR_TEAMS, FREE_FOR_ALL, SHUFFLE_TEAMS, RESET_GAME }
+enum class AdminAction { START_GAME, END_GAME, TWO_TEAMS, FOUR_TEAMS, FREE_FOR_ALL, SHUFFLE_TEAMS, RESET_GAME, TALK_TO_EVERYONE }
+
+/** Voice chat, as the play screen controls it: whether this player may talk, and an admin's talk to everyone. */
+interface VoiceControls {
+    /** Hears voice chat (the server has it on for this player). */
+    val listening: Boolean
+    val canTalk: Boolean
+    var toEveryone: Boolean
+
+    /** Players muted on this phone. */
+    val muted: Set<Int>
+    fun setMuted(playerIds: Collection<Int>, mute: Boolean)
+
+    companion object {
+        val NONE = object : VoiceControls {
+            override val listening = false
+            override val canTalk = false
+            override var toEveryone = false
+            override val muted = emptySet<Int>()
+            override fun setMuted(playerIds: Collection<Int>, mute: Boolean) {}
+        }
+    }
+}
 
 /** The team line. */
 sealed interface TeamDisplay {

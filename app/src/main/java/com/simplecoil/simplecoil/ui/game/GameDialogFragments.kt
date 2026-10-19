@@ -207,6 +207,8 @@ class ScoreboardDialog : GameDialogFragment() {
         val adapter = ScoreboardAdapter(isClient = true, listener = object : ScoreboardAdapter.Listener {
             override fun onTeamHeaderClicked() = vm.onTeamRatiosRequested()
             override fun onKickClicked(playerId: Byte) = vm.onKickPlayer(playerId)
+            override fun onMuteClicked(playerId: Byte) = vm.onMuteClicked(playerId)
+            override fun onMuteTeamClicked(team: Int) = vm.onMuteTeamClicked(team)
         })
         this.adapter = adapter
         binding.playerList.layoutManager = LinearLayoutManager(activity)

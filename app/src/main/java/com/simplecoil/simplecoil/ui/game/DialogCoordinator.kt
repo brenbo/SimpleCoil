@@ -252,8 +252,11 @@ class DialogCoordinator(
                 AdminAction.FREE_FOR_ALL -> R.string.team_mode_ffa
                 AdminAction.SHUFFLE_TEAMS -> R.string.shuffle_teams_button
                 AdminAction.RESET_GAME -> R.string.reset_game_admin
+                AdminAction.TALK_TO_EVERYONE -> R.string.voice_to_everyone
             }
-            popup.menu.add(0, action.ordinal, order, title)
+            val item = popup.menu.add(0, action.ordinal, order, title)
+            // A check mark while it's on
+            if (action == AdminAction.TALK_TO_EVERYONE) item.setCheckable(true).isChecked = vm.talkingToEveryone
             order += 10
         }
         popup.setOnMenuItemClickListener { item ->

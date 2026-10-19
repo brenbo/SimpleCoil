@@ -95,7 +95,15 @@ class GameViewModel(
     private val playerRepo: PlayerRepository,
     /** The server went from after a game back to the lobby (the host pressed Reset). */
     private val onSessionReset: () -> Unit = {},
+    /** Voice chat: may this player talk, and an admin's talk to everyone. */
+    private val voice: VoiceControls = VoiceControls.NONE,
 ) : ViewModel() {
+
+    /** An admin's talk to everyone, for the server controls menu's check mark. */
+    val talkingToEveryone: Boolean get() = voice.toEveryone
+
+    /** During a network game, an admin's game button opens the server controls (End Game, talk to everyone). */
+    fun adminMenuInGame(): Boolean = net.useNetwork && playerRepo.isAdmin
 
     /** The screen, while one exists. */
     var screen: GameScreen? = null
@@ -169,7 +177,27 @@ class GameViewModel(
         isClient = true,
         selfId = playerRepo.playerID,
         isAdmin = playerRepo.isAdmin,
+        voiceOn = voice.listening,
+        muted = voice.muted,
     )
+
+    /** The scoreboard's mute button: [playerId] muted, or heard again, on this phone only. */
+    fun onMuteClicked(playerId: Byte) {
+        val id = playerId.toInt()
+        voice.setMuted(listOf(id), id !in voice.muted)
+        latestPlayerData?.let { screen?.showScoreboard(it) }
+    }
+
+    /** A team header's mute-all (team 0: everyone, in free for all): all muted here, or all heard again. */
+    fun onMuteTeamClicked(team: Int) {
+        val layout = settingsRepo.teamLayout
+        val self = playerRepo.playerID.toInt()
+        val ids = latestPlayerData.orEmpty().filterNotNull().map { it.playerID.toInt() }
+            .filter { it != self && (team == 0 || layout.teamOf(it) == team) }
+        if (ids.isEmpty()) return
+        voice.setMuted(ids, !ids.all { it in voice.muted })
+        latestPlayerData?.let { screen?.showScoreboard(it) }
+    }
 
     init {
         viewModelScope.launch(start = CoroutineStart.UNDISPATCHED) { blasterEvents.collect { onBlasterEvent(it) } }
@@ -972,11 +1000,14 @@ class GameViewModel(
     /** The admin menu for the server's phase: Reset takes Start Game's place after a game. */
     fun adminActions(): List<AdminAction> {
         Log.d(TAG, "showAdminControlsMenu: serverPhase=$serverPhase")
-        return when (serverPhase) {
+        val phase = when (serverPhase) {
             SessionPhase.LOBBY -> listOf(AdminAction.START_GAME, AdminAction.TWO_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
             SessionPhase.RUNNING -> listOf(AdminAction.END_GAME)
             SessionPhase.POST_GAME -> listOf(AdminAction.RESET_GAME, AdminAction.TWO_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
         }
+        // An admin who may talk can talk to every player, in any phase (here, not in the player
+        // settings, so it works when the server allows only its own settings)
+        return if (voice.canTalk) phase + AdminAction.TALK_TO_EVERYONE else phase
     }
 
     fun onAdminAction(action: AdminAction) {
@@ -989,13 +1020,15 @@ class GameViewModel(
             }
             AdminAction.END_GAME -> {
                 Log.d(TAG, "Server Controls: End Game clicked. mTcpClient=" + (client != null))
-                client?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminEndGame))
+                // Asked first, as the End Game button always did
+                screen?.confirmEndGame()
             }
             AdminAction.TWO_TEAMS -> changeAdminTeamMode(TeamMode.TWO_TEAMS)
             AdminAction.FOUR_TEAMS -> changeAdminTeamMode(TeamMode.FOUR_TEAMS)
             AdminAction.FREE_FOR_ALL -> changeAdminTeamMode(TeamMode.FREE_FOR_ALL)
             AdminAction.SHUFFLE_TEAMS -> client?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminSortTeams))
             AdminAction.RESET_GAME -> screen?.confirmReset(latestPlayerData?.count { it != null && !it.isConnected } ?: 0)
+            AdminAction.TALK_TO_EVERYONE -> voice.toEveryone = !voice.toEveryone
         }
     }
 

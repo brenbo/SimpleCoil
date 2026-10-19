@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The server's voice settings: voice chat on or off for the session (off unless the operator
- * turns it on), and the players it's off for. Served to phones by the field service
- * (`SCFIELD1 VOICE <player id>`), so each knows whether to talk and listen.
+ * turns it on), and the players who may not talk (they still hear). Served to phones by the
+ * field service (`SCFIELD1 VOICE <player id>`), so each knows whether to talk and listen.
  */
 class VoiceSettings {
     @Volatile
@@ -34,23 +34,27 @@ class VoiceSettings {
 
     private val off: MutableSet<Int> = java.util.Collections.newSetFromMap(ConcurrentHashMap())
 
-    /** Voice chat for [playerId]: the session's on and theirs not turned off. */
+    /** [playerId] may talk: the session's voice is on and theirs not turned off. */
     fun allowed(playerId: Int): Boolean = enabled && playerId !in off
 
-    /** Whether the operator left voice on for [playerId] (whatever the session's switch). */
+    /** Whether the operator left talking on for [playerId] (whatever the session's switch). */
     fun allowedFor(playerId: Int): Boolean = playerId !in off
 
     fun setAllowed(playerId: Int, allowed: Boolean) {
         if (allowed) off -= playerId else off += playerId
     }
 
-    /** The VOICE reply's body for [playerId]: "1" to talk and listen, "0" not to. */
-    fun body(playerId: Int): ByteArray = (if (allowed(playerId)) "1" else "0").toByteArray(Charsets.US_ASCII)
+    /** The VOICE reply's body for [playerId]: "1" to talk and listen, "L" to listen only, "0" voice is off. */
+    fun body(playerId: Int): ByteArray = when {
+        !enabled -> "0"
+        allowed(playerId) -> "1"
+        else -> "L"
+    }.toByteArray(Charsets.US_ASCII)
 }
 
 /**
  * The server's half of voice chat: takes each phone's audio on [VoiceProtocol.PORT] and passes
- * it, unchanged, to the players [VoiceRules] says hear it. One thread; packets that can't be
+ * it to the players [VoiceRules] says hear it, marked as an admin's to everyone only if it is. One thread; packets that can't be
  * passed on are dropped (voice is live: late audio is no use).
  */
 class VoiceRelay(
@@ -94,9 +98,11 @@ class VoiceRelay(
                 incoming.setLength(buffer.size)
                 s.receive(incoming)
                 val packet = VoiceProtocol.decode(buffer, incoming.length) ?: continue
-                val to = VoiceRules.recipients(packet.playerId, incoming.address, packet.everyone, settings.enabled,
+                val delivery = VoiceRules.recipients(packet.playerId, incoming.address, packet.everyone, settings.enabled,
                     settings::allowed, peers(), freeForAll())
-                for (peer in to) {
+                // Marked "to everyone" only if it really is an admin's, so nobody else gets past a mute
+                buffer[VoiceProtocol.FLAGS_OFFSET] = (if (delivery.toEveryone) VoiceProtocol.FLAG_EVERYONE else 0).toByte()
+                for (peer in delivery.to) {
                     s.send(DatagramPacket(buffer, incoming.length, peer.address, port))
                 }
             } catch (e: Exception) {

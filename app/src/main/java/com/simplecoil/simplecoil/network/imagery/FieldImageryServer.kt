@@ -336,7 +336,7 @@ object FieldImageryProtocol {
         /** The sound settings the server set for a player: `SCFIELD1 SOUND <player id>`; PACK of JSON or NONE. */
         SOUND("SOUND"),
 
-        /** Whether voice chat is on for a player: `SCFIELD1 VOICE <player id>`; PACK of "1" or "0". */
+        /** What a player may do with voice chat: `SCFIELD1 VOICE <player id>`; PACK of "1" (talk), "L" (listen) or "0" (off). */
         VOICE("VOICE"),
     }
 

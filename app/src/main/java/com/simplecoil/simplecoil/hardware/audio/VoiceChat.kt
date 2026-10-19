@@ -28,6 +28,7 @@ import android.media.MediaRecorder
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.simplecoil.simplecoil.network.voice.VoiceAccess
 import com.simplecoil.simplecoil.network.voice.VoiceProtocol
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,8 +43,9 @@ import java.net.SocketTimeoutException
 /**
  * Push-to-talk on a player's phone: while [talk] is on, the microphone goes to the server (which
  * passes it to teammates, or to everyone for an admin who asks); whatever the server passes on
- * plays, one stream per speaker. Only while the server has voice chat on for this player
- * ([setEnabled]). Plain threads: audio can't wait on the main thread.
+ * plays, one stream per speaker (unless muted here). Only while the server has voice chat on
+ * for this player ([setAccess]): to listen, and to talk if it lets them. Plain threads: audio
+ * can't wait on the main thread.
  */
 class VoiceChat(
     context: Context,
@@ -81,28 +83,42 @@ class VoiceChat(
     @Volatile
     private var recording = false
 
-    fun setEnabled(on: Boolean) {
-        if (_enabled.value == on) return
-        _enabled.value = on
-        if (on) {
-            open()
-            _needsMic.value = !hasMic()
-        } else {
-            talk(false)
-            close()
-        }
+    private val _canTalk = MutableStateFlow(false)
+
+    /** This player may talk too, not just listen. */
+    val canTalk: StateFlow<Boolean> = _canTalk.asStateFlow()
+
+    private val _muted = MutableStateFlow<Set<Int>>(emptySet())
+
+    /** Players this phone has muted (only here). An admin talking to everyone is heard anyway. */
+    val muted: StateFlow<Set<Int>> = _muted.asStateFlow()
+
+    fun setMuted(playerIds: Collection<Int>, mute: Boolean) {
+        _muted.value = if (mute) _muted.value + playerIds else _muted.value - playerIds.toSet()
+    }
+
+    /** What the server lets this player do: hear, talk too, or nothing. */
+    fun setAccess(access: VoiceAccess) {
+        val listen = access != VoiceAccess.OFF
+        val talk = access == VoiceAccess.TALK
+        _canTalk.value = talk
+        if (!talk) talk(false)
+        _needsMic.value = talk && !hasMic()
+        if (_enabled.value == listen) return
+        _enabled.value = listen
+        if (listen) open() else close()
     }
 
     /** The microphone permission was just given (or refused). */
     fun onMicPermission() {
-        _needsMic.value = _enabled.value && !hasMic()
+        _needsMic.value = _canTalk.value && !hasMic()
     }
 
     private fun hasMic() = ContextCompat.checkSelfPermission(app, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
     /** Push to talk: [on] while the button is held. */
     fun talk(on: Boolean) {
-        if (on && (!_enabled.value || socket == null)) return
+        if (on && (!_canTalk.value || socket == null)) return
         if (on && !hasMic()) {
             _needsMic.value = true
             return
@@ -199,7 +215,8 @@ class VoiceChat(
                     packet.setLength(buffer.size)
                     s.receive(packet)
                     val voice = VoiceProtocol.decode(buffer, packet.length)
-                    if (voice != null && voice.playerId != playerId()) {
+                    // Muted here, unless an admin is talking to everyone (the server marks only those)
+                    if (voice != null && voice.playerId != playerId() && (voice.everyone || voice.playerId !in _muted.value)) {
                         val speaker = speakers.getOrPut(voice.playerId) { Speaker(newTrack(), now) }
                         // Talking again after a pause: the same cushion as a new speaker's
                         if (now - speaker.lastHeard > SPEAKING_MILLIS) cushion(speaker.track)

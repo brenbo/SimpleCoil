@@ -78,5 +78,17 @@
             android:layout_marginStart="4dp"
             android:visibility="gone"
             app:srcCompat="@drawable/ic_skull_red" />
+
+        <!-- Voice chat: mute this player on this phone -->
+        <ImageView
+            android:id="@+id/mute_player_iv"
+            android:contentDescription="@string/cd_mute_player"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            android:padding="5dp"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_voice_on" />
     </LinearLayout>
 </FrameLayout>

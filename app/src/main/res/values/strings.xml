@@ -220,6 +220,10 @@
     <string name="cd_blaster_battery">Blaster battery</string>
     <string name="cd_network_status">Network status</string>
     <string name="cd_kick_player">Kick player</string>
+    <string name="cd_mute_player">Mute this player (only for you)</string>
+    <string name="cd_unmute_player">Hear this player again</string>
+    <string name="cd_mute_team">Mute this team (only for you)</string>
+    <string name="cd_unmute_team">Hear this team again</string>
     <string name="cd_blaster_rifle">Rifle</string>
     <string name="cd_blaster_pistol">Pistol</string>
     <string name="cd_grenade_paired">Grenade paired</string>

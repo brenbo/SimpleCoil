@@ -32,6 +32,8 @@ sealed interface ScoreboardRow {
         val capacity: Int,
         val score: Int,
         val editable: Boolean,
+        /** Voice chat's mute-all for the team: null when not shown, else whether all of them are muted here. */
+        val allMuted: Boolean? = null,
     ) : ScoreboardRow
 
     data class Player(
@@ -47,6 +49,8 @@ sealed interface ScoreboardRow {
         /** GattProtocolHandler.BLASTER_TYPE_*; 0 when unknown. */
         val blasterType: Byte = 0,
         val hasGrenade: Boolean = false,
+        /** Voice chat's mute button: null when not shown (no voice chat, or this phone's player), else muted here. */
+        val muted: Boolean? = null,
     ) : ScoreboardRow
 }
 
@@ -61,6 +65,10 @@ data class ScoreboardContext(
     val selfId: Byte,
     /** This phone's player is a server admin. */
     val isAdmin: Boolean,
+    /** Voice chat is on for this phone: rows get mute buttons. */
+    val voiceOn: Boolean = false,
+    /** The players muted on this phone. */
+    val muted: Set<Int> = emptySet(),
 )
 
 /**
@@ -80,7 +88,8 @@ object ScoreboardRows {
         fun at(id: Int): PlayerDisplayData? = if (players != null && id < players.size) players[id] else null
 
         if (layout.mode.isFreeForAll) {
-            rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, canEdit)
+            val all = (1..GameSettingsRepository.MAX_PLAYER_ID).mapNotNull { at(it) }
+            rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, canEdit, allMuted(all, context))
             val list = (1..GameSettingsRepository.MAX_PLAYER_ID).mapNotNull { at(it) }.sortedWith(playerOrder(context))
             list.forEach { rows += playerRow(it, context) }
             return rows
@@ -119,7 +128,7 @@ object ScoreboardRows {
         }
         for (team in teams.sortedWith(teamOrder)) {
             val capacity = sizes.getOrElse(team.number - 1) { 16 }
-            rows += ScoreboardRow.TeamHeader(team.number, team.members.size, capacity, team.points, canEdit)
+            rows += ScoreboardRow.TeamHeader(team.number, team.members.size, capacity, team.points, canEdit, allMuted(team.members, context))
             for (p in team.members.sortedWith(playerOrder(context))) rows += playerRow(p, context)
         }
         return rows
@@ -144,7 +153,15 @@ object ScoreboardRows {
             kickable = canKick && idInt in 1..GameSettingsRepository.MAX_PLAYER_ID && id != context.selfId,
             blasterType = p.blasterType,
             hasGrenade = p.hasGrenade,
+            muted = (idInt in context.muted).takeIf { context.voiceOn && id != context.selfId },
         )
+    }
+
+    /** The team header's mute-all: shown with voice chat on and someone else to mute; all of them muted here? */
+    private fun allMuted(members: List<PlayerDisplayData>, context: ScoreboardContext): Boolean? {
+        if (!context.voiceOn) return null
+        val others = members.map { it.playerID.toInt() }.filter { it != context.selfId.toInt() }
+        return if (others.isEmpty()) null else others.all { it in context.muted }
     }
 
     private fun isLivesLimitSet(p: PlayerDisplayData, context: ScoreboardContext): Boolean =

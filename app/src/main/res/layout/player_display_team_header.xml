@@ -37,4 +37,16 @@
         android:textSize="12sp"
         android:textStyle="italic" />
 
+    <!-- Voice chat: mute (or hear again) the whole team on this phone -->
+    <ImageView
+        android:id="@+id/team_mute_iv"
+        android:contentDescription="@string/cd_mute_team"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="8dp"
+        android:padding="4dp"
+        android:src="@drawable/ic_voice_on"
+        android:visibility="gone" />
+
 </LinearLayout>

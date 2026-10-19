@@ -138,6 +138,7 @@ class GameScreenRenderer(
             displayInGameNetworkingOptions(isAdmin, freeForAll)
         } else {
             displayAllNetworkingOptions(false, freeForAll)
+            b.endGameButton.setText(R.string.end_game_button)
             b.endGameButton.visibility = View.VISIBLE
         }
         b.useNetworkButton.visibility = View.INVISIBLE
@@ -385,6 +386,8 @@ class GameScreenRenderer(
         displayAllNetworkingOptions(false, freeForAll)
         b.playerCountTv.visibility = View.VISIBLE
         b.scoresChip.visibility = View.VISIBLE
+        // An admin's server controls: End Game (and talk to everyone, with voice chat)
+        b.endGameButton.setText(R.string.admin_controls_button)
         b.endGameButton.visibility = if (isAdmin) View.VISIBLE else View.GONE
         if (!freeForAll) setTeamScoreVisible(true)
     }

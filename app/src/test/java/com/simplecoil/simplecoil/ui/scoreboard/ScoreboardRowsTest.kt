@@ -123,4 +123,22 @@ class ScoreboardRowsTest {
         assertTrue(byId.getValue(1).isSelf)
         assertTrue(byId.getValue(17).kickable)
     }
+
+    @Test
+    fun withVoiceChat_everyoneElseGetsAMuteButton_andTeamsAMuteAll() {
+        // Two teams: 1 (me) and 2 on team 1, 17 and 18 on team 2
+        val data = players(player(1, "Me", 0), player(2, "Mate", 0), player(17, "A", 0), player(18, "B", 0))
+        val quiet = ScoreboardRows.build(data, context(mode = TeamMode.TWO_TEAMS, isClient = true, selfId = 1))
+        assertTrue(quiet.filterIsInstance<ScoreboardRow.Player>().all { it.muted == null })
+
+        val voice = ScoreboardRows.build(data, context(mode = TeamMode.TWO_TEAMS, isClient = true, selfId = 1)
+            .copy(voiceOn = true, muted = setOf(17, 18)))
+        val byId = voice.filterIsInstance<ScoreboardRow.Player>().associateBy { it.playerId.toInt() }
+        assertEquals(null, byId.getValue(1).muted)
+        assertEquals(false, byId.getValue(2).muted)
+        assertEquals(true, byId.getValue(17).muted)
+        val headers = voice.filterIsInstance<ScoreboardRow.TeamHeader>().associateBy { it.team }
+        assertEquals(false, headers.getValue(1).allMuted)
+        assertEquals(true, headers.getValue(2).allMuted)
+    }
 }

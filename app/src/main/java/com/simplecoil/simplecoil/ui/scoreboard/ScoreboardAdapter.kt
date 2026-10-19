@@ -47,6 +47,25 @@ class ScoreboardAdapter(
         fun onPlayerClicked(playerId: Byte) {}
 
         fun onKickClicked(playerId: Byte)
+
+        /** Voice chat: mute or unmute [playerId] on this phone. */
+        fun onMuteClicked(playerId: Byte) {}
+
+        /** Voice chat: mute or unmute [team] (0: everyone, in free for all) on this phone. */
+        fun onMuteTeamClicked(team: Int) {}
+    }
+
+    /** The mute buttons: heard, or muted here. */
+    private fun showMute(view: ImageView, muted: Boolean?, mutedText: Int, heardText: Int, onClick: () -> Unit) {
+        if (muted == null) {
+            view.visibility = View.GONE
+            view.setOnClickListener(null)
+            return
+        }
+        view.setImageResource(if (muted) R.drawable.ic_voice_muted else R.drawable.ic_voice_on)
+        view.contentDescription = view.context.getString(if (muted) mutedText else heardText)
+        view.visibility = View.VISIBLE
+        view.setOnClickListener { onClick() }
     }
 
     override fun getItemViewType(position: Int) = when (getItem(position)) {
@@ -76,6 +95,7 @@ class ScoreboardAdapter(
         private val title: TextView = view.findViewById(R.id.team_header_title_tv)
         private val action: TextView = view.findViewById(R.id.team_header_action_tv)
         private val colorSquare: View? = view.findViewById(R.id.team_header_color_sq)
+        private val mute: ImageView? = view.findViewById(R.id.team_mute_iv)
 
         fun bind(row: ScoreboardRow.TeamHeader) {
             val context = itemView.context
@@ -97,6 +117,7 @@ class ScoreboardAdapter(
                 action.visibility = if (row.editable) View.VISIBLE else View.GONE
                 action.setText(R.string.scoreboard_edit_ratio)
             }
+            mute?.let { showMute(it, row.allMuted, R.string.cd_unmute_team, R.string.cd_mute_team) { listener.onMuteTeamClicked(row.team) } }
             if (row.editable) itemView.setOnClickListener { listener.onTeamHeaderClicked() } else itemView.setOnClickListener(null)
             itemView.isClickable = row.editable
         }
@@ -110,6 +131,7 @@ class ScoreboardAdapter(
         private val grenade: ImageView = view.findViewById(R.id.grenade_iv)
         private val networkStatus: ImageView? = view.findViewById(R.id.network_status_iv)
         private val kick: ImageView? = view.findViewById(R.id.kick_player_iv)
+        private val mute: ImageView? = view.findViewById(R.id.mute_player_iv)
         private val defaultNameColors: ColorStateList = name.textColors
 
         fun bindColumnHeader(row: ScoreboardRow.ColumnHeader) {
@@ -123,6 +145,8 @@ class ScoreboardAdapter(
             networkStatus?.visibility = View.GONE
             kick?.visibility = View.GONE
             kick?.setOnClickListener(null)
+            mute?.visibility = View.GONE
+            mute?.setOnClickListener(null)
             itemView.setOnClickListener(null)
             itemView.isClickable = false
         }
@@ -153,6 +177,7 @@ class ScoreboardAdapter(
                     it.setOnClickListener(null)
                 }
             }
+            mute?.let { showMute(it, row.muted, R.string.cd_unmute_player, R.string.cd_mute_player) { listener.onMuteClicked(row.playerId) } }
             if (isClient) {
                 itemView.setOnClickListener(null)
                 itemView.isClickable = false

@@ -55,6 +55,7 @@ import com.simplecoil.simplecoil.network.imagery.FieldPackStore
 import com.simplecoil.simplecoil.network.imagery.FieldPresetStore
 import com.simplecoil.simplecoil.network.imagery.GamePresetStore
 import com.simplecoil.simplecoil.network.server.PlayerGps
+import com.simplecoil.simplecoil.network.voice.VoiceAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -351,10 +352,10 @@ class AppContainer(private val app: Application) {
                 if (event != ClientEvent.PlayerSettingsUpdate && event !is ClientEvent.ServerReply) return@collect
                 val server = gameState.serverIP ?: return@collect
                 val playerId = players.playerID.toInt().takeIf { it != 0 } ?: return@collect
-                // Voice chat: whether the server has it on for this player
+                // Voice chat: what the server lets this player do (hear, or talk too)
                 val voice = withContext(dispatchers.io) { fieldImageryClient.voice(server, playerId) }
-                voiceChat.setEnabled(voice)
-                sessionEngine.pushToTalk = voice
+                voiceChat.setAccess(voice)
+                sessionEngine.pushToTalk = voice == VoiceAccess.TALK
                 val assigned = withContext(dispatchers.io) { fieldImageryClient.sound(server, playerId) } ?: return@collect
                 if (assigned.revision > remoteSoundRevision) {
                     remoteSoundRevision = assigned.revision
@@ -366,7 +367,7 @@ class AppContainer(private val app: Application) {
         appScope.launch {
             clientEvents.events.collect { event ->
                 if (event == ClientEvent.NetworkDisconnected || event == ClientEvent.ServerCancel) {
-                    voiceChat.setEnabled(false)
+                    voiceChat.setAccess(VoiceAccess.OFF)
                     sessionEngine.pushToTalk = false
                 }
             }

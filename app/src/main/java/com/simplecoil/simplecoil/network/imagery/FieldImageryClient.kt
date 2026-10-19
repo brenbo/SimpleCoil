@@ -25,6 +25,7 @@ import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.Readiness
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.postgame.GameRecord
+import com.simplecoil.simplecoil.network.voice.VoiceAccess
 import org.json.JSONObject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -183,11 +184,11 @@ class FieldImageryClient(
         body?.let { RemoteSounds.Assigned.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
 
-    /** Whether voice chat is on for [playerId]; false if not, or the server can't say (an older one). */
-    fun voice(server: InetAddress, playerId: Int): Boolean = exchange(server,
+    /** What [playerId] may do with voice chat; off if the server can't say (an older one). */
+    fun voice(server: InetAddress, playerId: Int): VoiceAccess = exchange(server,
         FieldImageryProtocol.requestLine(playerId.toString(), FieldImageryProtocol.Kind.VOICE)) { _, body ->
-        body?.let { String(it, Charsets.US_ASCII) == "1" }
-    } ?: false
+        VoiceAccess.fromBody(body?.let { String(it, Charsets.US_ASCII) })
+    } ?: VoiceAccess.OFF
 
     /** The last game for the post-game map; null if the server keeps none (or can't say). */
     fun replay(server: InetAddress): GameRecord? = exchange(server,

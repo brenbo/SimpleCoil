@@ -36,6 +36,9 @@ object VoiceProtocol {
     private const val HEADER = 6
     const val FLAG_EVERYONE = 0x01
 
+    /** Where the flags byte is: the server rewrites it as it passes a packet on. */
+    const val FLAGS_OFFSET = 4
+
     /** The longest a packet can be, header and audio. */
     const val MAX_PACKET = HEADER + FRAME_BYTES
 
@@ -70,28 +73,52 @@ data class VoicePeer(val playerId: Int, val team: Int, val address: InetAddress?
 
 /** Who may talk, and who hears them (the server's rules). */
 object VoiceRules {
+    /** Who [speaker] reaches, and whether as an admin talking to everyone (which can't be muted). */
+    data class Delivery(val to: List<VoicePeer>, val toEveryone: Boolean)
+
     /**
-     * The players [speaker] reaches: nobody if voice is off, or off for them, or they aren't a
-     * known player talking from their own address. Their teammates (in free for all, nobody);
-     * everyone if they are an admin and asked for [everyone]. Never themselves, nor anyone off.
+     * The players [speaker] reaches: nobody if voice is off, or [mayTalk] says not for them, or
+     * they aren't a known player talking from their own address. Their teammates (in free for
+     * all, nobody); everyone if they are an admin and asked for [everyone]. Never themselves, nor
+     * anyone off the server. A player who may not talk still hears.
      */
     fun recipients(
         speaker: Int,
         from: InetAddress?,
         everyone: Boolean,
         voiceOn: Boolean,
-        allowed: (Int) -> Boolean,
+        mayTalk: (Int) -> Boolean,
         peers: List<VoicePeer>,
         freeForAll: Boolean,
-    ): List<VoicePeer> {
-        if (!voiceOn || !allowed(speaker)) return emptyList()
-        val me = peers.firstOrNull { it.playerId == speaker } ?: return emptyList()
+    ): Delivery {
+        val none = Delivery(emptyList(), false)
+        if (!voiceOn || !mayTalk(speaker)) return none
+        val me = peers.firstOrNull { it.playerId == speaker } ?: return none
         // Only the phone that player is on: no talking as someone else
-        if (me.address == null || me.address != from) return emptyList()
+        if (me.address == null || me.address != from) return none
         val toAll = everyone && me.admin
-        return peers.filter { p ->
-            p.playerId != speaker && p.connected && p.address != null && allowed(p.playerId) &&
-                (toAll || (!freeForAll && p.team == me.team))
+        return Delivery(peers.filter { p ->
+            p.playerId != speaker && p.connected && p.address != null && (toAll || (!freeForAll && p.team == me.team))
+        }, toAll)
+    }
+}
+
+/** What a phone may do with voice chat, as the server says (field service VOICE). */
+enum class VoiceAccess {
+    /** Voice chat is off on the server (or it can't say). */
+    OFF,
+
+    /** Hears teammates (and admins talking to everyone), but may not talk. */
+    LISTEN,
+
+    /** Talks and hears. */
+    TALK;
+
+    companion object {
+        fun fromBody(body: String?): VoiceAccess = when (body) {
+            "1" -> TALK
+            "L" -> LISTEN
+            else -> OFF
         }
     }
 }

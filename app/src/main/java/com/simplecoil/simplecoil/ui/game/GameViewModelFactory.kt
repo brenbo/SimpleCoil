@@ -46,6 +46,15 @@ class GameViewModelFactory(private val app: SimpleCoilApp) : ViewModelProvider.F
             container.modeController.clear()
             container.sessionResets.tryEmit(Unit)
         },
+        voice = object : VoiceControls {
+            override val listening get() = container.voiceChat.enabled.value
+            override val canTalk get() = container.voiceChat.canTalk.value
+            override var toEveryone
+                get() = container.voiceToEveryone
+                set(value) { container.voiceToEveryone = value }
+            override val muted get() = container.voiceChat.muted.value
+            override fun setMuted(playerIds: Collection<Int>, mute: Boolean) = container.voiceChat.setMuted(playerIds, mute)
+        },
     ) as T
 
     companion object {

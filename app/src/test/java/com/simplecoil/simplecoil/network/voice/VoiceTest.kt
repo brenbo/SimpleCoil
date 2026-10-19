@@ -38,7 +38,7 @@ class VoiceTest {
 
     private fun heard(speaker: Int, everyone: Boolean = false, voiceOn: Boolean = true, off: Set<Int> = emptySet(),
                       from: InetAddress? = ip(speaker), freeForAll: Boolean = false) =
-        VoiceRules.recipients(speaker, from, everyone, voiceOn, { it !in off }, peers, freeForAll).map { it.playerId }
+        VoiceRules.recipients(speaker, from, everyone, voiceOn, { it !in off }, peers, freeForAll).to.map { it.playerId }
 
     @Test
     fun onlyTeammatesHear() {
@@ -53,12 +53,20 @@ class VoiceTest {
     }
 
     @Test
-    fun nobodyWhenVoiceIsOff_offForThem_orTalkingAsSomeoneElse() {
+    fun nobodyWhenVoiceIsOff_orTheyMayNotTalk_orTalkAsSomeoneElse() {
         assertTrue(heard(1, voiceOn = false).isEmpty())
         assertTrue(heard(1, off = setOf(1)).isEmpty())
-        // A player with voice off hears nothing either
-        assertTrue(heard(1, off = setOf(2)).isEmpty())
+        // A player who may not talk still hears
+        assertEquals(listOf(2), heard(1, off = setOf(2)))
         assertTrue(heard(1, from = ip(9)).isEmpty())
+    }
+
+    @Test
+    fun onlyAnAdminTalkingToEveryoneIsMarkedSo_soNobodyElseGetsPastAMute() {
+        val ask = { speaker: Int -> VoiceRules.recipients(speaker, ip(speaker), true, true, { true }, peers, false) }
+        assertTrue(ask(4).toEveryone)
+        assertFalse(ask(1).toEveryone)
+        assertFalse(VoiceRules.recipients(4, ip(4), false, true, { true }, peers, false).toEveryone)
     }
 
     @Test
@@ -95,7 +103,12 @@ class VoiceTest {
         settings.setAllowed(1, false)
         assertFalse(settings.allowed(1))
         assertFalse(settings.allowedFor(1))
-        assertEquals("0", String(settings.body(1)))
+        // Turned off for one player: they still listen
+        assertEquals("L", String(settings.body(1)))
         assertEquals("1", String(settings.body(2)))
+        settings.enabled = false
+        assertEquals("0", String(settings.body(2)))
+        assertEquals(VoiceAccess.LISTEN, VoiceAccess.fromBody("L"))
+        assertEquals(VoiceAccess.OFF, VoiceAccess.fromBody(null))
     }
 }

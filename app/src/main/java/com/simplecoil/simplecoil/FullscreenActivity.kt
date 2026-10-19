@@ -154,7 +154,8 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         binding.teamPlusButton.setOnClickListener { vm.onTeamPlusPressed() }
         binding.startGameButton.setOnClickListener { vm.onStartGamePressed() }
         binding.playerSettingsButton.setOnClickListener { vm.onPlayerSettingsPressed() }
-        binding.endGameButton.setOnClickListener { vm.onEndGamePressed() }
+        // In a network game an admin's button is the server controls (End Game, talk to everyone)
+        binding.endGameButton.setOnClickListener { if (vm.adminMenuInGame()) dialogs.showAdminMenu(it) else vm.onEndGamePressed() }
         binding.startRespawnButton.setOnClickListener { vm.onStartRespawnPressed() }
         binding.generateQrButton.setOnClickListener { vm.onGenerateQrPressed() }
         InfoSheet(this, binding)
