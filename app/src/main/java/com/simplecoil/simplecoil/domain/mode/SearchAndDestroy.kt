@@ -133,6 +133,20 @@ class BombEngine(
 
     private fun defenders() = 3 - attackers()
 
+    /** Players who joined mid-round: watching until the next round. */
+    private val sittingOut = HashSet<Int>()
+
+    /**
+     * [playerId] joined after the game started. Mid-round they sit out (and count as out, so
+     * they can't keep their team from being wiped out); while a round is starting or between
+     * rounds they just play the next one.
+     */
+    fun onLateJoin(playerId: Int) {
+        if (phase != RoundPhase.LIVE && phase != RoundPhase.PLANTED) return
+        out += playerId
+        sittingOut += playerId
+    }
+
     fun onEliminated(playerId: Int) {
         if (phase == RoundPhase.BETWEEN || phase == RoundPhase.STARTING) return
         out += playerId
@@ -254,6 +268,7 @@ class BombEngine(
 
     private fun startRound(now: Long) {
         round++
+        sittingOut.clear()
         phase = RoundPhase.STARTING
         endsAt = now + STARTING_MAX_MILLIS
         out.clear()
@@ -283,6 +298,7 @@ class BombEngine(
             bomb = BombState(round, attackers(), phase, endsAt, carrier, if (dropped || planted != null) bomb else null,
                 planted?.id, lastRoundWinner, out.toSet()),
             actor = doing?.first ?: 0,
+            sittingOut = sittingOut.toSet(),
         )
     }
 

@@ -162,6 +162,41 @@ class RoundsAndInfectionTest {
     }
 
     @Test
+    fun aLateJoiner_sitsOutTheRoundUnderWay_andPlaysTheNext() {
+        val e = BombEngine(rules, listOf(siteA), 0, Random(9))
+        e.tick(1_000, players())
+        // Player 3 (team 2) joins mid-round: out, and no use to their team
+        e.onLateJoin(3)
+        var state = e.tick(2_000, players() + (3 to PlayerInfo(2, at(50.0), true)))
+        assertEquals(setOf(3), state.sittingOut)
+        assertTrue(3 in state.bomb!!.out)
+        e.onEliminated(2)
+        state = e.tick(3_000, players() + (3 to PlayerInfo(2, at(50.0), true)))
+        assertEquals(1, state.scores[1])
+        // The next round they're in
+        state = e.tick(14_000, players() + (3 to PlayerInfo(2, at(50.0), true)))
+        assertEquals(2, state.round)
+        assertTrue(state.sittingOut.isEmpty())
+        // Joining while a round is starting: they just play it
+        val starting = BombEngine(rules, listOf(siteA), 0, Random(9), liveAfterMillis = 10_000)
+        starting.tick(1_000, players())
+        starting.onLateJoin(3)
+        assertTrue(starting.tick(2_000, players()).sittingOut.isEmpty())
+    }
+
+    @Test
+    fun aLateJoiner_sitsOutAGameOfInfection() {
+        val e = InfectionEngine(InfectionRules(), 0, Random(10))
+        val three = (1..3).associateWith { PlayerInfo(it, center, true) }
+        e.tick(1_000, three)
+        e.onLateJoin(4)
+        val state = e.tick(2_000, three + (4 to PlayerInfo(4, center, true)))
+        assertEquals(setOf(4), state.sittingOut)
+        // Not counted on either side
+        assertEquals(3, (state.scores[InfectionEngine.SURVIVORS] ?: 0) + (state.scores[InfectionEngine.INFECTED] ?: 0))
+    }
+
+    @Test
     fun theTeamsSwapAtHalfTime() {
         val e = BombEngine(rules, listOf(siteA), 0, Random(5))
         assertEquals(1, e.attackers(1))

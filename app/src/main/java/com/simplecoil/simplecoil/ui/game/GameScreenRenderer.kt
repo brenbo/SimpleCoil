@@ -678,7 +678,15 @@ class GameScreenRenderer(
                 b.spawnCountdownTv.setText(if (spawn.outOfBounds) R.string.respawn_return_to_field else R.string.respawn_go_to_spawn)
                 b.spawnCountdownTv.visibility = View.VISIBLE
             }
+            is SpawnPhase.SittingOut -> {
+                b.eliminatedTv.setText(R.string.sitting_out_label)
+                b.eliminatedTv.visibility = View.VISIBLE
+                b.eliminatedByTv.visibility = View.INVISIBLE
+                b.spawnCountdownTv.setText(if (spawn.untilNextRound) R.string.sitting_out_next_round else R.string.sitting_out_next_game)
+                b.spawnCountdownTv.visibility = View.VISIBLE
+            }
             is SpawnPhase.OutOfLives -> {
+                b.eliminatedTv.setText(R.string.eliminated_label)
                 b.eliminatedTv.visibility = View.VISIBLE
                 b.eliminatedByTv.text = spawn.eliminatedBy
                 b.eliminatedByTv.visibility = View.VISIBLE

@@ -62,6 +62,20 @@ class GrenadeImmunityTest {
     }
 
     @Test
+    fun aLateJoinerSitsOut_untilTheNextRoundRevivesThem() {
+        h.config.fullHealth = 1
+        h.connected()
+        h.startedAndSpawned()
+        h.engine.sitOut(untilNextRound = true)
+        assertEquals(SpawnPhase.SittingOut(true), h.state.spawn)
+        // Out: hits do nothing to them, and there's no elimination to report
+        hitBy(Packet().hit1(5, 0x01))
+        assertEquals(0, eliminatedCount())
+        h.engine.revive()
+        assertTrue(h.state.spawn is SpawnPhase.Spawning)
+    }
+
+    @Test
     fun theSameGrenadeCannotEliminateAgainForAWhile() {
         h.config.fullHealth = 1
         h.connected()

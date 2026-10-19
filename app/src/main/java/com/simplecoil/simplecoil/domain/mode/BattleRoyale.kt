@@ -238,6 +238,16 @@ class BattleRoyaleEngine(private val plan: ZonePlan) {
         if (zone(nowMillis).noRespawn) out += playerId
     }
 
+    /** Joined once respawns were over: out, watching, for the rest of the game. */
+    private val sittingOut = HashSet<Int>()
+
+    /** [playerId] joined after the start; once respawns are over that's too late to play. */
+    fun onLateJoin(playerId: Int, nowMillis: Long) {
+        if (!zone(nowMillis).noRespawn) return
+        out += playerId
+        sittingOut += playerId
+    }
+
     /** The game at [nowMillis], for [players] (id to team) in it. */
     fun tick(nowMillis: Long, players: Map<Int, Int>): ModeState {
         val zone = zone(nowMillis)
@@ -247,7 +257,7 @@ class BattleRoyaleEngine(private val plan: ZonePlan) {
         if (winner == 0 && teamsSeen >= 2 && left.size == 1) winner = left.keys.single()
         return ModeState(
             mode = GameMode.BATTLE_ROYALE, objectives = emptyList(), scores = left, scoreToWin = 0, radiusMeters = 0.0,
-            winner = winner, movesAt = 0L, zone = zone, out = out.toSet(),
+            winner = winner, movesAt = 0L, zone = zone, out = out.toSet(), sittingOut = sittingOut.toSet(),
         )
     }
 }

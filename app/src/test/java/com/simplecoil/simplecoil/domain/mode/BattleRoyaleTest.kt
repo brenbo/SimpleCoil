@@ -123,6 +123,17 @@ class BattleRoyaleTest {
     }
 
     @Test
+    fun aLateJoiner_playsWhileRespawnsLast_sitsOutAfter() {
+        val engine = BattleRoyaleEngine(ZonePlan(field, rules.copy(respawnUntilPhase = 1), 0, Random(5)))
+        engine.onLateJoin(4, 10_000)
+        assertTrue(engine.tick(10_000, mapOf(1 to 1, 4 to 2)).sittingOut.isEmpty())
+        engine.onLateJoin(5, 70_000)
+        val state = engine.tick(70_000, mapOf(1 to 1, 4 to 2, 5 to 2))
+        assertEquals(setOf(5), state.sittingOut)
+        assertTrue(5 in state.out)
+    }
+
+    @Test
     fun theRefereeCanCloseTheZoneNow() {
         val engine = BattleRoyaleEngine(ZonePlan(field, rules, 0, Random(7)))
         // Waiting for the first shrink at 60 s; closed at 10 s instead
@@ -170,6 +181,7 @@ class BattleRoyaleTest {
             override fun setNoRespawn(on: Boolean) { noRespawn = on }
             override fun revive() {}
             override fun setHitsPaused(on: Boolean) {}
+            override fun sitOut(untilNextRound: Boolean) {}
         }, inGame = { true }, feedback = object : ZoneController.Feedback {
             override fun play(sound: SessionSound) {}
             override fun vibrate() {}

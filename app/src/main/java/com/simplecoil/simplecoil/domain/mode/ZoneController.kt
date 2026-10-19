@@ -42,6 +42,8 @@ class ZoneController(
     private val feedback: Feedback,
     scope: CoroutineScope,
     private val clock: () -> Long,
+    /** This player's id, to know when the server has them sitting out. */
+    private val me: () -> Int = { 0 },
 ) {
     interface Penalties {
         fun damage(amount: Int)
@@ -52,6 +54,9 @@ class ZoneController(
 
         /** Hits do nothing while a round waits to start or is over. */
         fun setHitsPaused(on: Boolean)
+
+        /** Joined too late: out, watching, until the next round or game. */
+        fun sitOut(untilNextRound: Boolean)
     }
 
     interface Feedback {
@@ -97,6 +102,8 @@ class ZoneController(
         // Search & Destroy: no eliminations before a round goes live, or after it's decided
         val phase = mode?.bomb?.phase
         penalties.setHitsPaused(playing && (phase == RoundPhase.STARTING || phase == RoundPhase.BETWEEN))
+        // Joined too late to play now: sit out, watching the map
+        if (playing && mode != null && me() in mode.sittingOut) penalties.sitOut(untilNextRound = mode.mode == GameMode.SEARCH_AND_DESTROY)
         val newRound = mode?.round ?: 0
         if (playing && newRound > round && round != 0) penalties.revive()
         round = if (playing) newRound else 0

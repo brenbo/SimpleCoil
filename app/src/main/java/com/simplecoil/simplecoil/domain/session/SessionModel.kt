@@ -34,6 +34,9 @@ sealed interface SpawnPhase {
 
     /** Eliminated with no lives left; no respawn. */
     data class OutOfLives(val eliminatedBy: String) : SpawnPhase
+
+    /** Joined too late to play now: watching until the next round ([untilNextRound]) or game. */
+    data class SittingOut(val untilNextRound: Boolean) : SpawnPhase
 }
 
 /** The game clock. */

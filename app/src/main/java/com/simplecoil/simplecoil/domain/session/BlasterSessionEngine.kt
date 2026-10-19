@@ -466,9 +466,33 @@ class BlasterSessionEngine(
 
     /** A new round (Search & Destroy): a player out of this round comes back with the respawn countdown. */
     fun revive() {
-        val out = _state.value.spawn as? SpawnPhase.OutOfLives ?: return
+        val eliminatedBy = when (val spawn = _state.value.spawn) {
+            is SpawnPhase.OutOfLives -> spawn.eliminatedBy
+            is SpawnPhase.SittingOut -> ""
+            else -> return
+        }
         if (config.gameState != GameStateRepository.GAME_STATE_ELIMINATED) return
-        startSpawnCountdown(out.eliminatedBy)
+        startSpawnCountdown(eliminatedBy)
+    }
+
+    /**
+     * Joined after the game got going, in a mode where that's too late to play (Search & Destroy
+     * mid-round, Battle Royale after respawns, Infection): out without an elimination, watching
+     * the map, until the next round ([untilNextRound]) or the game ends.
+     */
+    fun sitOut(untilNextRound: Boolean) {
+        if (config.gameState == GameStateRepository.GAME_STATE_NONE) return
+        val spawn = _state.value.spawn
+        if (spawn is SpawnPhase.SittingOut || spawn is SpawnPhase.OutOfLives) return
+        spawnTimer?.cancel()
+        spawnTimer = null
+        shieldTimer?.cancel()
+        shieldTimer = null
+        isShielded = false
+        config.gameState = GameStateRepository.GAME_STATE_ELIMINATED
+        startReload(RELOADING_ELIMINATED)
+        clearHitOverlay()
+        _state.update { it.copy(spawn = SpawnPhase.SittingOut(untilNextRound), shieldSeconds = null) }
     }
 
     fun holdRespawn(reason: RespawnHold, held: Boolean) {

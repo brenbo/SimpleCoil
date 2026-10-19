@@ -56,12 +56,21 @@ class InfectionEngine(private val rules: InfectionRules, private val startMillis
     private var winner = 0
     private val endsAt = startMillis + rules.roundMinutes * 60_000L
 
+    /** Joined once the game was on: watching, on neither side, until the next game. */
+    private val sittingOut = HashSet<Int>()
+
+    /** [playerId] joined after the start: too late to join either side. */
+    fun onLateJoin(playerId: Int) {
+        if (playerId !in infected) sittingOut += playerId
+    }
+
     /** [victim] eliminated by [shooter]: infected if the shooter is. */
     fun onEliminated(victim: Int, shooter: Int) {
         if (shooter in infected) infected += victim
     }
 
-    fun tick(nowMillis: Long, players: Map<Int, PlayerInfo>): ModeState {
+    fun tick(nowMillis: Long, everyone: Map<Int, PlayerInfo>): ModeState {
+        val players = everyone.filterKeys { it !in sittingOut }
         if (!started && players.size >= 2) {
             // The first infected, picked at random once there are players
             started = true
@@ -81,6 +90,7 @@ class InfectionEngine(private val rules: InfectionRules, private val startMillis
             scores = mapOf(SURVIVORS to survivors.size, INFECTED to players.keys.count { it in infected }),
             scoreToWin = 0, radiusMeters = 0.0, winner = winner, movesAt = endsAt,
             infected = infected.toSet(),
+            sittingOut = sittingOut.toSet(),
             revealed = if (reveal) survivors.mapNotNull { id -> players[id]?.point?.let { id to it } }.toMap() else emptyMap(),
         )
     }

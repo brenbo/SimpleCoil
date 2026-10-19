@@ -93,6 +93,9 @@
     <string name="error_maximum">Maximum is %1$d</string>
     <string name="dialog_game_time_expired">Time limit reached!</string>
     <string name="dialog_out_of_lives">Out of Lives!</string>
+    <string name="sitting_out_label">Joined late</string>
+    <string name="sitting_out_next_round">Watch the map: you play from the next round</string>
+    <string name="sitting_out_next_game">Watch the map: you play from the next game</string>
 
     <string name="end_game_dialog_title">End Game?</string>
     <string name="end_game_dialog_message">Are you sure you want to stop playing?</string>

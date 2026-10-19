@@ -273,6 +273,7 @@ class AppContainer(private val app: Application) {
                 override fun setNoRespawn(on: Boolean) = engine.setNoRespawn(on)
                 override fun revive() = engine.revive()
                 override fun setHitsPaused(on: Boolean) = engine.setHitsPaused(on)
+                override fun sitOut(untilNextRound: Boolean) = engine.sitOut(untilNextRound)
             },
             inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
             feedback = object : ZoneController.Feedback {
@@ -281,6 +282,7 @@ class AppContainer(private val app: Application) {
             },
             scope = appScope,
             clock = clock,
+            me = { players.playerID.toInt() },
         )
     }
 

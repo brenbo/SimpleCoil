@@ -250,7 +250,7 @@ class SpawnController(
         is SpawnPhase.Spawning -> !phase.startingGame || rules.startAtSpawn
         is SpawnPhase.AwaitingReturn -> !phase.startingGame || rules.startAtSpawn
         is SpawnPhase.AwaitingRespawn -> true
-        is SpawnPhase.OutOfLives, SpawnPhase.None -> false
+        is SpawnPhase.OutOfLives, is SpawnPhase.SittingOut, SpawnPhase.None -> false
     }
 
     private fun setHeld(hold: Boolean) {

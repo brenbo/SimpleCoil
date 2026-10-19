@@ -327,6 +327,8 @@ In Search & Destroy the `MODE` reply sets `noRespawn`, `round` (it goes up when 
 
 In Infection, `infected` lists the infected players, `scores` is keyed by the sides -5 (survivors) and -4 (infected), `movesAt` is when the round ends, and `revealed` (`[[id, lat, lon], ...]`) holds the survivors the infected see right now. An elimination by an infected player infects the victim.
 
+`sitout` lists the players who joined too late to play now: in Search & Destroy someone joining mid-round sits out until the next round (and counts as out, so they can't keep their team from being wiped out); in Battle Royale someone joining after respawns end, and in Infection anyone joining after the first 30 s past the start countdown, sits out until the game ends. Their phone puts them out, without an elimination, and they watch the map.
+
 ### 8.6 The post-game map
 
 The config's `loadout` carries `postGameMap`: `off`, `kills` or `full`. During a game the server records each measured elimination and, with `full`, every player's position every 3 seconds; it keeps the record until the next game starts.

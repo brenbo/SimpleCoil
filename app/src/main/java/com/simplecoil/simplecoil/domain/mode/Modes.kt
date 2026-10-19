@@ -232,6 +232,8 @@ data class ModeState(
     val infected: Set<Int> = emptySet(),
     /** Infection: survivors shown on the infected's maps right now, by player id. */
     val revealed: Map<Int, LatLon> = emptyMap(),
+    /** Players who joined too late to play now, watching until the next round (Search & Destroy) or game. */
+    val sittingOut: Set<Int> = emptySet(),
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("mode", mode.wireValue)
@@ -272,6 +274,7 @@ data class ModeState(
                     .put("out", JSONArray().apply { b.out.sorted().forEach { put(it) } }))
             }
             if (infected.isNotEmpty()) put("infected", JSONArray().apply { infected.sorted().forEach { put(it) } })
+            if (sittingOut.isNotEmpty()) put("sitout", JSONArray().apply { sittingOut.sorted().forEach { put(it) } })
             if (revealed.isNotEmpty()) put("revealed", JSONArray().apply {
                 revealed.toSortedMap().forEach { (id, p) -> put(JSONArray().put(id).put(p.latitude).put(p.longitude)) }
             })
@@ -328,6 +331,7 @@ data class ModeState(
                         (0 until out.length()).map { out.getInt(it) }.toSet())
                 },
                 infected = json.optJSONArray("infected")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet(),
+                sittingOut = json.optJSONArray("sitout")?.let { a -> (0 until a.length()).map { a.getInt(it) }.toSet() } ?: emptySet(),
                 revealed = json.optJSONArray("revealed")?.let { a ->
                     (0 until a.length()).associate { a.getJSONArray(it).let { r -> r.getInt(0) to LatLon(r.getDouble(1), r.getDouble(2)) } }
                 } ?: emptyMap(),

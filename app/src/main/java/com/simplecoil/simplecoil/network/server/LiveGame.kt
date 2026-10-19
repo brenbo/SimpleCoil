@@ -322,7 +322,24 @@ class LiveGame(
             GameMode.CLASSIC -> return
         }
         var won = false
+        // Who started the game: everyone there through the start countdown and a grace after it
+        // (phones still connecting). Anyone after that is a late joiner, whom the mode may sit out
+        val startedAt = wallClock()
+        val starters = HashSet<Int>()
+        val late = HashSet<Int>()
         while (true) {
+            val now = wallClock()
+            for (id in players().keys) {
+                if (id in starters || id in late) continue
+                if (now - startedAt <= startDelayMillis() + LATE_JOIN_GRACE_MILLIS) {
+                    starters += id
+                } else {
+                    late += id
+                    bombs?.onLateJoin(id)
+                    battleRoyale?.onLateJoin(id, now)
+                    infection?.onLateJoin(id)
+                }
+            }
             val state = tick()
             modeBytes = state.toJson().toString().toByteArray(Charsets.UTF_8)
             if (state.winner != 0 && !won) {
@@ -509,6 +526,9 @@ class LiveGame(
 
         /** How often an objective game moves on. */
         const val MODE_TICK_MILLIS = 1_000L
+
+        /** After the start countdown, how long a phone still joining counts as starting the game. */
+        const val LATE_JOIN_GRACE_MILLIS = 30_000L
 
         /** Tries for a drop spot inside the Battle Royale zone. */
         private const val TRIES = 20
