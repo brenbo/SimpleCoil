@@ -183,6 +183,12 @@ class FieldImageryClient(
         body?.let { RemoteSounds.Assigned.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
 
+    /** Whether voice chat is on for [playerId]; false if not, or the server can't say (an older one). */
+    fun voice(server: InetAddress, playerId: Int): Boolean = exchange(server,
+        FieldImageryProtocol.requestLine(playerId.toString(), FieldImageryProtocol.Kind.VOICE)) { _, body ->
+        body?.let { String(it, Charsets.US_ASCII) == "1" }
+    } ?: false
+
     /** The last game for the post-game map; null if the server keeps none (or can't say). */
     fun replay(server: InetAddress): GameRecord? = exchange(server,
         FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.REPLAY)) { _, body ->

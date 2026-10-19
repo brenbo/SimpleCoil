@@ -135,6 +135,7 @@ class PlayerSettingsDialog : DialogFragment() {
         applyToTeamSwitch.visibility = if (teamCount == 0) View.GONE else View.VISIBLE
         playerSection.visibility = View.VISIBLE
         adminSwitch.isChecked = values.isAdmin
+        voiceSwitch.isChecked = args.getBoolean(ARG_VOICE, true)
         recoilSettingButton.visibility = View.VISIBLE
         showRecoilSetting()
         if (teamCount == 0) {
@@ -292,6 +293,8 @@ class PlayerSettingsDialog : DialogFragment() {
                     RESULT_TARGET_TEAM to targetTeam,
                     RESULT_SWAP_WITH to swapWith,
                     RESULT_SOUND to playerSound?.read()?.takeIf { it != playerSound?.initial }?.let { bundleOf(it) },
+                    // The server's player only: voice chat for them, if it changed
+                    RESULT_VOICE to if (isServer && voiceSwitch.isChecked != requireArguments().getBoolean(ARG_VOICE, true)) { if (voiceSwitch.isChecked) 1 else 0 } else -1,
                 ),
             )
         }
@@ -311,6 +314,8 @@ class PlayerSettingsDialog : DialogFragment() {
         val swapWith: Byte = 0,
         /** The player's sound settings, if the operator changed them; null otherwise. */
         val sound: AudioSettings? = null,
+        /** Voice chat on or off for the player, if the operator changed it; null otherwise. */
+        val voice: Boolean? = null,
     )
 
     companion object {
@@ -325,6 +330,7 @@ class PlayerSettingsDialog : DialogFragment() {
         private const val ARG_FULL_TEAM_IDS = "fullTeamIds"
         private const val ARG_FULL_TEAM_NAMES = "fullTeamNames"
         private const val ARG_SOUND = "sound"
+        private const val ARG_VOICE = "voice"
         private const val STATE_FIRING_MODE = "firingMode"
         private const val STATE_RECOIL = "recoilSetting"
         private const val STATE_TARGET_TEAM = "targetTeam"
@@ -337,6 +343,7 @@ class PlayerSettingsDialog : DialogFragment() {
         private const val RESULT_TARGET_TEAM = "targetTeam"
         private const val RESULT_SWAP_WITH = "swapWith"
         private const val RESULT_SOUND = "sound"
+        private const val RESULT_VOICE = "voice"
 
         /** This phone's player. */
         @JvmStatic
@@ -360,6 +367,7 @@ class PlayerSettingsDialog : DialogFragment() {
             indexInTeam: Int,
             fullTeams: Map<Int, List<Pair<Byte, String>>> = emptyMap(),
             sound: AudioSettings = AudioSettings(),
+            voice: Boolean = true,
         ) = PlayerSettingsDialog().apply {
             arguments = bundleOf(
                 ARG_SERVER to true,
@@ -370,6 +378,7 @@ class PlayerSettingsDialog : DialogFragment() {
                 ARG_TEAM to team,
                 ARG_INDEX_IN_TEAM to indexInTeam,
                 ARG_SOUND to bundleOf(sound),
+                ARG_VOICE to voice,
             ).apply {
                 for ((t, players) in fullTeams) {
                     putByteArray(ARG_FULL_TEAM_IDS + t, players.map { it.first }.toByteArray())
@@ -388,6 +397,7 @@ class PlayerSettingsDialog : DialogFragment() {
             targetTeam = bundle.getInt(RESULT_TARGET_TEAM),
             swapWith = bundle.getByte(RESULT_SWAP_WITH),
             sound = bundle.getBundle(RESULT_SOUND)?.let { soundOf(it) },
+            voice = when (bundle.getInt(RESULT_VOICE, -1)) { 1 -> true; 0 -> false; else -> null },
         )
 
         private fun bundleOf(v: PlayerSettingsValues) = bundleOf(

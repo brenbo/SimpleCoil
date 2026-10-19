@@ -94,6 +94,7 @@ class DedicatedServerViewModelTest {
         override fun setAllowJoinInProgress(allow: Boolean) { calls += "allowJoin $allow" }
         override fun setOnlyServerSettings(only: Boolean) { calls += "onlyServer $only" }
         override fun setAllowChooseTeams(allow: Boolean) { calls += "chooseTeams $allow" }
+        override fun resendPlayerSettings() { calls += "resendSettings" }
         override fun playerSettings(playerId: Byte): PlayerSettingsValues = PlayerSettingsValues.of(PlayerSettings())
         override fun applyPlayerSettings(
             playerId: Byte, values: PlayerSettingsValues, applyAll: Boolean, applyTeam: Boolean, targetTeam: Int, swapWith: Byte,

@@ -39,6 +39,8 @@ import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.network.ServerEvent
 import com.simplecoil.simplecoil.network.ServerCommand
 import com.simplecoil.simplecoil.network.ServerMessage
+import com.simplecoil.simplecoil.network.voice.VoicePeer
+import com.simplecoil.simplecoil.network.voice.VoiceRelay
 import com.simplecoil.simplecoil.network.WireCodec
 import com.simplecoil.simplecoil.network.discovery.DiscoveryBeacon
 import com.simplecoil.simplecoil.network.server.GameServer
@@ -80,6 +82,9 @@ class TcpServer : Service() {
     private var liveGame: LiveGame? = null
     private var spawnMoves: Job? = null
     private var gpsReports: Job? = null
+
+    /** Voice chat's relay: each phone's talk to whoever may hear it. */
+    private var voiceRelay: VoiceRelay? = null
 
     inner class LocalBinder : Binder() {
         val service: TcpServer get() = this@TcpServer
@@ -128,6 +133,7 @@ class TcpServer : Service() {
         beacon.start(SERVER_NAME)
         container.fieldImageryServer.start()
         startLiveGame()
+        voiceRelay = VoiceRelay(container.fieldImageryServer.voice, ::voicePeers, { serverSettings.teamLayout.mode.isFreeForAll }).also { it.start() }
         server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
         startAsForeground()
         updateWifiLock()
@@ -147,6 +153,8 @@ class TcpServer : Service() {
         container.fieldImageryServer.liveConfig = null
         container.fieldImageryServer.extras = null
         container.liveGame = null
+        voiceRelay?.stop()
+        voiceRelay = null
         container.fieldImageryServer.sounds.clear()
         container.fieldImageryServer.stop()
         server.stop() // closes each connection once the SERVERCANCEL is written
@@ -191,6 +199,13 @@ class TcpServer : Service() {
 
     /** A player's side in the field's games: their team, or in free for all, themselves. */
     private fun liveTeamOf(id: Int): Int = serverSettings.teamLayout.let { if (it.mode.isFreeForAll) id else it.teamOf(id) }
+
+    /** Everyone voice might go to: team, address, connected, and admin (who may talk to all). */
+    private fun voicePeers(): List<VoicePeer> = server.snapshot.value.players.map { row ->
+        val id = row.playerId.toInt()
+        VoicePeer(id, liveTeamOf(id), serverPlayers.teamIPMap[row.playerId], row.connected,
+            serverPlayers.playerSettings[row.playerId]?.isAdmin == true)
+    }
 
     /** Each player's last reported position and when it came, from the server's GPS reports. */
     private fun playerFixes(): Map<Int, Fix> = synchronized(serverPlayers) {

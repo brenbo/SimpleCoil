@@ -53,6 +53,7 @@
     <string name="kick_player_button">Kick Player</string>
     <string name="kicked_by_server_toast">You were kicked by the server</string>
     <string name="player_settings_admin">Admin Player (Server Controls)</string>
+    <string name="player_settings_voice">Voice chat (when the server has it on)</string>
     <string name="admin_controls_button">Server Controls</string>
 
     <string name="eliminations_count_label">ELIMINATIONS</string>
@@ -93,6 +94,12 @@
     <string name="error_maximum">Maximum is %1$d</string>
     <string name="dialog_game_time_expired">Time limit reached!</string>
     <string name="dialog_out_of_lives">Out of Lives!</string>
+    <string name="voice_talking_team">🎙 Talking to your team</string>
+    <string name="voice_talking_everyone">🎙 Talking to everyone</string>
+    <string name="voice_hearing">🔊 %1$s</string>
+    <string name="voice_player">Player %1$d</string>
+    <string name="voice_needs_mic">Allow the microphone to use voice chat</string>
+    <string name="voice_to_everyone">Talk to everyone (admin)</string>
     <string name="sitting_out_label">Joined late</string>
     <string name="sitting_out_next_round">Watch the map: you play from the next round</string>
     <string name="sitting_out_next_game">Watch the map: you play from the next game</string>
@@ -280,6 +287,7 @@
     <string name="blaster_disconnected_disconnect_quit">Disconnect &amp; Quit</string>
 
     <string name="dedicated_allow_choose_teams">Allow players to choose teams?</string>
+    <string name="dedicated_voice_chat">Voice chat? (hold the weapon switch button to talk to your team)</string>
     <string name="switch_to_team">Switch to Team %1$d</string>
     <string name="permission_rationale_title">Permissions needed</string>
     <string name="permission_rationale_ble">SimpleCoil needs these permissions to find and connect to your blaster: Bluetooth, location (for Bluetooth scanning and the game map) and notifications (to keep the blaster connected while the app is in the background).</string>

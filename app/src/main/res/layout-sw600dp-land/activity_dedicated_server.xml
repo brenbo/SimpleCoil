@@ -503,6 +503,14 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/dedicated_allow_choose_teams"
                                     android:textColor="#FFFFFF"/>
+
+                                <!-- Push-to-talk to teammates: off unless turned on -->
+                                <androidx.appcompat.widget.SwitchCompat
+                                    android:id="@+id/voice_chat_switch"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/dedicated_voice_chat"
+                                    android:textColor="#FFFFFF"/>
                             </LinearLayout>
                         </LinearLayout>
 

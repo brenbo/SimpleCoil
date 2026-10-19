@@ -346,3 +346,9 @@ With `spawnRules.startAtSpawn` on, a phone that has reached its spawn at the sta
 ### 8.8 Sound settings set by the server
 
 The server operator can set a player's sound in that player's settings. Because the game protocol is frozen, the phone asks for it here, `SCFIELD1 SOUND <player id>`, whenever the server sends it player settings (on joining, and each time the operator saves them). The reply is `PACK` of `{"rev","fx","voice","voiceOn","essential","vibrate"}` (volumes 0 to 1), or `NONE` if the server set nothing for that player. The phone applies each `rev` once, so changes the player makes afterwards stay until the operator sets the sound again. The server forgets them when it stops.
+
+## 9. Voice chat (UDP port 17512)
+
+Push-to-talk, off unless the server operator turns it on (and the operator can turn it off for single players in their player settings). A phone asks the field service `SCFIELD1 VOICE <player id>` whenever the server sends it player settings; the reply is `PACK` of `1` (voice on for this player) or `0`. With it on, holding the blaster's thumb (weapon switch) button for 0.3 s talks until it's let go; a tap still switches the fire mode.
+
+Each packet is 20 ms of 16 kHz mono 16-bit audio: `S` `V` 0x01, the speaker's player id, flags (0x01: an admin talking to everyone), a sequence number (0-255, wrapping), then the samples (little endian). Phones send to the server's port 17512 and listen on their own. The server passes a packet, unchanged, only when voice is on for the speaker and it came from that player's address: to their teammates (nobody in free for all), or to every player if the speaker is an admin who asked; never to players with voice off.

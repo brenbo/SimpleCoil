@@ -230,6 +230,12 @@
                 android:id="@+id/admin_switch"
                 android:text="@string/player_settings_admin" />
 
+            <!-- Voice chat for this player, when the server has it on -->
+            <androidx.appcompat.widget.SwitchCompat
+                style="@style/DialogSwitch"
+                android:id="@+id/voice_switch"
+                android:text="@string/player_settings_voice" />
+
             <Button
                 android:id="@+id/kick_player_button"
                 style="@style/Widget.AppCompat.Button.Colored"

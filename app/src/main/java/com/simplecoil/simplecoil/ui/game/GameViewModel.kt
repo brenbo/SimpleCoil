@@ -478,7 +478,8 @@ class GameViewModel(
             SessionEffect.PlayerIdReported -> displayCurrentTeam()
             SessionEffect.EndGameRequested -> endGame()
             SessionEffect.ThumbLongPressed -> toggleScoreboard()
-            // Sounds and vibration are played app-side by SessionFeedback.
+            // Sounds and vibration are played app-side by SessionFeedback; push to talk by the app's voice chat
+            SessionEffect.TalkStarted, SessionEffect.TalkStopped -> Unit
             is SessionEffect.Sound, SessionEffect.Vibrate -> Unit
         }
     }

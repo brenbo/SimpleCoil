@@ -50,6 +50,13 @@
         android:id="@+id/sound_vibration_switch"
         android:text="@string/sound_vibration" />
 
+    <!-- An admin, with voice chat on: talk to every player instead of the team -->
+    <androidx.appcompat.widget.SwitchCompat
+        style="@style/DialogSwitch"
+        android:id="@+id/voice_everyone_switch"
+        android:text="@string/voice_to_everyone"
+        android:visibility="gone" />
+
     <Button
         android:id="@+id/sound_test_button"
         style="@style/Widget.AppCompat.Button.Borderless.Colored"

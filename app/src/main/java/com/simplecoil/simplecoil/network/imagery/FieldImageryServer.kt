@@ -81,6 +81,9 @@ class FieldImageryServer(
     /** The sound settings the operator set for players; served in the lobby too. */
     val sounds = RemoteSounds(clock)
 
+    /** Voice chat: on for the session or not, and for whom. */
+    val voice = com.simplecoil.simplecoil.network.voice.VoiceSettings()
+
     private fun serveExtra(request: FieldImageryProtocol.Request, out: java.io.OutputStream) {
         val extras = extras
         val reply: String
@@ -99,6 +102,7 @@ class FieldImageryServer(
                     FieldImageryProtocol.Kind.REPLAY -> extras?.replay()
                     FieldImageryProtocol.Kind.READY -> extras?.ready()
                     FieldImageryProtocol.Kind.SOUND -> request.knownId.toIntOrNull()?.let { sounds.body(it) }
+                    FieldImageryProtocol.Kind.VOICE -> request.knownId.toIntOrNull()?.let { voice.body(it) }
                     else -> extras?.stats()
                 }
                 reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
@@ -203,7 +207,7 @@ class FieldImageryServer(
             val address = client.inetAddress?.hostAddress ?: "?"
             when (request.kind) {
                 FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE,
-                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY, FieldImageryProtocol.Kind.SOUND -> {
+                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY, FieldImageryProtocol.Kind.SOUND, FieldImageryProtocol.Kind.VOICE -> {
                     serveExtra(request, out)
                     out.flush()
                     return
@@ -331,6 +335,9 @@ object FieldImageryProtocol {
 
         /** The sound settings the server set for a player: `SCFIELD1 SOUND <player id>`; PACK of JSON or NONE. */
         SOUND("SOUND"),
+
+        /** Whether voice chat is on for a player: `SCFIELD1 VOICE <player id>`; PACK of "1" or "0". */
+        VOICE("VOICE"),
     }
 
     /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */

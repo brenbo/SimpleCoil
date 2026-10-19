@@ -605,6 +605,12 @@ class GameServer(
         sendAllGameInfo(SEND_ALL)
     }
 
+    /** Sends everyone's player settings again: phones ask the field service for what goes with them (voice, sound). */
+    fun resendPlayerSettings(): Unit = runOnDispatcher {
+        val list = snapshots.playerSettings() ?: return@runOnDispatcher
+        sendToAll(WireCodec.encode(ServerMessage.PlayerSettings(settings.isAllowPlayerSettings, list)))
+    }
+
     /** [read] of [playerId]'s settings (null if it has none), under the repository's lock. */
     fun <T> readPlayerSettings(playerId: Byte, read: (PlayerSettings?) -> T): T = synchronized(players) {
         read(players.playerSettings[playerId])

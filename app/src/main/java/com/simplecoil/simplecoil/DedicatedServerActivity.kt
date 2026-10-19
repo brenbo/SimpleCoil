@@ -449,6 +449,8 @@ class DedicatedServerActivity : AppCompatActivity() {
         allowJoinSwitch.setOnClickListener { vm.onAllowJoinChanged(allowJoinSwitch.isChecked) }
         onlyServerSettingsSwitch.setOnClickListener { vm.onOnlyServerSettingsChanged(onlyServerSettingsSwitch.isChecked) }
         allowChooseTeamsSwitch.setOnClickListener { vm.onAllowChooseTeamsChanged(allowChooseTeamsSwitch.isChecked) }
+        voiceChatSwitch.isChecked = vm.voiceChat
+        voiceChatSwitch.setOnClickListener { vm.onVoiceChatChanged(voiceChatSwitch.isChecked) }
     }
 
     /** The players in a bottom sheet under the controls, never over Start/End/Reset; the large-screen layout shows them beside the controls instead. */
@@ -512,7 +514,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             is ServerUiEffect.ShowTeamRatio ->
                 showDialog(TeamRatioDialog.newInstance(effect.teamCount, effect.sizes), TeamRatioDialog.REQUEST_KEY)
             is ServerUiEffect.ShowPlayerSettings -> showDialog(PlayerSettingsDialog.server(effect.playerId, effect.playerName, effect.values,
-                effect.teamCount, effect.team, effect.indexInTeam, effect.fullTeams, effect.sound), PlayerSettingsDialog.REQUEST_KEY)
+                effect.teamCount, effect.team, effect.indexInTeam, effect.fullTeams, effect.sound, effect.voice), PlayerSettingsDialog.REQUEST_KEY)
             ServerUiEffect.Finish -> finish()
         }
     }

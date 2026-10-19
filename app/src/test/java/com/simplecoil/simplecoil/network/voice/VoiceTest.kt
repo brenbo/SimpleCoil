@@ -1,0 +1,91 @@
+/*
+ * Copyright (C) 2026 Ethan Yonker
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.simplecoil.simplecoil.network.voice
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.net.InetAddress
+
+class VoiceTest {
+
+    private fun ip(last: Int) = InetAddress.getByAddress(byteArrayOf(192.toByte(), 168.toByte(), 1, last.toByte()))
+
+    /** Players 1, 2 on team 1; 3, 4 on team 2; 4 is an admin; 5 (team 1) is gone. */
+    private val peers = listOf(
+        VoicePeer(1, 1, ip(1), connected = true, admin = false),
+        VoicePeer(2, 1, ip(2), connected = true, admin = false),
+        VoicePeer(3, 2, ip(3), connected = true, admin = false),
+        VoicePeer(4, 2, ip(4), connected = true, admin = true),
+        VoicePeer(5, 1, ip(5), connected = false, admin = false),
+    )
+
+    private fun heard(speaker: Int, everyone: Boolean = false, voiceOn: Boolean = true, off: Set<Int> = emptySet(),
+                      from: InetAddress? = ip(speaker), freeForAll: Boolean = false) =
+        VoiceRules.recipients(speaker, from, everyone, voiceOn, { it !in off }, peers, freeForAll).map { it.playerId }
+
+    @Test
+    fun onlyTeammatesHear() {
+        assertEquals(listOf(2), heard(1))
+        assertEquals(listOf(4), heard(3))
+    }
+
+    @Test
+    fun anAdminCanTalkToEveryone_othersCant() {
+        assertEquals(listOf(1, 2, 3), heard(4, everyone = true))
+        assertEquals(listOf(2), heard(1, everyone = true))
+    }
+
+    @Test
+    fun nobodyWhenVoiceIsOff_offForThem_orTalkingAsSomeoneElse() {
+        assertTrue(heard(1, voiceOn = false).isEmpty())
+        assertTrue(heard(1, off = setOf(1)).isEmpty())
+        // A player with voice off hears nothing either
+        assertTrue(heard(1, off = setOf(2)).isEmpty())
+        assertTrue(heard(1, from = ip(9)).isEmpty())
+    }
+
+    @Test
+    fun freeForAllHasNoTeammates() {
+        assertTrue(heard(1, freeForAll = true).isEmpty())
+        assertEquals(listOf(1, 2, 3), heard(4, everyone = true, freeForAll = true))
+    }
+
+    @Test
+    fun aPacketGoesAndComesBack_andJunkIsntOne() {
+        val audio = ByteArray(VoiceProtocol.FRAME_BYTES) { it.toByte() }
+        val packet = VoiceProtocol.Packet(17, everyone = true, seq = 200, audio = audio)
+        assertEquals(packet, VoiceProtocol.decode(VoiceProtocol.encode(packet)))
+        assertNull(VoiceProtocol.decode("hello".toByteArray()))
+        assertNull(VoiceProtocol.decode(ByteArray(VoiceProtocol.MAX_PACKET + 10)))
+    }
+
+    @Test
+    fun theServersVoiceSettings_offUntilTurnedOn() {
+        val settings = VoiceSettings()
+        assertFalse(settings.allowed(1))
+        settings.enabled = true
+        assertTrue(settings.allowed(1))
+        settings.setAllowed(1, false)
+        assertFalse(settings.allowed(1))
+        assertFalse(settings.allowedFor(1))
+        assertEquals("0", String(settings.body(1)))
+        assertEquals("1", String(settings.body(2)))
+    }
+}

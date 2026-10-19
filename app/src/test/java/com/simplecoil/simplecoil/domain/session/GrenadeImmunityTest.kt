@@ -76,6 +76,29 @@ class GrenadeImmunityTest {
     }
 
     @Test
+    fun withVoiceChatOn_holdingTheThumbButtonTalks_aTapStillSwitchesTheShotMode() {
+        h.connected()
+        h.startedAndSpawned()
+        h.engine.pushToTalk = true
+        val effects = h.effects
+        // Held: talking starts after a moment, even with no packets while it's held
+        h.telemetry(Packet().noHit().thumb(1).thumbHeld())
+        h.advance(BlasterSessionEngine.PUSH_TO_TALK_MILLIS + 50)
+        assertTrue(SessionEffect.TalkStarted in effects)
+        val mode = h.engine.shotMode
+        h.telemetry(Packet().noHit().thumb(1))
+        assertTrue(SessionEffect.TalkStopped in effects)
+        assertEquals(mode, h.engine.shotMode)
+        // A quick tap: no talking
+        effects.clear()
+        h.telemetry(Packet().noHit().thumb(2).thumbHeld())
+        h.advance(50)
+        h.telemetry(Packet().noHit().thumb(2))
+        h.advance(BlasterSessionEngine.PUSH_TO_TALK_MILLIS)
+        assertTrue(SessionEffect.TalkStarted !in effects)
+    }
+
+    @Test
     fun theSameGrenadeCannotEliminateAgainForAWhile() {
         h.config.fullHealth = 1
         h.connected()

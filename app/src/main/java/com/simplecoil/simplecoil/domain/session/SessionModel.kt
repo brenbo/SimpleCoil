@@ -173,6 +173,10 @@ sealed interface SessionEffect {
     /** The thumb (mode) button was held for a long press; it did not cycle the shot mode. */
     data object ThumbLongPressed : SessionEffect
 
+    /** Push to talk: the thumb button held, and let go (voice chat on). */
+    data object TalkStarted : SessionEffect
+    data object TalkStopped : SessionEffect
+
     /** The game must end (time ran out). */
     data object EndGameRequested : SessionEffect
 }

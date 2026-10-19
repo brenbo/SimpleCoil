@@ -83,6 +83,9 @@ interface ServerController {
     fun setOnlyServerSettings(only: Boolean)
     fun setAllowChooseTeams(allow: Boolean)
 
+    /** Everyone's player settings again, so phones fetch what goes with them (voice chat). */
+    fun resendPlayerSettings()
+
     /** [playerId]'s settings, or the defaults if it has none. */
     fun playerSettings(playerId: Byte): PlayerSettingsValues
 
@@ -195,6 +198,10 @@ class TcpServerController(
 
     override fun setAllowChooseTeams(allow: Boolean) {
         server?.setAllowChooseTeams(allow)
+    }
+
+    override fun resendPlayerSettings() {
+        server?.resendPlayerSettings()
     }
 
     override fun playerSettings(playerId: Byte): PlayerSettingsValues =

@@ -31,6 +31,7 @@ import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
 import com.simplecoil.simplecoil.domain.session.GameConfig
 import com.simplecoil.simplecoil.domain.session.RepositoryGameConfig
 import com.simplecoil.simplecoil.domain.session.RespawnHold
+import com.simplecoil.simplecoil.domain.session.SessionEffect
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsManager
 import com.simplecoil.simplecoil.hardware.audio.AudioHapticsPlayer
@@ -39,6 +40,7 @@ import com.simplecoil.simplecoil.hardware.audio.GameSounds
 import com.simplecoil.simplecoil.hardware.audio.HapticsPlayer
 import com.simplecoil.simplecoil.hardware.audio.SessionFeedback
 import com.simplecoil.simplecoil.hardware.audio.SoundEffectPlayer
+import com.simplecoil.simplecoil.hardware.audio.VoiceChat
 import com.simplecoil.simplecoil.hardware.blaster.BlasterManager
 import com.simplecoil.simplecoil.hardware.blaster.BleConnectionManager
 import com.simplecoil.simplecoil.hardware.blaster.BleDeviceRepository
@@ -349,6 +351,10 @@ class AppContainer(private val app: Application) {
                 if (event != ClientEvent.PlayerSettingsUpdate && event !is ClientEvent.ServerReply) return@collect
                 val server = gameState.serverIP ?: return@collect
                 val playerId = players.playerID.toInt().takeIf { it != 0 } ?: return@collect
+                // Voice chat: whether the server has it on for this player
+                val voice = withContext(dispatchers.io) { fieldImageryClient.voice(server, playerId) }
+                voiceChat.setEnabled(voice)
+                sessionEngine.pushToTalk = voice
                 val assigned = withContext(dispatchers.io) { fieldImageryClient.sound(server, playerId) } ?: return@collect
                 if (assigned.revision > remoteSoundRevision) {
                     remoteSoundRevision = assigned.revision
@@ -356,5 +362,34 @@ class AppContainer(private val app: Application) {
                 }
             }
         }
+        // Off the server: no voice chat
+        appScope.launch {
+            clientEvents.events.collect { event ->
+                if (event == ClientEvent.NetworkDisconnected || event == ClientEvent.ServerCancel) {
+                    voiceChat.setEnabled(false)
+                    sessionEngine.pushToTalk = false
+                }
+            }
+        }
+        // Push to talk: the thumb button held and let go
+        appScope.launch {
+            sessionEngine.effects.collect { effect ->
+                when (effect) {
+                    SessionEffect.TalkStarted -> voiceChat.talk(true)
+                    SessionEffect.TalkStopped -> voiceChat.talk(false)
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    /** An admin's choice to talk to every player rather than their team. */
+    @Volatile
+    var voiceToEveryone = false
+
+    /** Push-to-talk voice chat with teammates (or everyone, for an admin), when the server has it on. */
+    val voiceChat: VoiceChat by lazy {
+        VoiceChat(app, playerId = { players.playerID.toInt() }, server = { gameState.serverIP },
+            everyone = { players.isAdmin && voiceToEveryone }, volume = { audioSettingsNow().voiceVolume })
     }
 }

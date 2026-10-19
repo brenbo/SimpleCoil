@@ -83,7 +83,18 @@ class SoundSettingsSection(
             if (settings.vibration) container.haptics.vibrate()
         }
 
-        fun save() = container.saveAudioSettings(section.read())
+        init {
+            // Only an admin can talk to everyone, and only with voice chat on
+            d.voiceEveryoneSwitch.isVisible = container.players.isAdmin && container.voiceChat.enabled.value
+            d.voiceEveryoneSwitch.isChecked = container.voiceToEveryone
+        }
+
+        private val voiceSwitch = d.voiceEveryoneSwitch
+
+        fun save() {
+            container.saveAudioSettings(section.read())
+            if (voiceSwitch.isVisible) container.voiceToEveryone = voiceSwitch.isChecked
+        }
 
         fun cancel() = container.saveAudioSettings(start)
     }

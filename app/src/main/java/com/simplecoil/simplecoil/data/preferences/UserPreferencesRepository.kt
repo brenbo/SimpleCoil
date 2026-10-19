@@ -87,6 +87,10 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun allowChooseTeams(): Boolean = prefs.getBoolean(ALLOW_CHOOSE_TEAMS, true)
     fun saveAllowChooseTeams(allow: Boolean) = prefs.edit { putBoolean(ALLOW_CHOOSE_TEAMS, allow) }
 
+    /** The server's voice chat switch: off unless the operator turns it on. */
+    fun voiceChat(): Boolean = prefs.getBoolean(VOICE_CHAT, false)
+    fun saveVoiceChat(on: Boolean) = prefs.edit { putBoolean(VOICE_CHAT, on) }
+
     fun deviceAddress(): String = prefs.getString(DEVICE_ADDRESS, "") ?: ""
     fun saveDeviceAddress(address: String) = prefs.edit { putString(DEVICE_ADDRESS, address) }
 
@@ -140,6 +144,7 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val DEVICE_ADDRESS = "DeviceAddress"
         const val GPS_MODE = "GPSMode"
         const val ALLOW_CHOOSE_TEAMS = "AllowChooseTeams"
+        const val VOICE_CHAT = "VoiceChat"
         const val MAP_HEADING_UP = "MapHeadingUp"
         const val MAP_AUTO_ZOOM = "MapAutoZoom"
         const val FIELD_MAP_CAMERA = "FieldMapCamera"

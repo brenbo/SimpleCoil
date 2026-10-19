@@ -16,6 +16,7 @@
 
 package com.simplecoil.simplecoil
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -24,6 +25,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -44,6 +46,7 @@ import com.simplecoil.simplecoil.ui.game.InfoSheet
 import com.simplecoil.simplecoil.ui.game.SavedGameScreen
 import com.simplecoil.simplecoil.ui.game.WindowController
 import com.simplecoil.simplecoil.ui.permissions.BlePermissionController
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
@@ -59,6 +62,41 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
             vm.onQrScanned(result.contents)
         } else {
             Log.e(TAG, "QR scan cancelled or no result")
+        }
+    }
+
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        (application as SimpleCoilApp).container.voiceChat.onMicPermission()
+    }
+
+    /**
+     * Voice chat on this screen: asks for the microphone once the server turns it on, and shows
+     * "Talking to your team" (or everyone) while you hold the button, else who you hear.
+     */
+    private fun showVoiceChat() {
+        val container = (application as SimpleCoilApp).container
+        val voice = container.voiceChat
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { voice.needsMic.collect { if (it) micPermission.launch(Manifest.permission.RECORD_AUDIO) } }
+                launch {
+                    combine(voice.enabled, voice.talking, voice.speakers, voice.needsMic) { on, talking, speakers, needsMic ->
+                        when {
+                            !on -> null
+                            talking -> getString(if (container.players.isAdmin && container.voiceToEveryone) R.string.voice_talking_everyone
+                                else R.string.voice_talking_team)
+                            speakers.isNotEmpty() -> getString(R.string.voice_hearing, speakers.joinToString(", ") { id ->
+                                container.players.getPlayerName(id.toByte())?.ifBlank { null } ?: getString(R.string.voice_player, id)
+                            })
+                            needsMic -> getString(R.string.voice_needs_mic)
+                            else -> null
+                        }
+                    }.collect { text ->
+                        binding.voiceTv.text = text
+                        binding.voiceTv.visibility = if (text == null) View.GONE else View.VISIBLE
+                    }
+                }
+            }
         }
     }
 
@@ -103,6 +141,7 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
                 vm.session.collect(renderer::render)
             }
         }
+        showVoiceChat()
 
         binding.reconnectWeaponButton.setOnClickListener { vm.onReconnectPressed() }
         binding.connectWeaponButton.setOnClickListener { vm.onConnectPressed() }

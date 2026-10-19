@@ -88,6 +88,16 @@ class BlasterSessionEngine(
 
     // Thumb button hold, from the buttons-held byte. A press only cycles the shot mode once it is
     // released short of a long press, so holding for the scoreboard leaves the shot mode alone.
+    /**
+     * Voice chat is on for this player: holding the thumb button talks (after [PUSH_TO_TALK_MILLIS])
+     * instead of opening the scoreboard; a tap still cycles the shot mode.
+     */
+    var pushToTalk = false
+        set(value) {
+            if (field && !value && thumbLongPressed && thumbHeldSince != NOT_HELD) emit(SessionEffect.TalkStopped)
+            field = value
+        }
+    private var talkTimer: Job? = null
     private var thumbHeldSince = NOT_HELD
     private var thumbLongPressed = false
     private var thumbPressPending = false
@@ -751,6 +761,9 @@ class BlasterSessionEngine(
             lastReloadButtonCount = telemetry.reloadCounter
             lastThumbButtonCount = telemetry.thumbCounter
             lastPowerButtonCount = telemetry.powerCounter
+            if (thumbLongPressed && pushToTalk) emit(SessionEffect.TalkStopped)
+            talkTimer?.cancel()
+            talkTimer = null
             thumbHeldSince = NOT_HELD
             thumbLongPressed = false
             thumbPressPending = false
@@ -891,14 +904,25 @@ class BlasterSessionEngine(
                 thumbHeldSince = now
                 thumbLongPressed = false
                 thumbPressPending = false
+                // Push to talk: timed from the press, as a blaster may send nothing while it's held
+                if (pushToTalk) talkTimer = scope.launch {
+                    delay(PUSH_TO_TALK_MILLIS)
+                    if (thumbHeldSince == NOT_HELD || thumbLongPressed) return@launch
+                    thumbLongPressed = true
+                    thumbPressPending = false
+                    emit(SessionEffect.TalkStarted)
+                }
             }
             if (counted && !thumbLongPressed) thumbPressPending = true
-            if (!thumbLongPressed && now - thumbHeldSince >= THUMB_LONG_PRESS_MILLIS) {
+            if (!pushToTalk && !thumbLongPressed && now - thumbHeldSince >= THUMB_LONG_PRESS_MILLIS) {
                 thumbLongPressed = true
                 thumbPressPending = false
                 emit(SessionEffect.ThumbLongPressed)
             }
         } else if (thumbHeldSince != NOT_HELD) {
+            talkTimer?.cancel()
+            talkTimer = null
+            if (thumbLongPressed && pushToTalk) emit(SessionEffect.TalkStopped)
             // Released: the blaster may count the press now rather than when it went down.
             shortPress = !thumbLongPressed && (thumbPressPending || counted)
             thumbLongPressReleased = thumbLongPressed && !counted
@@ -1040,6 +1064,9 @@ class BlasterSessionEngine(
 
         /** Holding the thumb (mode) button this long is a long press. */
         const val THUMB_LONG_PRESS_MILLIS = 2000L
+
+        /** With voice chat on, holding the thumb button this long starts talking (a tap still cycles the shot mode). */
+        const val PUSH_TO_TALK_MILLIS = 300L
         /** Holding reload this long while awaiting a manual respawn starts the respawn. */
         const val RELOAD_LONG_PRESS_MILLIS = 2000L
         private const val NOT_HELD = -1L
