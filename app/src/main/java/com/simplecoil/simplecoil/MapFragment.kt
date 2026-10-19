@@ -97,6 +97,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.math.min
 import java.util.Locale
 
@@ -183,6 +184,7 @@ class MapFragment : Fragment() {
         override fun doFrame(frameTimeNanos: Long) {
             if (!framesRunning) return
             if (container.spawnController.isFading()) renderSpawns()
+            easeYou(frameTimeNanos)
             moveCamera()
             placeYou()
             placePlayers()
@@ -692,6 +694,7 @@ class MapFragment : Fragment() {
         val button = binding?.mapZoomButton ?: return
         val (icon, description) = when (autoZoom) {
             AutoZoom.OFF -> R.drawable.ic_map_zoom_off to R.string.map_zoom_off
+            AutoZoom.YOU -> R.drawable.ic_map_zoom_you to R.string.map_zoom_you
             AutoZoom.PLAYERS -> R.drawable.ic_map_zoom_players to R.string.map_zoom_players
             AutoZoom.FIELD -> R.drawable.ic_map_zoom_field to R.string.map_zoom_field
         }
@@ -751,7 +754,7 @@ class MapFragment : Fragment() {
     private fun placeYou() {
         val view = binding?.mapYouIv ?: return
         val map = map
-        val me = you()
+        val me = smoothYou
         if (map == null || me == null || style == null) {
             view.isVisible = false
             return
@@ -1064,6 +1067,29 @@ class MapFragment : Fragment() {
         }
     }
 
+    /** You on the map, eased toward each GPS fix, so your arrow (and a camera following you) glides instead of jumping. */
+    private var smoothYou: LatLon? = null
+    private var easedAtNanos = 0L
+
+    /**
+     * Moves [smoothYou] toward the latest fix by how much time has passed, not per frame, so it
+     * glides the same at any frame rate. A fix far off (the first one, or GPS catching up) jumps.
+     */
+    private fun easeYou(frameTimeNanos: Long) {
+        val fix = you()
+        val was = smoothYou
+        val seconds = if (easedAtNanos == 0L) 0.0 else (frameTimeNanos - easedAtNanos) / 1e9
+        easedAtNanos = frameTimeNanos
+        smoothYou = when {
+            fix == null -> null
+            was == null || GeoMath.distanceMeters(was, fix) > YOU_SNAP_METERS -> fix
+            else -> {
+                val step = 1 - exp(-seconds / YOU_EASE_SECONDS)
+                LatLon(was.latitude + (fix.latitude - was.latitude) * step, was.longitude + (fix.longitude - was.longitude) * step)
+            }
+        }
+    }
+
     private fun moveCamera() {
         val map = map ?: return
         if (binding?.root?.isVisible != true) return
@@ -1077,11 +1103,14 @@ class MapFragment : Fragment() {
         }
         var center = now.target
         var zoom = now.zoom
-        val goal = target
+        // Following you: close in on where your arrow is, eased, so the map moves as smoothly as you
+        val following = autoZoom == AutoZoom.YOU
+        val goal = if (following) smoothYou?.let { GeoCircle(it, AutoZoom.FOLLOW_RADIUS_METERS) } else target
         val goalZoom = goal?.let { zoomFor(it) }
         if (goal != null && goalZoom != null && center != null) {
-            center = LatLng(center.latitude + (goal.center.latitude - center.latitude) * GLIDE,
-                center.longitude + (goal.center.longitude - center.longitude) * GLIDE)
+            val glide = if (following) FOLLOW_GLIDE else GLIDE
+            center = LatLng(center.latitude + (goal.center.latitude - center.latitude) * glide,
+                center.longitude + (goal.center.longitude - center.longitude) * glide)
             zoom += (goalZoom - zoom) * GLIDE
         }
         val turned = HeadingFilter.difference(currentBearing, bearing) >= MIN_TURN_DEGREES
@@ -1162,6 +1191,15 @@ class MapFragment : Fragment() {
 
         /** Share of the way to auto zoom's goal covered each frame. */
         const val GLIDE = 0.12
+
+        /** Following you, the map keeps up a little faster, so your arrow stays near the middle. */
+        const val FOLLOW_GLIDE = 0.3
+
+        /** Your arrow eases toward each fix over about this long (GPS updates about once a second). */
+        const val YOU_EASE_SECONDS = 0.6
+
+        /** A fix farther than this from the arrow (GPS catching up) jumps instead of gliding. */
+        const val YOU_SNAP_METERS = 50.0
         const val MIN_TURN_DEGREES = 0.2
         const val MIN_ZOOM_STEP = 0.002
         const val MIN_PAN_METERS = 0.05

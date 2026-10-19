@@ -328,7 +328,8 @@
     <!-- The map (map design: Map engine) -->
     <string name="map_compass_heading_up">The map turns with you. Tap to keep north up.</string>
     <string name="map_compass_north_up">North is up. Tap to turn the map with you.</string>
-    <string name="map_zoom_off">Auto zoom is off. Tap to fit everyone on the map.</string>
+    <string name="map_zoom_off">Auto zoom is off. Tap to follow you.</string>
+    <string name="map_zoom_you">Following you. Tap to fit everyone on the map.</string>
     <string name="map_zoom_players">Fitting everyone on the map. Tap to fit the whole field.</string>
     <string name="map_zoom_field">Fitting the whole field. Tap to turn auto zoom off.</string>
     <string name="map_out_of_bounds_countdown">OUT OF BOUNDS · %1$d s · %2$s to go</string>
