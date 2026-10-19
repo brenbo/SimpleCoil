@@ -781,6 +781,8 @@ class GameViewModel(
     fun switchTeamEntries(): List<SwitchTeamEntry> {
         if (!net.useNetwork || networkMenuType != NETWORK_TYPE_JOINED) return emptyList()
         if (!settingsRepo.isAllowChooseTeams || gameStateRepo.gameState != GameStateRepository.GAME_STATE_NONE) return emptyList()
+        // After a game, teams stay as they were until the host resets
+        if (serverPhase != SessionPhase.LOBBY) return emptyList()
         val layout = settingsRepo.teamLayout
         if (layout.mode.isFreeForAll) return emptyList()
         val currentTeam = layout.teamOf(playerRepo.playerID)

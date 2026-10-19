@@ -83,7 +83,8 @@ class DedicatedServerViewModelTest {
 
         override fun startGame(): Boolean = true.also { calls += "startGame" }
         override fun endGame() { calls += "endGame" }
-        override fun resetSession(): Boolean = true.also { calls += "reset" }
+        // As the server: only a finished game resets
+        override fun resetSession(): Boolean = (snapshot.value?.phase == SessionPhase.POST_GAME).also { if (it) calls += "reset" }
         override fun changeTeamMode(mode: TeamMode): Boolean = resets.also { calls += "teamMode $mode" }
         override fun sortTeams(): Boolean = resets.also { calls += "sort" }
         override fun changeTeamSizes(sizes: IntArray): Boolean = resets.also { calls += "sizes ${sizes.toList()}" }
@@ -198,6 +199,24 @@ class DedicatedServerViewModelTest {
         vm.onStopConfirmed()
         assertEquals("stop", controller.calls.last())
         assertEquals(ServerUiEffect.Finish, effects.last())
+    }
+
+    @Test
+    fun afterAGame_switchingAPlayersTeamOrAnySettingResetsFirst() {
+        val values = PlayerSettingsValues.of(PlayerSettings())
+        publish(SessionPhase.POST_GAME, listOf(player(1), player(2)))
+        vm.onPlayerSettingsSaved(PlayerSettingsDialog.Result(1, kick = false, values, applyToAll = false, applyToTeam = false, targetTeam = 2))
+        assertEquals(listOf("reset", "apply 1 team 2"), controller.calls.filter { it == "reset" || it.startsWith("apply") })
+        assertEquals(listOf(R.string.dedicated_game_reset_toast), toasts())
+        controller.calls.clear()
+        vm.onAllowChooseTeamsChanged(false)
+        assertEquals("reset", controller.calls.first())
+        // In the lobby nothing resets
+        publish(SessionPhase.LOBBY, listOf(player(1), player(2)))
+        controller.calls.clear()
+        vm.onAllowJoinChanged(true)
+        vm.onPlayerSettingsSaved(PlayerSettingsDialog.Result(1, kick = false, values, applyToAll = false, applyToTeam = false, targetTeam = 2))
+        assertTrue("reset" !in controller.calls)
     }
 
     @Test

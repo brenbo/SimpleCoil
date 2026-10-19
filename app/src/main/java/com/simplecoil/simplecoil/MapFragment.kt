@@ -79,6 +79,7 @@ import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.ZoneLayers
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.maplibre.android.MapLibre
@@ -286,6 +287,13 @@ class MapFragment : Fragment() {
                 launch { container.loadoutController.longestShot.collect { showLongestShot(it) } }
                 launch { container.loadoutController.uav.collect { renderPlayers() } }
                 launch { container.modeController.state.collect { renderMode(it) } }
+                // Extraction zones open on the clock, with nothing else changing: draw them again then
+                launch {
+                    while (true) {
+                        delay(EXTRACTION_REDRAW_MILLIS)
+                        container.modeController.state.value?.takeIf { it.mode == GameMode.EXTRACTION }?.let { renderMode(it) }
+                    }
+                }
                 launch { container.zoneController.outside.collect { showModeBanner() } }
                 launch { container.modeController.notices.collect { lastModeNotice = it; lastModeNoticeAt = container.clock(); showModeBanner() } }
             }
@@ -1125,6 +1133,9 @@ class MapFragment : Fragment() {
         const val LOOT_TEAM = -2
         const val EXTRACTION_TEAM = -3
         const val EXTRACTION_CLOSED_TEAM = -10
+
+        /** How often an Extraction map is redrawn, so the zones turn green as they open. */
+        const val EXTRACTION_REDRAW_MILLIS = 1_000L
         const val INFECTED_COLOR = 0xFF76FF03.toInt()
         const val SURVIVOR_COLOR = 0xFF40C4FF.toInt()
         const val BOMB = "💣"

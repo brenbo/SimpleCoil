@@ -227,11 +227,18 @@ class DedicatedServerViewModel(
         toastIfReset(controller.changeTeamSizes(sizes))
     }
 
-    fun onAllowJoinChanged(allow: Boolean) = controller.setAllowJoinInProgress(allow)
+    fun onAllowJoinChanged(allow: Boolean) {
+        resetIfOver()
+        controller.setAllowJoinInProgress(allow)
+    }
 
-    fun onOnlyServerSettingsChanged(only: Boolean) = controller.setOnlyServerSettings(only)
+    fun onOnlyServerSettingsChanged(only: Boolean) {
+        resetIfOver()
+        controller.setOnlyServerSettings(only)
+    }
 
     fun onAllowChooseTeamsChanged(allow: Boolean) {
+        resetIfOver()
         controller.setAllowChooseTeams(allow)
         prefs.saveAllowChooseTeams(allow)
     }
@@ -269,6 +276,8 @@ class DedicatedServerViewModel(
             return
         }
         val values = result.values ?: return
+        // After a game, a player's settings (or team) change only once it's reset
+        resetIfOver()
         result.sound?.let { sound ->
             // Before the settings go out: the phones ask for their sound when they get them
             val layout = snapshot?.settings?.teamLayout
@@ -296,6 +305,9 @@ class DedicatedServerViewModel(
     private fun toastIfReset(reset: Boolean) {
         if (reset) toast(R.string.dedicated_game_reset_toast)
     }
+
+    /** After a game, any change resets the session first (outside one, the reset does nothing). */
+    private fun resetIfOver() = toastIfReset(controller.resetSession())
 
     private fun toast(@StringRes text: Int, vararg args: Any) {
         _effects.trySend(ServerUiEffect.Toast(text, args.toList()))

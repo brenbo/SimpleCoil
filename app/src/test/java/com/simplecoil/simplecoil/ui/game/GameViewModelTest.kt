@@ -457,6 +457,13 @@ class GameViewModelTest {
 
         settings.isAllowChooseTeams = false
         assertEquals(emptyList<SwitchTeamEntry>(), vm.switchTeamEntries())
+
+        // After a game, teams stay put until the host resets
+        settings.isAllowChooseTeams = true
+        emitNetwork(ClientEvent.ListPlayers(null, null, SessionPhase.POST_GAME.wireValue, 7))
+        assertEquals(emptyList<SwitchTeamEntry>(), vm.switchTeamEntries())
+        emitNetwork(ClientEvent.ListPlayers(null, null, SessionPhase.LOBBY.wireValue, 0))
+        assertEquals(entries, vm.switchTeamEntries())
     }
 
     @Test

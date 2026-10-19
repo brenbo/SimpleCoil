@@ -46,14 +46,17 @@ class ObjectiveOverlay(private val context: Context, private val layer: FrameLay
         radiusMeters = radius
         this.letters = letters
         val shown = objectives.filter { it.active || it.next }
-        val ids = shown.map { it.id }.toSet()
+        // By label and place: two extraction zones are both "EX", and loot piles of the same worth share a label
+        val ids = shown.map { key(it) }.toSet()
         views.keys.filter { it !in ids }.forEach { layer.removeView(views.remove(it)) }
         for (o in shown) {
-            val view = views.getOrPut(o.id) { PointView(context).also { layer.addView(it, FrameLayout.LayoutParams(0, 0)) } }
+            val view = views.getOrPut(key(o)) { PointView(context).also { layer.addView(it, FrameLayout.LayoutParams(0, 0)) } }
             view.state = o
             view.invalidate()
         }
     }
+
+    private fun key(o: ObjectiveState) = "${o.id}@${o.point.latitude},${o.point.longitude}"
 
     /** Puts every point where it is, at its size on screen; every frame. */
     fun place(projection: Projection) {
