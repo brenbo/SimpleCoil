@@ -263,7 +263,10 @@ class RefereeMapActivity : AppCompatActivity() {
 
     private fun info(view: LiveGame.RefereeView, located: Int): String {
         val mode = view.mode
-        val scores = mode?.scores?.entries?.sortedByDescending { it.value }?.joinToString("   ") { (team, score) ->
+        // Battle Royale is everyone for themselves: just how many are left
+        val scores = if (mode?.mode == GameMode.BATTLE_ROYALE) {
+            mode.scores.values.sum().let { resources.getQuantityString(R.plurals.br_players_left, it, it) }
+        } else mode?.scores?.entries?.sortedByDescending { it.value }?.joinToString("   ") { (team, score) ->
             "${sideName(team)} ${String.format(Locale.ROOT, "%d", score)}"
         }
         val base = getString(R.string.ref_info, located, view.players.size)

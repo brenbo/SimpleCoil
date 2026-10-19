@@ -167,6 +167,7 @@ class TcpServer : Service() {
             teamOf = ::liveTeamOf,
             nameOf = { id -> server.snapshot.value.players.firstOrNull { it.playerId.toInt() == id }?.name },
             players = { server.snapshot.value.players.filter { it.connected }.associate { it.playerId.toInt() to liveTeamOf(it.playerId.toInt()) } },
+            roster = { server.snapshot.value.players.map { it.playerId.toInt() }.toSet() },
             freeForAll = { serverSettings.teamLayout.mode.isFreeForAll },
             startDelayMillis = { serverSettings.startTime * 1000L },
             gpsOn = { serverSettings.isUseGPS },

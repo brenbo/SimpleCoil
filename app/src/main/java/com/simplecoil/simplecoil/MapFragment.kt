@@ -884,9 +884,14 @@ class MapFragment : Fragment() {
         val myTeam = state.sideOf(container.players.playerID.toInt(), myTeam())
         val units = field?.rules?.units ?: DistanceUnits.defaultFor(Locale.getDefault())
         val text = SpannableStringBuilder()
-        // Your team first, then the others by score. Battle Royale: players left; Marksman: distance
+        // Your team first, then the others by score (Marksman: distance)
         val teams = (state.scores.keys + myTeam).distinct().sortedWith(compareBy({ it != myTeam }, { -(state.scores[it] ?: 0) }))
-        for (team in teams.take(MAX_SCORES_SHOWN)) {
+        // Battle Royale is everyone for themselves: just how many are left
+        if (state.mode == GameMode.BATTLE_ROYALE) {
+            val left = state.scores.values.sum()
+            text.append(resources.getQuantityString(R.plurals.br_players_left, left, left))
+        }
+        for (team in teams.take(MAX_SCORES_SHOWN).takeIf { state.mode != GameMode.BATTLE_ROYALE }.orEmpty()) {
             if (text.isNotEmpty()) text.append("   ")
             val start = text.length
             text.append("●")
@@ -894,7 +899,6 @@ class MapFragment : Fragment() {
             val score = state.scores[team] ?: 0
             text.append(" ").append(when (state.mode) {
                 GameMode.MARKSMAN -> units.format(score.toDouble())
-                GameMode.BATTLE_ROYALE -> resources.getQuantityString(R.plurals.br_left, score, score)
                 else -> String.format(Locale.ROOT, "%d", score)
             })
         }

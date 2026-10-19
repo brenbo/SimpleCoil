@@ -499,9 +499,9 @@
     <string name="mode_enemy_capturing">Hostiles taking %1$s</string>
     <string name="mode_secured">%1$s secured</string>
     <string name="mode_lost">%1$s lost</string>
-    <plurals name="br_left">
-        <item quantity="one">%1$d left</item>
-        <item quantity="other">%1$d left</item>
+    <plurals name="br_players_left">
+        <item quantity="one">%1$d player left</item>
+        <item quantity="other">%1$d players left</item>
     </plurals>
     <string name="br_zone_shrinking">zone closing</string>
     <string name="br_zone_shrinks_in">zone closes in %1$s</string>
