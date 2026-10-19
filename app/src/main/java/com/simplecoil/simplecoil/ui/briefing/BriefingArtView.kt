@@ -181,8 +181,8 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
 
         val power: Pair<Float, Float>
         if (pistol) {
-            // The frame loop from the trigger guard down to the grip's foot
-            shape(GREY, 30f, 42f, 36f, 42f, 50f, 70f, 66f, 70f, 66f, 75f, 46f, 75f)
+            // The frame loop from the trigger guard down and back into the grip
+            shape(GREY, 30f, 42f, 36f, 42f, 50f, 70f, 74f, 70f, 74f, 75f, 46f, 75f)
             // Trigger guard, curving round into the grip, then the grip and its orange foot (where reload is)
             guard(2.6f, 37f, 41f, 46f, 58f, 68f, 51f)
             shape(GREY, 56f, 40f, 78f, 40f, 92f, 72f, 70f, 72f)
