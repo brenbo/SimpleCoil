@@ -187,8 +187,8 @@ class DedicatedServerViewModel(
     }
 
     /**
-     * A field map is selected: the game runs on positions (border, spawns, drops, modes), so GPS
-     * must be on. Off (or teammates only in free for all, where nobody shares) turns to everyone.
+     * A game mode played on positions is selected (any but classic, on a field map), so GPS must
+     * be on. Off (or teammates only in free for all, where nobody shares) turns to everyone.
      */
     fun onFieldNeedsGps() {
         val settings = snapshot?.settings ?: return
