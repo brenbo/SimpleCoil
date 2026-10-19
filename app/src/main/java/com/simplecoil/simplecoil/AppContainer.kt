@@ -22,6 +22,7 @@ import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
+import com.simplecoil.simplecoil.domain.briefing.BriefingNow
 import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.mode.ModeController
 import com.simplecoil.simplecoil.domain.mode.ZoneController
@@ -58,8 +59,11 @@ import com.simplecoil.simplecoil.network.server.PlayerGps
 import com.simplecoil.simplecoil.network.voice.VoiceAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -384,6 +388,39 @@ class AppContainer(private val app: Application) {
         }
     }
 
+    private val _briefing = MutableStateFlow<BriefingNow?>(null)
+
+    /** The host's briefing as this phone last heard it, while connected to a server; null when none is running. */
+    val briefing: StateFlow<BriefingNow?> = _briefing.asStateFlow()
+
+    /** Asks the server about its briefing every second while connected, so the slides keep in step with the host. */
+    private fun followBriefings() {
+        appScope.launch {
+            var misses = 0
+            while (true) {
+                val server = gameState.serverIP
+                if (server != null && networkGateway.isConnectedToServer) {
+                    val heard = withContext(dispatchers.io) { fieldImageryClient.briefing(server) }
+                    // A lost request keeps the slide up; only the server saying so (or going quiet) ends it
+                    if (heard.isSuccess) {
+                        misses = 0
+                        _briefing.value = heard.getOrNull()
+                    } else if (++misses >= BRIEFING_MISSES) {
+                        _briefing.value = null
+                    }
+                } else {
+                    _briefing.value = null
+                }
+                delay(BRIEFING_POLL_MILLIS)
+            }
+        }
+    }
+
+    // After the briefing's state above: init blocks run in order with the properties
+    init {
+        followBriefings()
+    }
+
     /** An admin's choice to talk to every player rather than their team. */
     @Volatile
     var voiceToEveryone = false
@@ -392,5 +429,13 @@ class AppContainer(private val app: Application) {
     val voiceChat: VoiceChat by lazy {
         VoiceChat(app, playerId = { players.playerID.toInt() }, server = { gameState.serverIP },
             everyone = { players.isAdmin && voiceToEveryone }, volume = { audioSettingsNow().voiceVolume })
+    }
+
+    private companion object {
+        /** How often a phone asks whether the host is showing a briefing, and which slide. */
+        const val BRIEFING_POLL_MILLIS = 1_000L
+
+        /** Unanswered asks in a row before a phone gives the briefing up (the server gone). */
+        const val BRIEFING_MISSES = 5
     }
 }

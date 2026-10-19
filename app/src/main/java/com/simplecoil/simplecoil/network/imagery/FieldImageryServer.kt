@@ -84,6 +84,10 @@ class FieldImageryServer(
     /** Voice chat: on for the session or not, and for whom. */
     val voice = com.simplecoil.simplecoil.network.voice.VoiceSettings()
 
+    /** The briefing the host is showing now; null when none. */
+    @Volatile
+    var briefing: com.simplecoil.simplecoil.domain.briefing.BriefingNow? = null
+
     private fun serveExtra(request: FieldImageryProtocol.Request, out: java.io.OutputStream) {
         val extras = extras
         val reply: String
@@ -103,6 +107,7 @@ class FieldImageryServer(
                     FieldImageryProtocol.Kind.READY -> extras?.ready()
                     FieldImageryProtocol.Kind.SOUND -> request.knownId.toIntOrNull()?.let { sounds.body(it) }
                     FieldImageryProtocol.Kind.VOICE -> request.knownId.toIntOrNull()?.let { voice.body(it) }
+                    FieldImageryProtocol.Kind.BRIEF -> briefing?.toBytes()
                     else -> extras?.stats()
                 }
                 reply = if (body == null) FieldImageryProtocol.noneLine(null) else FieldImageryProtocol.packLine(body.size, null)
@@ -207,7 +212,7 @@ class FieldImageryServer(
             val address = client.inetAddress?.hostAddress ?: "?"
             when (request.kind) {
                 FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE,
-                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY, FieldImageryProtocol.Kind.SOUND, FieldImageryProtocol.Kind.VOICE -> {
+                FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY, FieldImageryProtocol.Kind.SOUND, FieldImageryProtocol.Kind.VOICE, FieldImageryProtocol.Kind.BRIEF -> {
                     serveExtra(request, out)
                     out.flush()
                     return
@@ -338,6 +343,9 @@ object FieldImageryProtocol {
 
         /** What a player may do with voice chat: `SCFIELD1 VOICE <player id>`; PACK of "1" (talk), "L" (listen) or "0" (off). */
         VOICE("VOICE"),
+
+        /** The briefing the host is showing, if any: `SCFIELD1 BRIEF -`; PACK of JSON or NONE. */
+        BRIEF("BRIEF"),
     }
 
     /** A phone's request: [kind], and the id it already has (`""` for none), or its argument. */

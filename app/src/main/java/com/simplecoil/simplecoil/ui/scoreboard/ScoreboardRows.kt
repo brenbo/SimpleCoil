@@ -153,14 +153,21 @@ object ScoreboardRows {
             kickable = canKick && idInt in 1..GameSettingsRepository.MAX_PLAYER_ID && id != context.selfId,
             blasterType = p.blasterType,
             hasGrenade = p.hasGrenade,
-            muted = (idInt in context.muted).takeIf { context.voiceOn && id != context.selfId },
+            muted = (idInt in context.muted).takeIf { context.voiceOn && id != context.selfId && teammate(idInt, context) },
         )
     }
 
-    /** The team header's mute-all: shown with voice chat on and someone else to mute; all of them muted here? */
+    /**
+     * [playerId] is on this phone's team: the only players heard (in free for all nobody is, and
+     * an admin talking to everyone can't be muted), so the only ones with a mute button.
+     */
+    private fun teammate(playerId: Int, context: ScoreboardContext): Boolean =
+        !context.layout.mode.isFreeForAll && context.layout.teamOf(playerId) == context.layout.teamOf(context.selfId)
+
+    /** The team header's mute-all: this phone's team only, with someone else on it; all of them muted here? */
     private fun allMuted(members: List<PlayerDisplayData>, context: ScoreboardContext): Boolean? {
         if (!context.voiceOn) return null
-        val others = members.map { it.playerID.toInt() }.filter { it != context.selfId.toInt() }
+        val others = members.map { it.playerID.toInt() }.filter { it != context.selfId.toInt() && teammate(it, context) }
         return if (others.isEmpty()) null else others.all { it in context.muted }
     }
 

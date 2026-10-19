@@ -125,20 +125,27 @@ class ScoreboardRowsTest {
     }
 
     @Test
-    fun withVoiceChat_everyoneElseGetsAMuteButton_andTeamsAMuteAll() {
-        // Two teams: 1 (me) and 2 on team 1, 17 and 18 on team 2
-        val data = players(player(1, "Me", 0), player(2, "Mate", 0), player(17, "A", 0), player(18, "B", 0))
+    fun withVoiceChat_teammatesGetAMuteButton_andYourTeamAMuteAll_nobodyElse() {
+        // Two teams: 1 (me), 2 and 3 on team 1, 17 and 18 on team 2
+        val data = players(player(1, "Me", 0), player(2, "Mate", 0), player(3, "Pal", 0), player(17, "A", 0), player(18, "B", 0))
         val quiet = ScoreboardRows.build(data, context(mode = TeamMode.TWO_TEAMS, isClient = true, selfId = 1))
         assertTrue(quiet.filterIsInstance<ScoreboardRow.Player>().all { it.muted == null })
 
         val voice = ScoreboardRows.build(data, context(mode = TeamMode.TWO_TEAMS, isClient = true, selfId = 1)
-            .copy(voiceOn = true, muted = setOf(17, 18)))
+            .copy(voiceOn = true, muted = setOf(2)))
         val byId = voice.filterIsInstance<ScoreboardRow.Player>().associateBy { it.playerId.toInt() }
         assertEquals(null, byId.getValue(1).muted)
-        assertEquals(false, byId.getValue(2).muted)
-        assertEquals(true, byId.getValue(17).muted)
+        assertEquals(true, byId.getValue(2).muted)
+        assertEquals(false, byId.getValue(3).muted)
+        // The other team can't be heard anyway
+        assertEquals(null, byId.getValue(17).muted)
         val headers = voice.filterIsInstance<ScoreboardRow.TeamHeader>().associateBy { it.team }
         assertEquals(false, headers.getValue(1).allMuted)
-        assertEquals(true, headers.getValue(2).allMuted)
+        assertEquals(null, headers.getValue(2).allMuted)
+
+        // Free for all: nobody to mute
+        val ffa = ScoreboardRows.build(data, context(mode = TeamMode.FREE_FOR_ALL, isClient = true, selfId = 1).copy(voiceOn = true))
+        assertTrue(ffa.filterIsInstance<ScoreboardRow.Player>().all { it.muted == null })
+        assertTrue(ffa.filterIsInstance<ScoreboardRow.TeamHeader>().all { it.allMuted == null })
     }
 }

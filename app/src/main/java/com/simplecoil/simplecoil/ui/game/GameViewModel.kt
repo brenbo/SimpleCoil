@@ -188,7 +188,7 @@ class GameViewModel(
         latestPlayerData?.let { screen?.showScoreboard(it) }
     }
 
-    /** A team header's mute-all (team 0: everyone, in free for all): all muted here, or all heard again. */
+    /** Your team header's mute-all: your teammates all muted here, or all heard again. */
     fun onMuteTeamClicked(team: Int) {
         val layout = settingsRepo.teamLayout
         val self = playerRepo.playerID.toInt()

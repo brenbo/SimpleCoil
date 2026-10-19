@@ -220,6 +220,16 @@
     <string name="cd_blaster_battery">Blaster battery</string>
     <string name="cd_network_status">Network status</string>
     <string name="cd_kick_player">Kick player</string>
+    <string name="briefing_button">Show the players how to play</string>
+    <string name="briefing_close">Close</string>
+    <string name="briefing_skip">Skip to game mode</string>
+    <string name="briefing_next">Next</string>
+    <string name="briefing_done">Done</string>
+    <string name="briefing_progress">%1$d of %2$d</string>
+    <string name="briefing_section_buttons">YOUR BLASTER</string>
+    <string name="briefing_section_drops">DROPS AND AMMO</string>
+    <string name="briefing_section_mode">THIS GAME</string>
+    <string name="briefing_waiting">The host is showing a slide this phone doesn\'t have yet. Listen to the host.</string>
     <string name="cd_mute_player">Mute this player (only for you)</string>
     <string name="cd_unmute_player">Hear this player again</string>
     <string name="cd_mute_team">Mute this team (only for you)</string>

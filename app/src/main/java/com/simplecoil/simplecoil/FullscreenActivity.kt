@@ -36,6 +36,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.simplecoil.simplecoil.databinding.ActivityFullscreenBinding
 import com.simplecoil.simplecoil.hardware.blaster.BlasterSupport
+import com.simplecoil.simplecoil.ui.briefing.BriefingActivity
 import com.simplecoil.simplecoil.ui.game.CompositeGameScreen
 import com.simplecoil.simplecoil.ui.game.DialogCoordinator
 import com.simplecoil.simplecoil.ui.game.GameNavigator
@@ -73,6 +74,18 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
      * Voice chat on this screen: asks for the microphone once the server turns it on, and shows
      * "Talking to your team" (or everyone) while you hold the button, else who you hear.
      */
+    /** The host started a briefing: it takes over this phone's screen until the host ends it. */
+    private fun followBriefings() {
+        val container = (application as SimpleCoilApp).container
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                container.briefing.collect { now ->
+                    if (now != null && !BriefingActivity.showing) startActivity(BriefingActivity.playerIntent(this@FullscreenActivity))
+                }
+            }
+        }
+    }
+
     private fun showVoiceChat() {
         val container = (application as SimpleCoilApp).container
         val voice = container.voiceChat
@@ -142,6 +155,15 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
             }
         }
         showVoiceChat()
+        // The host started a briefing: it takes over this phone until the host ends it
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                (application as SimpleCoilApp).container.briefing.collect { now ->
+                    if (now != null && !BriefingActivity.showing) startActivity(BriefingActivity.playerIntent(this@FullscreenActivity))
+                }
+            }
+        }
+        followBriefings()
 
         binding.reconnectWeaponButton.setOnClickListener { vm.onReconnectPressed() }
         binding.connectWeaponButton.setOnClickListener { vm.onConnectPressed() }

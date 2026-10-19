@@ -111,6 +111,13 @@
             android:label="@string/ref_title"
             android:theme="@style/AppTheme.NoActionBar" />
 
+        <!-- The host's "how to play" slideshow: shown on the server, and on every phone (which can't close it) -->
+        <activity
+            android:name=".ui.briefing.BriefingActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <!-- After a game: the kills, a heatmap and a replay -->
         <activity
             android:name=".ui.map.PostGameMapActivity"

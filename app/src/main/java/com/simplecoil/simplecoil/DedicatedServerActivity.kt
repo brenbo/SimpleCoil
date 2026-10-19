@@ -449,6 +449,7 @@ class DedicatedServerActivity : AppCompatActivity() {
         allowJoinSwitch.setOnClickListener { vm.onAllowJoinChanged(allowJoinSwitch.isChecked) }
         onlyServerSettingsSwitch.setOnClickListener { vm.onOnlyServerSettingsChanged(onlyServerSettingsSwitch.isChecked) }
         allowChooseTeamsSwitch.setOnClickListener { vm.onAllowChooseTeamsChanged(allowChooseTeamsSwitch.isChecked) }
+        briefingButton.setOnClickListener { startActivity(com.simplecoil.simplecoil.ui.briefing.BriefingActivity.hostIntent(this@DedicatedServerActivity)) }
         voiceChatSwitch.isChecked = vm.voiceChat
         voiceChatSwitch.setOnClickListener { vm.onVoiceChatChanged(voiceChatSwitch.isChecked) }
     }

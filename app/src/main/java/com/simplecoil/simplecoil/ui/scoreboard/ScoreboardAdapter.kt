@@ -51,7 +51,7 @@ class ScoreboardAdapter(
         /** Voice chat: mute or unmute [playerId] on this phone. */
         fun onMuteClicked(playerId: Byte) {}
 
-        /** Voice chat: mute or unmute [team] (0: everyone, in free for all) on this phone. */
+        /** Voice chat: mute or unmute your [team] on this phone. */
         fun onMuteTeamClicked(team: Int) {}
     }
 

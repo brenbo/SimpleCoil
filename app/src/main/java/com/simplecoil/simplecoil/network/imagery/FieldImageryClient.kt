@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil.network.imagery
 
 import android.util.Log
+import com.simplecoil.simplecoil.domain.briefing.BriefingNow
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
@@ -183,6 +184,13 @@ class FieldImageryClient(
         FieldImageryProtocol.requestLine(playerId.toString(), FieldImageryProtocol.Kind.SOUND)) { _, body ->
         body?.let { RemoteSounds.Assigned.fromJson(JSONObject(String(it, Charsets.UTF_8))) }
     }
+
+    /** The briefing the host is showing; null if none (or the server can't say). */
+    fun briefing(server: InetAddress): kotlin.Result<BriefingNow?> = exchange(server,
+        FieldImageryProtocol.requestLine(null, FieldImageryProtocol.Kind.BRIEF)) { _, body ->
+        // Success with null: the server says there's none. A failure: couldn't ask this time
+        kotlin.Result.success(body?.let { BriefingNow.fromBytes(it) })
+    } ?: kotlin.Result.failure(java.io.IOException("no answer about the briefing"))
 
     /** What [playerId] may do with voice chat; off if the server can't say (an older one). */
     fun voice(server: InetAddress, playerId: Int): VoiceAccess = exchange(server,

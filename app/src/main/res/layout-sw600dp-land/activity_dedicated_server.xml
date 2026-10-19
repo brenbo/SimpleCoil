@@ -190,12 +190,23 @@
                             android:text="@string/dedicated_reset_button" />
                     </LinearLayout>
 
+                    <!-- The host walks the players through the blaster, the drops and this game -->
+                    <Button
+                        android:id="@+id/briefing_button"
+                        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/phase_controls"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:text="@string/briefing_button" />
+
                     <!-- Everything below sets up the game and the server. -->
                     <LinearLayout
                         android:id="@+id/settings_divider"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_below="@id/phase_controls"
+                        android:layout_below="@id/briefing_button"
                         android:layout_marginStart="10dp"
                         android:layout_marginEnd="10dp"
                         android:layout_marginTop="5dp"
