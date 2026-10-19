@@ -336,7 +336,7 @@ class LiveGame(
                 } else {
                     late += id
                     bombs?.onLateJoin(id)
-                    battleRoyale?.onLateJoin(id, now)
+                    battleRoyale?.onLateJoin(id)
                     infection?.onLateJoin(id)
                 }
             }
@@ -528,7 +528,7 @@ class LiveGame(
         const val MODE_TICK_MILLIS = 1_000L
 
         /** After the start countdown, how long a phone still joining counts as starting the game. */
-        const val LATE_JOIN_GRACE_MILLIS = 30_000L
+        const val LATE_JOIN_GRACE_MILLIS = 10_000L
 
         /** Tries for a drop spot inside the Battle Royale zone. */
         private const val TRIES = 20

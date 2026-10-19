@@ -238,12 +238,11 @@ class BattleRoyaleEngine(private val plan: ZonePlan) {
         if (zone(nowMillis).noRespawn) out += playerId
     }
 
-    /** Joined once respawns were over: out, watching, for the rest of the game. */
+    /** Joined after the start: out, watching, for the rest of the game. */
     private val sittingOut = HashSet<Int>()
 
-    /** [playerId] joined after the start; once respawns are over that's too late to play. */
-    fun onLateJoin(playerId: Int, nowMillis: Long) {
-        if (!zone(nowMillis).noRespawn) return
+    /** [playerId] joined after the start: too late for a last-one-standing game, respawns or not. */
+    fun onLateJoin(playerId: Int) {
         out += playerId
         sittingOut += playerId
     }

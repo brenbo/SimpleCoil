@@ -123,14 +123,14 @@ class BattleRoyaleTest {
     }
 
     @Test
-    fun aLateJoiner_playsWhileRespawnsLast_sitsOutAfter() {
-        val engine = BattleRoyaleEngine(ZonePlan(field, rules.copy(respawnUntilPhase = 1), 0, Random(5)))
-        engine.onLateJoin(4, 10_000)
-        assertTrue(engine.tick(10_000, mapOf(1 to 1, 4 to 2)).sittingOut.isEmpty())
-        engine.onLateJoin(5, 70_000)
-        val state = engine.tick(70_000, mapOf(1 to 1, 4 to 2, 5 to 2))
-        assertEquals(setOf(5), state.sittingOut)
-        assertTrue(5 in state.out)
+    fun aLateJoiner_sitsOutTheRestOfTheGame_respawnsOrNot() {
+        val engine = BattleRoyaleEngine(ZonePlan(field, rules.copy(respawnUntilPhase = 3), 0, Random(5)))
+        // Early on, with respawns still on: out all the same
+        engine.onLateJoin(4)
+        val state = engine.tick(10_000, mapOf(1 to 1, 2 to 2, 4 to 2))
+        assertEquals(setOf(4), state.sittingOut)
+        assertTrue(4 in state.out)
+        assertEquals(mapOf(1 to 1, 2 to 1), state.scores)
     }
 
     @Test
@@ -167,6 +167,30 @@ class BattleRoyaleTest {
         assertEquals(GameMode.BATTLE_ROYALE, back.mode)
         assertEquals(rules, back.battleRoyale)
         assertEquals(MarksmanRules(12.0, 300.0), back.marksman)
+    }
+
+    @Test
+    fun thePhoneOfALateJoiner_sitsThemOut() = runTest {
+        val zone = ZoneState(com.simplecoil.simplecoil.domain.map.GeoCircle(center, 20.0), null, 1, 3, false, 0L, 2, 3, false)
+        val mode = MutableStateFlow<ModeState?>(ModeState(GameMode.BATTLE_ROYALE, emptyList(), emptyMap(), 0, 0.0, 0, 0L, zone))
+        val session = MutableStateFlow(SessionState(health = 10, maxHealth = 10, shotMode = 0, grenadePaired = false, spawn = SpawnPhase.None))
+        val sitOuts = mutableListOf<Boolean>()
+        ZoneController(mode, session, object : ZoneController.Penalties {
+            override fun damage(amount: Int) {}
+            override fun setNoRespawn(on: Boolean) {}
+            override fun revive() {}
+            override fun setHitsPaused(on: Boolean) {}
+            override fun sitOut(untilNextRound: Boolean) { sitOuts += untilNextRound }
+        }, inGame = { true }, feedback = object : ZoneController.Feedback {
+            override fun play(sound: SessionSound) {}
+            override fun vibrate() {}
+        }, scope = backgroundScope, clock = { testScheduler.currentTime }, me = { 7 })
+        advanceTimeBy(100)
+        assertTrue(sitOuts.isEmpty())
+        mode.value = mode.value!!.copy(sittingOut = setOf(7), out = setOf(7))
+        advanceTimeBy(1_100)
+        // Out for the rest of the game, not just the round
+        assertEquals(false, sitOuts.first())
     }
 
     @Test

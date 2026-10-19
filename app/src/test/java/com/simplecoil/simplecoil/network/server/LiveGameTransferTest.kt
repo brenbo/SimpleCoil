@@ -129,6 +129,33 @@ class ServerGpsTest {
     }
 }
 
+class LiveGameLateJoinTest {
+    @Test
+    fun someoneJoiningABattleRoyalePartWay_isListedToSitOut() {
+        val scope = TestScope(StandardTestDispatcher())
+        val center = LatLon(39.0, -77.0)
+        val field = FieldConfig(border = Border.Circle(center, 100.0), mode = com.simplecoil.simplecoil.domain.mode.GameMode.BATTLE_ROYALE)
+        val server = FieldImageryServer(FieldPackStore(java.io.File("unused")), port = 0)
+        val players = mutableMapOf(1 to 1, 2 to 2)
+        var now = 1_000_000L
+        val phase = MutableStateFlow(SessionPhase.LOBBY)
+        val game = LiveGame(server, savedField = { field }, positions = { emptyMap<Int, Fix>() },
+            teamOf = { players[it] ?: 0 }, nameOf = { "p$it" }, players = { players.toMap() },
+            wallClock = { now }, monoClock = { 0L }, startDelayMillis = { 5_000L })
+        LiveGame.launchIn(scope, game, phase, emptyFlow())
+        phase.value = SessionPhase.RUNNING
+        scope.testScheduler.advanceTimeBy(1_001)
+        // Well past the start countdown and the grace: player 3 joins
+        now += 60_000
+        players[3] = 2
+        scope.testScheduler.advanceTimeBy(2_000)
+        val mode = game.referee().mode!!
+        assertEquals(setOf(3), mode.sittingOut)
+        assertTrue(3 in mode.out)
+        scope.cancel()
+    }
+}
+
 class LiveGameShotsTest {
     @Test
     fun shotsAreMeasuredOnAServerWithoutAField() {

@@ -477,7 +477,7 @@ class BlasterSessionEngine(
 
     /**
      * Joined after the game got going, in a mode where that's too late to play (Search & Destroy
-     * mid-round, Battle Royale after respawns, Infection): out without an elimination, watching
+     * mid-round, Battle Royale, Infection): out without an elimination, watching
      * the map, until the next round ([untilNextRound]) or the game ends.
      */
     fun sitOut(untilNextRound: Boolean) {
