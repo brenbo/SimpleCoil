@@ -125,49 +125,142 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
 
     // ---- The blaster: a side view, the button in question pulsing --------------------------
 
+    /**
+     * The Recoil blaster from the side, muzzle to the left, as in the box photos: white body,
+     * grey frame, orange tips and trigger, the green power button. The button the slide is about
+     * pulses where it really is: the trigger; reload at the bottom of the grip; the weapon switch
+     * at the back of the pistol, or three-quarters of the way down the rifle's barrel; power, the
+     * green button on the pistol's side or the rifle's stock.
+     */
     private fun blaster(canvas: Canvas, w: Float, h: Float) {
-        // Laid out in a 100 x 60 box, scaled to fit
-        val scale = min(w / 100f, h / 60f) * 0.9f
-        val ox = (w - 100 * scale) / 2
-        val oy = (h - 60 * scale) / 2
+        // Laid out in a box of boxW x boxH units, scaled to fit
+        val boxW = if (pistol) 106f else 140f
+        val boxH = if (pistol) 80f else 44f
+        val scale = min(w / boxW, h / boxH) * 0.92f
+        val ox = (w - boxW * scale) / 2
+        val oy = (h - boxH * scale) / 2
         fun x(v: Float) = ox + v * scale
         fun y(v: Float) = oy + v * scale
-        path.reset()
-        if (pistol) {
-            // Slide, frame and grip
-            path.moveTo(x(18f), y(14f)); path.lineTo(x(84f), y(14f)); path.lineTo(x(86f), y(26f)); path.lineTo(x(52f), y(26f))
-            path.lineTo(x(46f), y(56f)); path.lineTo(x(30f), y(56f)); path.lineTo(x(34f), y(26f)); path.lineTo(x(18f), y(26f)); path.close()
-        } else {
-            // Stock, body, barrel and grip
-            path.moveTo(x(4f), y(20f)); path.lineTo(x(28f), y(18f)); path.lineTo(x(30f), y(14f)); path.lineTo(x(80f), y(14f))
-            path.lineTo(x(80f), y(18f)); path.lineTo(x(97f), y(18f)); path.lineTo(x(97f), y(24f)); path.lineTo(x(72f), y(24f))
-            path.lineTo(x(70f), y(30f)); path.lineTo(x(46f), y(30f)); path.lineTo(x(41f), y(52f)); path.lineTo(x(31f), y(52f))
-            path.lineTo(x(34f), y(30f)); path.lineTo(x(28f), y(30f)); path.lineTo(x(4f), y(36f)); path.close()
+        fun shape(color: Int, vararg points: Float) {
+            path.reset()
+            path.moveTo(x(points[0]), y(points[1]))
+            var i = 2
+            while (i < points.size) {
+                path.lineTo(x(points[i]), y(points[i + 1]))
+                i += 2
+            }
+            path.close()
+            fill.color = color
+            canvas.drawPath(path, fill)
+            stroke.color = EDGE
+            stroke.strokeWidth = 1.6f * density
+            canvas.drawPath(path, stroke)
         }
-        fill.color = BODY
-        canvas.drawPath(path, fill)
-        stroke.color = OUTLINE
-        canvas.drawPath(path, stroke)
-        // Trigger guard
-        stroke.color = OUTLINE
-        if (pistol) canvas.drawArc(x(46f), y(24f), x(60f), y(38f), 0f, 180f, false, stroke)
-        else canvas.drawArc(x(40f), y(28f), x(54f), y(42f), 0f, 180f, false, stroke)
+        fun box(color: Int, l: Float, t: Float, r: Float, b: Float, round: Float = 1.5f) {
+            rect.set(x(l), y(t), x(r), y(b))
+            fill.color = color
+            canvas.drawRoundRect(rect, round * scale, round * scale, fill)
+            stroke.color = EDGE
+            stroke.strokeWidth = 1.6f * density
+            canvas.drawRoundRect(rect, round * scale, round * scale, stroke)
+        }
+        fun stripe(x0: Float, y0: Float, x1: Float, y1: Float) {
+            stroke.color = WHITE
+            stroke.strokeWidth = 1.4f * scale
+            canvas.drawLine(x(x0), y(y0), x(x1), y(y1), stroke)
+        }
+        // From the frame, round under the trigger and into the grip (drawn first: the grip covers its end)
+        fun guard(width: Float, x0: Float, y0: Float, cx: Float, cy: Float, x1: Float, y1: Float) {
+            path.reset()
+            path.moveTo(x(x0), y(y0))
+            path.quadTo(x(cx), y(cy), x(x1), y(y1))
+            stroke.color = GREY
+            stroke.strokeWidth = width * scale
+            canvas.drawPath(path, stroke)
+        }
+
+        val power: Pair<Float, Float>
+        if (pistol) {
+            // The frame loop from the trigger guard down to the grip's foot
+            shape(GREY, 30f, 42f, 36f, 42f, 50f, 70f, 66f, 70f, 66f, 75f, 46f, 75f)
+            // Trigger guard, curving round into the grip, then the grip and its orange foot (where reload is)
+            guard(2.6f, 37f, 41f, 44f, 57f, 62f, 48f)
+            shape(GREY, 56f, 40f, 78f, 40f, 92f, 72f, 70f, 72f)
+            shape(ORANGE, 70f, 71f, 92f, 71f, 94f, 77f, 72f, 77f)
+            // Trigger
+            shape(ORANGE, 46f, 40f, 50f, 40f, 49f, 50f, 46f, 49f)
+            // Lower frame and the white body
+            box(GREY, 14f, 36f, 84f, 42f, 1f)
+            box(WHITE, 12f, 14f, 90f, 37f, 3f)
+            // Rail on top
+            box(GREY, 24f, 10f, 86f, 14f, 1f)
+            for (i in 0 until 8) box(GREY_DARK, 27f + i * 7.5f, 8.5f, 30f + i * 7.5f, 10.5f, 0.5f)
+            // Orange muzzle, with its white stripes, and the orange back
+            shape(ORANGE, 4f, 15f, 16f, 13f, 18f, 37f, 6f, 35f)
+            stripe(10f, 16f, 11.5f, 34f)
+            stripe(13.5f, 15.5f, 15f, 34.5f)
+            box(ORANGE, 88f, 13f, 96f, 33f, 2f)
+            // The weapon switch, on the back
+            box(ORANGE, 90f, 18f, 95f, 26f, 1f)
+            power = 74f to 25f
+        } else {
+            // Trigger guard, curving round into the grip; the grip, raked back, its foot, and the
+            // frame loop back to the stock
+            guard(2.2f, 72f, 26f, 76f, 38f, 90f, 34f)
+            shape(GREY, 84f, 25f, 97f, 25f, 104f, 41f, 91f, 41f)
+            shape(ORANGE, 90f, 40f, 105f, 40f, 106f, 44f, 91f, 44f)
+            shape(WHITE, 101f, 38f, 120f, 25f, 122f, 28f, 104f, 41f)
+            // Trigger
+            shape(ORANGE, 79f, 25f, 83f, 25f, 83f, 33f, 79f, 32f)
+            // Lower rail with its teeth, and the body
+            box(GREY, 6f, 24f, 70f, 28f, 1f)
+            for (i in 0 until 8) if (i != 3 && i != 4) box(GREY_DARK, 9f + i * 8f, 27.5f, 12f + i * 8f, 29.5f, 0.5f)
+            // The orange weapon switch, under the barrel near the front
+            box(ORANGE, 34f, 25f, 43f, 29.5f, 1.5f)
+            box(WHITE, 10f, 8f, 108f, 26f, 2f)
+            // The window in the body
+            box(GREY, 58f, 13f, 80f, 18f, 2f)
+            // Top rail and sights
+            box(GREY, 10f, 5f, 108f, 8f, 1f)
+            box(GREY_DARK, 14f, 2.5f, 17f, 5f, 0.5f)
+            box(GREY_DARK, 76f, 1.5f, 82f, 5f, 0.5f)
+            // Stock, its orange end and the butt
+            box(WHITE, 106f, 7f, 134f, 25f, 2f)
+            box(ORANGE, 118f, 24f, 134f, 32f, 2f)
+            shape(GREY, 132f, 4f, 139f, 6f, 139f, 30f, 132f, 28f)
+            // The orange front, about a fifth of its length, with its white stripes
+            shape(ORANGE, 2f, 7f, 31f, 7f, 28f, 26f, 2f, 26f)
+            stripe(14f, 9f, 10f, 24f)
+            stripe(19f, 9f, 15f, 24f)
+            stripe(24f, 9f, 20f, 24f)
+            power = 123f to 15f
+        }
+        // The green power button
+        fill.color = GREEN_RING
+        canvas.drawCircle(x(power.first), y(power.second), 3.2f * scale, fill)
+        fill.color = GREEN
+        canvas.drawCircle(x(power.first), y(power.second), 2f * scale, fill)
+
         // Where the button is
         val (bx, by) = when (art) {
-            SlideArt.TRIGGER -> if (pistol) 50f to 30f else 44f to 34f
-            SlideArt.RELOAD -> if (pistol) 26f to 12f else 34f to 12f
-            SlideArt.THUMB -> if (pistol) 40f to 22f else 36f to 24f
-            else -> if (pistol) 20f to 20f else 8f to 28f
+            SlideArt.TRIGGER -> if (pistol) 48f to 45f else 81f to 30f
+            SlideArt.RELOAD -> if (pistol) 83f to 77f else 98f to 44f
+            SlideArt.THUMB -> if (pistol) 92.5f to 22f else 38.5f to 27f
+            else -> power
         }
-        val ring = (5 + 7 * pulse(2)) * scale
-        fill.color = HIGHLIGHT
+        // It glows in its own colour: green for power, orange for the rest
+        val glow = if (art == SlideArt.POWER) GREEN else ORANGE
+        val ring = (4 + 6 * pulse(2)) * scale
+        stroke.strokeWidth = 3 * density
+        fill.color = glow
         fill.alpha = (110 + 145 * (1 - pulse(2))).toInt()
-        canvas.drawCircle(x(bx), y(by), 3.2f * scale, fill)
+        canvas.drawCircle(x(bx), y(by), 2.4f * scale, fill)
         fill.alpha = 255
-        stroke.color = HIGHLIGHT
+        stroke.color = glow
         stroke.alpha = (255 * (1 - pulse(2))).toInt().coerceIn(40, 255)
         canvas.drawCircle(x(bx), y(by), ring, stroke)
         stroke.alpha = 255
+        stroke.strokeWidth = 3 * density
     }
 
     // ---- Drops and ammo -------------------------------------------------------------------
@@ -432,9 +525,17 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
 
     private companion object {
         const val LOOP_MILLIS = 2_400L
-        const val BODY = 0xFF37474F.toInt()
         const val OUTLINE = 0xFFB0BEC5.toInt()
         const val HIGHLIGHT = 0xFFFF9800.toInt()
+
+        // The blaster, in its own colours, and the pulse that marks its button (cyan: the blaster has orange on it)
+        const val WHITE = 0xFFECEFF1.toInt()
+        const val GREY = 0xFF9AA4AA.toInt()
+        const val GREY_DARK = 0xFF6B757B.toInt()
+        const val ORANGE = 0xFFF26B1D.toInt()
+        const val EDGE = 0xFF2B3238.toInt()
+        const val GREEN = 0xFF43A047.toInt()
+        const val GREEN_RING = 0xFF1B5E20.toInt()
         const val CRATE = 0xFF8D6E63.toInt()
         const val SHADOW = 0x55000000
         const val AMMO = 0xFFFFC107.toInt()
