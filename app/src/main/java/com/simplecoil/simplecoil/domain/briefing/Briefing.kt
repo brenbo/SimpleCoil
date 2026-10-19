@@ -310,14 +310,30 @@ object Briefing {
  * The briefing as it runs: [id] for this showing (a new one each time the host starts one) and
  * the [slide] up now, by key. Sent by the field service (`SCFIELD1 BRIEF -`): JSON, or NONE when
  * no briefing is running.
+ *
+ * It carries the host's whole slide, [shown], with where it is in the show ([index] of [total]),
+ * so every phone says exactly what the host's screen says, whatever settings the phone has.
  */
-data class BriefingNow(val id: Long, val slide: String) {
-    fun toBytes(): ByteArray = org.json.JSONObject().put("id", id).put("slide", slide).toString().toByteArray(Charsets.UTF_8)
+data class BriefingNow(val id: Long, val slide: String, val shown: Slide? = null, val index: Int = -1, val total: Int = 0) {
+    fun toBytes(): ByteArray {
+        val json = org.json.JSONObject().put("id", id).put("slide", slide)
+        shown?.let {
+            json.put("section", it.section.name).put("title", it.title).put("body", it.body).put("art", it.art.name)
+                .put("index", index).put("total", total)
+            it.drop?.let { drop -> json.put("drop", drop.wireValue) }
+        }
+        return json.toString().toByteArray(Charsets.UTF_8)
+    }
 
     companion object {
         fun fromBytes(bytes: ByteArray): BriefingNow? = runCatching {
             val json = org.json.JSONObject(String(bytes, Charsets.UTF_8))
-            BriefingNow(json.getLong("id"), json.getString("slide"))
+            val key = json.getString("slide")
+            val shown = if (json.has("title")) runCatching {
+                Slide(key, Section.valueOf(json.getString("section")), json.getString("title"), json.getString("body"),
+                    SlideArt.valueOf(json.getString("art")), DropKind.fromWire(json.optString("drop").ifEmpty { null }))
+            }.getOrNull() else null
+            BriefingNow(json.getLong("id"), key, shown, json.optInt("index", -1), json.optInt("total", 0))
         }.getOrNull()
     }
 }

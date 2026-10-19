@@ -104,6 +104,14 @@ class BriefingTest {
         val now = BriefingNow(42, "drops.uav")
         assertEquals(now, BriefingNow.fromBytes(now.toBytes()))
         assertNull(BriefingNow.fromBytes("nope".toByteArray()))
+        // The host's whole slide goes with it, so every phone says what the host's screen says
+        val slides = Briefing.slides(inputs(field.copy(loadout = LoadoutRules(dropsEnabled = true, dropKinds = setOf(DropKind.UAV)))))
+        val uav = slides.indexOfFirst { it.key == "drops.uav" }
+        val full = BriefingNow(42, "drops.uav", slides[uav], uav, slides.size)
+        assertEquals(full, BriefingNow.fromBytes(full.toBytes()))
+        val border = slides.indexOfFirst { it.key == "mode.border" }
+        val withText = BriefingNow(7, "mode.border", slides[border], border, slides.size)
+        assertEquals(slides[border].body, BriefingNow.fromBytes(withText.toBytes())!!.shown!!.body)
     }
 
     @Test

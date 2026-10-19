@@ -53,6 +53,8 @@ class BriefingActivity : AppCompatActivity() {
     private val host get() = intent.getBooleanExtra(EXTRA_HOST, false)
     private var slides: List<Slide> = emptyList()
     private var shown: String? = null
+    private var shownSlide: Slide? = null
+    private var shownIndex = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,9 +72,10 @@ class BriefingActivity : AppCompatActivity() {
         binding.briefingControls.visibility = android.view.View.VISIBLE
         val imagery = container.fieldImageryServer
         // A new showing from the first slide, or the one it was on (the screen turned)
-        val now = imagery.briefing?.takeIf { savedInstanceState != null } ?: BriefingNow(System.currentTimeMillis(), slides.first().key)
-        imagery.briefing = now
-        show(now.slide)
+        val id = imagery.briefing?.takeIf { savedInstanceState != null }?.id ?: System.currentTimeMillis()
+        val key = imagery.briefing?.takeIf { savedInstanceState != null }?.slide ?: slides.first().key
+        imagery.briefing = BriefingNow(id, key)
+        goTo(key)
         binding.briefingNextButton.setOnClickListener {
             val at = slides.indexOfFirst { it.key == shown }
             if (at < 0 || at >= slides.size - 1) end() else goTo(slides[at + 1].key)
@@ -84,10 +87,13 @@ class BriefingActivity : AppCompatActivity() {
         })
     }
 
+    /** Shows [key] here and sends the whole slide to the phones, so they say just what this says. */
     private fun goTo(key: String) {
         val imagery = container.fieldImageryServer
-        imagery.briefing = imagery.briefing?.copy(slide = key) ?: BriefingNow(System.currentTimeMillis(), key)
-        show(key)
+        val index = slides.indexOfFirst { it.key == key }
+        val now = BriefingNow(imagery.briefing?.id ?: System.currentTimeMillis(), key, slides.getOrNull(index), index, slides.size)
+        imagery.briefing = now
+        show(now)
     }
 
     /** Over for everyone: the phones close theirs on their next look. */
@@ -112,9 +118,9 @@ class BriefingActivity : AppCompatActivity() {
                         finish()
                         return@collect
                     }
-                    // The game's settings may have changed since: build the slides again
-                    slides = Briefing.slides(playerInputs(container))
-                    show(now.slide)
+                    // The host's own slide when it sent one; an older server sends only the key
+                    if (now.shown == null) slides = Briefing.slides(playerInputs(container))
+                    show(now)
                 }
             }
         }
@@ -127,12 +133,16 @@ class BriefingActivity : AppCompatActivity() {
 
     // ---- Showing a slide -------------------------------------------------------------------
 
-    private fun show(key: String) {
-        if (key == shown) return
-        val forward = slides.indexOfFirst { it.key == key } >= slides.indexOfFirst { it.key == shown }
+    private fun show(now: BriefingNow) {
+        val key = now.slide
+        val index = if (now.shown != null) now.index else slides.indexOfFirst { it.key == key }
+        val total = if (now.shown != null) now.total else slides.size
+        val slide = now.shown ?: slides.getOrNull(index)
+        if (key == shown && slide == shownSlide) return
+        val forward = index >= shownIndex
         shown = key
-        val index = slides.indexOfFirst { it.key == key }
-        val slide = slides.getOrNull(index)
+        shownSlide = slide
+        shownIndex = index
         val b = binding
         b.briefingSectionTv.setText(when (slide?.section) {
             Section.BUTTONS -> R.string.briefing_section_buttons
@@ -146,9 +156,9 @@ class BriefingActivity : AppCompatActivity() {
             b.briefingArt.drop = it.drop
         }
         b.briefingArt.pistol = !host && container.sessionEngine.state.value.blasterType == GattProtocolHandler.BLASTER_TYPE_PISTOL
-        b.briefingProgressTv.text = if (index >= 0) getString(R.string.briefing_progress, index + 1, slides.size) else ""
+        b.briefingProgressTv.text = if (index >= 0) getString(R.string.briefing_progress, index + 1, total) else ""
         if (host) {
-            b.briefingNextButton.setText(if (index >= slides.size - 1) R.string.briefing_done else R.string.briefing_next)
+            b.briefingNextButton.setText(if (index >= total - 1) R.string.briefing_done else R.string.briefing_next)
             // Already on the game slides: nothing to skip to
             b.briefingSkipButton.visibility = if (slide?.section == Section.MODE) android.view.View.INVISIBLE else android.view.View.VISIBLE
         }
