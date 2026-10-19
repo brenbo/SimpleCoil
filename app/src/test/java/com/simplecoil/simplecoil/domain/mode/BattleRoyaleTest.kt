@@ -169,6 +169,7 @@ class BattleRoyaleTest {
             override fun damage(amount: Int) { damage += amount }
             override fun setNoRespawn(on: Boolean) { noRespawn = on }
             override fun revive() {}
+            override fun setHitsPaused(on: Boolean) {}
         }, inGame = { true }, feedback = object : ZoneController.Feedback {
             override fun play(sound: SessionSound) {}
             override fun vibrate() {}

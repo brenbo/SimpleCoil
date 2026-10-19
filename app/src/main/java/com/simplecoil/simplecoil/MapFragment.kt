@@ -757,8 +757,9 @@ class MapFragment : Fragment() {
     /** The drops on the field, with their countdowns (map design: Drops). */
     /** A team's colour on the capture points; in free for all, yours and everyone else's. */
     private fun objectiveColor(team: Int): Int = when {
-        team == LOOT_TEAM -> LOOT_COLOR
-        team == EXTRACTION_TEAM -> EXTRACTION_COLOR
+        team == LOOT_TEAM -> MapIcons.LOOT
+        team == EXTRACTION_TEAM -> MapIcons.EXTRACTION_OPEN
+        team == EXTRACTION_CLOSED_TEAM -> MapIcons.EXTRACTION_CLOSED
         team == InfectionEngine.INFECTED -> INFECTED_COLOR
         team == InfectionEngine.SURVIVORS -> SURVIVOR_COLOR
         settings.teamLayout.mode.isFreeForAll -> if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
@@ -797,9 +798,9 @@ class MapFragment : Fragment() {
             GameMode.EXTRACTION -> {
                 val e = state.extraction
                 val open = e != null && container.fieldImageryClient.serverNow() >= e.opensAt
-                // Extraction zones (dashed until they open) and the loot, each pile showing its worth
+                // Extraction zones (red and dashed until they open, then green) and the loot, each pile showing its worth
                 val areas = e?.zones?.mapIndexed { i, z ->
-                    ObjectiveState(getString(R.string.ex_zone_label) + if (e.zones.size > 1) (i + 1).toString() else "", z, EXTRACTION_TEAM, 0, 0.0,
+                    ObjectiveState(getString(R.string.ex_zone_label) + if (e.zones.size > 1) (i + 1).toString() else "", z, if (open) EXTRACTION_TEAM else EXTRACTION_CLOSED_TEAM, 0, 0.0,
                         contested = false, active = open, next = !open)
                 }.orEmpty() + e?.loot?.map { ObjectiveState(it.value.toString(), it.point, LOOT_TEAM, 0, 0.0, contested = false, active = true, next = false) }.orEmpty()
                 points?.update(areas, state.radiusMeters, letters = true)
@@ -1123,8 +1124,7 @@ class MapFragment : Fragment() {
         /** Not teams: the colours of loot piles and extraction zones on the capture point circles. */
         const val LOOT_TEAM = -2
         const val EXTRACTION_TEAM = -3
-        const val LOOT_COLOR = 0xFFFFC107.toInt()
-        const val EXTRACTION_COLOR = 0xFF69F0AE.toInt()
+        const val EXTRACTION_CLOSED_TEAM = -10
         const val INFECTED_COLOR = 0xFF76FF03.toInt()
         const val SURVIVOR_COLOR = 0xFF40C4FF.toInt()
         const val BOMB = "💣"

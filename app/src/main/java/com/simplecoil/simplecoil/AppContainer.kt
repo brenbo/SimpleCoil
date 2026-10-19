@@ -272,6 +272,7 @@ class AppContainer(private val app: Application) {
                 override fun damage(amount: Int) = engine.applyOutOfBoundsDamage(amount)
                 override fun setNoRespawn(on: Boolean) = engine.setNoRespawn(on)
                 override fun revive() = engine.revive()
+                override fun setHitsPaused(on: Boolean) = engine.setHitsPaused(on)
             },
             inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
             feedback = object : ZoneController.Feedback {

@@ -31,8 +31,7 @@ import android.animation.ObjectAnimator
 import android.view.animation.BounceInterpolator
 import android.view.animation.OvershootInterpolator
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
-import com.simplecoil.simplecoil.domain.mode.ModeState
-import com.simplecoil.simplecoil.domain.mode.sideOf
+import com.simplecoil.simplecoil.domain.mode.GameResult
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import kotlinx.coroutines.Dispatchers
@@ -214,8 +213,8 @@ class ScoreboardDialog : GameDialogFragment() {
         binding.playerList.adapter = adapter
         setData(players)
         showFace()
-        // A Domination or Hardpoint result arrives a moment after the game ends
-        lifecycleScope.launch { appContainer.modeController.state.collect { showResult(it) } }
+        // An objective game's result arrives a moment after the game ends
+        lifecycleScope.launch { appContainer.modeController.state.collect { showResult() } }
         // After a game on a dedicated server, its map: kills, heat map and replay
         val gameOver = appContainer.gameState.gameState == GameStateRepository.GAME_STATE_NONE
         binding.postMapButton.visibility =
@@ -254,42 +253,62 @@ class ScoreboardDialog : GameDialogFragment() {
 
     fun setData(players: Array<PlayerDisplayData?>) {
         adapter?.submitList(ScoreboardRows.build(players, vm.scoreboardContext()))
+        lastPlayers = players
+        showResult()
     }
+
+    /** The players last shown, for a classic team game's result. */
+    private var lastPlayers: Array<PlayerDisplayData?>? = null
 
     private val appContainer get() = (requireActivity().application as SimpleCoilApp).container
 
     /** The result this dialog last animated, so it plays once. */
-    private var resultShown: ModeState? = null
+    private var resultShown: GameResult? = null
 
     /**
-     * Victory or Defeat at the top, after an objective game (map design: Longest shot and
-     * post-game stats): a win springs in over confetti, a loss drops in and shakes.
+     * Victory, Defeat or Draw at the top once a game is over, in every mode but classic free for
+     * all (map design: Longest shot and post-game stats): a win springs in over confetti, a loss
+     * drops in and shakes, a draw settles in.
      */
-    private fun showResult(state: ModeState?) {
+    private fun showResult() {
+        if (!isAdded) return
         val b = binding ?: return
         val container = appContainer
         val over = container.gameState.gameState == GameStateRepository.GAME_STATE_NONE
-        if (state == null || state.winner == 0 || !over) {
+        val id = container.players.playerID.toInt()
+        val layout = container.settings.teamLayout
+        val freeForAll = layout.mode.isFreeForAll
+        // Every game mode, classic team games too (by the teams' totals); not classic free for all
+        val points = lastPlayers.orEmpty().filterNotNull().filter { it.playerID > 0 }.associate { it.playerID.toInt() to it.points }
+        val result = if (over) GameResult.of(container.modeController.state.value, id, if (freeForAll) id else layout.teamOf(id),
+            freeForAll, points) { layout.teamOf(it) } else null
+        if (result == null) {
             b.gameResultLayout.visibility = View.GONE
             resultShown = null
             return
         }
-        if (state == resultShown) return
-        resultShown = state
-        val id = container.players.playerID.toInt()
-        val layout = container.settings.teamLayout
-        // In Infection, the side you ended on: survivors or infected
-        val myTeam = state.sideOf(id, if (layout.mode.isFreeForAll) id else layout.teamOf(id))
-        val won = state.winner == myTeam
-        val mine = state.scores[myTeam] ?: 0
-        val theirs = state.scores.filterKeys { it != myTeam }.values.maxOrNull() ?: 0
+        if (result == resultShown) return
+        resultShown = result
+        val won = result.outcome == GameResult.Outcome.VICTORY
         b.gameResultLayout.visibility = View.VISIBLE
-        b.gameResultTv.setText(if (won) R.string.mode_victory_big else R.string.mode_defeat_big)
-        b.gameResultTv.setTextColor(if (won) VICTORY_COLOR else DEFEAT_COLOR)
-        b.gameResultScoreTv.text = getString(R.string.mode_result_score, mine, theirs)
+        b.gameResultTv.setText(when (result.outcome) {
+            GameResult.Outcome.VICTORY -> R.string.mode_victory_big
+            GameResult.Outcome.DEFEAT -> R.string.mode_defeat_big
+            GameResult.Outcome.DRAW -> R.string.mode_draw_big
+        })
+        b.gameResultTv.setTextColor(when (result.outcome) {
+            GameResult.Outcome.VICTORY -> VICTORY_COLOR
+            GameResult.Outcome.DEFEAT -> DEFEAT_COLOR
+            GameResult.Outcome.DRAW -> DRAW_COLOR
+        })
+        b.gameResultScoreTv.text = getString(R.string.mode_result_score, result.mine, result.theirs)
         val tv = b.gameResultTv
         tv.animate().cancel()
-        if (won) {
+        if (result.outcome == GameResult.Outcome.DRAW) {
+            // Neither: it just settles in
+            tv.alpha = 0f
+            tv.animate().alpha(1f).setDuration(600).start()
+        } else if (won) {
             tv.scaleX = 0.2f
             tv.scaleY = 0.2f
             tv.alpha = 0f
@@ -436,6 +455,7 @@ private const val SHOTS_REFRESH_MILLIS = 5_000L
 
 private const val VICTORY_COLOR = 0xFFFFD54F.toInt()
 private const val DEFEAT_COLOR = 0xFFEF5350.toInt()
+private const val DRAW_COLOR = 0xFFB0BEC5.toInt()
 
 /** The score matrix grows to at most this much of the window's height, then scrolls. */
 private const val MATRIX_MAX_HEIGHT_FRACTION = 0.8f

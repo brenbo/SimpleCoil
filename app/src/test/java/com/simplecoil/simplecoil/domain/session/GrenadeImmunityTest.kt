@@ -41,6 +41,21 @@ class GrenadeImmunityTest {
     }
 
     @Test
+    fun whileHitsArePaused_nothingEliminates() {
+        // A Search & Destroy round waiting for everyone at their spawn
+        h.config.fullHealth = 1
+        h.connected()
+        h.startedAndSpawned()
+        h.engine.setHitsPaused(true)
+        hitBy(Packet().hit1(5, 0x01))
+        hitBy(grenade(3))
+        assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
+        h.engine.setHitsPaused(false)
+        hitBy(Packet().hit1(5, 0x01))
+        assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
+    }
+
+    @Test
     fun theSameGrenadeCannotEliminateAgainForAWhile() {
         h.config.fullHealth = 1
         h.connected()

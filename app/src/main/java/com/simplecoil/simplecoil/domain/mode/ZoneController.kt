@@ -49,6 +49,9 @@ class ZoneController(
 
         /** A new round: out players come back. */
         fun revive()
+
+        /** Hits do nothing while a round waits to start or is over. */
+        fun setHitsPaused(on: Boolean)
     }
 
     interface Feedback {
@@ -91,6 +94,9 @@ class ZoneController(
         val playing = inGame()
         // Battle Royale once respawns are over, or a round of Search & Destroy: eliminations are final
         penalties.setNoRespawn(playing && (zone?.noRespawn == true || mode?.noRespawn == true))
+        // Search & Destroy: no eliminations before a round goes live, or after it's decided
+        val phase = mode?.bomb?.phase
+        penalties.setHitsPaused(playing && (phase == RoundPhase.STARTING || phase == RoundPhase.BETWEEN))
         val newRound = mode?.round ?: 0
         if (playing && newRound > round && round != 0) penalties.revive()
         round = if (playing) newRound else 0

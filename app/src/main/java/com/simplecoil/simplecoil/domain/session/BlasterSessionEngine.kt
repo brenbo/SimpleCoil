@@ -454,6 +454,13 @@ class BlasterSessionEngine(
         noRespawn = on
     }
 
+    /** Hits do nothing: a Search & Destroy round hasn't started yet, or is over. */
+    private var hitsPaused = false
+
+    fun setHitsPaused(on: Boolean) {
+        hitsPaused = on
+    }
+
     /** A new round (Search & Destroy): a player out of this round comes back with the respawn countdown. */
     fun revive() {
         val out = _state.value.spawn as? SpawnPhase.OutOfLives ?: return
@@ -762,7 +769,8 @@ class BlasterSessionEngine(
         var hitBy2 = telemetry.hitByPlayer2
         var shot2 = telemetry.rawShotIdByte2
         val now = clock()
-        fun immune(hitBy: Int, shot: Byte) = immuneGrenade != null && now < immuneUntil && damagingGrenade(hitBy, shot) == immuneGrenade
+        // While a round waits to start (or between rounds), nobody can be hit at all
+        fun immune(hitBy: Int, shot: Byte) = hitsPaused || (immuneGrenade != null && now < immuneUntil && damagingGrenade(hitBy, shot) == immuneGrenade)
         if (immune(hitBy2, shot2)) hitBy2 = 0
         if (immune(hitBy1, shot1)) {
             hitBy1 = hitBy2

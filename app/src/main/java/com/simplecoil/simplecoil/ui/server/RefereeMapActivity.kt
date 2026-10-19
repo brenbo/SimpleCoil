@@ -240,8 +240,10 @@ class RefereeMapActivity : AppCompatActivity() {
             GameMode.DOMINATION, GameMode.HARDPOINT, GameMode.SEARCH_AND_DESTROY -> mode.objectives
             GameMode.CAPTURE_THE_FLAG -> mode.flags.map { ObjectiveState("", it.base, it.team, 0, 0.0, false, active = true, next = false) }
             GameMode.EXTRACTION -> mode.extraction?.let { e ->
-                e.zones.map { ObjectiveState("EX", it, 0, 0, 0.0, false, active = true, next = false) } +
-                    e.loot.map { ObjectiveState(it.value.toString(), it.point, 0, 0, 0.0, false, active = true, next = false) }
+                // Red until the zones open, then green
+                val open = System.currentTimeMillis() >= e.opensAt
+                e.zones.map { ObjectiveState("EX", it, if (open) EXTRACTION_OPEN else EXTRACTION_CLOSED, 0, 0.0, false, active = open, next = !open) } +
+                    e.loot.map { ObjectiveState(it.value.toString(), it.point, LOOT, 0, 0.0, false, active = true, next = false) }
             }.orEmpty()
             else -> emptyList()
         }, mode?.radiusMeters ?: 10.0, letters = mode?.mode != GameMode.HARDPOINT)
@@ -276,6 +278,9 @@ class RefereeMapActivity : AppCompatActivity() {
     }
 
     private fun colorOf(team: Int): Int = when (team) {
+        EXTRACTION_OPEN -> MapIcons.EXTRACTION_OPEN
+        EXTRACTION_CLOSED -> MapIcons.EXTRACTION_CLOSED
+        LOOT -> MapIcons.LOOT
         InfectionEngine.INFECTED -> 0xFF76FF03.toInt()
         InfectionEngine.SURVIVORS -> 0xFF40C4FF.toInt()
         else -> MapIcons.teamColor(team, PALETTE[Math.floorMod(team, PALETTE.size)])
@@ -338,6 +343,12 @@ class RefereeMapActivity : AppCompatActivity() {
         const val BORDER_COLOR = "#FF5252"
         const val DOT = "●"
         const val FLAG = "⚑"
+
+        /** Stand-in teams for the Extraction zones (closed, open) and the loot, for their colours. */
+        const val EXTRACTION_CLOSED = -10
+        const val EXTRACTION_OPEN = -11
+        const val LOOT = -12
+
         const val DOT_SP = 22f
         const val NAME_SP = 11f
         val PALETTE = intArrayOf(0xFF2979FF.toInt(), 0xFFE53935.toInt(), 0xFF43A047.toInt(), 0xFFFFB300.toInt(), 0xFF8E24AA.toInt(),

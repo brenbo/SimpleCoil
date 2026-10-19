@@ -39,6 +39,13 @@ object MapIcons {
     /** Spawns anyone may use. */
     const val ANYONE = 0xFFFFFFFF.toInt()
 
+    /** Extraction: a zone not open yet, and one you can extract at. */
+    const val EXTRACTION_CLOSED = 0xFFE53935.toInt()
+    const val EXTRACTION_OPEN = 0xFF69F0AE.toInt()
+
+    /** Extraction: a pile of loot. */
+    const val LOOT = 0xFFFFC107.toInt()
+
     /** A team's colour (1-4), or [fallback]. */
     fun teamColor(team: Int, fallback: Int = NEUTRAL): Int =
         if (team in 1..4) TeamColors.colorOf(team) else fallback

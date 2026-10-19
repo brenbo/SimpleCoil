@@ -563,6 +563,7 @@
     <string name="mode_hp_moved">The point moved</string>
     <string name="mode_victory_big">VICTORY</string>
     <string name="mode_defeat_big">DEFEAT</string>
+    <string name="mode_draw_big">DRAW</string>
     <string name="mode_result_score">%1$d to %2$d</string>
     <string name="field_map_hint">Find your field, draw its border, then download the photo. Phones get both when they join.</string>
     <string name="field_hint_circle">Tap the center of the field, then tap its edge.</string>
