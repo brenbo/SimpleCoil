@@ -124,7 +124,7 @@ class DedicatedServerActivity : AppCompatActivity() {
                 }
                 launch { vm.effects.collect { onEffect(it) } }
                 launch { showFieldMapStatus() }
-                launch { requireGpsWithAField() }
+                launch { applyFieldRules() }
                 launch { showGps() }
                 launch { showCardSummaries() }
             }
@@ -155,14 +155,23 @@ class DedicatedServerActivity : AppCompatActivity() {
     }
 
     /**
-     * With a field map selected the game runs on positions, so GPS stays on: Off is greyed out
-     * (Teammates too in free for all, where it shares with nobody), and turned on if it was off.
+     * What the selected field rules out. With a field map the game runs on positions, so GPS
+     * stays on: Off is greyed out (Teammates too in free for all, where it shares with nobody),
+     * and turned on if it was off. The game mode greys out the team modes it can't be played
+     * in (free for all for Infection, two teams for Capture the Flag and Search & Destroy), and
+     * a team mode it can't use changes to one it can.
      */
-    private suspend fun requireGpsWithAField() {
+    private suspend fun applyFieldRules() {
         val container = (application as SimpleCoilApp).container
-        combine(container.serverFieldConfig.config, vm.state) { config, state -> (config?.border != null) to state }
-            .collect { (field, state) ->
+        combine(container.serverFieldConfig.config, vm.state) { config, state -> config to state }
+            .collect { (config, state) ->
                 state ?: return@collect
+                val gameMode = config?.mode ?: GameMode.CLASSIC
+                binding.teamMode2teamsButton.isEnabled = TeamMode.TWO_TEAMS in gameMode.teamModes
+                binding.teamMode4teamsButton.isEnabled = TeamMode.FOUR_TEAMS in gameMode.teamModes
+                binding.teamModeFfaButton.isEnabled = TeamMode.FREE_FOR_ALL in gameMode.teamModes
+                if (state.teamMode !in gameMode.teamModes) teamModeFor(gameMode)
+                val field = config?.border != null
                 binding.gpsModeDisabledButton.isEnabled = !field
                 binding.gpsModeTeammateButton.isEnabled = !(field && state.teamMode.isFreeForAll)
                 if (field) vm.onFieldNeedsGps()
