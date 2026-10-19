@@ -313,6 +313,7 @@ class BlasterSessionEngine(
         }
         _state.update { it.copy(gameInProgress = false, spawn = SpawnPhase.None, shieldSeconds = null, clock = GameClock.Stopped(countdownText)) }
         outOfBounds = false
+        hitsPaused = false
         respawnHolds.clear()
         extraLives = 0
         loseDeathPowerUps()
@@ -383,8 +384,8 @@ class BlasterSessionEngine(
     private fun finishReload() {
         if ((reloading != RELOADING_STARTED && reloading != RELOADING_ELIMINATED && reloading != RELOADING_OUT_OF_BOUNDS) ||
             config.gameState != GameStateRepository.GAME_STATE_RUNNING) return
-        if (outOfBounds) {
-            // Out of bounds: the blaster stays held until the player is back on the field
+        if (held) {
+            // Out of bounds, or a round not started yet: the blaster stays held until that is over
             reloading = RELOADING_OUT_OF_BOUNDS
             return
         }
@@ -415,7 +416,7 @@ class BlasterSessionEngine(
             }
             Log.d(TAG, "Reload finished")
             // Went out of bounds while the reload was being written
-            if (outOfBounds) startReload(RELOADING_OUT_OF_BOUNDS)
+            if (held) startReload(RELOADING_OUT_OF_BOUNDS)
         }
     }
 
@@ -454,11 +455,13 @@ class BlasterSessionEngine(
         noRespawn = on
     }
 
-    /** Hits do nothing: a Search & Destroy round hasn't started yet, or is over. */
+    /** A Search & Destroy round hasn't started yet, or is over: hits do nothing, and the blaster can't shoot. */
     private var hitsPaused = false
 
     fun setHitsPaused(on: Boolean) {
+        if (hitsPaused == on) return
         hitsPaused = on
+        updateHold()
     }
 
     /** A new round (Search & Destroy): a player out of this round comes back with the respawn countdown. */
@@ -560,7 +563,14 @@ class BlasterSessionEngine(
     fun setOutOfBounds(disabled: Boolean) {
         if (outOfBounds == disabled) return
         outOfBounds = disabled
-        if (disabled) {
+        updateHold()
+    }
+
+    /** The blaster can't shoot while the player is off the field or a round hasn't started. */
+    private val held get() = outOfBounds || hitsPaused
+
+    private fun updateHold() {
+        if (held) {
             if (reloading == RELOADING_NONE) startReload(RELOADING_OUT_OF_BOUNDS)
         } else if (reloading == RELOADING_OUT_OF_BOUNDS) {
             finishReload()

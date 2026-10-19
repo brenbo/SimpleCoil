@@ -19,6 +19,7 @@ package com.simplecoil.simplecoil.domain.session
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.domain.session.SessionTestHarness.Packet
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** A grenade that eliminated a player can't eliminate them again for a while; other grenades can. */
@@ -46,11 +47,16 @@ class GrenadeImmunityTest {
         h.config.fullHealth = 1
         h.connected()
         h.startedAndSpawned()
+        h.rec.ble.clear()
         h.engine.setHitsPaused(true)
+        // The blaster is held, as if reloading: it can't shoot either
+        assertTrue(h.rec.ble.any { it.startsWith("startReload") })
         hitBy(Packet().hit1(5, 0x01))
         hitBy(grenade(3))
         assertEquals(GameStateRepository.GAME_STATE_RUNNING, h.config.gameState)
         h.engine.setHitsPaused(false)
+        h.telemetry(Packet().noHit())
+        assertTrue(h.rec.ble.any { it.startsWith("finishReload") })
         hitBy(Packet().hit1(5, 0x01))
         assertEquals(GameStateRepository.GAME_STATE_ELIMINATED, h.config.gameState)
     }
