@@ -458,6 +458,8 @@ class MapFragment : Fragment() {
 
     private fun enableGps(enabled: Boolean) {
         if (activity == null) return
+        // No GPS in this game: no map behind the play screen either
+        updateVisibility()
         if (enabled) {
             if (!tracking) {
                 tracking = true
@@ -730,15 +732,16 @@ class MapFragment : Fragment() {
      * would visibly change, so a still map costs nothing.
      */
     /**
-     * The map shows only while playing on a server and connected to it: never in no-network
-     * mode, and not after the connection has been gone for [DISCONNECTED_HIDE_MILLIS].
+     * The map shows only while playing on a server and connected to it, in a game that uses GPS:
+     * never in no-network mode, not in a classic game with GPS off, and not after the connection
+     * has been gone for [DISCONNECTED_HIDE_MILLIS].
      */
     private fun updateVisibility() {
         val root = binding?.root ?: return
         val net = container.networkGateway
         val now = container.clock()
         if (net.isConnectedToServer) lastConnectedAt = now
-        root.isVisible = net.useNetwork && lastConnectedAt != Long.MIN_VALUE && now - lastConnectedAt < DISCONNECTED_HIDE_MILLIS
+        root.isVisible = net.useNetwork && lastConnectedAt != Long.MIN_VALUE && now - lastConnectedAt < DISCONNECTED_HIDE_MILLIS && wantsGps()
     }
 
     /**

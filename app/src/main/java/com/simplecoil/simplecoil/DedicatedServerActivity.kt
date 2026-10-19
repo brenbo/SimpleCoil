@@ -116,7 +116,7 @@ class DedicatedServerActivity : AppCompatActivity() {
                         renderer.render(state)
                         // A game starting: the home screen becomes the live referee map
                         val running = state.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
-                        if (running && lastPhase != null && lastPhase != state.phase) {
+                        if (running && lastPhase != null && lastPhase != state.phase && !liveMapOff()) {
                             startActivity(Intent(this@DedicatedServerActivity, RefereeMapActivity::class.java))
                         }
                         lastPhase = state.phase
@@ -167,14 +167,23 @@ class DedicatedServerActivity : AppCompatActivity() {
                 state ?: return@collect
                 val gameMode = config?.mode ?: GameMode.CLASSIC
                 val gpsRequired = config?.border != null && gameMode != GameMode.CLASSIC
-                if (renderer.gameMode != gameMode || renderer.gpsRequired != gpsRequired) {
+                val liveMapOff = liveMapOff()
+                if (renderer.gameMode != gameMode || renderer.gpsRequired != gpsRequired || renderer.liveMapOff != liveMapOff) {
                     renderer.gameMode = gameMode
                     renderer.gpsRequired = gpsRequired
+                    renderer.liveMapOff = liveMapOff
                     renderer.render(state)
                 }
                 if (state.teamMode !in gameMode.teamModes) teamModeFor(gameMode)
                 if (gpsRequired) vm.onFieldNeedsGps()
             }
+    }
+
+    /** A classic game with GPS off has no positions to show: no live referee map. */
+    private fun liveMapOff(): Boolean {
+        val state = vm.state.value ?: return false
+        val gameMode = (application as SimpleCoilApp).container.serverFieldConfig.config.value?.mode ?: GameMode.CLASSIC
+        return !state.useGps && gameMode == GameMode.CLASSIC
     }
 
     /** "GPS: 3 of 4 reporting · no fix from Bob": whose positions the server hears (shot distance, drops, spawns). */

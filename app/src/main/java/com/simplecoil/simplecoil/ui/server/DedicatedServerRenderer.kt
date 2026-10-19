@@ -44,6 +44,9 @@ class DedicatedServerRenderer(
     /** The game needs positions: a field map with a game mode played on them (not classic). GPS can't be off. */
     var gpsRequired = false
 
+    /** A classic game with GPS off: no positions, so no live map during the game. */
+    var liveMapOff = false
+
     /** The clock as last drawn. */
     private var clock: ClockState? = null
 
@@ -127,6 +130,7 @@ class DedicatedServerRenderer(
         // The field can't change under a running game
         // During a game the field can't change: the button opens the live referee map instead
         fieldMapButton.setText(if (running) R.string.ref_live_map else R.string.field_map_button)
+        fieldMapButton.isEnabled = !(running && liveMapOff)
         fieldRulesButton.isEnabled = !running
         modeCardHeader.isEnabled = !running
         extrasCardHeader.isEnabled = !running
