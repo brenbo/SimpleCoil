@@ -13,6 +13,8 @@
     <string name="connect_weapon_button">Connect blaster</string>
     <string name="connect_qr_weapon_button">Scan QR</string>
     <string name="start_game_button">Start game</string>
+    <!-- The game screen's offline Start, beside Game settings and QR code -->
+    <string name="start_short_button">Start</string>
     <string name="end_game_button">End game</string>
 
     <string name="connect_intro">Turn on your blaster, then connect it.</string>
@@ -23,7 +25,7 @@
     <string name="qr_learn_more_link">How QR codes work</string>
     <string name="qr_info_title">Using QR Codes</string>
     <string name="qr_info_body">A SimpleCoil QR code holds a blaster\'s Bluetooth address, and optionally a player name. Scanning it with Connect Blaster Using QR connects straight to that blaster instead of searching for the nearest one, and sets your player name.\n\nThis helps most when lots of players are pairing at the same time: a normal connect may pick up someone else\'s blaster, while a QR code always finds the right one.\n\nTo make one, connect to the blaster once, then tap Generate QR on the game screen before a game starts. Enter a player name (or leave it blank), save the image, then print it and tape it to the side of the blaster. The code prints about 1 inch (25 mm) wide.\n\nSee docs/QR_CODES.md in the SimpleCoil source for the code format.</string>
-    <string name="generate_qr_button">Generate QR</string>
+    <string name="generate_qr_button">QR code</string>
     <string name="qr_generate_title">Generate QR Code</string>
     <string name="qr_generate_explanation">Generate a QR code with a unique player name to speed up connection setup when lots of players are trying to pair devices and blasters at the same time. Print and tape the QR code to the side of your blasters.</string>
     <string name="qr_player_name_label">Player name</string>

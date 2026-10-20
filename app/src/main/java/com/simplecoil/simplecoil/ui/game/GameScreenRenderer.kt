@@ -196,6 +196,7 @@ class GameScreenRenderer(
         val visibility = if (visible) View.VISIBLE else View.GONE
         b.teamScoreLabelTv.visibility = visibility
         b.teamScoreTv.visibility = visibility
+        b.teamScoreColumn.visibility = visibility
         updateScoresDescription()
     }
 

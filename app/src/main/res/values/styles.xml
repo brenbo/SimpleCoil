@@ -343,6 +343,23 @@
         <item name="cornerRadius">999dp</item>
     </style>
 
+    <!-- The game screen's actions: the ones shown share one row equally, text shrinking to fit -->
+    <style name="Widget.SimpleCoil.Button.Row" parent="Widget.SimpleCoil.Button.Hud">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">3dp</item>
+        <item name="android:layout_marginEnd">3dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="iconPadding">4dp</item>
+        <item name="iconGravity">textStart</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">10sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
     <!-- Big text over the map (eliminated, respawning): a shadow keeps it readable on a photo -->
     <style name="HudOverlayText">
         <item name="android:layout_width">wrap_content</item>
