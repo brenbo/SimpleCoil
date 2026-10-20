@@ -229,7 +229,7 @@
     <string name="cd_kick_player">Kick player</string>
     <string name="briefing_button">Show players how to play</string>
     <string name="briefing_close">Close</string>
-    <string name="briefing_skip">Skip to game mode</string>
+    <string name="briefing_skip">Skip to game</string>
     <string name="briefing_next">Next</string>
     <string name="briefing_done">Done</string>
     <string name="briefing_progress">%1$d of %2$d</string>
