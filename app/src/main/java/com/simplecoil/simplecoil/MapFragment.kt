@@ -505,8 +505,12 @@ class MapFragment : Fragment() {
         return LatLon(best.latitude, best.longitude)
     }
 
-    private fun others(): List<MapLocationManager.PlayerPosition> =
-        if (settings.isUseGPS) location.visiblePlayers() else emptyList()
+    /** The other players to show: not those sitting out (joined too late to play), who aren't in the game. */
+    private fun others(): List<MapLocationManager.PlayerPosition> {
+        if (!settings.isUseGPS) return emptyList()
+        val sittingOut = container.modeController.state.value?.sittingOut.orEmpty()
+        return location.visiblePlayers().filter { it.playerId !in sittingOut }
+    }
 
     private fun renderPlayers() {
         val style = style ?: return

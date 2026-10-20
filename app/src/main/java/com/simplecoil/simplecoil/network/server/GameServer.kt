@@ -549,7 +549,7 @@ class GameServer(
         val reset = resetSessionNow()
         settings.teamMode = mode
         settings.resetDefaultTeamSizes()
-        applyGpsMode(settings.gpsMode) // teammate GPS means nothing in free for all
+        applyGpsMode(settings.gpsMode)
         rebalanceAllPlayers(false)
         reset
     }
@@ -623,11 +623,10 @@ class GameServer(
         settings.gameLimit = gameLimit
     }
 
-    /** Relays GPS unless the mode is off, or teammate-only in free for all; tells the clients. */
+    /** Relays GPS unless the mode is off (teammates only, in free for all, shows each player just themself); tells the clients. */
     private fun applyGpsMode(mode: Int) {
         settings.gpsMode = mode
-        val off = mode == GameSettingsRepository.GPS_DISABLED ||
-            (settings.teamMode == TeamMode.FREE_FOR_ALL && mode == GameSettingsRepository.GPS_TEAMMATE)
+        val off = mode == GameSettingsRepository.GPS_DISABLED
         settings.isUseGPS = !off
         if (!off) startGpsRelay()
         sendAllGameInfo(SEND_ALL)

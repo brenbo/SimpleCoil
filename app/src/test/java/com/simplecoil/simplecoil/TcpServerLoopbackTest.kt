@@ -957,7 +957,7 @@ class TcpServerLoopbackTest {
     }
 
     @Test
-    fun loadSettings_appliesTheSavedSettings_andTeammateGpsIsOffInFreeForAll() {
+    fun loadSettings_appliesTheSavedSettings_andTeammateGpsStaysOnInFreeForAll() {
         server.loadSettings(SavedServerSettings(TeamMode.FREE_FOR_ALL, timeLimit = 10, livesLimit = 0, scoreLimit = 5,
             startTimeSeconds = 7, gpsMode = GameSettingsRepository.GPS_TEAMMATE, allowChooseTeams = false))
         awaitTrue { server.snapshot.value.settings.startTimeSeconds == 7L }
@@ -967,7 +967,8 @@ class TcpServerLoopbackTest {
         assertEquals(10, saved.timeLimit)
         assertEquals(5, saved.scoreLimit)
         assertEquals(GameSettingsRepository.GPS_TEAMMATE, saved.gpsMode)
-        assertFalse(saved.useGps)
+        // In free for all, teammates only means each player sees just themself: GPS stays on
+        assertTrue(saved.useGps)
         assertFalse(saved.allowChooseTeams)
         assertFalse(saved.allowJoinInProgress)
     }

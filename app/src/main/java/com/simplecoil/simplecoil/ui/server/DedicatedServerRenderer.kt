@@ -66,10 +66,10 @@ class DedicatedServerRenderer(
             state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> R.id.gps_mode_teammate_button
             else -> R.id.gps_mode_all_button
         })
-        // The Teams and players card's summary: team mode and GPS sharing (free for all has no teammates)
+        // The Teams and players card's summary: team mode and GPS sharing (teammates, in free for all, is just you)
         val gps = when {
-            !state.useGps || (state.gpsMode == GameSettingsRepository.GPS_TEAMMATE && state.teamMode.isFreeForAll) -> R.string.gps_mode_disabled
-            state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> R.string.gps_mode_teammate
+            !state.useGps -> R.string.gps_mode_disabled
+            state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> if (state.teamMode.isFreeForAll) R.string.gps_mode_you else R.string.gps_mode_teammate
             else -> R.string.gps_mode_all
         }
         teamsSummaryTv.text = resources.getString(R.string.server_summary_teams, resources.getString(when (state.teamMode) {
@@ -138,8 +138,9 @@ class DedicatedServerRenderer(
         gpsModeGroup.children.forEach { it.isEnabled = !running }
         // A game played on positions can't have GPS off
         gpsModeDisabledButton.isEnabled = !running && !gpsRequired
-        // Free for all has no teammates: the server treats teammate GPS as off (shown as Off)
-        gpsModeTeammateButton.isEnabled = !running && !teamMode.isFreeForAll
+        // Free for all has no teammates: there it shows each player just themself
+        gpsModeTeammateButton.isEnabled = !running
+        gpsModeTeammateButton.setText(if (teamMode.isFreeForAll) R.string.gps_mode_you else R.string.gps_mode_teammate)
         gameStatusTv.setText(when {
             running -> R.string.dedicated_game_running
             postGame -> R.string.dedicated_game_over

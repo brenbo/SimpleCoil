@@ -249,8 +249,9 @@ class RefereeMapActivity : AppCompatActivity() {
         }, mode?.radiusMeters ?: 10.0, letters = mode?.mode != GameMode.HARDPOINT)
         flags?.update(mode?.flags.orEmpty().map { GlyphOverlay.Glyph("flag${it.team}", it.point, FLAG, colorOf(it.team)) })
         drops?.update(field?.drops.orEmpty(), System.currentTimeMillis())
-        // Everyone, by side: out or with no position shown faded, or left off
-        val located = view.players.filter { it.point != null }
+        // Everyone, by side: out or with no position shown faded, or left off; not those sitting out (joined too late)
+        val sittingOut = mode?.sittingOut.orEmpty()
+        val located = view.players.filter { it.point != null && it.id !in sittingOut }
         dots?.update(located.map { p ->
             val side = mode?.let { if (it.mode == GameMode.INFECTION) (if (p.id in it.infected) InfectionEngine.INFECTED else InfectionEngine.SURVIVORS) else null } ?: p.team
             val color = colorOf(side)
