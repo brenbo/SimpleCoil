@@ -748,6 +748,7 @@
     <string name="field_hint_objectives">Tap to add capture point %1$s. Tap a point to remove it. Leave none to have them placed by field size for each game.</string>
     <string name="field_objectives_cleared">Capture points cleared. They will be placed by field size for each game.</string>
     <string name="field_objectives_full">Five capture points at most.</string>
+    <string name="field_inside_border_only">Spawns and points go inside the field\'s border.</string>
     <plurals name="field_status_spawns">
         <item quantity="one">%1$d spawn</item>
         <item quantity="other">%1$d spawns</item>

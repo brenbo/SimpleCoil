@@ -379,6 +379,7 @@ class FieldMapActivity : AppCompatActivity() {
                 // A tap on a spawn removes it; anywhere else adds one for the chosen team
                 val radius = config.spawnRules.radiusMeters
                 val hit = config.spawns.lastOrNull { GeoMath.distanceMeters(it.point, point) <= radius }
+                if (hit == null && outsideBorder(point)) return true
                 saveConfig(config.copy(spawns = if (hit != null) config.spawns - hit else config.spawns + Spawn(spawnTeam, point)))
                 drawSpawns()
             }
@@ -479,6 +480,17 @@ class FieldMapActivity : AppCompatActivity() {
     }
 
     /** A tap on a point removes it; anywhere else adds the next letter. */
+    /**
+     * True (and says so) when [point] is outside the field's border: spawns and capture points
+     * go inside it. With no border yet, anywhere goes.
+     */
+    private fun outsideBorder(point: LatLon): Boolean {
+        val border = config.border ?: return false
+        if (border.contains(point)) return false
+        Toast.makeText(applicationContext, R.string.field_inside_border_only, Toast.LENGTH_SHORT).show()
+        return true
+    }
+
     private fun onObjectiveTapped(point: LatLon) {
         val radius = config.objectiveRules.radiusMeters
         val hit = config.objectives.lastOrNull { GeoMath.distanceMeters(it.point, point) <= radius }
@@ -488,6 +500,7 @@ class FieldMapActivity : AppCompatActivity() {
                 Toast.makeText(applicationContext, R.string.field_objectives_full, Toast.LENGTH_SHORT).show()
                 return
             }
+            outsideBorder(point) -> return
             else -> config.objectives + Objective("", point)
         }
         // Lettered in order, so removing B makes C the new B

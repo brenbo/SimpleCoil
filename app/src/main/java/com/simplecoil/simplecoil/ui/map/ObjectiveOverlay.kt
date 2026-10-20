@@ -104,10 +104,12 @@ class ObjectiveOverlay(private val context: Context, private val layer: FrameLay
             val color = if (o.owner == 0) NEUTRAL else colorOf(o.owner)
             val faded = o.next && !o.active
             fill.color = (color and 0x00FFFFFF) or (if (faded) 0x22000000 else 0x55000000)
-            canvas.drawCircle(r, r, r - edge.strokeWidth, fill)
+            // The outer edge on the point's radius exactly: what you see is what a tap hits
+            val edgeRadius = r - edge.strokeWidth / 2
+            canvas.drawCircle(r, r, edgeRadius, fill)
             edge.color = if (o.contested) CONTESTED else color
             edge.pathEffect = if (faded) dashes else null
-            canvas.drawCircle(r, r, r - edge.strokeWidth, edge)
+            canvas.drawCircle(r, r, edgeRadius, edge)
             if (o.capturing != 0 && o.progress > 0) {
                 ring.color = colorOf(o.capturing)
                 val inset = ring.strokeWidth
