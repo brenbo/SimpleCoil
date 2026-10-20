@@ -28,11 +28,14 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.Choreographer
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -252,10 +255,7 @@ class MapFragment : Fragment() {
         dropOverlay = DropOverlay(requireContext(), b.mapDropsLayer)
         objectiveOverlay = ObjectiveOverlay(requireContext(), b.mapObjectivesLayer) { objectiveColor(it) }
         glyphOverlay = GlyphOverlay(requireContext(), b.mapGlyphsLayer)
-        b.mapZoomButton.setOnClickListener {
-            setAutoZoom(autoZoom.next())
-            preferences.saveMapAutoZoom(autoZoom.name)
-        }
+        b.mapZoomButton.setOnClickListener { showZoomMenu(it) }
         MapCredit.attach(b.mapCreditTv)
         compass = CompassSensor(requireContext()).also { if (!it.isAvailable) headingUp = false }
         b.mapCompassButton.isVisible = compass?.isAvailable == true
@@ -694,14 +694,35 @@ class MapFragment : Fragment() {
             getString(if (headingUp) R.string.map_compass_heading_up else R.string.map_compass_north_up)
     }
 
+    /** Each auto zoom's icon and name. */
+    private fun zoomLook(zoom: AutoZoom) = when (zoom) {
+        AutoZoom.OFF -> R.drawable.ic_map_zoom_off to R.string.map_zoom_off
+        AutoZoom.YOU -> R.drawable.ic_map_zoom_you to R.string.map_zoom_you
+        AutoZoom.PLAYERS -> R.drawable.ic_map_zoom_players to R.string.map_zoom_players
+        AutoZoom.FIELD -> R.drawable.ic_map_zoom_field to R.string.map_zoom_field
+    }
+
+    /** The map's views to pick from, each with its icon; the one in use in orange. */
+    private fun showZoomMenu(anchor: View) {
+        val popup = PopupMenu(ContextThemeWrapper(requireContext(), R.style.AppTheme_PopupOverlay), anchor)
+        for (zoom in AutoZoom.entries) {
+            val (icon, name) = zoomLook(zoom)
+            val drawable = ContextCompat.getDrawable(requireContext(), icon)?.mutate()
+            if (zoom == autoZoom) drawable?.setTint(ACTIVE_COLOR.toColorInt())
+            popup.menu.add(0, zoom.ordinal, zoom.ordinal, name).icon = drawable
+        }
+        popup.setForceShowIcon(true)
+        popup.setOnMenuItemClickListener { item ->
+            setAutoZoom(AutoZoom.entries[item.itemId])
+            preferences.saveMapAutoZoom(autoZoom.name)
+            true
+        }
+        popup.show()
+    }
+
     private fun updateZoomButton() {
         val button = binding?.mapZoomButton ?: return
-        val (icon, description) = when (autoZoom) {
-            AutoZoom.OFF -> R.drawable.ic_map_zoom_off to R.string.map_zoom_off
-            AutoZoom.YOU -> R.drawable.ic_map_zoom_you to R.string.map_zoom_you
-            AutoZoom.PLAYERS -> R.drawable.ic_map_zoom_players to R.string.map_zoom_players
-            AutoZoom.FIELD -> R.drawable.ic_map_zoom_field to R.string.map_zoom_field
-        }
+        val (icon, description) = zoomLook(autoZoom)
         button.setImageResource(icon)
         button.contentDescription = getString(description)
         // Orange while it is zooming by itself

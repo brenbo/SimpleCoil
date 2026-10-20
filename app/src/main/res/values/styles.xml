@@ -322,6 +322,27 @@
         <item name="cornerRadius">999dp</item>
     </style>
 
+    <!-- A small pill button, the size of the text around it (Player settings beside the timer) -->
+    <style name="Widget.SimpleCoil.Button.Mini" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="iconSize">14dp</item>
+        <item name="iconPadding">4dp</item>
+        <item name="cornerRadius">999dp</item>
+    </style>
+
     <!-- Big text over the map (eliminated, respawning): a shadow keeps it readable on a photo -->
     <style name="HudOverlayText">
         <item name="android:layout_width">wrap_content</item>

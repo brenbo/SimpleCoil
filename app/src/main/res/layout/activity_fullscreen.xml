@@ -247,16 +247,7 @@
                     android:contentDescription="@null"
                     android:visibility="gone" />
 
-                <!-- Team tag (colored; tap to switch teams on a server) and name (tap to rename) -->
-                <TextView
-                    android:id="@+id/team_label_tv"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:maxLines="1"
-                    android:text="@string/team_label"
-                    android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
-
+                <!-- Your name (tap to rename on a server) -->
                 <TextView
                     android:id="@+id/team_tv"
                     android:layout_width="0dp"
@@ -332,6 +323,34 @@
                     android:textColor="@color/sc_warning"
                     android:textSize="13sp"
                     android:visibility="gone" />
+
+                <!-- Keeps the team tag and player settings at the end when there's no loadout -->
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="0.01" />
+
+                <!-- Your team, always shown (colored; tap to switch teams on a server when allowed) -->
+                <TextView
+                    android:id="@+id/team_label_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_pill"
+                    android:maxLines="1"
+                    android:paddingStart="10dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="2dp"
+                    android:text="@string/team_label"
+                    android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                <Button
+                    android:id="@+id/player_settings_button"
+                    style="@style/Widget.SimpleCoil.Button.Mini"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/player_settings_button"
+                    app:icon="@drawable/ic_sc_person" />
             </LinearLayout>
 
             <ProgressBar
@@ -448,26 +467,10 @@
                     android:text="@string/team_plus_button" />
 
                 <Button
-                    android:id="@+id/player_settings_button"
-                    style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:text="@string/player_settings_button"
-                    app:icon="@drawable/ic_sc_person"
-                    app:iconSize="18dp" />
-
-                <Button
                     android:id="@+id/start_game_button"
                     style="@style/Widget.SimpleCoil.Button.Hud"
                     android:text="@string/start_game_button"
                     app:icon="@drawable/ic_sc_play"
-                    app:iconSize="18dp" />
-
-                <!-- Start Game's spot on a server, where Start Game is hidden -->
-                <Button
-                    android:id="@+id/admin_controls_button"
-                    style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:visibility="gone"
-                    android:text="@string/admin_controls_button"
-                    app:icon="@drawable/ic_sc_admin"
                     app:iconSize="18dp" />
 
                 <Button
@@ -518,13 +521,30 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
 
-                <!-- Players our shots hit, oldest on top: one hit_player_row each -->
+                <!-- An admin's server controls (start, end, team mode, talk to everyone), before and during a game -->
+                <ImageButton
+                    android:id="@+id/admin_controls_button"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="6dp"
+                    android:background="@drawable/bg_map_button"
+                    android:contentDescription="@string/admin_controls_button"
+                    android:elevation="4dp"
+                    android:padding="9dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_sc_admin"
+                    android:visibility="gone"
+                    app:tint="@color/sc_orange" />
+
+                <!-- Players our shots hit, oldest on top (below the admin button): one hit_player_row each -->
                 <LinearLayout
                     android:id="@+id/hit_players_ll"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|start"
-                    android:layout_margin="8dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="54dp"
                     android:orientation="vertical" />
 
                 <ImageView

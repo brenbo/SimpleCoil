@@ -142,7 +142,7 @@ class GameScreenRenderer(
         inGame = true
         showTeamModeSelectable(false)
         if (useNetwork) {
-            displayInGameNetworkingOptions(isAdmin, freeForAll)
+            displayInGameNetworkingOptions(freeForAll)
         } else {
             displayAllNetworkingOptions(false, freeForAll)
             b.endGameButton.setText(R.string.end_game_button)
@@ -245,10 +245,10 @@ class GameScreenRenderer(
             if (team.color != Color.TRANSPARENT) {
                 val box = GradientDrawable().apply {
                     setColor(team.color)
-                    cornerRadius = 8f
+                    cornerRadius = 999f
                 }
                 b.teamLabelTv.background = if (team.switchable) RippleDrawable(ColorStateList.valueOf(0x55FFFFFF), box, null) else box
-                b.teamLabelTv.setPadding(24, 12, 24, 12)
+                setTeamLabelPadding()
                 b.teamLabelTv.setTextColor(if (team.team == 4) Color.BLACK else Color.WHITE)
             } else {
                 clearTeamLabelStyle()
@@ -265,11 +265,11 @@ class GameScreenRenderer(
             setTeamScoreVisible(team.teamScoreVisible)
             return
         }
-        b.teamLabelTv.setText(R.string.team_label)
+        // Always shown: free for all says so
+        b.teamLabelTv.setText(if (team is TeamDisplay.FreeForAll) R.string.team_mode_ffa else R.string.team_label)
         clearTeamLabelStyle()
         setTeamLabelTappable(false)
         if (team is TeamDisplay.FreeForAll && team.playerName != null) {
-            b.teamLabelTv.visibility = View.GONE
             b.teamTv.text = team.playerName
             setPlayerNameTile(true)
             showPlayerId(context.getString(R.string.player_id_ffa_label, team.playerId.toInt()))
@@ -330,9 +330,15 @@ class GameScreenRenderer(
     }
 
     private fun clearTeamLabelStyle() {
-        b.teamLabelTv.background = null
-        b.teamLabelTv.setPadding(0, 0, 0, 0)
+        b.teamLabelTv.setBackgroundResource(R.drawable.bg_pill)
+        setTeamLabelPadding()
         b.teamLabelTv.setTextColor(ContextCompat.getColor(context, R.color.sc_text_secondary))
+    }
+
+    /** The team tag is a pill about as tall as the timer's text beside it. */
+    private fun setTeamLabelPadding() {
+        val dp = context.resources.displayMetrics.density
+        b.teamLabelTv.setPadding((10 * dp).toInt(), (2 * dp).toInt(), (10 * dp).toInt(), (2 * dp).toInt())
     }
 
     override fun showPreGameButtons(buttons: PreGameButtons) {
@@ -361,12 +367,11 @@ class GameScreenRenderer(
         setTeamScoreVisible(enabled && !freeForAll)
     }
 
-    private fun displayInGameNetworkingOptions(isAdmin: Boolean, freeForAll: Boolean) {
+    private fun displayInGameNetworkingOptions(freeForAll: Boolean) {
         displayAllNetworkingOptions(false, freeForAll)
         b.scoresChip.visibility = View.VISIBLE
-        // An admin's server controls: End Game (and talk to everyone, with voice chat)
-        b.endGameButton.setText(R.string.admin_controls_button)
-        b.endGameButton.visibility = if (isAdmin) View.VISIBLE else View.GONE
+        // An admin ends the game from the server controls (the shield on the map)
+        b.endGameButton.visibility = View.GONE
         if (!freeForAll) setTeamScoreVisible(true)
     }
 

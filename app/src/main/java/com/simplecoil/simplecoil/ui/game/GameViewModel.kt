@@ -766,10 +766,10 @@ class GameViewModel(
         updateAdminButtonVisibility()
     }
 
-    /** Hidden during a game: its only entry then is End Game, which has its own button. */
+    /** An admin's server controls: before, during (End game) and after a game. */
     private fun updateAdminButtonVisibility() {
         val inGame = engine.state.value.gameInProgress
-        val showAdmin = playerRepo.isAdmin && net.useNetwork && ready && !inGame
+        val showAdmin = playerRepo.isAdmin && net.useNetwork && ready
         screen?.showAdminButton(showAdmin)
         Log.d(TAG, "updateAdminButtonVisibility: mIsAdmin=" + playerRepo.isAdmin + ", mUseNetwork=" + net.useNetwork + ", mReady=" + ready + ", inGame=" + inGame + " -> show=" + showAdmin)
     }

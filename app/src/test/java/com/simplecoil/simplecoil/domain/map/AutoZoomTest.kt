@@ -28,14 +28,6 @@ class AutoZoomTest {
     private val border = Border.Circle(center, 150.0)
 
     @Test
-    fun theButtonCyclesOffYouPlayersField() {
-        assertEquals(AutoZoom.YOU, AutoZoom.OFF.next())
-        assertEquals(AutoZoom.PLAYERS, AutoZoom.YOU.next())
-        assertEquals(AutoZoom.FIELD, AutoZoom.PLAYERS.next())
-        assertEquals(AutoZoom.OFF, AutoZoom.FIELD.next())
-    }
-
-    @Test
     fun followingYouIsCloseInOnYou_andNothingWithoutAFix() {
         val there = GeoMath.offset(center, 60.0, 0.0)
         assertEquals(GeoCircle(there, AutoZoom.FOLLOW_RADIUS_METERS), AutoZoom.target(AutoZoom.YOU, border, photo, there, listOf(center)))

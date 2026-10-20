@@ -17,7 +17,7 @@
 package com.simplecoil.simplecoil.domain.map
 
 /**
- * The map's auto zoom (map design: Auto zoom), a four-way button: off (the player moves the
+ * The map's auto zoom (map design: Auto zoom), picked from the map button's menu: off (the player moves the
  * map), follow you up close, fit everyone the map shows, or fit the whole field. It fits a
  * circle rather than a box, so what it fits stays on screen however the map is rotated.
  */
@@ -33,9 +33,6 @@ enum class AutoZoom {
 
     /** The whole field: its border, or its photo when there's no border. */
     FIELD;
-
-    /** The button's next state: off → you → players → field → off. */
-    fun next(): AutoZoom = entries[(ordinal + 1) % entries.size]
 
     companion object {
         /** Never zoom in closer than a circle this big, so two players standing together aren't a blur. */
