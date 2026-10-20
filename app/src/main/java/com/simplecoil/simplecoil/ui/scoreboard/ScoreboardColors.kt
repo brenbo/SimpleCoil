@@ -19,5 +19,8 @@ package com.simplecoil.simplecoil.ui.scoreboard
 /** Colours the scoreboard list and the score matrix share. */
 object ScoreboardColors {
     /** This phone's own name. */
-    const val SELF_NAME = 0xFFFF8C00.toInt()
+    const val SELF_NAME = 0xFFFF6A1A.toInt()
+
+    /** Everyone else's name (the theme's text color, sc_text). */
+    const val NAME = 0xFFE8EAED.toInt()
 }

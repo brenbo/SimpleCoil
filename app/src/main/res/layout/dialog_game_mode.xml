@@ -4,7 +4,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#080808">
+    android:background="@color/sc_surface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -191,7 +191,7 @@
                     android:inputType="number"
                     android:maxLength="2" />
 
-                <androidx.appcompat.widget.SwitchCompat
+                <com.google.android.material.materialswitch.MaterialSwitch
                     style="@style/DialogSwitch"
                     android:id="@+id/mode_faster_switch"
                     android:text="@string/mode_more_faster" />
@@ -345,7 +345,7 @@
                 android:inputType="number"
                 android:maxLength="2" />
 
-            <androidx.appcompat.widget.SwitchCompat
+            <com.google.android.material.materialswitch.MaterialSwitch
                 style="@style/DialogSwitch"
                 android:id="@+id/br_rises_switch"
                 android:text="@string/br_rises" />
@@ -454,7 +454,7 @@
                 android:inputType="number"
                 android:maxLength="3" />
 
-            <androidx.appcompat.widget.SwitchCompat
+            <com.google.android.material.materialswitch.MaterialSwitch
                 style="@style/DialogSwitch"
                 android:id="@+id/ctf_own_home_switch"
                 android:text="@string/ctf_own_home" />
@@ -661,7 +661,7 @@
                 android:inputType="number"
                 android:maxLength="1" />
 
-            <androidx.appcompat.widget.SwitchCompat
+            <com.google.android.material.materialswitch.MaterialSwitch
                 style="@style/DialogSwitch"
                 android:id="@+id/sndr_swap_switch"
                 android:text="@string/sndr_swap" />
@@ -751,7 +751,7 @@
         <!-- In the sheet, not beside Save and Cancel: three buttons there don't fit and stack -->
         <Button
             android:id="@+id/mode_reset_button"
-            style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            style="@style/Widget.SimpleCoil.Button.Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"

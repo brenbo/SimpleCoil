@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- A segmented choice: the chosen one filled orange, the others on the card's own surface. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_enabled="false" android:state_checked="true" android:color="#66FF9800" />
-    <item android:state_checked="true" android:color="@color/colorPrimary" />
-    <item android:color="@android:color/transparent" />
+    <item android:state_enabled="false" android:state_checked="true" android:color="@color/sc_orange_container" />
+    <item android:state_checked="true" android:color="@color/sc_orange" />
+    <item android:color="@color/sc_surface_highest" />
 </selector>

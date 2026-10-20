@@ -30,6 +30,8 @@ import com.simplecoil.simplecoil.ui.sheet.FillingBottomSheet
 class InfoSheet(activity: AppCompatActivity, private val b: ActivityFullscreenBinding) {
 
     init {
+        // The sheet's own color under the page, so it doesn't flash white while it loads
+        b.infoWv.setBackgroundColor(androidx.core.content.ContextCompat.getColor(activity, R.color.sc_surface))
         b.infoWv.loadUrl("file:///android_asset/simplecoil.html")
         b.infoWv.visibility = View.VISIBLE
         FillingBottomSheet(activity, b.infoSheet, b.infoSheetHeader, b.connectCoordinator, b.connectContent, b.connectScroll,

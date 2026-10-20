@@ -4,7 +4,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#080808">
+    android:background="@color/sc_surface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -104,12 +104,12 @@
 
         <View style="@style/DialogDivider" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_walk_back_switch"
             android:text="@string/rules_walk_back" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_start_at_spawn_switch"
             android:text="@string/rules_start_at_spawn" />
@@ -220,7 +220,7 @@
             android:inputType="number"
             android:maxLength="2" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_shield_in_spawn_switch"
             android:text="@string/rules_shield_in_spawn" />
@@ -277,7 +277,7 @@
             android:inputType="number"
             android:maxLength="2" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_refill_switch"
             android:text="@string/rules_refill_at_spawn" />
@@ -308,7 +308,7 @@
             android:inputType="number"
             android:maxLength="2" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_drops_switch"
             android:text="@string/rules_drops" />
@@ -418,7 +418,7 @@
             android:inputType="number"
             android:maxLength="3" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_nearest_team_switch"
             android:text="@string/rules_nearest_team" />
@@ -449,7 +449,7 @@
             android:inputType="number"
             android:maxLength="2" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_killstreaks_switch"
             android:text="@string/rules_killstreaks" />
@@ -480,7 +480,7 @@
             android:inputType="number"
             android:maxLength="2" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_track_shots_switch"
             android:text="@string/rules_track_shots" />
@@ -499,7 +499,7 @@
             android:inputType="number"
             android:maxLength="3" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_longest_shot_switch"
             android:text="@string/rules_longest_shot" />
@@ -634,7 +634,7 @@
 
         <View style="@style/DialogDivider" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/rules_only_near_switch"
             android:text="@string/rules_only_near" />

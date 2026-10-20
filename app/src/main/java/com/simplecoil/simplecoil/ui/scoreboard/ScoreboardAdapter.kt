@@ -23,6 +23,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -132,11 +133,10 @@ class ScoreboardAdapter(
         private val networkStatus: ImageView? = view.findViewById(R.id.network_status_iv)
         private val kick: ImageView? = view.findViewById(R.id.kick_player_iv)
         private val mute: ImageView? = view.findViewById(R.id.mute_player_iv)
-        private val defaultNameColors: ColorStateList = name.textColors
 
         fun bindColumnHeader(row: ScoreboardRow.ColumnHeader) {
             name.setText(R.string.player_list_name_label)
-            name.setTextColor(defaultNameColors)
+            TextViewCompat.setTextAppearance(name, R.style.TextAppearance_SimpleCoil_Label)
             points.setText(R.string.player_list_points_label)
             stat.setText(if (row.livesColumn) R.string.scoreboard_lives else R.string.player_list_eliminated_label)
             // Invisible, not gone: the icons keep their space so the columns line up
@@ -153,7 +153,8 @@ class ScoreboardAdapter(
 
         fun bind(row: ScoreboardRow.Player) {
             val context = itemView.context
-            name.setTextColor(if (row.isSelf) ScoreboardColors.SELF_NAME else Color.WHITE)
+            TextViewCompat.setTextAppearance(name, R.style.TextAppearance_SimpleCoil_Body)
+            name.setTextColor(if (row.isSelf) ScoreboardColors.SELF_NAME else ScoreboardColors.NAME)
             name.text = row.name
             points.text = context.getString(R.string.number, row.points)
             stat.text = context.getString(R.string.number, row.livesOrEliminations)

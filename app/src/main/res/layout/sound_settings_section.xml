@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:max="100" />
 
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         style="@style/DialogSwitch"
         android:id="@+id/sound_voice_switch"
         android:text="@string/sound_voice" />
@@ -40,18 +40,18 @@
         android:layout_height="wrap_content"
         android:max="100" />
 
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         style="@style/DialogSwitch"
         android:id="@+id/sound_essential_switch"
         android:text="@string/sound_essential" />
 
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         style="@style/DialogSwitch"
         android:id="@+id/sound_vibration_switch"
         android:text="@string/sound_vibration" />
     <Button
         android:id="@+id/sound_test_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        style="@style/Widget.SimpleCoil.Button.Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"

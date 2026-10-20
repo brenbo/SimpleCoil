@@ -2,26 +2,31 @@
     <string name="app_name">SimpleCoil</string>
     <string name="app_name_with_version">SimpleCoil v%1$s</string>
     <string name="info_sheet_title">About SimpleCoil</string>
-    <string name="player_sheet_title">Players - tap a player for player settings</string>
+    <!-- The home screen -->
+    <string name="home_heading">Ready to play?</string>
+    <string name="home_play_title">Play</string>
+    <string name="home_play_summary">Join a game with your blaster</string>
+    <string name="home_host_title">Host a game</string>
+    <string name="player_sheet_title">Players: tap one for their settings</string>
 
-    <string name="reconnect_weapon_button">Reconnect Same Blaster Only</string>
-    <string name="connect_weapon_button">Connect Blaster</string>
-    <string name="connect_qr_weapon_button">Connect Blaster Using QR</string>
-    <string name="start_game_button">Start Game!</string>
-    <string name="end_game_button">End Game!</string>
+    <string name="reconnect_weapon_button">Reconnect</string>
+    <string name="connect_weapon_button">Connect blaster</string>
+    <string name="connect_qr_weapon_button">Scan QR</string>
+    <string name="start_game_button">Start game</string>
+    <string name="end_game_button">End game</string>
 
-    <string name="connect_intro">Ready to play? Power on your blaster and tap a connect button!</string>
+    <string name="connect_intro">Turn on your blaster, then connect it.</string>
     <string name="connect_status_scanning">Scanning&#8230;</string>
     <string name="connect_status_connecting">Connecting&#8230;</string>
     <string name="connect_status_communicating">Communicating&#8230;</string>
     <string name="scan_qr_prompt">Scan Blaster QR Code</string>
-    <string name="qr_learn_more_link">Learn more about using QR codes</string>
+    <string name="qr_learn_more_link">How QR codes work</string>
     <string name="qr_info_title">Using QR Codes</string>
     <string name="qr_info_body">A SimpleCoil QR code holds a blaster\'s Bluetooth address, and optionally a player name. Scanning it with Connect Blaster Using QR connects straight to that blaster instead of searching for the nearest one, and sets your player name.\n\nThis helps most when lots of players are pairing at the same time: a normal connect may pick up someone else\'s blaster, while a QR code always finds the right one.\n\nTo make one, connect to the blaster once, then tap Generate QR on the game screen before a game starts. Enter a player name (or leave it blank), save the image, then print it and tape it to the side of the blaster. The code prints about 1 inch (25 mm) wide.\n\nSee docs/QR_CODES.md in the SimpleCoil source for the code format.</string>
     <string name="generate_qr_button">Generate QR</string>
     <string name="qr_generate_title">Generate QR Code</string>
     <string name="qr_generate_explanation">Generate a QR code with a unique player name to speed up connection setup when lots of players are trying to pair devices and blasters at the same time. Print and tape the QR code to the side of your blasters.</string>
-    <string name="qr_player_name_label">Player Name</string>
+    <string name="qr_player_name_label">Player name</string>
     <string name="qr_player_name_hint">Leave blank for the blaster only</string>
     <string name="qr_generate_button">Generate</string>
     <string name="qr_code_title">Blaster QR Code</string>
@@ -33,55 +38,55 @@
     <string name="qr_no_blaster_toast">Connect to a blaster first to generate its QR code</string>
     <string name="qr_file_name">SimpleCoil-QR-%1$s.png</string>
     <string name="cd_qr_code">Blaster pairing QR code</string>
-    <string name="network_searching_status">SEARCHING FOR SERVER…</string>
+    <string name="network_searching_status">Searching for a server…</string>
 
-    <string name="team_label">TEAM</string>
-    <string name="team_number_label">TEAM %1$d</string>
-    <string name="no_team">Auto Sort</string>
-    <string name="auto_sort_team">Auto Sort</string>
-    <string name="switch_team_button">Switch Team</string>
+    <string name="team_label">Team</string>
+    <string name="team_number_label">Team %1$d</string>
+    <string name="no_team">Auto sort</string>
+    <string name="auto_sort_team">Auto sort</string>
+    <string name="switch_team_button">Switch team</string>
     <string name="shuffle_teams_button">Shuffle</string>
     <string name="error_team_full">Team %1$d is full</string>
     <string name="team_full_switch_with">Team is full. Switch with?</string>
     <!-- The player settings dialog's team button once a player to switch with is picked: team, then that player's name. -->
-    <string name="switch_team_with_label">TEAM %1$d: switch with %2$s</string>
+    <string name="switch_team_with_label">Team %1$d: switch with %2$s</string>
     <!-- A player with no name in the team-full switch list. -->
     <string name="team_swap_unnamed_player">Player %1$d</string>
     <string name="player_settings_recoil_default">Recoil: Let Player Choose</string>
-    <string name="player_settings_recoil_enabled">Recoil: Force Enabled</string>
-    <string name="player_settings_recoil_disabled">Recoil: Force Disabled</string>
-    <string name="kick_player_button">Kick Player</string>
+    <string name="player_settings_recoil_enabled">Recoil: always on</string>
+    <string name="player_settings_recoil_disabled">Recoil: always off</string>
+    <string name="kick_player_button">Kick player</string>
     <string name="kicked_by_server_toast">You were kicked by the server</string>
     <string name="player_settings_admin">Admin Player (Server Controls)</string>
     <string name="player_settings_voice">Voice chat (when the server has it on)</string>
-    <string name="admin_controls_button">Server Controls</string>
+    <string name="admin_controls_button">Server controls</string>
 
-    <string name="eliminations_count_label">ELIMINATIONS</string>
-    <string name="lives_count_label">LIVES</string>
-    <string name="shots_remaining_label">SHOTS (%1$d, %2$d)</string>
-    <string name="shot_mode_label">MODE</string>
+    <string name="eliminations_count_label">Eliminations</string>
+    <string name="lives_count_label">Lives</string>
+    <string name="shots_remaining_label">Shots (%1$d, %2$d)</string>
+    <string name="shot_mode_label">Fire mode</string>
     <string name="shot_mode_single">Single</string>
-    <string name="shot_mode_burst3">Burst(3)</string>
+    <string name="shot_mode_burst3">Burst 3</string>
     <string name="shot_mode_auto">Auto</string>
-    <string name="recoil_label">RECOIL</string>
+    <string name="recoil_label">Recoil</string>
     <string name="recoil_enabled">Enabled</string>
     <string name="recoil_disabled">Disabled</string>
-    <string name="score_label">SCORE</string>
-    <string name="team_score_label">TEAM</string>
-    <string name="score_limit_label">SCORE (%1$d)</string>
-    <string name="team_score_limit_label">TEAM (%1$d)</string>
+    <string name="score_label">Score</string>
+    <string name="team_score_label">Team</string>
+    <string name="score_limit_label">Score (%1$d)</string>
+    <string name="team_score_limit_label">Team (%1$d)</string>
 
-    <string name="firing_mode_outdoor_no_cone">Outdoor No Cone</string>
-    <string name="firing_mode_outdoor_with_cone">Outdoor With Cone</string>
-    <string name="firing_mode_indoor_no_cone">Indoor No Cone</string>
+    <string name="firing_mode_outdoor_no_cone">Outdoor, no cone</string>
+    <string name="firing_mode_outdoor_with_cone">Outdoor, with cone</string>
+    <string name="firing_mode_indoor_no_cone">Indoor, no cone</string>
     <string name="firing_mode_cone_toast">The cone is a wide angle, short range IR blaster that allows you to hit opponents without aiming in a 30ft/10m range.</string>
 
-    <string name="health_label">HEALTH (%1$d)</string>
+    <string name="health_label">Health (%1$d)</string>
 
     <string name="starting_game_label">STARTING!</string>
     <string name="eliminated_label">ELIMINATED!</string>
     <string name="spawn_in_label">Spawn in %1$d</string>
-    <string name="start_respawn_button">Start Respawn</string>
+    <string name="start_respawn_button">Respawn</string>
     <string name="manual_respawn_hint">Hold reload to respawn</string>
     <string name="manual_respawn_go_to_spawn">Walk to your spawn, then hold reload to respawn</string>
     <string name="respawn_shield_label">Shield: %1$d</string>
@@ -104,7 +109,7 @@
     <string name="sitting_out_next_round">Watch the map: you play from the next round</string>
     <string name="sitting_out_next_game">Watch the map: you play from the next game</string>
 
-    <string name="end_game_dialog_title">End Game?</string>
+    <string name="end_game_dialog_title">End the game?</string>
     <string name="end_game_dialog_message">Are you sure you want to stop playing?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
@@ -115,14 +120,14 @@
     <string name="server_status_connected_to">%1$s</string>
     <string name="server_status_searching">Searching for server&#8230;</string>
 
-    <string name="use_network_button">Enable Networking</string>
-    <string name="disable_networking_button">Disable Networking</string>
-    <string name="network_menu_button">Network Options</string>
-    <string name="no_network_button">Disable Network</string>
-    <string name="join_button">Join Lobby</string>
+    <string name="use_network_button">Go online</string>
+    <string name="disable_networking_button">Go offline</string>
+    <string name="network_menu_button">Network</string>
+    <string name="no_network_button">Play offline</string>
+    <string name="join_button">Join lobby</string>
     <string name="join_ip_button">Join IP&#8230;</string>
-    <string name="team_mode_label">Team Mode</string>
-    <string name="team_mode_ffa">Free For All</string>
+    <string name="team_mode_label">Team mode</string>
+    <string name="team_mode_ffa">Free for all</string>
     <string name="team_mode_2teams">2 Teams</string>
     <string name="team_mode_4teams">4 Teams</string>
     <!-- Free For All on the server's team mode control, where the full name doesn't fit. -->
@@ -134,21 +139,21 @@
     <string name="player_id_ffa_label">(%1$d)</string>
     <string name="player_name">Change Player Name:</string>
     <string name="server_ip">Server IP:</string>
-    <string name="game_limit_button">Game Limits</string>
+    <string name="game_limit_button">Game limits</string>
     <string name="game_limit_title">When should the game end?</string>
     <string name="game_limit_time">Timed game in minutes (0 for unlimited)</string>
     <string name="game_limit_lives">Lives Per Player (0 for unlimited) - Players will stop respawning when they run out of lives. Game ends when all opponents are out of lives.</string>
     <string name="game_limit_score">Score (0 for unlimited, team score for team games)</string>
-    <string name="starting_timer_button">Starting Timer</string>
+    <string name="starting_timer_button">Start timer</string>
     <string name="starting_timer_title">Set Game Start Countdown (Seconds):</string>
 
 
     <string name="pistol_detected_toast">Pistol Detected! (%1$s)</string>
     <string name="rifle_detected_toast">Rifle Detected! (%1$s)</string>
-    <string name="grenade_paired_toast">Grenade Paired!</string>
+    <string name="grenade_paired_toast">Grenade paired</string>
 
-    <string name="dedicated_server_button">Dedicated Server</string>
-    <string name="dedicated_server_intro">Have a spare device and Wi-Fi or a RECOIL hub and want a more complete experience including live scoring? Use this device as a dedicated server!</string>
+    <string name="dedicated_server_button">Start a server</string>
+    <string name="dedicated_server_intro">Run the game on this phone: live scores, maps and game modes for everyone. Needs Wi-Fi or a RECOIL hub.</string>
     <string name="title_activity_dedicated_server">DedicatedServerActivity</string>
     <string name="server_notification_channel">SimpleCoil Dedicated Server</string>
     <string name="server_notification_title">SimpleCoil Dedicated Server</string>
@@ -166,21 +171,21 @@
     <string name="dedicated_stop_button">Stop</string>
     <string name="dedicated_unlimited">Unlimited</string>
     <string name="dedicated_limit_separator">", "</string>
-    <string name="dedicated_game_running">Game Running</string>
-    <string name="dedicated_game_waiting">Waiting to Start</string>
-    <string name="dedicated_game_over">Game Over</string>
-    <string name="dedicated_start_button">Start</string>
-    <string name="dedicated_end_button">End</string>
+    <string name="dedicated_game_running">Game running</string>
+    <string name="dedicated_game_waiting">Waiting to start</string>
+    <string name="dedicated_game_over">Game over</string>
+    <string name="dedicated_start_button">Start game</string>
+    <string name="dedicated_end_button">End game</string>
     <string name="dedicated_end_confirm">End the game for all players?</string>
-    <string name="dedicated_reset_button">↺ Reset</string>
-    <string name="dedicated_settings_label">Game / Server Settings</string>
+    <string name="dedicated_reset_button">Reset for the next game</string>
+    <string name="dedicated_settings_label">Game settings</string>
     <string name="dedicated_phase_arrow" translatable="false">→</string>
     <string name="reset_game_button">Reset</string>
     <string name="reset_game_admin">Reset game</string>
     <string name="dedicated_game_reset_toast">Game reset</string>
     <string name="dedicated_gps_forced">GPS is on for everyone: this game mode needs it</string>
-    <string name="dedicated_allow_join">Allow players to join after game has started?</string>
-    <string name="dedicated_server_settings_only">Only allow server settings?</string>
+    <string name="dedicated_allow_join">Let players join a game in progress</string>
+    <string name="dedicated_server_settings_only">Use the server\'s settings for everyone</string>
     <string name="gps_mode_label">GPS</string>
     <string name="gps_mode_disabled">Off</string>
     <string name="gps_mode_teammate">Teammates</string>
@@ -199,8 +204,8 @@
     <string name="player_list_name_label">Name</string>
     <string name="player_list_points_label">Score</string>
     <string name="player_list_eliminated_label">Eliminated</string>
-    <string name="player_list_team_header">TEAM %1$d (Limit %2$d/%3$d) Score: %4$d</string>
-    <string name="team_ratio_dialog_title">Configure Team Sizes</string>
+    <string name="player_list_team_header">Team %1$d · %2$d/%3$d · score %4$d</string>
+    <string name="team_ratio_dialog_title">Team sizes</string>
     <string name="team_ratio_instructions">Enter player limit/ratio for each team (e.g. 1 and 31 for 1:31 ratio). Total slots = 32.</string>
     <string name="team_ratio_team1">Team 1:</string>
     <string name="team_ratio_team2">Team 2:</string>
@@ -213,7 +218,7 @@
     <string name="team_plus_button">+</string>
     <string name="team_ratio_min_one">Team limits must be at least 1 player slot</string>
     <string name="team_ratio_total">Total player slots across all teams must equal %1$d (current sum: %2$d)</string>
-    <string name="scoreboard_players_header">PLAYERS</string>
+    <string name="scoreboard_players_header">Players</string>
     <string name="scoreboard_lives">Lives</string>
     <string name="scoreboard_edit_ratio">Tap to edit ratio</string>
     <!-- A number shown on its own, in the locale's digits. -->
@@ -222,7 +227,7 @@
     <string name="cd_blaster_battery">Blaster battery</string>
     <string name="cd_network_status">Network status</string>
     <string name="cd_kick_player">Kick player</string>
-    <string name="briefing_button">Show the players how to play</string>
+    <string name="briefing_button">Show players how to play</string>
     <string name="briefing_close">Close</string>
     <string name="briefing_skip">Skip to game mode</string>
     <string name="briefing_next">Next</string>
@@ -241,11 +246,11 @@
     <string name="cd_grenade_paired">Grenade paired</string>
     <string name="scoreboard_disconnected">Disconnected</string>
     <!-- The score matrix (who eliminated whom) on the scoreboard dialog. -->
-    <string name="score_matrix">SCORE MATRIX</string>
-    <string name="scoreboard">SCOREBOARD</string>
+    <string name="score_matrix">Score matrix</string>
+    <string name="scoreboard">Scoreboard</string>
     <string name="score_matrix_empty">No eliminations yet</string>
     <string name="score_matrix_unsupported">This server doesn\'t support the score matrix</string>
-    <string name="longest_shots">LONGEST SHOTS</string>
+    <string name="longest_shots">Longest shots</string>
     <string name="longest_shots_empty">No measured shots yet. Shot distance needs both players\' GPS.</string>
     <string name="longest_shots_unsupported">This server doesn\'t measure shots</string>
     <string name="longest_shots_rank">%1$d.</string>
@@ -271,13 +276,13 @@
         <item quantity="other">%1$d eliminations in total</item>
     </plurals>
 
-    <string name="player_settings_title">Player Settings</string>
+    <string name="player_settings_title">Player settings</string>
     <string name="player_settings_id_title">%1$s Settings (%2$d)</string>
     <string name="player_settings_team_title">%1$s Settings (%2$d-%3$d)</string>
     <string name="player_settings_unnamed_player">Player</string>
-    <string name="player_settings_button">Player Settings</string>
+    <string name="player_settings_button">Player settings</string>
     <string name="player_settings_section_health">Health &amp; Lives</string>
-    <string name="player_settings_section_blaster">Blaster Settings</string>
+    <string name="player_settings_section_blaster">Blaster</string>
     <string name="player_settings_section_respawn">Respawn</string>
     <string name="player_settings_section_player">Player</string>
     <string name="player_settings_section_apply">Apply</string>
@@ -286,24 +291,24 @@
     <string name="player_settings_spawn_time">Respawn Time (Seconds)</string>
     <string name="player_settings_respawn_shield_time">Respawn Shield Time (Seconds)</string>
     <string name="player_settings_reload_time">Reload Time (Milliseconds)</string>
-    <string name="player_settings_reload_shots">Shots Per Reload</string>
+    <string name="player_settings_reload_shots">Shots per reload</string>
     <string name="player_settings_reload_on_empty">Reload on empty?</string>
     <string name="player_settings_damage">Damage Per Hit To Others (Network Game Only)</string>
     <string name="player_settings_override_lives">Override lives limit?</string>
     <string name="player_settings_lives">Lives</string>
-    <string name="player_settings_reset">Reset Defaults</string>
+    <string name="player_settings_reset">Reset to defaults</string>
     <string name="player_settings_apply_to_all">Apply to all players?</string>
     <string name="player_settings_apply_to_team">Apply to Team?</string>
     <string name="player_settings_not_allowed_toast">Players are not allowed to change player settings on this server.</string>
-    <string name="player_settings_shot_modes_allowed">Shot Modes Allowed</string>
+    <string name="player_settings_shot_modes_allowed">Fire modes allowed</string>
     <string name="player_settings_shot_mode_error">Must allow at least one shot mode!</string>
 
     <string name="blaster_disconnected_dialog">Blaster Disconnected! Trying to reconnect&#8230;</string>
     <string name="blaster_disconnected_suggestion">You can power cycle your blaster if the reconnect process is taking too long.</string>
     <string name="blaster_disconnected_disconnect_quit">Disconnect &amp; Quit</string>
 
-    <string name="dedicated_allow_choose_teams">Allow players to choose teams?</string>
-    <string name="dedicated_voice_chat">Voice chat? (hold the weapon switch button to talk to your team)</string>
+    <string name="dedicated_allow_choose_teams">Let players choose their team</string>
+    <string name="dedicated_voice_chat">Voice chat (hold the weapon switch to talk)</string>
     <string name="switch_to_team">Switch to Team %1$d</string>
     <string name="permission_rationale_title">Permissions needed</string>
     <string name="permission_rationale_ble">SimpleCoil needs these permissions to find and connect to your blaster: Bluetooth, location (for Bluetooth scanning and the game map) and notifications (to keep the blaster connected while the app is in the background).</string>
@@ -317,8 +322,8 @@
     <string name="permission_continue">Continue</string>
     <string name="permission_open_settings">Open settings</string>
     <plurals name="network_player_count">
-        <item quantity="one">%1$d Player</item>
-        <item quantity="other">%1$d Players</item>
+        <item quantity="one">%1$d player</item>
+        <item quantity="other">%1$d players</item>
     </plurals>
     <plurals name="dedicated_time_limit">
         <item quantity="one">%1$d minute</item>

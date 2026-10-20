@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Opaque dialog window background; the inset matches AppCompat's own dialog background (24dp). -->
+<!-- The dialogs' window: a rounded card over the screen; the inset matches AppCompat's own (24dp). -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:inset="@dimen/dialog_inset">
     <shape android:shape="rectangle">
-        <solid android:color="#080808" />
+        <solid android:color="@color/sc_surface" />
+        <corners android:radius="24dp" />
     </shape>
 </inset>

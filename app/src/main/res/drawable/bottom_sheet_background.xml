@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A bottom sheet (the About sheet, the server's players): a little lighter than the screen, rounded on top. -->
+<!-- A bottom sheet (the About sheet, the server's players): a step up from the screen, rounded on top. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#161616" />
+    <solid android:color="@color/sc_surface" />
     <corners
-        android:topLeftRadius="16dp"
-        android:topRightRadius="16dp" />
+        android:topLeftRadius="24dp"
+        android:topRightRadius="24dp" />
 </shape>

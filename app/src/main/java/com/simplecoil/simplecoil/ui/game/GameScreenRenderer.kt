@@ -24,9 +24,11 @@ import android.graphics.drawable.RippleDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
-import android.view.ViewGroup
+
 import android.view.animation.AnimationUtils
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.core.view.isVisible
@@ -90,6 +92,8 @@ class GameScreenRenderer(
 
     override fun showConnectScreen(reconnectVisible: Boolean) {
         b.playLayout.visibility = View.GONE
+        // The app bar on the home screen; the game screen gives its room to the map
+        (context as? AppCompatActivity)?.supportActionBar?.show()
         b.connectLayout.visibility = View.VISIBLE
         if (serverOnly) {
             b.connectWeaponButton.visibility = View.GONE
@@ -97,6 +101,8 @@ class GameScreenRenderer(
             b.qrLearnMoreTv.visibility = View.GONE
             b.connectIntroTv.visibility = View.GONE
             b.dedicatedServerTopDivider.visibility = View.GONE
+            b.homePlayCard.visibility = View.GONE
+            b.connectHeadingTv.visibility = View.GONE
         }
         setReconnectVisible(reconnectVisible)
     }
@@ -104,6 +110,7 @@ class GameScreenRenderer(
     override fun showPlayScreen() {
         b.connectLayout.visibility = View.GONE
         b.playLayout.visibility = View.VISIBLE
+        (context as? AppCompatActivity)?.supportActionBar?.hide()
     }
 
     override fun setReconnectVisible(visible: Boolean) {
@@ -291,68 +298,36 @@ class GameScreenRenderer(
         label.isFocusable = tappable
     }
 
-    /**
-     * On a dedicated server the player name is a tile like the score readout's that opens the
-     * player name dialog. The tile's padding comes out of the top margin so the name stays put.
-     */
+    /** On a dedicated server the player name is a tile like the score readout's that opens the player name dialog. */
     private fun setPlayerNameTile(tile: Boolean) {
-        val name = b.teamTv
-        val params = name.layoutParams as ViewGroup.MarginLayoutParams
-        val dp = context.resources.displayMetrics.density
-        if (tile) {
-            name.setBackgroundResource(R.drawable.scores_chip_background)
-            name.setPadding((12 * dp).toInt(), (2 * dp).toInt(), (12 * dp).toInt(), (2 * dp).toInt())
-            params.topMargin = (38 * dp).toInt()
-            name.setOnClickListener { onPlayerNameTapped() }
-            ViewCompat.replaceAccessibilityAction(name, AccessibilityActionCompat.ACTION_CLICK,
-                context.getString(R.string.player_name_action), null)
-        } else {
-            name.background = null
-            name.setPadding(0, 0, 0, 0)
-            params.topMargin = (40 * dp).toInt()
-            name.setOnClickListener(null)
-            name.isClickable = false
-        }
-        name.isFocusable = tile
-        name.layoutParams = params
+        setTile(b.teamTv, tile, R.string.player_name_action, onPlayerNameTapped)
     }
 
-    /**
-     * The shot mode and recoil values are tiles like the score readout's while the player may
-     * change them. The tile's padding comes out of the margins (and the end margin, for a view
-     * aligned to the parent's end) so the text stays put.
-     */
-    private fun setSettingTile(view: TextView, tile: Boolean, action: Int, onTapped: () -> Unit, endMarginDp: Int = 0) {
-        val params = view.layoutParams as ViewGroup.MarginLayoutParams
+    /** The shot mode and recoil values are tiles like the score readout's while the player may change them. */
+    private fun setSettingTile(view: TextView, tile: Boolean, action: Int, onTapped: () -> Unit) {
+        setTile(view, tile, action, onTapped)
+    }
+
+    private fun setTile(view: TextView, tile: Boolean, action: Int, onTapped: () -> Unit) {
         val dp = context.resources.displayMetrics.density
-        val padH = (12 * dp).toInt()
-        val padV = (2 * dp).toInt()
-        val endMargin = (endMarginDp * dp).toInt()
         if (tile) {
             view.setBackgroundResource(R.drawable.scores_chip_background)
-            view.setPadding(padH, padV, padH, padV)
-            params.topMargin = -padV
-            params.bottomMargin = -padV
-            params.marginEnd = if (endMargin > 0) endMargin - padH else 0
+            view.setPadding((12 * dp).toInt(), (2 * dp).toInt(), (12 * dp).toInt(), (2 * dp).toInt())
             view.setOnClickListener { onTapped() }
             ViewCompat.replaceAccessibilityAction(view, AccessibilityActionCompat.ACTION_CLICK, context.getString(action), null)
         } else {
             view.background = null
             view.setPadding(0, 0, 0, 0)
-            params.topMargin = 0
-            params.bottomMargin = 0
-            params.marginEnd = endMargin
             view.setOnClickListener(null)
             view.isClickable = false
         }
         view.isFocusable = tile
-        view.layoutParams = params
     }
 
     private fun clearTeamLabelStyle() {
         b.teamLabelTv.background = null
         b.teamLabelTv.setPadding(0, 0, 0, 0)
-        b.teamLabelTv.setTextColor(Color.WHITE)
+        b.teamLabelTv.setTextColor(ContextCompat.getColor(context, R.color.sc_text_secondary))
     }
 
     override fun showPreGameButtons(buttons: PreGameButtons) {
@@ -433,7 +408,7 @@ class GameScreenRenderer(
             ViewCompat.replaceAccessibilityAction(chip, AccessibilityActionCompat.ACTION_CLICK,
                 context.getString(R.string.scores_chip_action), null)
         } else {
-            chip.background = null
+            chip.setBackgroundResource(R.drawable.bg_server_card)
             chip.setOnClickListener(null)
             chip.isClickable = false
         }
@@ -587,7 +562,7 @@ class GameScreenRenderer(
             b.recoilTv.setText(if (s.recoilEnabled) R.string.recoil_enabled else R.string.recoil_disabled)
         }
         if (p == null || p.shotModeChangeable != s.shotModeChangeable) {
-            setSettingTile(b.shotModeTv, s.shotModeChangeable, R.string.shot_mode_action, onShotModeTapped, endMarginDp = 15)
+            setSettingTile(b.shotModeTv, s.shotModeChangeable, R.string.shot_mode_action, onShotModeTapped)
         }
         if (p == null || p.recoilChangeable != s.recoilChangeable) {
             setSettingTile(b.recoilTv, s.recoilChangeable, R.string.recoil_action, onRecoilTapped)

@@ -24,17 +24,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:background="#99000000"
+        android:background="#B30E1116"
         android:padding="8dp"
         android:text="@string/field_map_hint"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/sc_text"
         android:textSize="14sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#CC000000"
+        android:background="#D90E1116"
         android:orientation="vertical"
         android:padding="8dp">
 
@@ -42,7 +42,7 @@
             android:id="@+id/field_status_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:textSize="14sp" />
 
         <ProgressBar
@@ -58,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="@string/field_border_label"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:textSize="12sp" />
 
         <com.google.android.material.button.MaterialButtonToggleGroup
@@ -113,20 +113,21 @@
             android:id="@+id/field_spawn_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal"
             android:visibility="gone">
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_spawn_team_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="2dp" />
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_auto_place_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -137,11 +138,12 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal">
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_undo_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -149,8 +151,8 @@
                 android:text="@string/field_undo" />
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_clear_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -159,8 +161,8 @@
                 android:text="@string/field_clear" />
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_presets_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -171,11 +173,12 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal">
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_my_location_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -183,8 +186,8 @@
                 android:text="@string/field_map_my_location" />
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_download_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -193,8 +196,8 @@
                 android:text="@string/field_map_download" />
 
             <Button
+                style="@style/Widget.SimpleCoil.Button.Compact"
                 android:id="@+id/field_delete_button"
-                style="@style/Widget.AppCompat.Button.Colored"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

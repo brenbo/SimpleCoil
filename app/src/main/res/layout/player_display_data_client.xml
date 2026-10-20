@@ -5,19 +5,19 @@
     android:id="@+id/main_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#080808"
+    android:background="@android:color/transparent"
     tools:context="com.simplecoil.simplecoil.FullscreenActivity">
 
     <LinearLayout
         android:id="@+id/connect_layout"
         android:layout_width="match_parent"
         android:layout_height="44dp"
-        android:background="#080808"
+        android:background="@android:color/transparent"
         android:fitsSystemWindows="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
         android:visibility="visible">
 
         <ImageView
@@ -47,7 +47,7 @@
             android:maxLines="1"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
+            android:textAppearance="@style/TextAppearance.SimpleCoil.Body" />
 
         <TextView
             android:id="@+id/player_points_tv"
@@ -57,7 +57,7 @@
             android:gravity="center"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
+            android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
 
         <TextView
             android:id="@+id/player_eliminated_tv"
@@ -67,7 +67,7 @@
             android:gravity="center"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
+            android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
 
         <ImageView
             android:id="@+id/kick_player_iv"

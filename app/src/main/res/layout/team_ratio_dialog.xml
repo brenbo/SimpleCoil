@@ -25,7 +25,7 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:text="@string/team_ratio_team1"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:textSize="16sp" />
 
         <EditText
@@ -48,7 +48,7 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:text="@string/team_ratio_team2"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:textSize="16sp" />
 
         <EditText
@@ -72,7 +72,7 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:text="@string/team_ratio_team3"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:textSize="16sp" />
 
         <EditText
@@ -96,7 +96,7 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:text="@string/team_ratio_team4"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:textSize="16sp" />
 
         <EditText

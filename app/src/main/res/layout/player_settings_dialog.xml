@@ -2,7 +2,7 @@
 <ScrollView
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#080808"
+    android:background="@color/sc_surface"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <LinearLayout
@@ -10,7 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#080808"
+        android:background="@color/sc_surface"
         android:padding="10dp" >
 
         <TextView
@@ -55,7 +55,7 @@
             android:inputType="number" >
         </EditText>
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/override_lives_limit_switch"
             android:text="@string/player_settings_override_lives" />
@@ -111,7 +111,7 @@
             android:inputType="number" >
         </EditText>
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/reload_on_empty_switch"
             android:text="@string/player_settings_reload_on_empty" />
@@ -121,25 +121,24 @@
             android:id="@+id/shot_mode_title"
             android:text="@string/player_settings_shot_modes_allowed" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/shot_mode_single"
             android:text="@string/shot_mode_single" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/shot_mode_burst3"
             android:text="@string/shot_mode_burst3" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/shot_mode_auto"
             android:text="@string/shot_mode_auto" />
 
         <Button
             android:id="@+id/firing_mode_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
@@ -147,8 +146,7 @@
 
         <Button
             android:id="@+id/recoil_setting_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
@@ -161,7 +159,7 @@
 
         <View style="@style/DialogDivider" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/manual_respawn_switch"
             android:text="@string/player_settings_manual_respawn" />
@@ -217,29 +215,27 @@
 
             <Button
                 android:id="@+id/switch_team_button"
-                style="@style/Widget.AppCompat.Button.Colored"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/sc_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
                 android:visibility="gone"
                 android:text="@string/switch_team_button" />
 
-            <androidx.appcompat.widget.SwitchCompat
+            <com.google.android.material.materialswitch.MaterialSwitch
                 style="@style/DialogSwitch"
                 android:id="@+id/admin_switch"
                 android:text="@string/player_settings_admin" />
 
             <!-- Voice chat for this player, when the server has it on -->
-            <androidx.appcompat.widget.SwitchCompat
+            <com.google.android.material.materialswitch.MaterialSwitch
                 style="@style/DialogSwitch"
                 android:id="@+id/voice_switch"
                 android:text="@string/player_settings_voice" />
 
             <Button
                 android:id="@+id/kick_player_button"
-                style="@style/Widget.AppCompat.Button.Colored"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/sc_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="5dp"
@@ -255,20 +251,19 @@
 
         <View style="@style/DialogDivider" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/apply_to_all_switch"
             android:text="@string/player_settings_apply_to_all" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"
             android:id="@+id/apply_to_team_switch"
             android:text="@string/player_settings_apply_to_team" />
 
         <Button
             android:id="@+id/reset_defaults_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/sc_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"

@@ -41,22 +41,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
-        android:background="#99000000"
+        android:background="#B30E1116"
         android:padding="8dp"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/sc_text"
         android:textSize="14sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#CC000000"
+        android:background="#D90E1116"
         android:orientation="horizontal"
         android:padding="8dp">
 
         <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
             android:id="@+id/ref_drop_button"
-            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -64,8 +64,8 @@
             android:text="@string/ref_drop_now" />
 
         <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
             android:id="@+id/ref_zone_button"
-            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -75,8 +75,8 @@
             android:visibility="gone" />
 
         <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
             android:id="@+id/ref_end_button"
-            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"

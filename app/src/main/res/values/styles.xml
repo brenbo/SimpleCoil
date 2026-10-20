@@ -1,23 +1,62 @@
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar.Bridge">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <!-- The SimpleCoil theme (colors in colors.xml): Material 3, dark slate with the blasters'
+         orange. Every screen and dialog takes its look from here, so they all match. -->
+    <style name="AppTheme" parent="Theme.Material3.Dark">
+        <item name="colorPrimary">@color/sc_orange</item>
+        <item name="colorOnPrimary">@color/sc_on_orange</item>
+        <item name="colorPrimaryContainer">@color/sc_orange_container</item>
+        <item name="colorOnPrimaryContainer">@color/sc_on_orange_container</item>
+        <item name="colorPrimaryDark">@color/sc_background</item>
+        <item name="colorAccent">@color/sc_orange</item>
+        <item name="colorSecondary">@color/sc_orange</item>
+        <item name="colorOnSecondary">@color/sc_on_orange</item>
+        <item name="colorSecondaryContainer">@color/sc_orange_container</item>
+        <item name="colorOnSecondaryContainer">@color/sc_on_orange_container</item>
+        <item name="colorTertiary">@color/sc_info</item>
+        <item name="colorError">@color/sc_danger</item>
+        <item name="android:colorBackground">@color/sc_background</item>
+        <item name="colorOnBackground">@color/sc_text</item>
+        <item name="colorSurface">@color/sc_background</item>
+        <item name="colorOnSurface">@color/sc_text</item>
+        <item name="colorSurfaceVariant">@color/sc_surface_high</item>
+        <item name="colorOnSurfaceVariant">@color/sc_text_secondary</item>
+        <item name="colorSurfaceContainerLowest">@color/sc_background</item>
+        <item name="colorSurfaceContainerLow">@color/sc_surface</item>
+        <item name="colorSurfaceContainer">@color/sc_surface</item>
+        <item name="colorSurfaceContainerHigh">@color/sc_surface_high</item>
+        <item name="colorSurfaceContainerHighest">@color/sc_surface_highest</item>
+        <item name="colorOutline">@color/sc_outline_strong</item>
+        <item name="colorOutlineVariant">@color/sc_outline</item>
+        <item name="colorControlActivated">@color/sc_orange</item>
+        <item name="android:textColorPrimary">@color/sc_text</item>
+        <item name="android:textColorSecondary">@color/sc_text_secondary</item>
+        <item name="android:textColorHint">@color/sc_text_muted</item>
+        <item name="android:windowBackground">@color/sc_background</item>
+        <item name="android:statusBarColor">@color/sc_background</item>
+        <item name="android:navigationBarColor">@color/sc_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="materialButtonStyle">@style/Widget.SimpleCoil.Button</item>
+        <item name="materialSwitchStyle">@style/Widget.Material3.CompoundButton.MaterialSwitch</item>
+        <item name="actionBarStyle">@style/Widget.SimpleCoil.ActionBar</item>
+        <item name="alertDialogTheme">@style/AppDialogTheme</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Material3.BottomSheetDialog</item>
+    </style>
+
+    <!-- The bar along the top: the background's own color, a plain title, no shadow line. -->
+    <style name="Widget.SimpleCoil.ActionBar" parent="Widget.Material3.ActionBar.Solid">
+        <item name="background">@color/sc_background</item>
+        <item name="elevation">0dp</item>
+        <item name="titleTextStyle">@style/TextAppearance.SimpleCoil.BarTitle</item>
+    </style>
+
+    <style name="TextAppearance.SimpleCoil.BarTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="FullscreenTheme" parent="AppTheme">
-        <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
-        <item name="android:windowActionBarOverlay">true</item>
-        <item name="android:windowBackground">@null</item>
-        <item name="metaButtonBarStyle">?android:attr/buttonBarStyle</item>
-        <item name="metaButtonBarButtonStyle">?android:attr/buttonBarButtonStyle</item>
-    </style>
-
-    <style name="FullscreenActionBarStyle" parent="Widget.AppCompat.ActionBar">
-        <item name="android:background">@color/black_overlay</item>
+        <item name="android:windowActionBarOverlay">false</item>
     </style>
 
     <style name="AppTheme.NoActionBar">
@@ -25,40 +64,148 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <!-- One choice in a segmented control on the server screen: filled orange when chosen, outlined when not. -->
-    <style name="ServerSegment" parent="Widget.MaterialComponents.Button.OutlinedButton">
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.Material3.Dark">
+        <item name="colorSurface">@color/sc_surface_high</item>
+        <item name="colorSurfaceContainer">@color/sc_surface_high</item>
+    </style>
+
+    <!-- ===== Buttons ============================================================================
+         Filled orange for the one main action on a screen, tonal (dark orange) for the others,
+         outlined for quieter choices, text for links. Sentence case, rounded. -->
+    <style name="Widget.SimpleCoil.Button" parent="Widget.Material3.Button">
+        <item name="android:minHeight">52dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="cornerRadius">14dp</item>
+        <item name="android:insetTop">2dp</item>
+        <item name="android:insetBottom">2dp</item>
+    </style>
+
+    <style name="Widget.SimpleCoil.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="cornerRadius">14dp</item>
+        <item name="android:insetTop">2dp</item>
+        <item name="android:insetBottom">2dp</item>
+    </style>
+
+    <style name="Widget.SimpleCoil.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="strokeColor">@color/sc_outline_strong</item>
+        <item name="cornerRadius">14dp</item>
+    </style>
+
+    <style name="Widget.SimpleCoil.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- A danger action (end the game, kick): filled red. -->
+    <style name="Widget.SimpleCoil.Button.Danger" parent="Widget.SimpleCoil.Button">
+        <item name="backgroundTint">@color/sc_danger</item>
+        <item name="android:textColor">@color/sc_on_orange</item>
+    </style>
+
+    <!-- ===== Text ================================================================================ -->
+    <!-- A small label over a value ("Health", "Score") -->
+    <style name="TextAppearance.SimpleCoil.Label" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/sc_text_secondary</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <!-- A big readout (score, ammo, timers): condensed and bold, like a scoreboard -->
+    <style name="TextAppearance.SimpleCoil.Value" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.SimpleCoil.Body" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/sc_text</item>
+    </style>
+
+    <style name="TextAppearance.SimpleCoil.Secondary" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/sc_text_secondary</item>
+    </style>
+
+    <style name="TextAppearance.SimpleCoil.Title" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.SimpleCoil.Headline" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- A section's heading above a group of cards ("Game settings") -->
+    <style name="SectionHeading">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">20dp</item>
+        <item name="android:layout_marginBottom">2dp</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/sc_text_secondary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <!-- ===== Cards and rows ====================================================================== -->
+    <!-- One choice in a segmented control: filled orange when chosen, a raised chip when not. -->
+    <style name="ServerSegment" parent="Widget.Material3.Button.OutlinedButton">
         <item name="backgroundTint">@color/server_segment_background</item>
         <item name="strokeColor">@color/server_segment_stroke</item>
         <item name="android:textColor">@color/server_segment_text</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:maxLines">1</item>
         <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">44dp</item>
         <item name="android:paddingStart">4dp</item>
         <item name="android:paddingEnd">4dp</item>
+        <item name="cornerRadius">12dp</item>
     </style>
 
     <!-- The field map's five tools in a row: the text shrinks to fit a narrow phone instead of cutting off -->
     <style name="FieldToolSegment" parent="ServerSegment">
-        <item name="android:letterSpacing">0</item>
         <item name="android:paddingStart">2dp</item>
         <item name="android:paddingEnd">2dp</item>
         <item name="autoSizeTextType">uniform</item>
         <item name="autoSizeMinTextSize">8sp</item>
-        <item name="autoSizeMaxTextSize">12sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
         <item name="autoSizeStepGranularity">1sp</item>
     </style>
 
-    <!-- The dedicated server's home screen cards (map design: Dedicated server settings) -->
+    <!-- A card on a settings screen (map design: Dedicated server settings) -->
     <style name="ServerCard">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:layout_marginTop">10dp</item>
         <item name="android:background">@drawable/bg_server_card</item>
         <item name="android:orientation">vertical</item>
-        <item name="android:paddingStart">10dp</item>
-        <item name="android:paddingTop">6dp</item>
-        <item name="android:paddingEnd">10dp</item>
-        <item name="android:paddingBottom">4dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingBottom">10dp</item>
     </style>
 
     <style name="ServerCardHeader">
@@ -68,23 +215,34 @@
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
         <item name="android:gravity">center_vertical</item>
-        <item name="android:minHeight">40dp</item>
+        <item name="android:minHeight">48dp</item>
         <item name="android:orientation">horizontal</item>
+    </style>
+
+    <!-- The rounded icon at the start of a card's header -->
+    <style name="ServerCardIcon">
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_marginEnd">12dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:background">@drawable/bg_icon_tile</item>
+        <item name="tint">@color/sc_orange</item>
+        <item name="android:importantForAccessibility">no</item>
     </style>
 
     <style name="ServerCardTitle">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="ServerCardSummary">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">#B0BEC5</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/sc_text_secondary</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <style name="ServerCardChevron">
@@ -92,20 +250,79 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:paddingStart">8dp</item>
         <item name="android:text">@string/server_card_open</item>
-        <item name="android:textColor">#90A4AE</item>
+        <item name="android:textColor">@color/sc_text_muted</item>
         <item name="android:textSize">22sp</item>
         <item name="android:importantForAccessibility">no</item>
     </style>
 
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
+    <!-- ===== The game screen ===================================================================== -->
+    <!-- A readout tile (ammo, recoil, fire mode, eliminations): a small card, label over value -->
+    <style name="HudTile">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_server_card</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:minHeight">68dp</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:paddingEnd">4dp</item>
+    </style>
 
-    <!-- The dialogs' text. Every label, toggle and field shares one text size and color, and
-         sections open with an orange heading over an orange rule. -->
+    <!-- A small action on the game screen (Network, Player settings, Start game...) -->
+    <style name="Widget.SimpleCoil.Button.Hud" parent="Widget.SimpleCoil.Button.Tonal">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <!-- A tool button in a row of them (the field map, the live map): shrinks its text to fit one line -->
+    <style name="Widget.SimpleCoil.Button.Compact" parent="Widget.SimpleCoil.Button.Tonal">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:paddingStart">6dp</item>
+        <item name="android:paddingEnd">6dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">12dp</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">9sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- Big text over the map (eliminated, respawning): a shadow keeps it readable on a photo -->
+    <style name="HudOverlayText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:textSize">26sp</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:shadowColor">#E6000000</item>
+        <item name="android:shadowRadius">10</item>
+    </style>
+
+    <!-- ===== Dialogs ============================================================================
+         Every label, toggle and field shares one text size and color, and sections open with an
+         orange heading. -->
     <style name="DialogTitle">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textSize">22sp</item>
-        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/sc_text</item>
     </style>
 
     <style name="DialogBody">
@@ -113,32 +330,31 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">10dp</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textColor">@color/sc_text</item>
     </style>
 
     <!-- Secondary text, such as a tip under the dialog's content. -->
     <style name="DialogHint" parent="DialogBody">
         <item name="android:textSize">14sp</item>
-        <item name="android:textColor">#AAAAAA</item>
+        <item name="android:textColor">@color/sc_text_secondary</item>
     </style>
 
     <style name="DialogSection">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">20dp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:layout_marginTop">22dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.04</item>
         <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textColor">@color/sc_orange</item>
     </style>
 
     <style name="DialogDivider">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">2dp</item>
-        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginTop">6dp</item>
         <item name="android:layout_marginBottom">4dp</item>
-        <item name="android:background">@color/colorPrimary</item>
+        <item name="android:background">@color/sc_outline</item>
     </style>
 
     <style name="DialogLabel">
@@ -146,46 +362,54 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">8dp</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textColor">@color/sc_text</item>
     </style>
 
     <style name="DialogSwitch">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="android:minHeight">52dp</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textColor">@color/sc_text</item>
     </style>
 
     <style name="DialogRadio">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:minHeight">40dp</item>
+        <item name="android:minHeight">44dp</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="buttonTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="buttonTint">@color/sc_orange</item>
     </style>
 
     <style name="DialogField">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:textColor">#FFFFFF</item>
-        <item name="android:textColorHint">#AAAAAA</item>
-        <item name="android:backgroundTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/sc_text</item>
+        <item name="android:textColorHint">@color/sc_text_muted</item>
+        <item name="android:backgroundTint">@color/sc_orange</item>
     </style>
 
-    <style name="AppDialogTheme" parent="Theme.AppCompat.Dialog.Alert">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <style name="AppDialogTheme" parent="ThemeOverlay.Material3.Dialog.Alert">
+        <item name="colorPrimary">@color/sc_orange</item>
+        <item name="colorOnPrimary">@color/sc_on_orange</item>
+        <item name="colorAccent">@color/sc_orange</item>
+        <item name="colorSecondaryContainer">@color/sc_orange_container</item>
+        <item name="colorOnSecondaryContainer">@color/sc_on_orange_container</item>
         <item name="android:windowBackground">@drawable/dialog_background</item>
-        <item name="android:colorBackground">#080808</item>
-        <item name="colorButtonNormal">@color/colorPrimary</item>
-        <item name="colorControlActivated">@color/colorPrimary</item>
-        <item name="android:textColorPrimary">#FFFFFF</item>
-        <item name="android:textColorSecondary">#AAAAAA</item>
+        <item name="android:colorBackground">@color/sc_surface</item>
+        <item name="colorSurface">@color/sc_surface</item>
+        <item name="colorOnSurface">@color/sc_text</item>
+        <item name="colorButtonNormal">@color/sc_orange</item>
+        <item name="colorControlActivated">@color/sc_orange</item>
+        <item name="android:textColorPrimary">@color/sc_text</item>
+        <item name="android:textColorSecondary">@color/sc_text_secondary</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="materialButtonStyle">@style/Widget.SimpleCoil.Button</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.SimpleCoil.Button.Text</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.SimpleCoil.Button.Text</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.SimpleCoil.Button.Text</item>
     </style>
 
 </resources>

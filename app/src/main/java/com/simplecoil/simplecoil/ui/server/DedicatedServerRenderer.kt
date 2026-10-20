@@ -18,7 +18,9 @@ package com.simplecoil.simplecoil.ui.server
 
 import android.os.SystemClock
 import android.view.View
+import androidx.core.content.ContextCompat
 import androidx.core.view.children
+import androidx.core.view.isVisible
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
@@ -116,10 +118,18 @@ class DedicatedServerRenderer(
     private fun renderPhase(phase: SessionPhase, teamMode: TeamMode) = with(binding) {
         val running = phase == SessionPhase.RUNNING
         val postGame = phase == SessionPhase.POST_GAME
-        // All three steps stay in view; only the one to the next phase is enabled
+        // One big button: the step to the next phase (Start, then End, then Reset)
         startGameButton.isEnabled = phase == SessionPhase.LOBBY
         endGameButton.isEnabled = running
         resetGameButton.isEnabled = postGame
+        startGameButton.isVisible = !running && !postGame
+        endGameButton.isVisible = running
+        resetGameButton.isVisible = postGame
+        gameStatusTv.setTextColor(ContextCompat.getColor(root.context, when {
+            running -> R.color.sc_orange
+            postGame -> R.color.sc_text_secondary
+            else -> R.color.sc_success
+        }))
         // Only the team modes the game mode can be played in
         teamMode2teamsButton.isEnabled = !running && TeamMode.TWO_TEAMS in gameMode.teamModes
         teamMode4teamsButton.isEnabled = !running && TeamMode.FOUR_TEAMS in gameMode.teamModes

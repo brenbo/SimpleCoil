@@ -1186,7 +1186,7 @@ class MapFragment : Fragment() {
         const val MIN_ZOOM = 13.0
         const val MAX_ZOOM = 20.0
         const val BORDER_COLOR = "#FF5252"
-        const val ACTIVE_COLOR = "#FF9800"
+        const val ACTIVE_COLOR = "#FF6A1A"
 
         const val TICK_MILLIS = 1_000L
 

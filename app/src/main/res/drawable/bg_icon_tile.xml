@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The rounded square behind a row's icon (the home screen's cards, the server's settings). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/sc_surface_highest" />
+    <corners android:radius="10dp" />
+</shape>

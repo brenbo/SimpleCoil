@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:background="#080808"
+    android:background="@color/sc_surface"
     android:padding="20dp" >
 
     <ProgressBar

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The tappable score readout on the game screen: a lighter, outlined chip that ripples on press. -->
+<!-- A tappable tile on the game screen (score, name, fire mode, recoil): a raised chip that ripples on press. -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="#33FFFFFF">
+    android:color="#33FF6A1A">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#1C1C1C" />
+            <solid android:color="@color/sc_surface_highest" />
             <stroke
-                android:width="2dp"
-                android:color="#555555" />
+                android:width="1dp"
+                android:color="@color/sc_outline_strong" />
             <corners android:radius="12dp" />
         </shape>
     </item>

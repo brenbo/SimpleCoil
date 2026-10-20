@@ -4,11 +4,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:background="#222222"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:background="@color/sc_surface_high"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <View
         android:id="@+id/team_header_color_sq"
@@ -24,16 +24,16 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         tools:text="TEAM 1"
-        android:textColor="#FF8C00"
+        android:textColor="@color/sc_on_orange_container"
         android:textSize="14sp"
-        android:textStyle="bold" />
+        android:fontFamily="sans-serif-medium" />
 
     <TextView
         android:id="@+id/team_header_action_tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/scoreboard_edit_ratio"
-        android:textColor="#AAAAAA"
+        android:textColor="@color/sc_text_secondary"
         android:textSize="12sp"
         android:textStyle="italic" />
 

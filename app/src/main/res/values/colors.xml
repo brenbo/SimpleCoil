@@ -1,13 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FF9800</color>
-    <color name="colorPrimaryDark">#F57C00</color>
-    <color name="colorAccent">#E65100</color>
+    <!-- The SimpleCoil theme: deep slate surfaces with the blasters' orange as the one accent.
+         Every screen takes its colors from here (through the theme in styles.xml). -->
+
+    <!-- Surfaces, darkest to lightest -->
+    <color name="sc_background">#0E1116</color>
+    <color name="sc_surface">#181C23</color>
+    <color name="sc_surface_high">#1F242D</color>
+    <color name="sc_surface_highest">#272C36</color>
+    <color name="sc_outline">#2E3440</color>
+    <color name="sc_outline_strong">#465061</color>
+
+    <!-- Text -->
+    <color name="sc_text">#E8EAED</color>
+    <color name="sc_text_secondary">#9AA3B2</color>
+    <color name="sc_text_muted">#6B7485</color>
+
+    <!-- The accent: the orange of the Recoil blasters -->
+    <color name="sc_orange">#FF6A1A</color>
+    <color name="sc_orange_pressed">#E85A0C</color>
+    <color name="sc_on_orange">#1A0A00</color>
+    <color name="sc_orange_container">#3A2214</color>
+    <color name="sc_on_orange_container">#FFB48A</color>
+
+    <!-- Status -->
+    <color name="sc_success">#6FD08C</color>
+    <color name="sc_success_container">#16301F</color>
+    <color name="sc_danger">#FF5A5A</color>
+    <color name="sc_danger_container">#3A1717</color>
+    <color name="sc_warning">#FFC24D</color>
+    <color name="sc_warning_container">#3A2D12</color>
+    <color name="sc_info">#5AA9FF</color>
+
+    <!-- The names the app has always used, now in the theme's colors -->
+    <color name="colorPrimary">@color/sc_orange</color>
+    <color name="colorPrimaryDark">@color/sc_background</color>
+    <color name="colorAccent">@color/sc_orange</color>
 
     <color name="black_overlay">#66000000</color>
     <!-- The score matrix: header bands, the own-elimination diagonal (over any team tint), grid lines. -->
-    <color name="score_matrix_header_background">#141414</color>
+    <color name="score_matrix_header_background">@color/sc_surface_high</color>
     <color name="score_matrix_diagonal">#26FFFFFF</color>
-    <color name="score_matrix_grid">#262626</color>
-    <color name="score_matrix_separator">#5A5A5A</color>
+    <color name="score_matrix_grid">@color/sc_outline</color>
+    <color name="score_matrix_separator">@color/sc_outline_strong</color>
 </resources>

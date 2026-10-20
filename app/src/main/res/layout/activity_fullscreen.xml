@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#080808"
+    android:background="@color/sc_background"
     android:id="@+id/main_view"
     tools:context="com.simplecoil.simplecoil.FullscreenActivity">
 
@@ -28,89 +28,169 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false">
 
+                <!-- The home screen: play (connect your blaster), or host a game on this phone. -->
                 <LinearLayout
                     android:id="@+id/connect_content"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:gravity="center_horizontal"
-                    android:paddingBottom="16dp">
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="20dp">
+
+                    <TextView
+                        android:id="@+id/connect_heading_tv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/home_heading"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Headline" />
 
                     <TextView
                         android:id="@+id/connect_intro_tv"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="24dp"
-                        android:paddingStart="24dp"
-                        android:paddingEnd="24dp"
-                        android:gravity="center_horizontal"
-                        android:text="@string/connect_intro"
-                        android:textAppearance="@android:style/TextAppearance.Material.Medium.Inverse" />
-
-                    <Button
-                        android:id="@+id/reconnect_weapon_button"
-                        style="@style/Widget.AppCompat.Button.Colored"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:visibility="gone"
-                        android:text="@string/reconnect_weapon_button" />
-
-                    <Button
-                        android:id="@+id/connect_weapon_button"
-                        style="@style/Widget.AppCompat.Button.Colored"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:text="@string/connect_weapon_button" />
-
-                    <Button
-                        android:id="@+id/connect_qr_weapon_button"
-                        style="@style/Widget.AppCompat.Button.Colored"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:text="@string/connect_qr_weapon_button" />
-
-                    <TextView
-                        android:id="@+id/qr_learn_more_tv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:padding="6dp"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:text="@string/qr_learn_more_link"
-                        android:textColor="@color/colorPrimary"
-                        android:textAppearance="@android:style/TextAppearance.Material.Small" />
+                        android:text="@string/connect_intro"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
 
+                    <!-- Play: connect your blaster -->
+                    <LinearLayout
+                        android:id="@+id/home_play_card"
+                        style="@style/ServerCard"
+                        android:layout_marginTop="18dp"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                style="@style/ServerCardIcon"
+                                android:src="@drawable/ic_sc_bluetooth" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    style="@style/ServerCardTitle"
+                                    android:text="@string/home_play_title" />
+
+                                <TextView
+                                    style="@style/ServerCardSummary"
+                                    android:text="@string/home_play_summary" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/connect_weapon_button"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/connect_weapon_button"
+                            app:icon="@drawable/ic_sc_bluetooth"
+                            app:iconGravity="textStart" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:orientation="horizontal">
+
+                            <Button
+                                android:id="@+id/connect_qr_weapon_button"
+                                style="@style/Widget.SimpleCoil.Button.Tonal"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/connect_qr_weapon_button"
+                                app:icon="@drawable/ic_sc_qr"
+                                app:iconGravity="textStart" />
+
+                            <Button
+                                android:id="@+id/reconnect_weapon_button"
+                                style="@style/Widget.SimpleCoil.Button.Tonal"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="8dp"
+                                android:visibility="gone"
+                                android:text="@string/reconnect_weapon_button"
+                                app:icon="@drawable/ic_sc_replay"
+                                app:iconGravity="textStart" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/qr_learn_more_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_marginTop="4dp"
+                            android:minHeight="40dp"
+                            android:gravity="center"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
+                            android:background="?attr/selectableItemBackground"
+                            android:text="@string/qr_learn_more_link"
+                            android:textColor="@color/sc_on_orange_container"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <!-- Hidden with the play card on a server-only phone -->
                     <View
                         android:id="@+id/dedicated_server_top_divider"
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginStart="24dp"
-                        android:layout_marginEnd="24dp"
-                        android:background="#444444" />
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:visibility="gone" />
 
-                    <TextView
-                        android:id="@+id/dedicated_server_intro_tv"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:paddingStart="24dp"
-                        android:paddingEnd="24dp"
-                        android:gravity="center_horizontal"
-                        android:text="@string/dedicated_server_intro"
-                        android:textColor="#CCCCCC"
-                        android:textAppearance="@android:style/TextAppearance.Material.Small" />
+                    <!-- Host: this phone runs the game -->
+                    <LinearLayout
+                        style="@style/ServerCard"
+                        android:layout_marginTop="12dp"
+                        android:padding="16dp">
 
-                    <Button
-                        android:id="@+id/dedicated_server_button"
-                        style="@style/Widget.AppCompat.Button.Colored"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="@string/dedicated_server_button" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                style="@style/ServerCardIcon"
+                                android:src="@drawable/ic_sc_server" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    style="@style/ServerCardTitle"
+                                    android:text="@string/home_host_title" />
+
+                                <TextView
+                                    android:id="@+id/dedicated_server_intro_tv"
+                                    style="@style/ServerCardSummary"
+                                    android:text="@string/dedicated_server_intro" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/dedicated_server_button"
+                            style="@style/Widget.SimpleCoil.Button.Tonal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="@string/dedicated_server_button"
+                            app:icon="@drawable/ic_sc_server"
+                            app:iconGravity="textStart" />
+                    </LinearLayout>
                 </LinearLayout>
             </ScrollView>
 
@@ -145,8 +225,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:text="@string/info_sheet_title"
-                        android:textColor="#CCCCCC"
-                        android:textAppearance="@android:style/TextAppearance.Material.Small" />
+                        android:textColor="@color/sc_text_secondary"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
                 </LinearLayout>
 
                 <androidx.core.widget.NestedScrollView
@@ -165,613 +245,627 @@
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </FrameLayout>
 
-    <RelativeLayout
+    <!-- The game screen: a column of readouts over the map, with overlays for the moments that
+         take over the screen (hit, eliminated, respawning). -->
+    <FrameLayout
         android:id="@+id/play_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
         android:fitsSystemWindows="true">
 
-        <fragment
-            android:layout_width="fill_parent"
-            android:layout_height="400dp"
-            android:name="com.simplecoil.simplecoil.MapFragment"
-            android:id="@+id/map_fragment"
-            android:visibility="visible"
-            android:layout_below="@id/health_pb"
-            android:layout_centerHorizontal="true" />
-
-        <ImageView
-            android:id="@+id/battery_iv"
-            android:contentDescription="@string/cd_blaster_battery"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginStart="10dp"
-            app:srcCompat="@drawable/ic_battery_full_green_24dp" />
-
-        <ImageView
-            android:id="@+id/blaster_type_iv"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginStart="6dp"
-            android:layout_toEndOf="@id/battery_iv"
-            android:contentDescription="@null"
-            android:visibility="gone" />
-
-        <ImageView
-            android:id="@+id/grenade_iv"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginStart="6dp"
-            android:layout_toEndOf="@id/blaster_type_iv"
-            android:contentDescription="@null"
-            android:visibility="gone" />
-
-        <ImageView
-            android:id="@+id/network_status_iv"
-            android:contentDescription="@string/cd_network_status"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="5dp"
-            android:layout_toStartOf="@id/player_count_tv"
-            android:visibility="gone"
-            app:srcCompat="@drawable/ic_network_connected_24dp" />
-
-        <TextView
-            android:id="@+id/player_count_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="10dp"
-            android:layout_alignParentEnd="true"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <TextView
-            android:id="@+id/player_id_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/player_count_tv"
-            android:layout_marginEnd="10dp"
-            android:layout_alignParentEnd="true"
-            android:visibility="gone"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <TextView
-            android:id="@+id/eliminations_count_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="0dp"
-            android:layout_marginStart="15dp"
-            android:layout_above="@id/eliminations_count_tv"
-            android:text="@string/eliminations_count_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <TextView
-            android:id="@+id/eliminations_count_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_marginBottom="10dp"
-            android:layout_marginStart="30dp"
-            android:text="@string/count_zero"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/team_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_centerHorizontal="true"
-            android:text="@string/team_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <Button
-            android:id="@+id/team_minus_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="35dp"
-            android:layout_marginStart="15dp"
-            android:visibility="invisible"
-            android:text="@string/team_minus_button" />
-
-        <Button
-            android:id="@+id/team_plus_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="35dp"
-            android:layout_marginEnd="15dp"
-            android:layout_alignParentEnd="true"
-            android:visibility="invisible"
-            android:text="@string/team_plus_button" />
-
-        <TextView
-            android:id="@+id/team_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:layout_centerHorizontal="true"
-            android:text="@string/no_team"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/shots_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/team_tv"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="15dp"
-            android:text="@string/shots_remaining_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <TextView
-            android:id="@+id/shots_remaining_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/shots_label_tv"
-            android:layout_marginTop="0dp"
-            android:layout_marginStart="30dp"
-            android:text="@string/count_zero"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <!-- Magazines left with limited ammo, and power-ups (map design: Ammo, drops and power-ups):
-             on the health label's row, across from the game timer -->
-        <TextView
-            android:id="@+id/loadout_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignBaseline="@+id/health_label_tv"
-            android:layout_toEndOf="@+id/health_label_tv"
-            android:layout_alignParentEnd="true"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="15dp"
-            android:ellipsize="end"
-            android:gravity="end"
-            android:maxLines="1"
-            android:textColor="#FFB74D"
-            android:textSize="13sp"
-            android:visibility="gone" />
-
-        <ProgressBar
-            android:id="@+id/reload_pb"
-            android:visibility="gone"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginStart="25dp"
-            android:layout_below="@+id/shots_label_tv"
-            android:layout_marginTop="0dp"/>
-
-        <TextView
-            android:id="@+id/recoil_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/team_tv"
-            android:layout_marginTop="10dp"
-            android:layout_centerHorizontal="true"
-            android:text="@string/recoil_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <TextView
-            android:id="@+id/recoil_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
-            android:layout_below="@+id/recoil_label_tv"
-            android:layout_centerHorizontal="true"
-            android:text="@string/recoil_enabled"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/shot_mode_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/team_tv"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="15dp"
-            android:layout_alignParentEnd="true"
-            android:text="@string/shot_mode_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <TextView
-            android:id="@+id/shot_mode_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/shot_mode_label_tv"
-            android:layout_marginEnd="15dp"
-            android:layout_marginTop="0dp"
-            android:layout_alignParentEnd="true"
-            android:text="@string/shot_mode_single"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/hits_taken_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="30dp"
-            android:layout_alignParentEnd="true"
-            android:visibility="gone"
-            android:text="@string/count_zero"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/health_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/shot_mode_tv"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="5dp"
-            android:text="@string/health_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <ProgressBar
-            android:id="@+id/health_pb"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="30dp"
-            android:layout_marginEnd="30dp"
-            android:layout_below="@+id/health_label_tv"
-            android:layout_marginTop="5dp"
-            android:minHeight="20dip"
-            android:maxHeight="20dip"
-            style="@android:style/Widget.ProgressBar.Horizontal"
-            android:progress="100"/>
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="10dp">
 
+            <!-- Top bar: the blaster (battery, type, grenade) and the network (status, players) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/battery_iv"
+                    android:contentDescription="@string/cd_blaster_battery"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    app:srcCompat="@drawable/ic_battery_full_green_24dp" />
+
+                <ImageView
+                    android:id="@+id/blaster_type_iv"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@null"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/grenade_iv"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@null"
+                    android:visibility="gone" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <ImageView
+                    android:id="@+id/network_status_iv"
+                    android:contentDescription="@string/cd_network_status"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="6dp"
+                    android:visibility="gone"
+                    app:srcCompat="@drawable/ic_network_connected_24dp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/player_count_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <TextView
+                        android:id="@+id/player_id_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:textColor="@color/sc_text_muted"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Who you are: team (a colored tag, tappable to switch) and name -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/team_minus_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:minWidth="48dp"
+                    android:visibility="invisible"
+                    android:text="@string/team_minus_button" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/team_label_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/team_label"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <TextView
+                        android:id="@+id/team_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:text="@string/no_team"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Headline" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/team_plus_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:minWidth="48dp"
+                    android:visibility="invisible"
+                    android:text="@string/team_plus_button" />
+            </LinearLayout>
+
+            <!-- Health: the bar, the clock and what you're carrying -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/health_label_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/health_label"
+                    android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                <Chronometer
+                    android:id="@+id/game_timer_chronometer"
+                    style="@style/TextAppearance.SimpleCoil.Label"
+                    android:format="%s"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp" />
+
+                <TextView
+                    android:id="@+id/game_countdown_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text=""
+                    android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                <!-- Magazines left with limited ammo, and power-ups (map design: Ammo, drops and power-ups) -->
+                <TextView
+                    android:id="@+id/loadout_tv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:ellipsize="end"
+                    android:gravity="end"
+                    android:maxLines="1"
+                    android:textColor="@color/sc_warning"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/health_pb"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="12dp"
+                android:layout_marginTop="6dp"
+                android:progressDrawable="@drawable/health_bar"
+                android:progress="100" />
+
+            <!-- The blaster's readouts: ammo, recoil, fire mode -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <LinearLayout style="@style/HudTile">
+
+                    <TextView
+                        android:id="@+id/shots_label_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/shots_remaining_label"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <FrameLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/shots_remaining_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="@string/count_zero"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Value" />
+
+                        <ProgressBar
+                            android:id="@+id/reload_pb"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/sc_orange"
+                            android:visibility="gone" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/HudTile"
+                    android:layout_marginStart="8dp">
+
+                    <TextView
+                        android:id="@+id/recoil_label_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/recoil_label"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <TextView
+                        android:id="@+id/recoil_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:text="@string/recoil_enabled"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/HudTile"
+                    android:layout_marginStart="8dp">
+
+                    <TextView
+                        android:id="@+id/shot_mode_label_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/shot_mode_label"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <TextView
+                        android:id="@+id/shot_mode_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:text="@string/shot_mode_single"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
+                        android:textSize="20sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- What you can do now: networking, settings and game controls (each shown only when it
+                 applies); they wrap onto a second line when there are many -->
+            <com.google.android.material.chip.ChipGroup
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:chipSpacingHorizontal="6dp"
+                app:chipSpacingVertical="6dp">
+
+                <Button
+                    android:id="@+id/use_network_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:text="@string/use_network_button"
+                    app:icon="@drawable/ic_sc_wifi"
+                    app:iconSize="18dp" />
+
+                <Button
+                    android:id="@+id/player_settings_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:text="@string/player_settings_button"
+                    app:icon="@drawable/ic_sc_person"
+                    app:iconSize="18dp" />
+
+                <Button
+                    android:id="@+id/start_game_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:text="@string/start_game_button"
+                    app:icon="@drawable/ic_sc_play"
+                    app:iconSize="18dp" />
+
+                <!-- Start Game's spot on a server, where Start Game is hidden -->
+                <Button
+                    android:id="@+id/admin_controls_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:visibility="gone"
+                    android:text="@string/admin_controls_button"
+                    app:icon="@drawable/ic_sc_admin"
+                    app:iconSize="18dp" />
+
+                <Button
+                    android:id="@+id/game_limit_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:text="@string/game_limit_button"
+                    app:icon="@drawable/ic_sc_limits"
+                    app:iconSize="18dp" />
+
+                <Button
+                    android:id="@+id/shuffle_teams_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:visibility="gone"
+                    android:text="@string/shuffle_teams_button"
+                    app:icon="@drawable/ic_sc_shuffle"
+                    app:iconSize="18dp" />
+
+                <!-- Offline, or for a network admin -->
+                <Button
+                    android:id="@+id/end_game_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:visibility="gone"
+                    android:text="@string/end_game_button"
+                    app:icon="@drawable/ic_sc_admin"
+                    app:iconSize="18dp" />
+
+                <!-- Between games only -->
+                <Button
+                    android:id="@+id/generate_qr_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:text="@string/generate_qr_button"
+                    app:icon="@drawable/ic_sc_qr"
+                    app:iconSize="18dp" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <TextView
+                android:id="@+id/server_ip_tv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:text=""
+                android:textColor="@color/sc_text_muted"
+                android:textSize="12sp" />
+
+            <!-- The map fills the rest -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_server_card"
+                android:clipToOutline="true">
+
+                <fragment
+                    android:id="@+id/map_fragment"
+                    android:name="com.simplecoil.simplecoil.MapFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- Players our shots hit, oldest on top: one hit_player_row each -->
+                <LinearLayout
+                    android:id="@+id/hit_players_ll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="8dp"
+                    android:orientation="vertical" />
+
+                <ImageView
+                    android:id="@+id/shots_fired_iv"
+                    android:contentDescription="@null"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="64dp"
+                    android:layout_marginEnd="8dp"
+                    android:visibility="gone"
+                    app:srcCompat="@drawable/ic_flare_red_50dp" />
+            </FrameLayout>
+
+            <!-- Manual respawn: the big button when it's needed -->
+            <Button
+                android:id="@+id/start_respawn_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                android:text="@string/start_respawn_button"
+                app:icon="@drawable/ic_sc_replay"
+                app:iconGravity="textStart" />
+
+            <!-- The score line: eliminations, team mode, and score (tap it for the scoreboard on a server) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <LinearLayout style="@style/HudTile">
+
+                    <TextView
+                        android:id="@+id/eliminations_count_label_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/eliminations_count_label"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <TextView
+                        android:id="@+id/eliminations_count_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/count_zero"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Value" />
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/HudTile"
+                    android:layout_weight="1.4"
+                    android:layout_marginStart="8dp">
+
+                    <TextView
+                        android:id="@+id/team_mode_label_tv"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/team_mode_label"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <!-- Server-less clients pick the mode with the button before a game; otherwise it's a label -->
+                    <FrameLayout
+                        android:id="@+id/team_mode_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/team_mode_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:maxLines="1"
+                            android:visibility="gone"
+                            android:text="@string/team_mode_2teams"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
+                            android:textSize="20sp" />
+
+                        <Button
+                            android:id="@+id/team_mode_button"
+                            style="@style/Widget.SimpleCoil.Button.Hud"
+                            android:layout_gravity="center"
+                            android:text="@string/team_mode_2teams" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                <!-- The score readout. Once connected to a server it becomes a tappable chip that opens the
+                     scoreboard; GameScreenRenderer.setScoreboardAvailable adds the background and click. -->
+                <LinearLayout
+                    android:id="@+id/scores_chip"
+                    style="@style/HudTile"
+                    android:layout_marginStart="8dp"
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/team_score_label_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:importantForAccessibility="no"
+                            android:text="@string/team_score_label"
+                            android:visibility="gone"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                        <TextView
+                            android:id="@+id/team_score_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:importantForAccessibility="no"
+                            android:text="@string/count_zero"
+                            android:visibility="gone"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Value" />
+
+                        <TextView
+                            android:id="@+id/score_label_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:importantForAccessibility="no"
+                            android:text="@string/score_label"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                        <TextView
+                            android:id="@+id/score_tv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:importantForAccessibility="no"
+                            android:text="@string/count_zero"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Value" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ===== Overlays ===== -->
         <ImageView
             android:id="@+id/hit_animation_iv"
             android:contentDescription="@null"
             android:visibility="gone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"/>
+            android:layout_gravity="center" />
 
-        <TextView
-            android:id="@+id/respawn_shield_countdown_tv"
-            android:layout_width="wrap_content"
+        <!-- Eliminated, by whom, and the countdown back in -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:visibility="gone"
-            android:textColor="#00FFFF"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/eliminated_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:visibility="invisible"
-            android:text="@string/starting_game_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/eliminated_by_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_below="@+id/eliminated_tv"
-            android:layout_marginTop="10dp"
-            android:visibility="invisible"
-            android:text=""
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <TextView
-            android:id="@+id/spawn_countdown_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:gravity="center"
-            android:layout_below="@+id/eliminated_by_tv"
-            android:layout_marginTop="10dp"
-            android:visibility="gone"
-            android:text="@string/spawn_in_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-        <Button
-            android:id="@+id/start_game_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginStart="15dp"
-            android:layout_below="@+id/player_settings_button"
-            android:text="@string/start_game_button" />
-
-        <!-- Player Settings' row, on the right, so it stays clear of the server status line. -->
-        <Button
-            android:id="@+id/game_limit_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:layout_marginEnd="15dp"
-            android:layout_alignParentEnd="true"
-            android:layout_below="@id/use_network_button"
-            android:text="@string/game_limit_button" />
-
-        <!-- Offline, or for a network admin. Above the eliminations count. -->
-        <Button
-            android:id="@+id/end_game_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="15dp"
-            android:layout_above="@+id/eliminations_count_label_tv"
-            android:visibility="gone"
-            android:text="@string/end_game_button" />
-
-        <!-- Always the first row under the health bar, whether searching, joined or offline. -->
-        <Button
-            android:id="@+id/use_network_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/health_pb"
-            android:layout_marginStart="15dp"
-            android:layout_marginTop="7dp"
-            android:text="@string/use_network_button" />
-
-        <TextView
-            android:id="@+id/server_ip_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/use_network_button"
-            android:layout_alignParentEnd="true"
-            android:layout_alignBaseline="@+id/use_network_button"
-            android:layout_marginStart="5dp"
-            android:layout_marginEnd="15dp"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:text=""
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <!-- Start Game's spot on a server, where Start Game is hidden. -->
-        <Button
-            android:id="@+id/admin_controls_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/start_game_button"
-            android:layout_marginStart="15dp"
-            android:layout_marginTop="5dp"
-            android:visibility="gone"
-            android:text="@string/admin_controls_button" />
-
-        <!-- Right under the network button, offline and on a server alike. -->
-        <Button
-            android:id="@+id/player_settings_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/use_network_button"
-            android:layout_marginStart="15dp"
-            android:layout_marginTop="5dp"
-            android:text="@string/player_settings_button" />
-
-        <Button
-            android:id="@+id/shuffle_teams_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/game_limit_button"
-            android:layout_marginEnd="15dp"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="5dp"
-            android:visibility="gone"
-            android:text="@string/shuffle_teams_button" />
-
-        <!-- Between games only. -->
-        <Button
-            android:id="@+id/generate_qr_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="10dp"
-            android:layout_above="@+id/team_mode_label_tv"
-            android:text="@string/generate_qr_button" />
-
-        <TextView
-            android:id="@+id/team_mode_label_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/team_mode_container"
-            android:layout_centerHorizontal="true"
-            android:text="@string/team_mode_label"
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-        <!-- Server-less clients pick the mode with the button before a game; otherwise it's a label. -->
-        <FrameLayout
-            android:id="@+id/team_mode_container"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_marginBottom="10dp"
-            android:layout_centerHorizontal="true">
+            android:layout_gravity="center"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/team_mode_tv"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:id="@+id/respawn_shield_countdown_tv"
+                style="@style/HudOverlayText"
                 android:visibility="gone"
-                android:text="@string/team_mode_2teams"
-                android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
+                android:textColor="#00E5FF" />
 
-            <Button
-                android:id="@+id/team_mode_button"
-                style="@style/Widget.AppCompat.Button.Colored"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/team_mode_2teams" />
-        </FrameLayout>
+            <TextView
+                android:id="@+id/eliminated_tv"
+                style="@style/HudOverlayText"
+                android:visibility="invisible"
+                android:text="@string/starting_game_label" />
 
-        <!-- The score readout. Once connected to a server it becomes a tappable chip that opens the
-             scoreboard; GameScreenRenderer.setScoreboardAvailable adds the background and click. -->
-        <LinearLayout
-            android:id="@+id/scores_chip"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="6dp"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:clickable="false"
-            android:focusable="false">
+            <TextView
+                android:id="@+id/eliminated_by_tv"
+                style="@style/HudOverlayText"
+                android:layout_marginTop="8dp"
+                android:visibility="invisible"
+                android:text=""
+                android:textSize="20sp" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="end">
-
-                <TextView
-                    android:id="@+id/team_score_label_tv"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:importantForAccessibility="no"
-                    android:text="@string/team_score_label"
-                    android:visibility="gone"
-                    android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-                <TextView
-                    android:id="@+id/team_score_tv"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:importantForAccessibility="no"
-                    android:text="@string/count_zero"
-                    android:visibility="gone"
-                    android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-
-                <TextView
-                    android:id="@+id/score_label_tv"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:importantForAccessibility="no"
-                    android:text="@string/score_label"
-                    android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-                <TextView
-                    android:id="@+id/score_tv"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:importantForAccessibility="no"
-                    android:text="@string/count_zero"
-                    android:textAppearance="@android:style/TextAppearance.Material.Large.Inverse" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/spawn_countdown_tv"
+                style="@style/HudOverlayText"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"
+                android:text="@string/spawn_in_label"
+                android:textSize="20sp" />
         </LinearLayout>
 
-        <!-- Manual respawn: above the team mode label. -->
-        <Button
-            android:id="@+id/start_respawn_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="10dp"
-            android:layout_above="@id/team_mode_label_tv"
-            android:visibility="gone"
-            android:text="@string/start_respawn_button" />
-
-        <!-- Players our shots hit, oldest on top: one hit_player_row each. -->
+        <!-- A point scored: the plus and who it was for, above the score -->
         <LinearLayout
-            android:id="@+id/hit_players_ll"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_below="@+id/health_pb"
-            android:orientation="vertical" />
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="104dp"
+            android:gravity="end"
+            android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/shots_fired_iv"
-            android:contentDescription="@null"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="10dp"
-            android:layout_below="@+id/health_pb"
-            app:srcCompat="@drawable/ic_flare_red_50dp" />
+            <TextView
+                android:id="@+id/score_increase_player_name_tv"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text=""
+                android:shadowColor="#E6000000"
+                android:shadowRadius="8"
+                android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
 
-        <ImageView
-            android:id="@+id/score_increase_iv"
-            android:contentDescription="@null"
-            android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_toStartOf="@id/scores_chip"
-            android:layout_marginEnd="10dp"
-            android:layout_alignBottom="@id/scores_chip"
-            app:srcCompat="@drawable/ic_add_circle_green_50dp" />
+            <ImageView
+                android:id="@+id/score_increase_iv"
+                android:contentDescription="@null"
+                android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_add_circle_green_50dp" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/score_increase_player_name_tv"
+            android:id="@+id/hits_taken_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:visibility="gone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/score_increase_iv"
-            android:layout_toStartOf="@id/scores_chip"
-            android:layout_marginEnd="10dp"
-            android:layout_marginBottom="5dp"
-            android:text=""
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
+            android:text="@string/count_zero"
+            android:textAppearance="@style/TextAppearance.SimpleCoil.Value" />
+    </FrameLayout>
 
-        <Chronometer
-            android:id="@+id/game_timer_chronometer"
-            style="@android:style/TextAppearance.Material.Small.Inverse"
-            android:format="%s"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignTop="@+id/health_label_tv"
-            android:layout_marginStart="15dp"/>
-
-        <TextView
-            android:id="@+id/game_countdown_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignTop="@+id/health_label_tv"
-            android:layout_marginStart="15dp"
-            android:text=""
-            android:textAppearance="@android:style/TextAppearance.Material.Small.Inverse" />
-
-    </RelativeLayout>
-
-    <!-- Voice chat: you talking, or who is (above the score, team mode and eliminations) -->
+    <!-- Voice chat: you talking, or who is (above the score line) -->
     <TextView
         android:id="@+id/voice_tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="140dp"
+        android:layout_marginBottom="110dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:background="#CC000000"
+        android:background="@drawable/bg_pill"
+        android:backgroundTint="#F2272C36"
         android:gravity="center"
-        android:paddingStart="12dp"
-        android:paddingTop="5dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="5dp"
-        android:textColor="#FFFFFF"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp"
+        android:textColor="@color/sc_text"
         android:textSize="16sp"
-        android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
         android:visibility="gone" />
 
 </FrameLayout>
