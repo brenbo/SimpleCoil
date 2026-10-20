@@ -208,6 +208,26 @@
         <item name="android:paddingBottom">10dp</item>
     </style>
 
+    <!-- A settings card that opens in place: no padding of its own, so its header (the part you tap)
+         reaches the card's edges; the header and the opened part pad themselves -->
+    <style name="ServerDropCard" parent="ServerCard">
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
+    </style>
+
+    <!-- What opens under a drop card's header -->
+    <style name="ServerDropBody">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
     <style name="ServerCardHeader">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -217,6 +237,10 @@
         <item name="android:gravity">center_vertical</item>
         <item name="android:minHeight">48dp</item>
         <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:paddingBottom">12dp</item>
     </style>
 
     <!-- The rounded icon at the start of a card's header -->

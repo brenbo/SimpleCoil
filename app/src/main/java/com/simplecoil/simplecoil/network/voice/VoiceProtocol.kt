@@ -77,10 +77,11 @@ object VoiceRules {
     data class Delivery(val to: List<VoicePeer>, val toEveryone: Boolean)
 
     /**
-     * The players [speaker] reaches: nobody if voice is off, or [mayTalk] says not for them, or
-     * they aren't a known player talking from their own address. Their teammates (in free for
-     * all, nobody); everyone if they are an admin and asked for [everyone]. Never themselves, nor
-     * anyone off the server. A player who may not talk still hears.
+     * The players [speaker] reaches: nobody if [mayTalk] says not for them, or they aren't a known
+     * player talking from their own address. Their teammates (in free for all, nobody); everyone if
+     * they are an admin and asked for [everyone]. With voice chat off ([voiceOn] false), only an
+     * admin talking to everyone is heard. Never themselves, nor anyone off the server. A player
+     * who may not talk still hears.
      */
     fun recipients(
         speaker: Int,
@@ -92,11 +93,12 @@ object VoiceRules {
         freeForAll: Boolean,
     ): Delivery {
         val none = Delivery(emptyList(), false)
-        if (!voiceOn || !mayTalk(speaker)) return none
+        if (!mayTalk(speaker)) return none
         val me = peers.firstOrNull { it.playerId == speaker } ?: return none
         // Only the phone that player is on: no talking as someone else
         if (me.address == null || me.address != from) return none
         val toAll = everyone && me.admin
+        if (!voiceOn && !toAll) return none
         return Delivery(peers.filter { p ->
             p.playerId != speaker && p.connected && p.address != null && (toAll || (!freeForAll && p.team == me.team))
         }, toAll)
@@ -112,12 +114,20 @@ enum class VoiceAccess {
     LISTEN,
 
     /** Talks and hears. */
-    TALK;
+    TALK,
+
+    /** Voice chat is off, but this admin may still talk to everyone (and hears the other admins doing it). */
+    BROADCAST,
+
+    /** Voice chat is off: hears only an admin talking to everyone. */
+    HEAR_BROADCASTS;
 
     companion object {
         fun fromBody(body: String?): VoiceAccess = when (body) {
             "1" -> TALK
             "L" -> LISTEN
+            "A" -> BROADCAST
+            "E" -> HEAR_BROADCASTS
             else -> OFF
         }
     }

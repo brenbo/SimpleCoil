@@ -133,6 +133,8 @@ class TcpServer : Service() {
         beacon.start(SERVER_NAME)
         container.fieldImageryServer.start()
         startLiveGame()
+        // An admin may talk to everyone even with voice chat off
+        container.fieldImageryServer.voice.isAdmin = { id -> serverPlayers.playerSettings[id.toByte()]?.isAdmin == true }
         voiceRelay = VoiceRelay(container.fieldImageryServer.voice, ::voicePeers, { serverSettings.teamLayout.mode.isFreeForAll }).also { it.start() }
         server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
         startAsForeground()

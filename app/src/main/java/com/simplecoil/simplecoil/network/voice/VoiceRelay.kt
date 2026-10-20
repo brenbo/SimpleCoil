@@ -44,9 +44,17 @@ class VoiceSettings {
         if (allowed) off -= playerId else off += playerId
     }
 
-    /** The VOICE reply's body for [playerId]: "1" to talk and listen, "L" to listen only, "0" voice is off. */
+    /** Who is an admin (the server sets it): with voice chat off, an admin may still talk to everyone. */
+    @Volatile
+    var isAdmin: (Int) -> Boolean = { false }
+
+    /**
+     * The VOICE reply's body for [playerId]: "1" to talk and listen, "L" to listen only. With voice
+     * chat off: "A" for an admin who may still talk to everyone, "E" for everyone else, who hear
+     * only that (older phones read both as off).
+     */
     fun body(playerId: Int): ByteArray = when {
-        !enabled -> "0"
+        !enabled -> if (isAdmin(playerId) && allowedFor(playerId)) "A" else "E"
         allowed(playerId) -> "1"
         else -> "L"
     }.toByteArray(Charsets.US_ASCII)
@@ -99,7 +107,7 @@ class VoiceRelay(
                 s.receive(incoming)
                 val packet = VoiceProtocol.decode(buffer, incoming.length) ?: continue
                 val delivery = VoiceRules.recipients(packet.playerId, incoming.address, packet.everyone, settings.enabled,
-                    settings::allowed, peers(), freeForAll())
+                    settings::allowedFor, peers(), freeForAll())
                 // Marked "to everyone" only if it really is an admin's, so nobody else gets past a mute
                 buffer[VoiceProtocol.FLAGS_OFFSET] = (if (delivery.toEveryone) VoiceProtocol.FLAG_EVERYONE else 0).toByte()
                 for (peer in delivery.to) {

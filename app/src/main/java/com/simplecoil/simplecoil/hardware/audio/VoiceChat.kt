@@ -97,15 +97,23 @@ class VoiceChat(
         _muted.value = if (mute) _muted.value + playerIds else _muted.value - playerIds.toSet()
     }
 
-    /** What the server lets this player do: hear, talk too, or nothing. */
+    /** With voice chat off, an admin talks only to everyone (no team chat). */
+    @Volatile
+    private var broadcastOnly = false
+
+    /**
+     * What the server lets this player do: hear, talk too, or nothing. With voice chat off a
+     * phone still listens for an admin talking to everyone, and an admin may do that, but voice
+     * chat doesn't count as on ([enabled]: no mute buttons, no team chat).
+     */
     fun setAccess(access: VoiceAccess) {
         val listen = access != VoiceAccess.OFF
-        val talk = access == VoiceAccess.TALK
+        val talk = access == VoiceAccess.TALK || access == VoiceAccess.BROADCAST
+        broadcastOnly = access == VoiceAccess.BROADCAST
         _canTalk.value = talk
         if (!talk) talk(false)
         _needsMic.value = talk && !hasMic()
-        if (_enabled.value == listen) return
-        _enabled.value = listen
+        _enabled.value = access == VoiceAccess.TALK || access == VoiceAccess.LISTEN
         if (listen) open() else close()
     }
 
@@ -118,7 +126,7 @@ class VoiceChat(
 
     /** Push to talk: [on] while the button is held. */
     fun talk(on: Boolean) {
-        if (on && (!_canTalk.value || socket == null)) return
+        if (on && (!_canTalk.value || socket == null || (broadcastOnly && !everyone()))) return
         if (on && !hasMic()) {
             _needsMic.value = true
             return

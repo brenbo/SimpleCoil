@@ -359,7 +359,8 @@ class AppContainer(private val app: Application) {
                 // Voice chat: what the server lets this player do (hear, or talk too)
                 val voice = withContext(dispatchers.io) { fieldImageryClient.voice(server, playerId) }
                 voiceChat.setAccess(voice)
-                sessionEngine.pushToTalk = voice == VoiceAccess.TALK
+                voiceAccess = voice
+                updatePushToTalk()
                 val assigned = withContext(dispatchers.io) { fieldImageryClient.sound(server, playerId) } ?: return@collect
                 if (assigned.revision > remoteSoundRevision) {
                     remoteSoundRevision = assigned.revision
@@ -372,7 +373,8 @@ class AppContainer(private val app: Application) {
             clientEvents.events.collect { event ->
                 if (event == ClientEvent.NetworkDisconnected || event == ClientEvent.ServerCancel) {
                     voiceChat.setAccess(VoiceAccess.OFF)
-                    sessionEngine.pushToTalk = false
+                    voiceAccess = VoiceAccess.OFF
+                    updatePushToTalk()
                 }
             }
         }
@@ -424,6 +426,23 @@ class AppContainer(private val app: Application) {
     /** An admin's choice to talk to every player rather than their team. */
     @Volatile
     var voiceToEveryone = false
+        set(value) {
+            field = value
+            updatePushToTalk()
+        }
+
+    /** What the server lets this phone do with voice chat. */
+    @Volatile
+    private var voiceAccess = VoiceAccess.OFF
+
+    /**
+     * Holding the thumb button talks when this player may talk to their team, or, with voice
+     * chat off, when an admin has Talk to everyone on; otherwise it opens the scoreboard.
+     */
+    private fun updatePushToTalk() {
+        sessionEngine.pushToTalk = voiceAccess == VoiceAccess.TALK ||
+            (voiceAccess == VoiceAccess.BROADCAST && players.isAdmin && voiceToEveryone)
+    }
 
     /** Push-to-talk voice chat with teammates (or everyone, for an admin), when the server has it on. */
     val voiceChat: VoiceChat by lazy {

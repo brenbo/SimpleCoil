@@ -16,6 +16,10 @@
 
 package com.simplecoil.simplecoil
 
+import android.animation.ValueAnimator
+import android.graphics.Rect
+import android.view.animation.DecelerateInterpolator
+import androidx.core.animation.doOnEnd
 import android.Manifest
 import android.graphics.Bitmap
 import android.location.Location
@@ -704,27 +708,28 @@ class MapFragment : Fragment() {
     }
 
     /**
-     * The map's views to pick from: a column of icons under the button, each as the button
-     * shows it (the automatic ones in orange), the one in use on a raised tile.
+     * The map's views to pick from: the round button stretches down into a pill of icons, each
+     * as the button shows it (the automatic ones in orange), the one in use on a dark-orange dot.
      */
     private fun showZoomMenu(anchor: View) {
         val context = requireContext()
         val dp = resources.displayMetrics.density
+        val size = anchor.width
+        val full = size * AutoZoom.entries.size
         val column = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundResource(R.drawable.bg_zoom_menu)
-            val pad = (4 * dp).toInt()
-            setPadding(pad, pad, pad, pad)
         }
-        val popup = PopupWindow(column, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
-            elevation = 8 * dp
+        val popup = PopupWindow(column, size, full, true).apply {
+            elevation = anchor.elevation
+            animationStyle = 0
         }
         for (zoom in AutoZoom.entries) {
             val (icon, name) = zoomLook(zoom)
             column.addView(ImageButton(context).apply {
                 setImageResource(icon)
                 if (zoom != AutoZoom.OFF) setColorFilter(ACTIVE_COLOR.toColorInt())
-                if (zoom == autoZoom) setBackgroundResource(R.drawable.bg_icon_tile)
+                if (zoom == autoZoom) setBackgroundResource(R.drawable.bg_zoom_selected)
                 else setBackgroundResource(android.R.color.transparent)
                 contentDescription = getString(name)
                 val pad = (8 * dp).toInt()
@@ -735,10 +740,20 @@ class MapFragment : Fragment() {
                     preferences.saveMapAutoZoom(autoZoom.name)
                     popup.dismiss()
                 }
-            }, LinearLayout.LayoutParams((40 * dp).toInt(), (40 * dp).toInt()).apply { topMargin = (2 * dp).toInt() })
+            }, LinearLayout.LayoutParams(size, size))
         }
-        // Right edges lined up, so it stays on the map
-        popup.showAsDropDown(anchor, 0, (4 * dp).toInt(), Gravity.END)
+        // Right over the button, then grown down out of it
+        val at = IntArray(2)
+        anchor.getLocationInWindow(at)
+        column.clipBounds = Rect(0, 0, size, size)
+        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, at[0], at[1])
+        ValueAnimator.ofInt(size, full).apply {
+            duration = ZOOM_MENU_MILLIS
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { column.clipBounds = Rect(0, 0, size, it.animatedValue as Int) }
+            doOnEnd { column.clipBounds = null }
+            start()
+        }
     }
 
     private fun updateZoomButton() {
@@ -1229,6 +1244,9 @@ class MapFragment : Fragment() {
         const val MAX_ZOOM = 20.0
         const val BORDER_COLOR = "#FF5252"
         const val ACTIVE_COLOR = "#FF6A1A"
+
+        /** How long the view button takes to grow into its picker. */
+        const val ZOOM_MENU_MILLIS = 180L
 
         const val TICK_MILLIS = 1_000L
 

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The view in use, in the map's view picker: a dot inside the pill's edge. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:inset="3dp">
+    <shape android:shape="oval">
+        <solid android:color="@color/sc_orange_container" />
+    </shape>
+</inset>

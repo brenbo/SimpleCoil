@@ -438,6 +438,8 @@ class DedicatedServerActivity : AppCompatActivity() {
         modeChangeButton.setOnClickListener { showMode() }
         presetsButton.setOnClickListener { showPresets() }
         // The settings cards open in place (each on its own)
+        // Each card clips to its rounded shape, so the header's press ripple keeps the corners
+        listOf(modeCard, fieldCard, teamsCard).forEach { it.clipToOutline = true }
         dropDown(modeCardHeader, modeBody, modeChevronTv)
         dropDown(fieldCardHeader, fieldBody, fieldChevronTv)
         dropDown(teamsCardHeader, teamsBody, teamsChevronTv)

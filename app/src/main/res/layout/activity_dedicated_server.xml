@@ -207,7 +207,7 @@
 
                         <!-- Game mode: the one choice every game needs, with the game limit, starting timer and saved setups. -->
                         <LinearLayout
-                            style="@style/ServerCard"
+                            style="@style/ServerDropCard"
                             android:id="@+id/mode_card"
                             android:layout_marginTop="6dp">
 
@@ -241,17 +241,14 @@
 
                             <LinearLayout
                                 android:id="@+id/mode_body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical"
-                                android:visibility="gone">
+                                style="@style/ServerDropBody">
 
                             <Button
                                 android:id="@+id/mode_change_button"
                                 style="@style/Widget.SimpleCoil.Button.Tonal"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="0dp"
                                 android:text="@string/server_mode_change"
                                 app:icon="@drawable/ic_sc_target"
                                 app:iconGravity="textStart" />
@@ -306,7 +303,7 @@
                              (map design: Field imagery packs), and the rules and extras (out of bounds, respawn,
                              ammo, drops, killstreaks, shot distance). Tap to open. -->
                         <LinearLayout
-                            style="@style/ServerCard"
+                            style="@style/ServerDropCard"
                             android:id="@+id/field_card">
 
                             <LinearLayout
@@ -344,18 +341,14 @@
 
                             <LinearLayout
                                 android:id="@+id/field_body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical"
-                                android:visibility="gone">
+                                style="@style/ServerDropBody">
 
                             <!-- Whose GPS the server hears from: a player without a fix has no shot distances, drops,
                                  spawns or capture points -->
                             <TextView
                                 style="@style/ServerCardSummary"
                                 android:id="@+id/server_gps_tv"
-                                android:layout_marginTop="6dp"
-                                android:visibility="gone" />
+                                                                android:visibility="gone" />
 
                             <LinearLayout
                                 android:layout_width="match_parent"
@@ -391,7 +384,7 @@
                         <!-- Teams and players: tap to open. Team and GPS modes as segmented controls, so every choice
                              and the current one are in view, then who may join and choose. -->
                         <LinearLayout
-                            style="@style/ServerCard"
+                            style="@style/ServerDropCard"
                             android:id="@+id/teams_card">
 
                             <LinearLayout
@@ -424,15 +417,12 @@
 
                             <LinearLayout
                                 android:id="@+id/teams_body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical"
-                                android:visibility="gone">
+                                style="@style/ServerDropBody">
 
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginTop="10dp"
+                                    android:layout_marginTop="0dp"
                                     android:layout_marginBottom="4dp"
                                     android:text="@string/team_mode_label"
                                     android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />

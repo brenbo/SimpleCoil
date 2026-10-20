@@ -62,6 +62,14 @@ class VoiceTest {
     }
 
     @Test
+    fun withVoiceOff_anAdminCanStillTalkToEveryone_butNotToTheirTeam() {
+        assertEquals(listOf(1, 2, 3), heard(4, everyone = true, voiceOn = false))
+        assertTrue(heard(4, voiceOn = false).isEmpty())
+        // Not when the operator turned their talking off
+        assertTrue(heard(4, everyone = true, voiceOn = false, off = setOf(4)).isEmpty())
+    }
+
+    @Test
     fun onlyAnAdminTalkingToEveryoneIsMarkedSo_soNobodyElseGetsPastAMute() {
         val ask = { speaker: Int -> VoiceRules.recipients(speaker, ip(speaker), true, true, { true }, peers, false) }
         assertTrue(ask(4).toEveryone)
@@ -107,7 +115,13 @@ class VoiceTest {
         assertEquals("L", String(settings.body(1)))
         assertEquals("1", String(settings.body(2)))
         settings.enabled = false
-        assertEquals("0", String(settings.body(2)))
+        // Voice chat off: everyone listens for an admin talking to everyone, and an admin may
+        assertEquals("E", String(settings.body(2)))
+        settings.isAdmin = { it == 2 }
+        assertEquals("A", String(settings.body(2)))
+        assertEquals("E", String(settings.body(1)))
+        assertEquals(VoiceAccess.BROADCAST, VoiceAccess.fromBody("A"))
+        assertEquals(VoiceAccess.HEAR_BROADCASTS, VoiceAccess.fromBody("E"))
         assertEquals(VoiceAccess.LISTEN, VoiceAccess.fromBody("L"))
         assertEquals(VoiceAccess.OFF, VoiceAccess.fromBody(null))
     }
