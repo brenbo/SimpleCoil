@@ -279,6 +279,45 @@
 
             </LinearLayout>
 
+            <!-- Offline only (there's no map, so there's room): your name on its own row, big, with the
+                 team buttons either side before a game -->
+            <LinearLayout
+                android:id="@+id/offline_name_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/team_minus_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:minWidth="56dp"
+                    android:visibility="gone"
+                    android:text="@string/team_minus_button" />
+
+                <TextView
+                    android:id="@+id/offline_name_tv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:textAppearance="@style/TextAppearance.SimpleCoil.Headline"
+                    android:textSize="32sp" />
+
+                <Button
+                    android:id="@+id/team_plus_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:minWidth="56dp"
+                    android:visibility="gone"
+                    android:text="@string/team_plus_button" />
+            </LinearLayout>
+
             <!-- Health: the bar, the clock and what you're carrying -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -330,12 +369,20 @@
                     android:layout_height="0dp"
                     android:layout_weight="0.01" />
 
-                <!-- Your team, always shown (colored; tap to switch teams on a server when allowed) -->
+                <Button
+                    android:id="@+id/player_settings_button"
+                    style="@style/Widget.SimpleCoil.Button.Mini"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/player_settings_button"
+                    app:icon="@drawable/ic_sc_person" />
+
+                <!-- Your team, always shown, against the right edge (colored; tap to switch teams on a
+                     server when allowed) -->
                 <TextView
                     android:id="@+id/team_label_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="6dp"
                     android:background="@drawable/bg_pill"
                     android:maxLines="1"
                     android:paddingStart="10dp"
@@ -344,13 +391,6 @@
                     android:paddingBottom="2dp"
                     android:text="@string/team_label"
                     android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
-
-                <Button
-                    android:id="@+id/player_settings_button"
-                    style="@style/Widget.SimpleCoil.Button.Mini"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/player_settings_button"
-                    app:icon="@drawable/ic_sc_person" />
             </LinearLayout>
 
             <ProgressBar
@@ -453,19 +493,6 @@
                 app:chipSpacingHorizontal="6dp"
                 app:chipSpacingVertical="6dp">
 
-                <!-- Offline before a game: step through the teams -->
-                <Button
-                    android:id="@+id/team_minus_button"
-                    style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:visibility="gone"
-                    android:text="@string/team_minus_button" />
-
-                <Button
-                    android:id="@+id/team_plus_button"
-                    style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:visibility="gone"
-                    android:text="@string/team_plus_button" />
-
                 <Button
                     android:id="@+id/start_game_button"
                     style="@style/Widget.SimpleCoil.Button.Hud"
@@ -476,8 +503,8 @@
                 <Button
                     android:id="@+id/game_limit_button"
                     style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:text="@string/game_limit_button"
-                    app:icon="@drawable/ic_sc_limits"
+                    android:text="@string/offline_game_settings"
+                    app:icon="@drawable/ic_sc_tune"
                     app:iconSize="18dp" />
 
                 <Button
@@ -506,8 +533,16 @@
                     app:iconSize="18dp" />
             </com.google.android.material.chip.ChipGroup>
 
-            <!-- The map fills the rest -->
+            <!-- The map fills the rest (offline there's no map: the spacer keeps the score line down) -->
+            <View
+                android:id="@+id/map_spacer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:visibility="gone" />
+
             <FrameLayout
+                android:id="@+id/map_card"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -623,12 +658,6 @@
                             android:text="@string/team_mode_2teams"
                             android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
                             android:textSize="20sp" />
-
-                        <Button
-                            android:id="@+id/team_mode_button"
-                            style="@style/Widget.SimpleCoil.Button.Hud"
-                            android:layout_gravity="center"
-                            android:text="@string/team_mode_2teams" />
                     </FrameLayout>
                 </LinearLayout>
 
@@ -653,6 +682,7 @@
                             android:id="@+id/team_score_label_tv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="14dp"
                             android:importantForAccessibility="no"
                             android:text="@string/team_score_label"
                             android:visibility="gone"
@@ -662,10 +692,19 @@
                             android:id="@+id/team_score_tv"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="14dp"
                             android:importantForAccessibility="no"
                             android:text="@string/count_zero"
                             android:visibility="gone"
                             android:textAppearance="@style/TextAppearance.SimpleCoil.Value" />
+                    </LinearLayout>
+
+                    <!-- Your score, beside the team's -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/score_label_tv"

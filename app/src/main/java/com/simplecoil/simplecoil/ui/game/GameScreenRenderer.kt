@@ -32,6 +32,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.ActivityFullscreenBinding
@@ -74,6 +75,11 @@ class GameScreenRenderer(
 ) : GameView {
 
     private val context get() = b.root.context
+
+    init {
+        // Offline the name shows on its own row too (setOfflineLayout)
+        b.teamTv.doAfterTextChanged { b.offlineNameTv.text = it }
+    }
     private var hitAnimation: AnimationDrawable? = null
     /** The players our shots hit that are on screen, by player ID, in the order they appear. */
     private val hitPlayerRows = LinkedHashMap<Byte, HitPlayerRow>()
@@ -140,7 +146,8 @@ class GameScreenRenderer(
         b.shuffleTeamsButton.isEnabled = false
         b.shuffleTeamsButton.visibility = View.GONE
         inGame = true
-        showTeamModeSelectable(false)
+        showTeamModeLabel()
+        setOfflineLayout(!useNetwork)
         if (useNetwork) {
             displayInGameNetworkingOptions(freeForAll)
         } else {
@@ -224,17 +231,26 @@ class GameScreenRenderer(
             TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa
         }
         b.teamModeTv.setText(text)
-        b.teamModeButton.setText(text)
     }
 
     /**
-     * The team mode is a button offline before the game, otherwise a label. Not [shown] while
-     * networking is on without a server yet; kept INVISIBLE so the QR button above stays put.
+     * The team mode, as a label (offline it's changed from Game settings). Not [shown] while
+     * networking is on without a server yet.
      */
-    private fun showTeamModeSelectable(selectable: Boolean, shown: Boolean = true) {
+    private fun showTeamModeLabel(shown: Boolean = true) {
         b.teamModeLabelTv.visibility = if (shown) View.VISIBLE else View.INVISIBLE
-        b.teamModeButton.visibility = if (!shown) View.INVISIBLE else if (selectable) View.VISIBLE else View.GONE
-        b.teamModeTv.visibility = if (shown && !selectable) View.VISIBLE else View.GONE
+        b.teamModeTv.visibility = if (shown) View.VISIBLE else View.INVISIBLE
+    }
+
+    /**
+     * Offline there's no map: the map's room goes to the name, on its own row with the team
+     * buttons either side (the status row keeps its place for it, so the pill stays put).
+     */
+    private fun setOfflineLayout(offline: Boolean) {
+        b.offlineNameRow.isVisible = offline
+        b.teamTv.visibility = if (offline) View.INVISIBLE else View.VISIBLE
+        b.mapCard.isVisible = !offline
+        b.mapSpacer.isVisible = offline
     }
 
     override fun showTeam(team: TeamDisplay) {
@@ -350,7 +366,8 @@ class GameScreenRenderer(
         b.startGameButton.visibility = if (buttons.offline && buttons.startVisible) View.VISIBLE else View.GONE
         b.playerSettingsButton.visibility = if ((buttons.offline || buttons.joined) && !buttons.serverSettingsOnly) View.VISIBLE else View.GONE
         b.shuffleTeamsButton.visibility = View.GONE
-        showTeamModeSelectable(buttons.offline, shown = buttons.offline || buttons.joined)
+        showTeamModeLabel(shown = buttons.offline || buttons.joined)
+        setOfflineLayout(buttons.offline)
     }
 
     override fun showAdminButton(visible: Boolean) {
@@ -362,7 +379,7 @@ class GameScreenRenderer(
     // ---------------------------------------------------------------------------------------
 
     private fun displayAllNetworkingOptions(enabled: Boolean, freeForAll: Boolean) {
-        val visibility = if (enabled) View.VISIBLE else View.INVISIBLE
+        val visibility = if (enabled) View.VISIBLE else View.GONE
         b.scoresChip.visibility = visibility
         setTeamScoreVisible(enabled && !freeForAll)
     }

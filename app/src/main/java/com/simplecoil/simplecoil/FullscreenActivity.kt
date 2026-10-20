@@ -22,6 +22,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -29,6 +30,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -137,7 +139,7 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
             onTeamTapped = { vm.onTeamLabelPressed() }, onPlayerNameTapped = { vm.onPlayerNamePressed() },
             onShotModeTapped = { vm.onShotModePressed() }, onRecoilTapped = { vm.onRecoilPressed() }) { vm.openScoreboard() }
         vm = ViewModelProvider(this, GameViewModelFactory(application as SimpleCoilApp))[GameViewModel::class.java]
-        dialogs = DialogCoordinator(this, vm, binding.useNetworkButton, binding.teamModeButton, binding.teamLabelTv)
+        dialogs = DialogCoordinator(this, vm, binding.useNetworkButton, binding.gameLimitButton, binding.teamLabelTv)
         vm.screen = CompositeGameScreen(renderer, dialogs, this)
         permissions = BlePermissionController(this, vm, ::startQRScan)
         val saved = savedInstanceState?.let {
@@ -191,8 +193,17 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         }
 
         binding.useNetworkButton.setOnClickListener { permissions.joinNetwork() }
-        binding.gameLimitButton.setOnClickListener { vm.onGameLimitPressed() }
-        binding.teamModeButton.setOnClickListener { vm.onTeamModePressed() }
+        // Offline before a game: the game limits and the team mode, from one button
+        binding.gameLimitButton.setOnClickListener { anchor ->
+            PopupMenu(ContextThemeWrapper(this, R.style.AppTheme_PopupOverlay), anchor).apply {
+                menu.add(0, 0, 0, R.string.game_limit_button)
+                menu.add(0, 1, 1, R.string.team_mode_label)
+                setOnMenuItemClickListener { item ->
+                    if (item.itemId == 0) vm.onGameLimitPressed() else vm.onTeamModePressed()
+                    true
+                }
+            }.show()
+        }
         binding.adminControlsButton.setOnClickListener(dialogs::showAdminMenu)
         binding.useNetworkButton.visibility = View.VISIBLE
         vm.onViewsCreated()

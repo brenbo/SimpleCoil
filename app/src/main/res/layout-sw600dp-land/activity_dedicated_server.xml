@@ -342,8 +342,15 @@
                                     android:id="@+id/field_chevron_tv" />
                             </LinearLayout>
 
+                            <LinearLayout
+                                android:id="@+id/field_body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:visibility="gone">
+
                             <!-- Whose GPS the server hears from: a player without a fix has no shot distances, drops,
-                                 spawns or capture points (shown whether the card is open or not) -->
+                                 spawns or capture points -->
                             <TextView
                                 style="@style/ServerCardSummary"
                                 android:id="@+id/server_gps_tv"
@@ -351,12 +358,10 @@
                                 android:visibility="gone" />
 
                             <LinearLayout
-                                android:id="@+id/field_body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                android:orientation="horizontal"
-                                android:visibility="gone">
+                                android:orientation="horizontal">
 
                                 <Button
                                     android:id="@+id/field_map_button"
@@ -379,6 +384,7 @@
                                     android:text="@string/field_rules"
                                     app:icon="@drawable/ic_sc_rules"
                                     app:iconGravity="textStart" />
+                            </LinearLayout>
                             </LinearLayout>
                         </LinearLayout>
 

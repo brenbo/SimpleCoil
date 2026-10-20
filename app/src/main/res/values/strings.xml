@@ -140,6 +140,8 @@
     <string name="player_name">Change Player Name:</string>
     <string name="server_ip">Server IP:</string>
     <string name="game_limit_button">Game limits</string>
+    <!-- Offline, before a game: the game limits and the team mode -->
+    <string name="offline_game_settings">Game settings</string>
     <string name="game_limit_title">When should the game end?</string>
     <string name="game_limit_time">Timed game in minutes (0 for unlimited)</string>
     <string name="game_limit_lives">Lives Per Player (0 for unlimited) - Players will stop respawning when they run out of lives. Game ends when all opponents are out of lives.</string>
@@ -214,8 +216,8 @@
     <string name="team_ratio_hint_two_teams">16</string>
     <string name="team_ratio_hint_four_teams">8</string>
     <string name="count_zero">0</string>
-    <string name="team_minus_button">Team -</string>
-    <string name="team_plus_button">Team +</string>
+    <string name="team_minus_button">−</string>
+    <string name="team_plus_button">+</string>
     <string name="team_ratio_min_one">Team limits must be at least 1 player slot</string>
     <string name="team_ratio_total">Total player slots across all teams must equal %1$d (current sum: %2$d)</string>
     <string name="scoreboard_players_header">Players</string>

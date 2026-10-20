@@ -28,14 +28,15 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.Choreographer
-import android.view.ContextThemeWrapper
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.PopupWindow
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.widget.PopupMenu
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -702,22 +703,42 @@ class MapFragment : Fragment() {
         AutoZoom.FIELD -> R.drawable.ic_map_zoom_field to R.string.map_zoom_field
     }
 
-    /** The map's views to pick from, each with its icon; the one in use in orange. */
+    /**
+     * The map's views to pick from: a column of icons under the button, each as the button
+     * shows it (the automatic ones in orange), the one in use on a raised tile.
+     */
     private fun showZoomMenu(anchor: View) {
-        val popup = PopupMenu(ContextThemeWrapper(requireContext(), R.style.AppTheme_PopupOverlay), anchor)
+        val context = requireContext()
+        val dp = resources.displayMetrics.density
+        val column = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_zoom_menu)
+            val pad = (4 * dp).toInt()
+            setPadding(pad, pad, pad, pad)
+        }
+        val popup = PopupWindow(column, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
+            elevation = 8 * dp
+        }
         for (zoom in AutoZoom.entries) {
             val (icon, name) = zoomLook(zoom)
-            val drawable = ContextCompat.getDrawable(requireContext(), icon)?.mutate()
-            if (zoom == autoZoom) drawable?.setTint(ACTIVE_COLOR.toColorInt())
-            popup.menu.add(0, zoom.ordinal, zoom.ordinal, name).icon = drawable
+            column.addView(ImageButton(context).apply {
+                setImageResource(icon)
+                if (zoom != AutoZoom.OFF) setColorFilter(ACTIVE_COLOR.toColorInt())
+                if (zoom == autoZoom) setBackgroundResource(R.drawable.bg_icon_tile)
+                else setBackgroundResource(android.R.color.transparent)
+                contentDescription = getString(name)
+                val pad = (8 * dp).toInt()
+                setPadding(pad, pad, pad, pad)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setOnClickListener {
+                    setAutoZoom(zoom)
+                    preferences.saveMapAutoZoom(autoZoom.name)
+                    popup.dismiss()
+                }
+            }, LinearLayout.LayoutParams((40 * dp).toInt(), (40 * dp).toInt()).apply { topMargin = (2 * dp).toInt() })
         }
-        popup.setForceShowIcon(true)
-        popup.setOnMenuItemClickListener { item ->
-            setAutoZoom(AutoZoom.entries[item.itemId])
-            preferences.saveMapAutoZoom(autoZoom.name)
-            true
-        }
-        popup.show()
+        // Right edges lined up, so it stays on the map
+        popup.showAsDropDown(anchor, 0, (4 * dp).toInt(), Gravity.END)
     }
 
     private fun updateZoomButton() {
