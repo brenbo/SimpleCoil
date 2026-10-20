@@ -175,6 +175,13 @@ class FieldImageryServer(
             onFieldChanged()
         }
 
+    /**
+     * What the saved field becomes for the game being set up (the server sets it): the spawns
+     * for its team mode (TeamSpawns). The saved setup itself is never changed.
+     */
+    @Volatile
+    var prepareConfig: (FieldConfig) -> FieldConfig = { it }
+
     /** A game played without GPS (classic, GPS off): no field at all while it runs, so CONFIG says NONE. */
     @Volatile
     var noField = false
@@ -225,7 +232,7 @@ class FieldImageryServer(
                 currentId = store.refresh()?.id
                 bytes = if (currentId == null || currentId == request.knownId) null else store.bytes()
             } else {
-                val config = if (noField) null else liveConfig ?: configs?.refresh()
+                val config = if (noField) null else liveConfig ?: configs?.refresh()?.let(prepareConfig)
                 currentId = config?.id
                 bytes = if (config == null || currentId == request.knownId) null else config.toBytes()
             }
@@ -262,7 +269,7 @@ class FieldImageryServer(
     /** Under the [delivered] lock. */
     private fun recount() {
         val photo = store.info.value?.id
-        val config = (liveConfig ?: configs?.config?.value)?.id
+        val config = (liveConfig ?: configs?.config?.value?.let(prepareConfig))?.id
         _deliveredCount.value = if (photo == null && config == null) 0 else {
             delivered.values.count { (p, c) -> p == photo && c == config }
         }

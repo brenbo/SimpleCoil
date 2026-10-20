@@ -150,8 +150,11 @@ class ModesTest {
         assertEquals(two, GameMode.SEARCH_AND_DESTROY.teamModeFor(four, four))
         // The team mode it was last played with comes back
         assertEquals(four, GameMode.DOMINATION.teamModeFor(four, ffa))
+        // Domination and Hardpoint are team games: free for all becomes two teams; four teams stays
+        assertEquals(two, GameMode.DOMINATION.teamModeFor(null, ffa))
+        assertEquals(setOf(two, four), GameMode.HARDPOINT.teamModes)
         // Never played: a mode that takes any keeps what is set
-        assertEquals(ffa, GameMode.DOMINATION.teamModeFor(null, ffa))
+        assertEquals(ffa, GameMode.CLASSIC.teamModeFor(null, ffa))
     }
 
     // Placement

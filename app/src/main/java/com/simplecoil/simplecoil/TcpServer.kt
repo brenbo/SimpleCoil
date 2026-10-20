@@ -36,6 +36,7 @@ import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
 import com.simplecoil.simplecoil.domain.loadout.Fix
 import com.simplecoil.simplecoil.domain.map.LatLon
+import com.simplecoil.simplecoil.domain.map.TeamSpawnsCache
 import com.simplecoil.simplecoil.network.ServerEvent
 import com.simplecoil.simplecoil.network.ServerCommand
 import com.simplecoil.simplecoil.network.ServerMessage
@@ -131,6 +132,9 @@ class TcpServer : Service() {
         server.loadSettings(saved)
         server.start()
         beacon.start(SERVER_NAME)
+        // The field the game and the phones get: the spawns for the team mode being played
+        val teamSpawns = TeamSpawnsCache()
+        container.fieldImageryServer.prepareConfig = { teamSpawns.forMode(it, serverSettings.teamLayout.mode) }
         container.fieldImageryServer.start()
         startLiveGame()
         // An admin may talk to everyone even with voice chat off
@@ -172,7 +176,7 @@ class TcpServer : Service() {
     private fun startLiveGame() {
         val game = LiveGame(
             imagery = container.fieldImageryServer,
-            savedField = { withContext(Dispatchers.IO) { container.serverFieldConfig.refresh() } },
+            savedField = { withContext(Dispatchers.IO) { container.serverFieldConfig.refresh()?.let(container.fieldImageryServer.prepareConfig) } },
             positions = ::playerFixes,
             teamOf = ::liveTeamOf,
             nameOf = { id -> server.snapshot.value.players.firstOrNull { it.playerId.toInt() == id }?.name },
