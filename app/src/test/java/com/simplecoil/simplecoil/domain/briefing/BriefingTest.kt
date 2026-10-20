@@ -71,6 +71,11 @@ class BriefingTest {
         assertEquals(SlideArt.FREE_FOR_ALL, ffa.art)
         val teams = Briefing.slides(inputs(voice = true)).single { it.key == "mode.teams" }
         assertTrue("talk" in teams.body)
+        assertEquals(SlideArt.TEAMS, teams.art)
+        // Four teams: four groups of players
+        val four = Briefing.slides(inputs().copy(teamCount = 4)).single { it.key == "mode.teams" }
+        assertEquals(SlideArt.FOUR_TEAMS, four.art)
+        assertEquals("4 teams", four.title)
         // Search & Destroy: no respawns, whatever the respawn time
         val snd = Briefing.slides(inputs(field.copy(mode = GameMode.SEARCH_AND_DESTROY)))
         assertEquals(SlideArt.NO_RESPAWN, snd.single { it.key == "mode.respawn" }.art)

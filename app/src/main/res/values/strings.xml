@@ -218,7 +218,7 @@
     <string name="player_list_eliminated_label">Eliminated</string>
     <string name="player_list_team_header">Team %1$d · %2$d/%3$d · score %4$d</string>
     <string name="team_ratio_dialog_title">Team sizes</string>
-    <string name="team_ratio_instructions">Drag to size each team. The last team gets the rest of the %1$d player slots.</string>
+    <string name="team_ratio_instructions">Drag to size each team, or tap a number to type it. The last team gets the rest of the %1$d player slots.</string>
     <string name="team_ratio_rest">Team %1$d (the rest)</string>
     <string name="team_ratio_even">Split evenly</string>
     <string name="team_ratio_slider">Team size</string>

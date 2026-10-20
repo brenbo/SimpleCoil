@@ -37,8 +37,10 @@ class TeamSizesTest {
     }
 
     @Test
-    fun theLastTeamIsntSetDirectly() {
-        assertArrayEquals(intArrayOf(32, 31), TeamSizes.adjust(intArrayOf(32, 31), 1, 10))
+    fun settingTheLastTeam_theTeamBeforeItGetsTheRest() {
+        assertArrayEquals(intArrayOf(53, 10), TeamSizes.adjust(intArrayOf(32, 31), 1, 10))
+        assertArrayEquals(intArrayOf(16, 16, 11, 20), TeamSizes.adjust(intArrayOf(16, 16, 16, 15), 3, 20))
+        assertArrayEquals(intArrayOf(16, 16, 1, 30), TeamSizes.adjust(intArrayOf(16, 16, 16, 15), 3, 99))
     }
 
     @Test

@@ -29,6 +29,8 @@ enum class SlideArt {
     DROP, AMMO, KILLSTREAK,
     CLASSIC, CAPTURE, HARDPOINT, ZONE, MARKSMAN, FLAG, LOOT, BOMB, INFECTION,
     TEAMS, FREE_FOR_ALL, RESPAWN, NO_RESPAWN, BORDER, WIN,
+    /** Four teams: four groups of players (TEAMS is two). */
+    FOUR_TEAMS,
 }
 
 /** The three parts of a briefing: the blaster's buttons, the drops, and how this game plays. */
@@ -238,7 +240,7 @@ object Briefing {
             "Your team's colour is on your screen." +
                 (if (input.voiceChat) " Hold the weapon switch to talk to them." else "") +
                 " Friendly fire doesn't count, so shoot the other colours.",
-            SlideArt.TEAMS)
+            if (input.teamCount == 4) SlideArt.FOUR_TEAMS else SlideArt.TEAMS)
     }
 
     private fun respawns(mode: GameMode, input: BriefingInputs): Slide {

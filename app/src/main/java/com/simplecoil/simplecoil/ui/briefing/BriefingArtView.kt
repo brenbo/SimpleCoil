@@ -113,6 +113,7 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
             SlideArt.BOMB -> bomb(canvas, cx, cy, s)
             SlideArt.INFECTION -> infection(canvas, cx, cy, s)
             SlideArt.TEAMS, SlideArt.FREE_FOR_ALL -> players(canvas, cx, cy, s, art == SlideArt.TEAMS)
+            SlideArt.FOUR_TEAMS -> fourTeams(canvas, cx, cy, s)
             SlideArt.RESPAWN -> respawn(canvas, cx, cy, s)
             SlideArt.NO_RESPAWN -> noRespawn(canvas, cx, cy, s)
             SlideArt.BORDER -> border(canvas, cx, cy, s)
@@ -455,6 +456,18 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
             val wobble = sin((t * 2 * PI + i).toFloat()) * s * 0.01f
             val color = if (teams) TeamColors.colorOf(if (i < 3) 1 else 2) else FFA_COLORS[i % FFA_COLORS.size]
             dot(canvas, cx + dx * s, cy + dy * s + wobble, s * 0.05f, color)
+        }
+    }
+
+    /** Four teams: a group of three in each corner, each in its team's colour. */
+    private fun fourTeams(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        val group = listOf(0f to -0.06f, -0.06f to 0.05f, 0.06f to 0.05f)
+        val corners = listOf(-0.27f to -0.2f, 0.27f to -0.2f, -0.27f to 0.2f, 0.27f to 0.2f)
+        corners.forEachIndexed { team, (gx, gy) ->
+            group.forEachIndexed { i, (dx, dy) ->
+                val wobble = sin((t * 2 * PI + team * 3 + i).toFloat()) * s * 0.01f
+                dot(canvas, cx + (gx + dx) * s, cy + (gy + dy) * s + wobble, s * 0.045f, TeamColors.colorOf(team + 1))
+            }
         }
     }
 

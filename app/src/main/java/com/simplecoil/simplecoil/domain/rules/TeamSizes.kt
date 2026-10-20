@@ -28,16 +28,18 @@ object TeamSizes {
     private val SLOTS = GameSettingsRepository.MAX_PLAYER_ID.toInt()
 
     /**
-     * [sizes] with [team] (0-based, not the last) set to [size], the last team taking up or
-     * giving back the difference. [size] is held to what leaves every other team at least one.
+     * [sizes] with [team] (0-based) set to [size], the last team taking up or giving back the
+     * difference (or, when it is the last team that's set, the team before it). [size] is held to
+     * what leaves every other team at least one.
      */
     fun adjust(sizes: IntArray, team: Int, size: Int): IntArray {
         val result = sizes.copyOf()
+        if (team !in result.indices || result.size < 2) return result
         val last = result.lastIndex
-        if (team !in 0 until last) return result
-        val others = result.indices.filter { it != team && it != last }.sumOf { result[it] }
+        val giver = if (team == last) last - 1 else last
+        val others = result.indices.filter { it != team && it != giver }.sumOf { result[it] }
         result[team] = size.coerceIn(1, SLOTS - others - 1)
-        result[last] = SLOTS - others - result[team]
+        result[giver] = SLOTS - others - result[team]
         return result
     }
 

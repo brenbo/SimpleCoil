@@ -28,10 +28,23 @@
             android:textColor="@color/sc_text"
             android:textSize="16sp" />
 
-        <TextView
+        <!-- The size: follows the slider, or tap it and type one -->
+        <EditText
             android:id="@+id/team_ratio_count_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="64dp"
+            android:background="@drawable/bg_icon_tile"
+            android:gravity="center"
+            android:importantForAutofill="no"
+            android:imeOptions="actionDone"
+            android:inputType="number"
+            android:maxLength="2"
+            android:paddingStart="10dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="4dp"
+            android:selectAllOnFocus="true"
             android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
             android:textSize="22sp" />
     </LinearLayout>

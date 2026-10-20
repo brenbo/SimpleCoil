@@ -21,11 +21,13 @@ import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
@@ -131,6 +133,8 @@ class GameLimitDialog : AppDialogFragment() {
  * always add up to every player slot. OK returns them under [REQUEST_KEY].
  */
 class TeamRatioDialog : AppDialogFragment() {
+    // The size fields hold ASCII digits, read back as the sizes; locale digits wouldn't parse
+    @SuppressLint("SetTextI18n")
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         isCancelable = false
         val numTeams = requireArguments().getInt(ARG_NUM_TEAMS)
@@ -139,12 +143,13 @@ class TeamRatioDialog : AppDialogFragment() {
         val context = requireContext()
         val binding = TeamRatioDialogBinding.inflate(LayoutInflater.from(context))
         binding.teamRatioInstructionsTv.text = getString(R.string.team_ratio_instructions, GameSettingsRepository.MAX_PLAYER_ID.toInt())
-        val counts = ArrayList<TextView>()
+        val counts = ArrayList<EditText>()
         val sliders = ArrayList<Slider>()
         var updating = false
-        fun show() {
+        // Every size shown again, except in the field being typed in ([typing]), so the cursor stays put
+        fun show(typing: Int = -1) {
             updating = true
-            counts.forEachIndexed { team, count -> count.text = getString(R.string.number, sizes[team]) }
+            counts.forEachIndexed { team, count -> if (team != typing) count.setText(sizes[team].toString()) }
             sliders.forEachIndexed { team, slider -> slider.value = sizes[team].toFloat() }
             updating = false
         }
@@ -153,7 +158,21 @@ class TeamRatioDialog : AppDialogFragment() {
             val last = team == numTeams - 1
             row.teamRatioNameTv.text = getString(if (last && numTeams > 1) R.string.team_ratio_rest else R.string.team_number_label, team + 1)
             TeamColors.colorOf(team + 1).takeIf { it != TeamColors.NONE }?.let { row.teamRatioDot.background.mutate().setTint(it) }
-            counts += row.teamRatioCountTv
+            val count = row.teamRatioCountTv
+            counts += count
+            // Tap the number to type one: it applies as you type; leaving the field shows what it came to
+            count.doAfterTextChanged { text ->
+                if (updating) return@doAfterTextChanged
+                val typed = text?.toString()?.toIntOrNull() ?: return@doAfterTextChanged
+                sizes = TeamSizes.adjust(sizes, team, typed)
+                show(typing = team)
+            }
+            count.setOnFocusChangeListener { _, focused -> if (!focused) show() }
+            count.setOnEditorActionListener { view, _, _ ->
+                view.clearFocus()
+                ContextCompat.getSystemService(context, InputMethodManager::class.java)?.hideSoftInputFromWindow(view.windowToken, 0)
+                true
+            }
             if (last) {
                 row.teamRatioSlider.visibility = View.GONE
             } else {
