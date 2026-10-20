@@ -16,6 +16,7 @@
 
 package com.simplecoil.simplecoil.network
 
+import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -53,7 +54,7 @@ class WireCodecTest {
     private val serverCommands = listOf(
         ServerCommand.Ack(1), ServerCommand.Eliminated(1), ServerCommand.EndGame, ServerCommand.Error("Reset the game first"),
         ServerCommand.Hit(1), ServerCommand.Out(1), ServerCommand.ServerCancel, ServerCommand.ServerReply(1),
-        ServerCommand.ServerReply(17), ServerCommand.ServerReply(2), ServerCommand.ShieldHit(1), ServerCommand.ShotFired, ServerCommand.StartGame,
+        ServerCommand.ServerReply(2), ServerCommand.ServerReply(33), ServerCommand.ShieldHit(1), ServerCommand.ShotFired, ServerCommand.StartGame,
         ServerCommand.TeamEliminated,
     )
 
@@ -205,7 +206,7 @@ class WireCodecTest {
     // ------------------------------------------------------------------------------------------
 
     private val ip = "/127.0.0.1"
-    private val players = listOf(WirePlayer(1, "Alpha", ip), WirePlayer(17, "Bravo", ip))
+    private val players = listOf(WirePlayer(1, "Alpha", ip), WirePlayer(33, "Bravo", ip))
 
     private fun serverSettings(playerId: Int, livesLimit: Int?, isAdmin: Boolean) = WirePlayerSettings(
         playerId = playerId, health = 20, reloadShots = 30, reloadTime = 1500, reloadOnEmpty = false, manualRespawn = false,
@@ -214,7 +215,7 @@ class WireCodecTest {
     )
 
     private val lobby = ServerMessage.GameInfo(
-        players = players, limits = WireLimits(null, null, null), gameMode = 2, teamSizes = listOf(16, 16), gameState = 0,
+        players = players, limits = WireLimits(null, null, null), gameMode = 2, teamSizes = listOf(32, 31), gameState = 0,
         timeRemaining = null, sessionPhase = 0, gameId = null, gpsMode = null, allowPlayerSettings = false,
         playerSettings = emptyList(), onlyServerSettings = false, allowChooseTeams = true, startTime = 5, playerUpdate = null,
     )
@@ -229,17 +230,17 @@ class WireCodecTest {
         "server/game_info_lobby_joiner.frame" to lobby.withPlayerUpdate(WirePlayerGameUpdate(0, 0, 0, null, 0)),
         "server/game_info_running.frame" to running,
         "server/game_info_post_game.frame" to running.copy(gameState = 0, timeRemaining = null, sessionPhase = 2),
-        "server/player_data.frame" to ServerMessage.PlayerData(listOf(WireScore(1, "Alpha", ip, 0, 1, true), WireScore(17, "Bravo", ip, 1, 0, true))),
+        "server/player_data.frame" to ServerMessage.PlayerData(listOf(WireScore(1, "Alpha", ip, 0, 1, true), WireScore(33, "Bravo", ip, 1, 0, true))),
         "server/player_settings.frame" to ServerMessage.PlayerSettings(true, listOf(
             serverSettings(1, 2, true),
-            WirePlayerSettings(17, 30, 12, 2500, true, true, 15, 4, -3, null, true, true, false, 1, 2, false),
+            WirePlayerSettings(33, 30, 12, 2500, true, true, 15, 4, -3, null, true, true, false, 1, 2, false),
         )),
         "server/grenade_pairings.frame" to ServerMessage.GrenadePairings(listOf(WireGrenadePairing(3, 1))),
         "server/gps_full.frame" to ServerMessage.GpsUpdate(listOf(WireGpsPosition(1, 1, -74.25, 40.5)), true),
         "server/gps_delta.frame" to ServerMessage.GpsUpdate(listOf(WireGpsPosition(1, 1, -74.5, 40.75)), false),
         "server/score_matrix.frame" to ServerMessage.ScoreMatrix(
-            listOf(WireMatrixPlayer(1, "Alpha", 1, true), WireMatrixPlayer(17, "Bravo", 2, true)),
-            listOf(WireMatrixCell(17, 1, 1)), 418873301),
+            listOf(WireMatrixPlayer(1, "Alpha", 1, true), WireMatrixPlayer(33, "Bravo", 2, true)),
+            listOf(WireMatrixCell(33, 1, 1)), 418873301),
     )
 
     @Test
@@ -319,16 +320,16 @@ class WireCodecTest {
 
     @Test
     fun theLargestScoreMatrix_fitsInOneFrame() {
-        // 32 players with 20-code-point names in a 4-byte script (6 bytes each in modified UTF-8), every cell 999
+        // Every player (63) with 20-code-point names in a 4-byte script (6 bytes each in modified UTF-8), every cell 999
         val name = "\uD800\uDF48".repeat(20)
-        val ids = 1..32
+        val ids = 1..GameSettingsRepository.MAX_PLAYER_ID.toInt()
         val matrix = ServerMessage.ScoreMatrix(
-            ids.map { WireMatrixPlayer(it, name, 1 + it / 17, it % 2 == 0) },
+            ids.map { WireMatrixPlayer(it, name, 1 + it / 33, it % 2 == 0) },
             ids.flatMap { shooter -> ids.map { victim -> WireMatrixCell(shooter, victim, 999) } },
             Long.MAX_VALUE)
         val frame = WireCodec.encode(matrix)
         val bytes = ByteArrayOutputStream().also { DataOutputStream(it).writeUTF(frame) }.toByteArray()
-        assertTrue("${bytes.size} bytes", bytes.size < 32 * 1024)
+        assertTrue("${bytes.size} bytes", bytes.size <= 65535 + 2) // a frame's length is 2 bytes
         assertEquals(matrix, decodeServer(FrameReader(ByteArrayInputStream(bytes)).poll()!!))
     }
 }

@@ -22,21 +22,25 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.os.bundleOf
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
+import com.google.android.material.slider.Slider
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.GameLimitDialogBinding
 import com.simplecoil.simplecoil.databinding.StartingTimerDialogBinding
 import com.simplecoil.simplecoil.databinding.TeamRatioDialogBinding
+import com.simplecoil.simplecoil.databinding.TeamRatioRowBinding
 import com.simplecoil.simplecoil.domain.rules.GameLimitRules
 import com.simplecoil.simplecoil.domain.rules.LimitKind
 import com.simplecoil.simplecoil.domain.rules.Limits
 import com.simplecoil.simplecoil.domain.rules.TeamSizes
+import com.simplecoil.simplecoil.domain.team.TeamColors
 
 /*
  * Dialogs both screens show (DEDICATED_SERVER_DESIGN.md §7.1). They know nothing about their
@@ -123,52 +127,57 @@ class GameLimitDialog : AppDialogFragment() {
 }
 
 /**
- * The team sizes. Stays open, with a toast, until they are valid (each team at least 1, every
- * player slot used); then returns them under [REQUEST_KEY].
+ * The team sizes: a slider for each team but the last, which gets the rest (TeamSizes), so they
+ * always add up to every player slot. OK returns them under [REQUEST_KEY].
  */
 class TeamRatioDialog : AppDialogFragment() {
-    // The fields hold ASCII digits that TeamSizes parses back; locale digits wouldn't parse.
-    @SuppressLint("SetTextI18n")
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         isCancelable = false
         val numTeams = requireArguments().getInt(ARG_NUM_TEAMS)
-        val sizes = requireArguments().getIntArray(ARG_SIZES)!!
-        val binding = TeamRatioDialogBinding.inflate(LayoutInflater.from(requireContext()))
-        val editTexts = listOf(binding.team1RatioEt, binding.team2RatioEt, binding.team3RatioEt, binding.team4RatioEt)
-        editTexts[0].setText(sizes[0].toString())
-        editTexts[1].setText(sizes[1].toString())
-        if (numTeams == 4) {
-            binding.team3Layout.visibility = View.VISIBLE
-            binding.team4Layout.visibility = View.VISIBLE
-            editTexts[2].setText(sizes[2].toString())
-            editTexts[3].setText(sizes[3].toString())
-        } else {
-            binding.team3Layout.visibility = View.GONE
-            binding.team4Layout.visibility = View.GONE
+        var sizes = requireArguments().getIntArray(ARG_SIZES)!!.copyOf(numTeams)
+        if (sizes.sum() != GameSettingsRepository.MAX_PLAYER_ID.toInt() || sizes.any { it < 1 }) sizes = TeamSizes.even(numTeams)
+        val context = requireContext()
+        val binding = TeamRatioDialogBinding.inflate(LayoutInflater.from(context))
+        binding.teamRatioInstructionsTv.text = getString(R.string.team_ratio_instructions, GameSettingsRepository.MAX_PLAYER_ID.toInt())
+        val counts = ArrayList<TextView>()
+        val sliders = ArrayList<Slider>()
+        var updating = false
+        fun show() {
+            updating = true
+            counts.forEachIndexed { team, count -> count.text = getString(R.string.number, sizes[team]) }
+            sliders.forEachIndexed { team, slider -> slider.value = sizes[team].toFloat() }
+            updating = false
         }
-        val dialog = alertBuilder()
-            .setView(binding.root)
-            .setTitle(R.string.team_ratio_dialog_title)
-            .setPositiveButton(R.string.ok, null)
-            .setNegativeButton(R.string.cancel) { d, _ -> d.cancel() }
-            .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                when (val result = TeamSizes.validate(editTexts.map { it.text.toString() }, numTeams)) {
-                    TeamSizes.Result.BelowOne -> toast(getString(R.string.team_ratio_min_one), Toast.LENGTH_SHORT)
-                    is TeamSizes.Result.WrongTotal ->
-                        toast(getString(R.string.team_ratio_total, GameSettingsRepository.MAX_PLAYER_ID.toInt(), result.total), Toast.LENGTH_LONG)
-                    is TeamSizes.Result.Valid -> {
-                        parentFragmentManager.setFragmentResult(REQUEST_KEY, bundleOf(RESULT_SIZES to result.sizes))
-                        dialog.dismiss()
-                    }
+        for (team in 0 until numTeams) {
+            val row = TeamRatioRowBinding.inflate(LayoutInflater.from(context), binding.teamRatioRows, true)
+            val last = team == numTeams - 1
+            row.teamRatioNameTv.text = getString(if (last && numTeams > 1) R.string.team_ratio_rest else R.string.team_number_label, team + 1)
+            TeamColors.colorOf(team + 1).takeIf { it != TeamColors.NONE }?.let { row.teamRatioDot.background.mutate().setTint(it) }
+            counts += row.teamRatioCountTv
+            if (last) {
+                row.teamRatioSlider.visibility = View.GONE
+            } else {
+                row.teamRatioSlider.valueTo = TeamSizes.maxSize(numTeams).toFloat()
+                row.teamRatioSlider.addOnChangeListener { _, value, fromUser ->
+                    if (updating || !fromUser) return@addOnChangeListener
+                    sizes = TeamSizes.adjust(sizes, team, value.toInt())
+                    show()
                 }
+                sliders += row.teamRatioSlider
             }
         }
-        return dialog
+        binding.teamRatioEvenButton.setOnClickListener {
+            sizes = TeamSizes.even(numTeams)
+            show()
+        }
+        show()
+        return alertBuilder()
+            .setView(binding.root)
+            .setTitle(R.string.team_ratio_dialog_title)
+            .setPositiveButton(R.string.ok) { _, _ -> parentFragmentManager.setFragmentResult(REQUEST_KEY, bundleOf(RESULT_SIZES to sizes)) }
+            .setNegativeButton(R.string.cancel) { d, _ -> d.cancel() }
+            .create()
     }
-
-    private fun toast(text: String, duration: Int) = Toast.makeText(requireActivity(), text, duration).show()
 
     companion object {
         const val REQUEST_KEY = "teamRatio"

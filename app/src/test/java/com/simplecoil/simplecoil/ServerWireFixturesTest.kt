@@ -136,7 +136,7 @@ class ServerWireFixturesTest {
         alpha.json(JSONObject().put(WireKeys.GPSLONGITUDE, -74.5).put(WireKeys.GPSLATITUDE, 40.75))
         WireFixtures.assertFrame("server/gps_delta.frame", awaitJsonFrame(bravo, WireKeys.GPSUPDATE, 1))
 
-        alpha.mesg(WireProtocol.NETMSG_ELIMINATED + 17) // Alpha out, Bravo scores: the final scores aren't all 0
+        alpha.mesg(WireProtocol.NETMSG_ELIMINATED + 33) // Alpha out, Bravo scores: the final scores aren't all 0
         bravo.awaitMesg(WireProtocol.NETMSG_ELIMINATED)
         val infosBeforeEnd = jsonFrames(bravo, WireKeys.PLAYERS).size
         server.endGame()
@@ -150,7 +150,7 @@ class ServerWireFixturesTest {
         val alpha = join("Alpha", "AA:00")
         val bravo = join("Bravo", "BB:00")
         players.playerSettings[1] = PlayerSettings().apply { overrideLives = true; lives = 2; isAdmin = true }
-        players.playerSettings[17] = PlayerSettings().apply {
+        players.playerSettings[33] = PlayerSettings().apply {
             health = 30; shots = 12; reloadTime = 2500; reloadOnEmpty = true; manualRespawn = true; spawnTime = 15
             respawnShieldTime = 4; damage = -3; allowShotModeAuto = false; firingMode = 1; recoilSetting = 2
         }
@@ -167,7 +167,7 @@ class ServerWireFixturesTest {
         val bravo = join("Bravo", "BB:00")
         server.startGame()
         bravo.awaitMesg(WireProtocol.NETMSG_STARTGAME)
-        alpha.mesg(WireProtocol.NETMSG_ELIMINATED + 17)
+        alpha.mesg(WireProtocol.NETMSG_ELIMINATED + 33)
         bravo.awaitMesg(WireProtocol.NETMSG_ELIMINATED)
         alpha.mesg(WireProtocol.NETMSG_SCOREMATRIXREQUEST)
         val json = JSONObject(awaitJsonFrame(alpha, WireKeys.SCOREMATRIX).removePrefix(jsonHeader))
@@ -178,21 +178,21 @@ class ServerWireFixturesTest {
     @Test
     fun commands() {
         val alpha = join("Alpha", "AA:00") // 1, team 1
-        val bravo = join("Bravo", "BB:00") // 17, team 2
+        val bravo = join("Bravo", "BB:00") // 33, team 2
         val charlie = join("Charlie", "CC:00") // 2, team 1
         server.startGame()
         charlie.awaitMesg(WireProtocol.NETMSG_STARTGAME)
-        alpha.mesg(WireProtocol.NETMSG_HIT + 17)
+        alpha.mesg(WireProtocol.NETMSG_HIT + 33)
         bravo.awaitMesg(WireProtocol.NETMSG_HIT)
-        alpha.mesg(WireProtocol.NETMSG_OUT + 17)
+        alpha.mesg(WireProtocol.NETMSG_OUT + 33)
         bravo.awaitMesg(WireProtocol.NETMSG_OUT)
-        alpha.mesg(WireProtocol.NETMSG_SHIELDHIT + 17)
+        alpha.mesg(WireProtocol.NETMSG_SHIELDHIT + 33)
         bravo.awaitMesg(WireProtocol.NETMSG_SHIELDHIT)
         bravo.mesg(WireProtocol.NETMSG_SHOTFIRED)
         charlie.awaitMesg(WireProtocol.NETMSG_SHOTFIRED)
         val outbox = ClientOutbox()
         outbox.onGameId(server.roster.gameId())
-        val entry = outbox.add(WireProtocol.NETMSG_ELIMINATED + 17, outbox.gameId)
+        val entry = outbox.add(WireProtocol.NETMSG_ELIMINATED + 33, outbox.gameId)
         alpha.send(WireCodec.encode(ClientMessage.Reliable(entry.rmsg, entry.seq, outbox.gameId)))
         alpha.awaitMesg(WireProtocol.NETMSG_ACK)
         bravo.awaitMesg(WireProtocol.NETMSG_ELIMINATED)

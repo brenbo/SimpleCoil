@@ -57,9 +57,9 @@ public class PlayerRepositoryTest {
         settingsRepo.setTeamMode(TeamMode.TWO_TEAMS);
 
         assertEquals(1, playerRepo.calcNetworkTeam((byte) 1));
-        assertEquals(1, playerRepo.calcNetworkTeam((byte) 16));
-        assertEquals(2, playerRepo.calcNetworkTeam((byte) 17));
-        assertEquals(2, playerRepo.calcNetworkTeam((byte) 32));
+        assertEquals(1, playerRepo.calcNetworkTeam((byte) 32));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 33));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 63));
     }
 
     @Test
@@ -67,13 +67,13 @@ public class PlayerRepositoryTest {
         settingsRepo.setTeamMode(TeamMode.FOUR_TEAMS);
 
         assertEquals(1, playerRepo.calcNetworkTeam((byte) 1));
-        assertEquals(1, playerRepo.calcNetworkTeam((byte) 8));
-        assertEquals(2, playerRepo.calcNetworkTeam((byte) 9));
-        assertEquals(2, playerRepo.calcNetworkTeam((byte) 16));
-        assertEquals(3, playerRepo.calcNetworkTeam((byte) 17));
-        assertEquals(3, playerRepo.calcNetworkTeam((byte) 24));
-        assertEquals(4, playerRepo.calcNetworkTeam((byte) 25));
-        assertEquals(4, playerRepo.calcNetworkTeam((byte) 32));
+        assertEquals(1, playerRepo.calcNetworkTeam((byte) 16));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 17));
+        assertEquals(2, playerRepo.calcNetworkTeam((byte) 32));
+        assertEquals(3, playerRepo.calcNetworkTeam((byte) 33));
+        assertEquals(3, playerRepo.calcNetworkTeam((byte) 48));
+        assertEquals(4, playerRepo.calcNetworkTeam((byte) 49));
+        assertEquals(4, playerRepo.calcNetworkTeam((byte) 63));
     }
 
     @Test
@@ -106,9 +106,9 @@ public class PlayerRepositoryTest {
         assertEquals((byte) 1, player1ID);
         playerRepo.getTeamIPMap().put(player1ID, InetAddress.getByName("192.168.1.101"));
 
-        // Player 2 joins -> should receive Team 2 ID (e.g. ID 17) because team 1 has 1 player and team 2 has 0
+        // Player 2 joins -> should receive Team 2 ID (e.g. ID 33) because team 1 has 1 player and team 2 has 0
         byte player2ID = playerRepo.findAutoSortPlayerID();
-        assertEquals((byte) 17, player2ID);
+        assertEquals((byte) 33, player2ID);
         playerRepo.getTeamIPMap().put(player2ID, InetAddress.getByName("192.168.1.102"));
 
         // Verify Player 1 and Player 2 have distinct player IDs and teams
@@ -123,11 +123,11 @@ public class PlayerRepositoryTest {
 
         Set<Byte> additional = new HashSet<>();
         additional.add((byte) 1);
-        additional.add((byte) 17);
+        additional.add((byte) 33);
 
         byte newID = playerRepo.findAutoSortPlayerID(additional);
         Assert.assertNotEquals((byte) 1, newID);
-        Assert.assertNotEquals((byte) 17, newID);
+        Assert.assertNotEquals((byte) 33, newID);
         Assert.assertTrue(newID > 0 && newID <= GameSettingsRepository.MAX_PLAYER_ID);
     }
 

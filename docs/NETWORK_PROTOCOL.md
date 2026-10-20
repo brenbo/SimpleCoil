@@ -74,7 +74,9 @@ The server refuses the join in these cases:
   `MESG ERROR<reason>` and closes the connection.
 - **Server full**: it closes the connection.
 
-Player IDs run from 1 to 32. In team games, the ID decides the team. The IDs are split into
+Player IDs run from 1 to 63 (a blaster reports who hit it as their ID shifted up 2 bits in one byte,
+so no higher ID can come back). Phones and servers from before this limit used 1 to 32: run the same
+version everywhere. In team games, the ID decides the team. The IDs are split into
 consecutive blocks, sized by the team sizes.
 
 ## 4. Messages
@@ -105,7 +107,7 @@ operator marked as admin. It ignores them from anyone else.
 | `ADMIN_ENDGAME` | End the game. |
 | `ADMIN_RESET` | Clear the finished game and go back to the lobby. |
 | `ADMIN_GAMEMODE<n>` | Set the game mode (1 = free for all, 2 = two teams, 4 = four teams) and reassign IDs. |
-| `ADMIN_TEAMSIZES<a,b,...>` | Set team sizes (they must add up to 32) and reassign IDs. |
+| `ADMIN_TEAMSIZES<a,b,...>` | Set team sizes (they must add up to 63) and reassign IDs. |
 | `ADMIN_SORTTEAMS` | Shuffle the players into teams. |
 | `ADMIN_KICK<id>` | Remove a player. They receive `SERVERCANCEL`. |
 

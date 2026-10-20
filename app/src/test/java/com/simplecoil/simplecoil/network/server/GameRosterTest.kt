@@ -65,13 +65,13 @@ class GameRosterTest {
     fun hello_autoSortsAlternatingTeams_andHonorsAFreeRequestedId() {
         val (_, a) = join("Alpha", "AA")
         val (_, b) = join("Bravo", "BB")
-        val (_, c) = join("Charlie", "CC", requestedId = 20)
+        val (_, c) = join("Charlie", "CC", requestedId = 40)
         assertEquals(1.toByte(), a.playerId)
-        assertEquals(17.toByte(), b.playerId)
-        assertEquals(20.toByte(), c.playerId)
+        assertEquals(33.toByte(), b.playerId)
+        assertEquals(40.toByte(), c.playerId)
         assertEquals(2, c.team)
         assertEquals("Alpha", repo.getPlayerName(1))
-        assertEquals(17.toByte(), repo.getPlayerIdByMac("BB"))
+        assertEquals(33.toByte(), repo.getPlayerIdByMac("BB"))
     }
 
     @Test
@@ -198,7 +198,7 @@ class GameRosterTest {
         assertEquals(GameRoster.HelloResult.Kind.REJOINED, result.kind)
         assertSame(b, result.record)
         assertEquals(1, b.points)
-        assertEquals(17.toByte(), b.playerId)
+        assertEquals(33.toByte(), b.playerId)
         assertEquals(1, a.eliminated)
     }
 
@@ -401,7 +401,7 @@ class GameRosterTest {
     @Test
     fun matrix_recordsCreditedOwnAndTeammateKills() {
         val (ca, a) = join("Alpha", "AA") // 1, team 1
-        val (cb, b) = join("Bravo", "BB") // 17, team 2
+        val (cb, b) = join("Bravo", "BB") // 33, team 2
         val (_, c) = join("Charlie", "CC") // 2, team 1
         roster.startGame()
         roster.onEliminated(ca, b.playerId) // credited
@@ -409,9 +409,9 @@ class GameRosterTest {
         roster.onEliminated(cb, a.playerId)
         roster.onEliminated(ca, a.playerId) // own grenade
         roster.onEliminated(ca, c.playerId) // teammate's grenade
-        assertEquals(mapOf((17 to 1) to 2, (1 to 17) to 1, (1 to 1) to 1, (2 to 1) to 1), cells())
+        assertEquals(mapOf((33 to 1) to 2, (1 to 33) to 1, (1 to 1) to 1, (2 to 1) to 1), cells())
         val matrix = roster.scoreMatrix()
-        assertEquals(listOf<Byte>(1, 2, 17), matrix.players.map { it.playerId })
+        assertEquals(listOf<Byte>(1, 2, 33), matrix.players.map { it.playerId })
         assertEquals(listOf("Alpha", "Charlie", "Bravo"), matrix.players.map { it.name })
         assertEquals(listOf(1, 1, 2), matrix.players.map { it.team })
     }
@@ -546,10 +546,10 @@ class GameRosterTest {
         join("Bravo", "BB", requestedId = 4)
         join("Charlie", "CC", requestedId = 5)
         val result = roster.rebalance(false)
-        assertEquals(listOf<Byte>(1, 17, 2), result.assigned.map { it.playerId })
+        assertEquals(listOf<Byte>(1, 33, 2), result.assigned.map { it.playerId })
         assertEquals(listOf(1, 2, 1), result.assigned.map { it.team })
-        assertEquals("Bravo", repo.getPlayerName(17))
-        assertEquals(17.toByte(), repo.getPlayerIdByMac("BB"))
+        assertEquals("Bravo", repo.getPlayerName(33))
+        assertEquals(33.toByte(), repo.getPlayerIdByMac("BB"))
         assertNull(repo.teamIPMap[3])
     }
 
@@ -570,7 +570,7 @@ class GameRosterTest {
         roster.rebalance(false)
         repeat(20) { connect() }
         assertEquals(22, roster.connectionCount())
-        assertSame(b, roster.record(17))
+        assertSame(b, roster.record(33))
         assertSame(cb, b.connection)
         assertSame(a, roster.record(1))
     }
@@ -580,10 +580,10 @@ class GameRosterTest {
         val (ca, a) = join("Alpha", "AA")
         val moved = roster.changeTeam(ca, 2)
         assertSame(a, moved)
-        assertEquals(17.toByte(), a.playerId)
+        assertEquals(33.toByte(), a.playerId)
         assertEquals(2, a.team)
         assertNull(roster.record(1))
-        assertEquals("Alpha", repo.getPlayerName(17))
+        assertEquals("Alpha", repo.getPlayerName(33))
     }
 
     @Test
@@ -591,17 +591,17 @@ class GameRosterTest {
         val (_, a) = join("Alpha", "AA")
         val (_, b) = join("Bravo", "BB")
         assertEquals(1.toByte(), a.playerId)
-        assertEquals(17.toByte(), b.playerId)
-        assertEquals(a to b, roster.swapPlayers(1, 17))
-        assertEquals(17.toByte(), a.playerId)
+        assertEquals(33.toByte(), b.playerId)
+        assertEquals(a to b, roster.swapPlayers(1, 33))
+        assertEquals(33.toByte(), a.playerId)
         assertEquals(2, a.team)
         assertEquals(1.toByte(), b.playerId)
         assertEquals(1, b.team)
-        assertSame(a, roster.record(17))
+        assertSame(a, roster.record(33))
         assertSame(b, roster.record(1))
-        assertEquals("Alpha", repo.getPlayerName(17))
+        assertEquals("Alpha", repo.getPlayerName(33))
         assertEquals("Bravo", repo.getPlayerName(1))
-        assertEquals(17.toByte(), repo.getPlayerIdByMac("AA"))
+        assertEquals(33.toByte(), repo.getPlayerIdByMac("AA"))
         assertNull(roster.swapPlayers(1, 5))
     }
 }

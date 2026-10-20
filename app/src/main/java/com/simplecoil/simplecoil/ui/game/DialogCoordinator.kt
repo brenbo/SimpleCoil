@@ -76,7 +76,7 @@ class DialogCoordinator(
             vm.onGameLimitsEntered(GameLimitDialog.texts(result))
         }
         fm.setFragmentResultListener(TeamRatioDialog.REQUEST_KEY, activity) { _, result ->
-            vm.onTeamSizesEntered(TeamRatioDialog.sizes(result).map { it.toString() })
+            vm.onTeamSizesEntered(TeamRatioDialog.sizes(result))
         }
         fm.setFragmentResultListener(TeamSwapDialog.REQUEST_KEY, activity) { _, result ->
             TeamSwapDialog.result(result).let { vm.onTeamSwapChosen(it.team, it.swapWith) }
@@ -163,9 +163,6 @@ class DialogCoordinator(
             GameMessage.RATIOS_DURING_GAME -> activityToast("Cannot edit team ratios while a game is in progress")
             GameMessage.RATIOS_ADMIN_ONLY -> activityToast("Only server admins can edit team ratios")
             GameMessage.RATIOS_NOT_IN_FFA -> activityToast("Team ratios are not applicable in Free For All mode")
-            GameMessage.RATIOS_MIN_ONE -> activityToast("Team limits must be at least 1 player slot")
-            GameMessage.RATIOS_TOTAL ->
-                activityToast("Total player slots across all teams must equal " + GameSettingsRepository.MAX_PLAYER_ID + " (current sum: " + arg + ")", Toast.LENGTH_LONG)
             GameMessage.KICK_SENT -> activityToast("Kick command sent")
             GameMessage.QR_NO_BLASTER -> toast(appContext.getString(R.string.qr_no_blaster_toast))
         }

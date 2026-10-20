@@ -18,32 +18,32 @@ package com.simplecoil.simplecoil.domain.rules
 
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 
-/** The team size dialog's rules, shared by the play screen and the dedicated server. Pure. */
+/**
+ * The team size dialog's rules, shared by the play screen and the dedicated server. Pure. The
+ * sizes always add up to every player slot: each team but the last is set, and the last team
+ * gets the rest, never fewer than one.
+ */
 object TeamSizes {
 
-    sealed interface Result {
-        data class Valid(val sizes: IntArray) : Result {
-            override fun equals(other: Any?) = other is Valid && sizes.contentEquals(other.sizes)
-            override fun hashCode() = sizes.contentHashCode()
-        }
-        /** A team field is empty, not a number, or below 1. */
-        data object BelowOne : Result
-        /** The sizes don't add up to every player slot. */
-        data class WrongTotal(val total: Int) : Result
+    private val SLOTS = GameSettingsRepository.MAX_PLAYER_ID.toInt()
+
+    /**
+     * [sizes] with [team] (0-based, not the last) set to [size], the last team taking up or
+     * giving back the difference. [size] is held to what leaves every other team at least one.
+     */
+    fun adjust(sizes: IntArray, team: Int, size: Int): IntArray {
+        val result = sizes.copyOf()
+        val last = result.lastIndex
+        if (team !in 0 until last) return result
+        val others = result.indices.filter { it != team && it != last }.sumOf { result[it] }
+        result[team] = size.coerceIn(1, SLOTS - others - 1)
+        result[last] = SLOTS - others - result[team]
+        return result
     }
 
-    /** Validates the first [teamCount] of [texts]: each at least 1, together every player slot. */
-    fun validate(texts: List<String>, teamCount: Int = texts.size): Result {
-        val sizes = IntArray(teamCount)
-        var total = 0
-        for (i in 0 until teamCount) {
-            val text = texts.getOrElse(i) { "" }.trim()
-            val value = text.toIntOrNull()
-            if (value == null || value <= 0) return Result.BelowOne
-            sizes[i] = value
-            total += value
-        }
-        if (total != GameSettingsRepository.MAX_PLAYER_ID.toInt()) return Result.WrongTotal(total)
-        return Result.Valid(sizes)
-    }
+    /** [teamCount] teams as even as they go, the first teams one bigger when it doesn't divide. */
+    fun even(teamCount: Int): IntArray = IntArray(teamCount) { SLOTS / teamCount + if (it < SLOTS % teamCount) 1 else 0 }
+
+    /** The most players one team but the last can have: everyone else keeps one. */
+    fun maxSize(teamCount: Int): Int = SLOTS - (teamCount - 1)
 }

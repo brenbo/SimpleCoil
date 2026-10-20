@@ -34,7 +34,9 @@ public class GameSettingsRepository {
     }
 
     // Constants
-    public static final byte MAX_PLAYER_ID = (byte) 0x20;
+    // The most players: a blaster reports who hit it as their id shifted up 2 bits in one byte, so
+    // ids above 63 can't come back (and 0 is "no hit")
+    public static final byte MAX_PLAYER_ID = (byte) 0x3F;
     public static final byte RELOAD_COUNT = (byte) 30;
     public static final long RESPAWN_TIME_SECONDS = 10;
     public static final long RESPAWN_SHIELD_TIME_SECONDS = 3;

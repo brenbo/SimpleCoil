@@ -33,9 +33,7 @@ enum class NetworkButton { USE_NETWORK, MENU, SEARCHING, DISABLE }
 enum class GameMessage {
     NOT_ENOUGH_PLAYERS, PLAYER_SETTINGS_NOT_ALLOWED,
     UDP_VERSION_ERROR, KICKED_BY_SERVER, INAPPROPRIATE_NAME, LOCATION_PERMISSION_REQUIRED,
-    RATIOS_DURING_GAME, RATIOS_ADMIN_ONLY, RATIOS_NOT_IN_FFA, RATIOS_MIN_ONE,
-    /** Team sizes don't add up; arg = the entered total. */
-    RATIOS_TOTAL,
+    RATIOS_DURING_GAME, RATIOS_ADMIN_ONLY, RATIOS_NOT_IN_FFA,
     KICK_SENT,
     /** Generate QR without a blaster address to put in the code. */
     QR_NO_BLASTER,

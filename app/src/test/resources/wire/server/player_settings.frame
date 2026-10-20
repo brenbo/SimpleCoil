@@ -35,7 +35,7 @@ SimpleCoil:07JSON
       "respawnshieldtime": 4,
       "spawntime": 15,
       "shotmodesingle": true,
-      "playerID": 17
+      "playerID": 33
     }
   ]
 }

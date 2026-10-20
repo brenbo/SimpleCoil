@@ -585,12 +585,12 @@ class BlasterSessionEngineTest {
     @Test
     fun fourTeams_friendlyFireFollowsTheFourTeamLayout() {
         h.rec.useNetwork = true
-        h.engine.networkTeam = 1 // players 1-8 with four teams
+        h.engine.networkTeam = 1 // players 1-16 with four teams
         h.config.teamLayout = TeamLayout.defaultFor(TeamMode.FOUR_TEAMS)
         h.connected()
         h.startedAndSpawned()
-        // Player 9 is on team 2 with four teams (with two teams of 16 it would be a teammate).
-        h.telemetry(Packet().hit1(0x24, 0x3D))
+        // Player 17 is on team 2 with four teams (with two teams of 32 it would be a teammate).
+        h.telemetry(Packet().hit1(0x44, 0x3D))
         assertEquals(GameSettingsRepository.MAX_HEALTH - 1, h.state.health)
         // Player 2 is a teammate: the hit is counted but costs nothing.
         h.telemetry(Packet().noHit())

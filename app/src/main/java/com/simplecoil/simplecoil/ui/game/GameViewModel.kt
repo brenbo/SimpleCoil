@@ -33,7 +33,6 @@ import com.simplecoil.simplecoil.domain.player.PlayerNames
 import com.simplecoil.simplecoil.domain.rules.GameLimitRules
 import com.simplecoil.simplecoil.domain.rules.LimitKind
 import com.simplecoil.simplecoil.domain.rules.Limits
-import com.simplecoil.simplecoil.domain.rules.TeamSizes
 import com.simplecoil.simplecoil.domain.session.BlasterSessionEngine
 import com.simplecoil.simplecoil.domain.session.HitResolver
 import com.simplecoil.simplecoil.domain.session.SessionEffect
@@ -1065,19 +1064,9 @@ class GameViewModel(
         screen?.showTeamRatioDialog(layout.mode.teamCount, layout.teamSizes())
     }
 
-    /** Team sizes entered in the ratio dialog. Returns true when accepted (close the dialog). */
-    fun onTeamSizesEntered(texts: List<String>): Boolean {
-        val newSizes = when (val result = TeamSizes.validate(texts)) {
-            TeamSizes.Result.BelowOne -> {
-                screen?.showMessage(GameMessage.RATIOS_MIN_ONE)
-                return false
-            }
-            is TeamSizes.Result.WrongTotal -> {
-                screen?.showMessage(GameMessage.RATIOS_TOTAL, result.total)
-                return false
-            }
-            is TeamSizes.Result.Valid -> result.sizes
-        }
+    /** Team sizes from the ratio dialog (which keeps them adding up to every slot). Returns true when accepted. */
+    fun onTeamSizesEntered(newSizes: IntArray): Boolean {
+        if (newSizes.any { it < 1 } || newSizes.sum() != GameSettingsRepository.MAX_PLAYER_ID.toInt()) return false
         settingsRepo.setTeamSizes(newSizes)
         net.tcpClient?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminTeamSizes(newSizes.toList())))
         return true

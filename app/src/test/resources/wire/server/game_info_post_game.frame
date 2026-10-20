@@ -11,7 +11,7 @@ SimpleCoil:07JSON
     {
       "playername": "Bravo",
       "playerIP": "/127.0.0.1",
-      "playerID": 17
+      "playerID": 33
     }
   ],
   "sessionphase": 2,
@@ -37,8 +37,8 @@ SimpleCoil:07JSON
   "starttime": 5,
   "gamemode": 2,
   "teamsizes": [
-    16,
-    16
+    32,
+    31
   ],
   "allowchooseteams": true,
   "gamestate": 0,

@@ -284,15 +284,15 @@ class DedicatedServerViewModelTest {
         vm.onTeamHeaderClicked()
         val ratio = effects.last() as ServerUiEffect.ShowTeamRatio
         assertEquals(4, ratio.teamCount)
-        assertArrayEquals(intArrayOf(8, 8, 8, 8), ratio.sizes)
+        assertArrayEquals(intArrayOf(16, 16, 16, 15), ratio.sizes)
     }
 
     @Test
     fun playerRow_opensItsSettings_withItsPlaceOnTheTeam() {
-        publish(players = listOf(player(18)))
-        vm.onPlayerClicked(18)
+        publish(players = listOf(player(34)))
+        vm.onPlayerClicked(34)
         val dialog = effects.single() as ServerUiEffect.ShowPlayerSettings
-        assertEquals("P18", dialog.playerName)
+        assertEquals("P34", dialog.playerName)
         assertEquals(2, dialog.teamCount)
         assertEquals(2, dialog.team)
         assertEquals(2, dialog.indexInTeam)
@@ -313,7 +313,7 @@ class DedicatedServerViewModelTest {
 
     @Test
     fun playerRow_listsTheFullTeams_andSavingSwapsWithThePickedPlayer() {
-        publish(players = listOf(player(1), player(2), player(3)), sizes = intArrayOf(1, 31))
+        publish(players = listOf(player(1), player(2), player(3)), sizes = intArrayOf(1, 62))
         vm.onPlayerClicked(2)
         val dialog = effects.single() as ServerUiEffect.ShowPlayerSettings
         assertEquals(mapOf(1 to listOf(1.toByte() to "P1")), dialog.fullTeams)

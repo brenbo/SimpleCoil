@@ -81,8 +81,8 @@ class OutboundCommandProtocolTest {
     fun setTeam_minAndMaxPlayerIds() {
         assertPacket("00 00 80 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
             buildSetTeamCommand(b(0x00), b(1)))
-        // GameSettingsRepository.MAX_PLAYER_ID == 0x20 (32)
-        assertPacket("F0 00 80 00 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+        // GameSettingsRepository.MAX_PLAYER_ID == 0x3F (63)
+        assertPacket("F0 00 80 00 3F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
             buildSetTeamCommand(b(0xF0), GameSettingsRepository.MAX_PLAYER_ID))
     }
 

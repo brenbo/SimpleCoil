@@ -140,7 +140,7 @@ public class MapLocationManagerTest {
     @Test
     public void testFourTeamsUsesTheFourTeamLayout() {
         TeamLayout four = TeamLayout.defaultFor(TeamMode.FOUR_TEAMS);
-        byte me = 9; // team 2 with four teams, team 1 with two
+        byte me = 17; // team 2 with four teams, team 1 with two
         assertTrue(MapLocationManager.isVisible(four, GameSettingsRepository.GPS_TEAMMATE, me, playerOnTeam(2)));
         assertFalse(MapLocationManager.isVisible(four, GameSettingsRepository.GPS_TEAMMATE, me, playerOnTeam(1)));
     }

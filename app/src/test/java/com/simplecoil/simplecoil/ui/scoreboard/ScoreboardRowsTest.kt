@@ -88,15 +88,15 @@ class ScoreboardRowsTest {
     @Test
     fun teams_sortByTeamScore_withTheirPlayersUnderThem() {
         val rows = ScoreboardRows.build(
-            players(player(1, "Team 1 Low", 5), player(2, "Team 1 High", 15), player(17, "Team 2 High", 50)),
+            players(player(1, "Team 1 Low", 5), player(2, "Team 1 High", 15), player(33, "Team 2 High", 50)),
             context(mode = TeamMode.TWO_TEAMS),
         )
-        // Column header, team 2 (50), 17, team 1 (20), 2 (15), 1 (5)
+        // Column header, team 2 (50), 33, team 1 (20), 2 (15), 1 (5)
         assertEquals(6, rows.size)
-        assertEquals(ScoreboardRow.TeamHeader(2, 1, 16, 50, true), rows[1])
-        assertEquals(17, (rows[2] as ScoreboardRow.Player).playerId.toInt())
-        assertEquals(ScoreboardRow.TeamHeader(1, 2, 16, 20, true), rows[3])
-        assertEquals(listOf(17, 2, 1), rows.playerIds())
+        assertEquals(ScoreboardRow.TeamHeader(2, 1, 31, 50, true), rows[1])
+        assertEquals(33, (rows[2] as ScoreboardRow.Player).playerId.toInt())
+        assertEquals(ScoreboardRow.TeamHeader(1, 2, 32, 20, true), rows[3])
+        assertEquals(listOf(33, 2, 1), rows.playerIds())
     }
 
     @Test
@@ -126,8 +126,8 @@ class ScoreboardRowsTest {
 
     @Test
     fun withVoiceChat_teammatesGetAMuteButton_andYourTeamAMuteAll_nobodyElse() {
-        // Two teams: 1 (me), 2 and 3 on team 1, 17 and 18 on team 2
-        val data = players(player(1, "Me", 0), player(2, "Mate", 0), player(3, "Pal", 0), player(17, "A", 0), player(18, "B", 0))
+        // Two teams: 1 (me), 2 and 3 on team 1, 33 and 34 on team 2
+        val data = players(player(1, "Me", 0), player(2, "Mate", 0), player(3, "Pal", 0), player(33, "A", 0), player(34, "B", 0))
         val quiet = ScoreboardRows.build(data, context(mode = TeamMode.TWO_TEAMS, isClient = true, selfId = 1))
         assertTrue(quiet.filterIsInstance<ScoreboardRow.Player>().all { it.muted == null })
 
@@ -138,7 +138,7 @@ class ScoreboardRowsTest {
         assertEquals(true, byId.getValue(2).muted)
         assertEquals(false, byId.getValue(3).muted)
         // The other team can't be heard anyway
-        assertEquals(null, byId.getValue(17).muted)
+        assertEquals(null, byId.getValue(33).muted)
         val headers = voice.filterIsInstance<ScoreboardRow.TeamHeader>().associateBy { it.team }
         assertEquals(false, headers.getValue(1).allMuted)
         assertEquals(null, headers.getValue(2).allMuted)

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One team in the team sizes dialog: its color, name and size, and its slider (none for the
+     last team, which gets the rest). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/team_ratio_dot"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_pill" />
+
+        <TextView
+            android:id="@+id/team_ratio_name_tv"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/sc_text"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/team_ratio_count_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
+            android:textSize="22sp" />
+    </LinearLayout>
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/team_ratio_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/team_ratio_slider"
+        android:stepSize="1"
+        android:valueFrom="1"
+        android:valueTo="63"
+        app:labelBehavior="gone"
+        app:tickVisible="false"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+</LinearLayout>

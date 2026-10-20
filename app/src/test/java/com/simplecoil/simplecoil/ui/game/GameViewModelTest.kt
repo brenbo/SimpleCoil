@@ -165,7 +165,7 @@ class GameViewModelTest {
         vm.onTeamPlusPressed()
         assertEquals(1.toByte(), players.playerID)
         assertEquals(1, prefs.values["SelectedPlayerID"])
-        assertEquals(listOf("team:32", "team:1"), rec.ble)
+        assertEquals(listOf("team:63", "team:1"), rec.ble)
     }
 
     @Test
@@ -523,14 +523,14 @@ class GameViewModelTest {
     }
 
     @Test
-    fun gameModeSelected_fourTeams_splitsPlayerIdsIntoTeamsOfEight() {
+    fun gameModeSelected_fourTeams_splitsPlayerIdsIntoTeamsOfSixteen() {
         vm.onTeamModeSelected(TeamMode.FOUR_TEAMS)
-        assertEquals(1, players.calcNetworkTeam(8))
-        assertEquals(2, players.calcNetworkTeam(9))
-        assertEquals(4, players.calcNetworkTeam(32))
-        vm.onTeamModeSelected(TeamMode.TWO_TEAMS)
         assertEquals(1, players.calcNetworkTeam(16))
         assertEquals(2, players.calcNetworkTeam(17))
+        assertEquals(4, players.calcNetworkTeam(63))
+        vm.onTeamModeSelected(TeamMode.TWO_TEAMS)
+        assertEquals(1, players.calcNetworkTeam(32))
+        assertEquals(2, players.calcNetworkTeam(33))
     }
 
     @Test
@@ -605,13 +605,11 @@ class GameViewModelTest {
     }
 
     @Test
-    fun teamSizes_validateLikeTheDialogDid() {
-        assertFalse(vm.onTeamSizesEntered(listOf("16", "")))
-        verify(screen).showMessage(GameMessage.RATIOS_MIN_ONE, 0)
-        assertFalse(vm.onTeamSizesEntered(listOf("10", "10")))
-        verify(screen).showMessage(GameMessage.RATIOS_TOTAL, 20)
-        assertTrue(vm.onTeamSizesEntered(listOf("20", "12")))
-        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_TEAMSIZES20,12")
+    fun teamSizes_fromTheDialog_areSentToTheServer_unlessTheyDontFillEverySlot() {
+        assertFalse(vm.onTeamSizesEntered(intArrayOf(10, 10)))
+        assertFalse(vm.onTeamSizesEntered(intArrayOf(0, 63)))
+        assertTrue(vm.onTeamSizesEntered(intArrayOf(40, 23)))
+        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_TEAMSIZES40,23")
     }
 
     private fun joinServer() {
