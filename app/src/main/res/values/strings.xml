@@ -145,7 +145,7 @@
     <string name="game_limit_lives">Lives Per Player (0 for unlimited) - Players will stop respawning when they run out of lives. Game ends when all opponents are out of lives.</string>
     <string name="game_limit_score">Score (0 for unlimited, team score for team games)</string>
     <string name="starting_timer_button">Start timer</string>
-    <string name="starting_timer_title">Set Game Start Countdown (Seconds):</string>
+    <string name="starting_timer_title">Start countdown (seconds)</string>
 
 
     <string name="pistol_detected_toast">Pistol Detected! (%1$s)</string>
@@ -214,8 +214,8 @@
     <string name="team_ratio_hint_two_teams">16</string>
     <string name="team_ratio_hint_four_teams">8</string>
     <string name="count_zero">0</string>
-    <string name="team_minus_button">-</string>
-    <string name="team_plus_button">+</string>
+    <string name="team_minus_button">Team -</string>
+    <string name="team_plus_button">Team +</string>
     <string name="team_ratio_min_one">Team limits must be at least 1 player slot</string>
     <string name="team_ratio_total">Total player slots across all teams must equal %1$d (current sum: %2$d)</string>
     <string name="scoreboard_players_header">Players</string>
@@ -384,11 +384,10 @@
 
     <!-- The server's home screen cards (map design: Dedicated server settings) -->
     <string name="server_card_mode">Game mode</string>
-    <string name="server_card_field">Field</string>
+    <string name="server_card_field">Field and rules</string>
+    <string name="server_mode_change">Change game mode</string>
     <string name="server_card_teams">Teams and players</string>
-    <string name="server_card_extras">Extras</string>
     <string name="server_card_open">›</string>
-    <string name="server_card_close">⌄</string>
     <string name="server_summary_classic">Classic: score by eliminations</string>
     <string name="server_summary_domination">Domination · %1$s · %2$d to win</string>
     <string name="server_summary_hardpoint">Hardpoint · moves every %1$d s · %2$d to win</string>
@@ -406,7 +405,6 @@
     <string name="server_summary_drops">drops every %1$d min</string>
     <string name="server_summary_killstreaks">killstreaks</string>
     <string name="server_summary_longest">longest shot</string>
-    <string name="rules_title_extras">Extras</string>
     <string name="game_presets_button">Presets</string>
     <string name="game_presets_title">Game presets</string>
     <string name="game_presets_save">Save this setup…</string>
@@ -636,7 +634,7 @@
     <string name="field_presets_error">Couldn\'t do that. Try again.</string>
     <string name="field_dialog_save">Save</string>
     <string name="field_dialog_cancel">Cancel</string>
-    <string name="rules_title">Field rules</string>
+    <string name="rules_title">Rules</string>
     <string name="rules_penalty">When a player stays outside past the countdown</string>
     <string name="rules_penalty_disable">Blaster off until they\'re back</string>
     <string name="rules_penalty_health">Lose health until they\'re back</string>

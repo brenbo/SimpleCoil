@@ -1,9 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The blaster's battery: low (an outline battery, its level in bars) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-        android:width="24dp"
-        android:height="24dp"
-        android:viewportWidth="24.0"
-        android:viewportHeight="24.0">
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
     <path
-        android:fillColor="#FFFB0000"
-        android:pathData="M15.67,4L14,4L14,2h-4v2L8.33,4C7.6,4 7,4.6 7,5.33v15.33C7,21.4 7.6,22 8.33,22h7.33c0.74,0 1.34,-0.6 1.34,-1.33L17,5.33C17,4.6 16.4,4 15.67,4zM13,18h-2v-2h2v2zM13,14h-2L11,9h2v5z"/>
+        android:strokeColor="#FF5A5A"
+        android:strokeWidth="1.6"
+        android:pathData="M4,7h13.5a1.5,1.5 0,0 1,1.5 1.5v7a1.5,1.5 0,0 1,-1.5 1.5h-13.5a1.5,1.5 0,0 1,-1.5 -1.5v-7a1.5,1.5 0,0 1,1.5 -1.5z" />
+    <path
+        android:strokeColor="#FF5A5A"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M21.2,10.5v3" />
+    <path
+        android:fillColor="#FF5A5A"
+        android:pathData="M4.5,9.5h2.5v5h-2.5z" />
 </vector>

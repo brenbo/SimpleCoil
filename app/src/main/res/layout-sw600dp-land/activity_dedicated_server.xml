@@ -197,7 +197,7 @@
                         style="@style/SectionHeading"
                         android:text="@string/dedicated_settings_label" />
 
-                    <!-- The setup as four cards (map design: Dedicated server settings): Game mode, Field, Teams and
+                    <!-- The setup as three cards that open in place: Game mode, Field and rules, Teams and
                          players, Extras. Each shows a one-line summary; the rest is one tap deeper. -->
                     <LinearLayout
                         android:id="@+id/settings_buttons"
@@ -234,13 +234,32 @@
                                         android:id="@+id/mode_summary_tv" />
                                 </LinearLayout>
 
-                                <TextView style="@style/ServerCardChevron" />
+                                <TextView
+                                    style="@style/ServerCardChevron"
+                                    android:id="@+id/mode_chevron_tv" />
                             </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/mode_body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:visibility="gone">
+
+                            <Button
+                                android:id="@+id/mode_change_button"
+                                style="@style/Widget.SimpleCoil.Button.Tonal"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/server_mode_change"
+                                app:icon="@drawable/ic_sc_target"
+                                app:iconGravity="textStart" />
 
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="8dp"
+                                android:layout_marginTop="4dp"
                                 android:orientation="horizontal">
 
                                 <Button
@@ -280,20 +299,19 @@
                                     android:paddingEnd="8dp"
                                     android:text="@string/game_presets_button" />
                             </LinearLayout>
+                            </LinearLayout>
                         </LinearLayout>
 
-                        <!-- Field: the map (border, spawns, capture points, photo), its rules, and whose GPS is heard
-                             (map design: Field imagery packs). -->
+                        <!-- Field and rules: the map (border, spawns, capture points, photo), whose GPS is heard
+                             (map design: Field imagery packs), and the rules and extras (out of bounds, respawn,
+                             ammo, drops, killstreaks, shot distance). Tap to open. -->
                         <LinearLayout
                             style="@style/ServerCard"
                             android:id="@+id/field_card">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:minHeight="48dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
+                                style="@style/ServerCardHeader"
+                                android:id="@+id/field_card_header">
 
                                 <ImageView
                                     style="@style/ServerCardIcon"
@@ -313,11 +331,19 @@
                                         style="@style/ServerCardSummary"
                                         android:id="@+id/field_map_status_tv"
                                         android:text="@string/field_map_status_none" />
+
+                                    <TextView
+                                        style="@style/ServerCardSummary"
+                                        android:id="@+id/extras_summary_tv" />
                                 </LinearLayout>
+
+                                <TextView
+                                    style="@style/ServerCardChevron"
+                                    android:id="@+id/field_chevron_tv" />
                             </LinearLayout>
 
                             <!-- Whose GPS the server hears from: a player without a fix has no shot distances, drops,
-                                 spawns or capture points -->
+                                 spawns or capture points (shown whether the card is open or not) -->
                             <TextView
                                 style="@style/ServerCardSummary"
                                 android:id="@+id/server_gps_tv"
@@ -325,10 +351,12 @@
                                 android:visibility="gone" />
 
                             <LinearLayout
+                                android:id="@+id/field_body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="8dp"
-                                android:orientation="horizontal">
+                                android:orientation="horizontal"
+                                android:visibility="gone">
 
                                 <Button
                                     android:id="@+id/field_map_button"
@@ -515,38 +543,6 @@
                                     android:id="@+id/voice_chat_switch"
                                     style="@style/DialogSwitch"
                                     android:text="@string/dedicated_voice_chat" />
-                            </LinearLayout>
-                        </LinearLayout>
-
-                        <!-- Extras: ammo, drops, killstreaks and shot distance, in the rules sheet. -->
-                        <LinearLayout
-                            style="@style/ServerCard"
-                            android:id="@+id/extras_card">
-
-                            <LinearLayout
-                                style="@style/ServerCardHeader"
-                                android:id="@+id/extras_card_header">
-
-                                <ImageView
-                                    style="@style/ServerCardIcon"
-                                    android:src="@drawable/ic_sc_tune" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
-
-                                    <TextView
-                                        style="@style/ServerCardTitle"
-                                        android:text="@string/server_card_extras" />
-
-                                    <TextView
-                                        style="@style/ServerCardSummary"
-                                        android:id="@+id/extras_summary_tv" />
-                                </LinearLayout>
-
-                                <TextView style="@style/ServerCardChevron" />
                             </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>

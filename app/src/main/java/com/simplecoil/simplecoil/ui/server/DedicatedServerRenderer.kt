@@ -142,8 +142,7 @@ class DedicatedServerRenderer(
         fieldMapButton.setText(if (running) R.string.ref_live_map else R.string.field_map_button)
         fieldMapButton.isEnabled = !(running && liveMapOff)
         fieldRulesButton.isEnabled = !running
-        modeCardHeader.isEnabled = !running
-        extrasCardHeader.isEnabled = !running
+        modeChangeButton.isEnabled = !running
         presetsButton.isEnabled = !running
         gpsModeGroup.children.forEach { it.isEnabled = !running }
         // A game played on positions can't have GPS off

@@ -47,18 +47,11 @@ import kotlin.math.roundToInt
  */
 object FieldRulesDialog {
 
-    /** Which part to show: the field's rules (out of bounds, respawn), or the extras (ammo, drops, shot distance). */
-    enum class Section { FIELD, EXTRAS }
-
     /** Shows [config]'s rules; Save hands [onSave] the config with the new ones. */
-    fun show(context: Context, config: FieldConfig, section: Section, onSave: (FieldConfig) -> Unit) {
+    fun show(context: Context, config: FieldConfig, onSave: (FieldConfig) -> Unit) {
         val dialog = DialogBorderRulesBinding.inflate(LayoutInflater.from(context))
-        // GPS (and its units) shows with both: the extras have distances too
-        val field = section == Section.FIELD
-        dialog.rulesFieldGroup.isVisible = field
-        dialog.rulesMapGroup.isVisible = field
-        dialog.rulesExtrasGroup.isVisible = !field
-        dialog.rulesTitleTv.setText(if (field) R.string.rules_title else R.string.rules_title_extras)
+        // The field's rules and the extras, on one page
+        dialog.rulesTitleTv.setText(R.string.rules_title)
         val rules = config.rules
         val spawnRules = config.spawnRules
         var units = rules.units

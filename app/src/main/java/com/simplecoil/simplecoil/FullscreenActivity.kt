@@ -22,6 +22,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -43,7 +45,7 @@ import com.simplecoil.simplecoil.ui.game.GameNavigator
 import com.simplecoil.simplecoil.ui.game.GameScreenRenderer
 import com.simplecoil.simplecoil.ui.game.GameViewModel
 import com.simplecoil.simplecoil.ui.game.GameViewModelFactory
-import com.simplecoil.simplecoil.ui.game.InfoSheet
+import com.simplecoil.simplecoil.ui.game.AboutDialog
 import com.simplecoil.simplecoil.ui.game.SavedGameScreen
 import com.simplecoil.simplecoil.ui.game.WindowController
 import com.simplecoil.simplecoil.ui.permissions.BlePermissionController
@@ -180,7 +182,6 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         binding.endGameButton.setOnClickListener { if (vm.adminMenuInGame()) dialogs.showAdminMenu(it) else vm.onEndGamePressed() }
         binding.startRespawnButton.setOnClickListener { vm.onStartRespawnPressed() }
         binding.generateQrButton.setOnClickListener { vm.onGenerateQrPressed() }
-        InfoSheet(this, binding)
 
         try {
             // Display app version
@@ -195,6 +196,20 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         binding.adminControlsButton.setOnClickListener(dialogs::showAdminMenu)
         binding.useNetworkButton.visibility = View.VISIBLE
         vm.onViewsCreated()
+    }
+
+    /** The home screen's top bar: About (the game screen hides the bar). */
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.home_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.menu_about) {
+            AboutDialog.show(this)
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

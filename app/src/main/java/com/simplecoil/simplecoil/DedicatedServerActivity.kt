@@ -20,6 +20,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.viewModels
@@ -203,8 +204,8 @@ class DedicatedServerActivity : AppCompatActivity() {
     }
 
     /** The game rules for the field: out of bounds, respawn, ammo and drops (map design: Server UI). */
-    private fun showRules(section: FieldRulesDialog.Section) = editField { config, save ->
-        FieldRulesDialog.show(this, config, section, save)
+    private fun showRules() = editField { config, save ->
+        FieldRulesDialog.show(this, config, save)
     }
 
     private fun showMode() = editField { config, save ->
@@ -433,15 +434,13 @@ class DedicatedServerActivity : AppCompatActivity() {
             val running = vm.state.value?.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
             startActivity(Intent(this@DedicatedServerActivity, if (running) RefereeMapActivity::class.java else FieldMapActivity::class.java))
         }
-        fieldRulesButton.setOnClickListener { showRules(FieldRulesDialog.Section.FIELD) }
-        extrasCardHeader.setOnClickListener { showRules(FieldRulesDialog.Section.EXTRAS) }
-        modeCardHeader.setOnClickListener { showMode() }
+        fieldRulesButton.setOnClickListener { showRules() }
+        modeChangeButton.setOnClickListener { showMode() }
         presetsButton.setOnClickListener { showPresets() }
-        // Teams and players opens in place
-        teamsCardHeader.setOnClickListener {
-            teamsBody.isVisible = !teamsBody.isVisible
-            teamsChevronTv.setText(if (teamsBody.isVisible) R.string.server_card_close else R.string.server_card_open)
-        }
+        // The settings cards open in place (each on its own)
+        dropDown(modeCardHeader, modeBody, modeChevronTv)
+        dropDown(fieldCardHeader, fieldBody, fieldChevronTv)
+        dropDown(teamsCardHeader, teamsBody, teamsChevronTv)
         startGameButton.setOnClickListener { vm.onStartPressed() }
         endGameButton.setOnClickListener { vm.onEndPressed() }
         resetGameButton.setOnClickListener { vm.onResetPressed() }
@@ -452,6 +451,14 @@ class DedicatedServerActivity : AppCompatActivity() {
         briefingButton.setOnClickListener { startActivity(com.simplecoil.simplecoil.ui.briefing.BriefingActivity.hostIntent(this@DedicatedServerActivity)) }
         voiceChatSwitch.isChecked = vm.voiceChat
         voiceChatSwitch.setOnClickListener { vm.onVoiceChatChanged(voiceChatSwitch.isChecked) }
+    }
+
+    /** A settings card that opens and closes in place when its header is tapped. */
+    private fun dropDown(header: View, body: View, chevron: TextView) {
+        header.setOnClickListener {
+            body.isVisible = !body.isVisible
+            chevron.animate().rotation(if (body.isVisible) 90f else 0f).setDuration(150).start()
+        }
     }
 
     /** The players in a bottom sheet under the controls, never over Start/End/Reset; the large-screen layout shows them beside the controls instead. */

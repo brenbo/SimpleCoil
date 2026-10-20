@@ -133,13 +133,13 @@ class GameScreenRenderer(
         b.scoreTv.text = "0"
         b.teamScoreTv.text = "0"
         b.startGameButton.visibility = View.GONE
-        b.teamMinusButton.visibility = View.INVISIBLE
-        b.teamPlusButton.visibility = View.INVISIBLE
+        b.teamMinusButton.visibility = View.GONE
+        b.teamPlusButton.visibility = View.GONE
         b.gameLimitButton.visibility = View.GONE
-        b.playerSettingsButton.visibility = View.INVISIBLE
+        b.playerSettingsButton.visibility = View.GONE
         b.shuffleTeamsButton.isEnabled = false
         b.shuffleTeamsButton.visibility = View.GONE
-        b.generateQrButton.visibility = View.GONE
+        inGame = true
         showTeamModeSelectable(false)
         if (useNetwork) {
             displayInGameNetworkingOptions(isAdmin, freeForAll)
@@ -148,15 +148,20 @@ class GameScreenRenderer(
             b.endGameButton.setText(R.string.end_game_button)
             b.endGameButton.visibility = View.VISIBLE
         }
-        b.useNetworkButton.visibility = View.INVISIBLE
+        // In a game the pill only shows the players; offline there's nothing to show
+        b.useNetworkButton.isClickable = false
+        if (!useNetwork) b.useNetworkButton.visibility = View.INVISIBLE
+        renderNetworkPill()
     }
 
     override fun showGameEnded(useNetwork: Boolean, freeForAll: Boolean) {
         window.exitGame()
         b.endGameButton.visibility = View.GONE
-        b.generateQrButton.visibility = View.VISIBLE
+        inGame = false
         displayAllNetworkingOptions(useNetwork, freeForAll)
         b.useNetworkButton.visibility = View.VISIBLE
+        b.useNetworkButton.isClickable = true
+        renderNetworkPill()
         hitPlayerRows.keys.toList().forEach(::removeHitPlayer)
         b.shotsFiredIv.visibility = View.GONE
     }
@@ -264,7 +269,7 @@ class GameScreenRenderer(
         clearTeamLabelStyle()
         setTeamLabelTappable(false)
         if (team is TeamDisplay.FreeForAll && team.playerName != null) {
-            b.teamLabelTv.visibility = View.INVISIBLE
+            b.teamLabelTv.visibility = View.GONE
             b.teamTv.text = team.playerName
             setPlayerNameTile(true)
             showPlayerId(context.getString(R.string.player_id_ffa_label, team.playerId.toInt()))
@@ -332,7 +337,7 @@ class GameScreenRenderer(
 
     override fun showPreGameButtons(buttons: PreGameButtons) {
         val offlineLobby = buttons.offline && !buttons.ready
-        val lobbyVisibility = if (offlineLobby) View.VISIBLE else View.INVISIBLE
+        val lobbyVisibility = if (offlineLobby) View.VISIBLE else View.GONE
         b.teamMinusButton.visibility = lobbyVisibility
         b.teamPlusButton.visibility = lobbyVisibility
         b.gameLimitButton.visibility = if (offlineLobby) View.VISIBLE else View.GONE
@@ -353,13 +358,11 @@ class GameScreenRenderer(
     private fun displayAllNetworkingOptions(enabled: Boolean, freeForAll: Boolean) {
         val visibility = if (enabled) View.VISIBLE else View.INVISIBLE
         b.scoresChip.visibility = visibility
-        b.serverIpTv.visibility = View.GONE
         setTeamScoreVisible(enabled && !freeForAll)
     }
 
     private fun displayInGameNetworkingOptions(isAdmin: Boolean, freeForAll: Boolean) {
         displayAllNetworkingOptions(false, freeForAll)
-        b.playerCountTv.visibility = View.VISIBLE
         b.scoresChip.visibility = View.VISIBLE
         // An admin's server controls: End Game (and talk to everyone, with voice chat)
         b.endGameButton.setText(R.string.admin_controls_button)
@@ -371,25 +374,53 @@ class GameScreenRenderer(
         displayAllNetworkingOptions(enabled, freeForAll)
     }
 
+    // The network pill in the status row: "Go online", "Searching…" or the players, with the
+    // connection's color; tapping it is the network button (go online, the menu, go offline).
+    private var networkButton = NetworkButton.USE_NETWORK
+    private var playerCountText: String? = null
+    private var connected: Boolean? = null
+    private var serverIp: String? = null
+    private var onServer = false
+    private var inGame = false
+
+    private fun renderNetworkPill() {
+        val pill = b.useNetworkButton
+        pill.text = when (networkButton) {
+            NetworkButton.USE_NETWORK -> context.getString(R.string.use_network_button)
+            NetworkButton.SEARCHING -> context.getString(R.string.network_searching_status)
+            NetworkButton.MENU -> playerCountText ?: context.getString(R.string.network_menu_button)
+            NetworkButton.DISABLE -> playerCountText ?: context.getString(R.string.disable_networking_button)
+        }
+        pill.iconTint = ColorStateList.valueOf(ContextCompat.getColor(context, when (connected) {
+            true -> R.color.sc_success
+            false -> R.color.sc_danger
+            null -> R.color.sc_text_secondary
+        }))
+        pill.contentDescription = listOfNotNull(pill.text,
+            serverIp?.let { context.getString(R.string.server_status_connected_to, it) },
+            if (networkButton == NetworkButton.DISABLE) context.getString(R.string.disable_networking_button) else null,
+        ).joinToString(", ")
+        // Generate QR is for playing without a server, between games
+        b.generateQrButton.visibility = if (onServer || inGame) View.GONE else View.VISIBLE
+    }
+
     override fun showNetworkButton(button: NetworkButton) {
-        b.useNetworkButton.setText(when (button) {
-            NetworkButton.USE_NETWORK -> R.string.use_network_button
-            NetworkButton.MENU -> R.string.network_menu_button
-            NetworkButton.SEARCHING -> R.string.network_searching_status
-            NetworkButton.DISABLE -> R.string.disable_networking_button
-        })
+        networkButton = button
+        renderNetworkPill()
     }
 
     override fun showServerSearching() {
-        b.serverIpTv.visibility = View.VISIBLE
-        b.serverIpTv.setText(R.string.server_status_searching)
+        serverIp = null
+        renderNetworkPill()
     }
 
     override fun showNotReady() {
-        b.networkStatusIv.visibility = View.GONE
-        b.playerCountTv.visibility = View.GONE
+        connected = null
+        playerCountText = null
+        serverIp = null
+        onServer = false
         window.setKeepScreenOn(false)
-        b.serverIpTv.visibility = View.GONE
+        renderNetworkPill()
     }
 
     override fun setKeepScreenOn(on: Boolean) {
@@ -416,20 +447,21 @@ class GameScreenRenderer(
     }
 
     override fun showPlayerCount(count: Int) {
-        b.playerCountTv.text = context.resources.getQuantityString(R.plurals.network_player_count, count, count)
-        b.playerCountTv.visibility = View.VISIBLE
+        playerCountText = context.resources.getQuantityString(R.plurals.network_player_count, count, count)
+        renderNetworkPill()
     }
 
     override fun showOnlyOnePlayer() {
-        b.playerCountTv.setText(R.string.network_player_1count)
+        playerCountText = context.getString(R.string.network_player_1count)
+        renderNetworkPill()
     }
 
     override fun showConnectedToServer(ip: String) {
-        b.serverIpTv.text = context.getString(R.string.server_status_connected_to, ip)
-        b.serverIpTv.visibility = View.VISIBLE
+        serverIp = ip
+        onServer = true
+        connected = true
         setScoreboardAvailable(true)
-        b.networkStatusIv.visibility = View.VISIBLE
-        b.networkStatusIv.setImageResource(R.drawable.ic_network_connected_24dp)
+        renderNetworkPill()
     }
 
     override fun hideStartButton() {
@@ -437,7 +469,8 @@ class GameScreenRenderer(
     }
 
     override fun showNetworkConnected(connected: Boolean) {
-        b.networkStatusIv.setImageResource(if (connected) R.drawable.ic_network_connected_24dp else R.drawable.ic_network_disconnected_24dp)
+        this.connected = connected
+        renderNetworkPill()
     }
 
     override fun showShotsFired() {

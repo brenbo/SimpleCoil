@@ -193,55 +193,6 @@
                     </LinearLayout>
                 </LinearLayout>
             </ScrollView>
-
-            <!-- About SimpleCoil: peeks into the space left below the buttons; drag or tap the header to expand. -->
-            <LinearLayout
-                android:id="@+id/info_sheet"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:background="@drawable/bottom_sheet_background"
-                app:behavior_peekHeight="@dimen/info_sheet_min_peek"
-                app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
-
-                <LinearLayout
-                    android:id="@+id/info_sheet_header"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center_horizontal"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:background="?android:attr/selectableItemBackground">
-
-                    <View
-                        android:layout_width="36dp"
-                        android:layout_height="4dp"
-                        android:background="@drawable/bottom_sheet_handle" />
-
-                    <TextView
-                        android:id="@+id/info_sheet_title_tv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/info_sheet_title"
-                        android:textColor="@color/sc_text_secondary"
-                        android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
-                </LinearLayout>
-
-                <androidx.core.widget.NestedScrollView
-                    android:id="@+id/info_scroll"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                    <!-- Full height inside the NestedScrollView so the sheet can tell when it is scrolled to the top. -->
-                    <WebView
-                        android:id="@+id/info_wv"
-                        android:visibility="gone"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-                </androidx.core.widget.NestedScrollView>
-            </LinearLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </FrameLayout>
 
@@ -263,25 +214,28 @@
             android:paddingTop="6dp"
             android:paddingBottom="10dp">
 
-            <!-- Top bar: the blaster (battery, type, grenade) and the network (status, players) -->
+            <!-- One status row, so the map gets the room: the blaster (battery, type, grenade), who you
+                 are (team tag, name), and the network pill (players and connection; tap it to go
+                 online or offline) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minHeight="44dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <ImageView
                     android:id="@+id/battery_iv"
                     android:contentDescription="@string/cd_blaster_battery"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
                     app:srcCompat="@drawable/ic_battery_full_green_24dp" />
 
                 <ImageView
                     android:id="@+id/blaster_type_iv"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="6dp"
                     android:contentDescription="@null"
                     android:visibility="gone" />
 
@@ -289,92 +243,49 @@
                     android:id="@+id/grenade_iv"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="6dp"
                     android:contentDescription="@null"
                     android:visibility="gone" />
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <ImageView
-                    android:id="@+id/network_status_iv"
-                    android:contentDescription="@string/cd_network_status"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginEnd="6dp"
-                    android:visibility="gone"
-                    app:srcCompat="@drawable/ic_network_connected_24dp" />
-
-                <LinearLayout
+                <!-- Team tag (colored; tap to switch teams on a server) and name (tap to rename) -->
+                <TextView
+                    android:id="@+id/team_label_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:orientation="vertical">
+                    android:layout_marginStart="10dp"
+                    android:maxLines="1"
+                    android:text="@string/team_label"
+                    android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
 
-                    <TextView
-                        android:id="@+id/player_count_tv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
-
-                    <TextView
-                        android:id="@+id/player_id_tv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:textColor="@color/sc_text_muted"
-                        android:textSize="12sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Who you are: team (a colored tag, tappable to switch) and name -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/team_minus_button"
-                    style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:minWidth="48dp"
-                    android:visibility="invisible"
-                    android:text="@string/team_minus_button" />
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/team_tv"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical">
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="@string/no_team"
+                    android:textAppearance="@style/TextAppearance.SimpleCoil.Title"
+                    android:textSize="20sp" />
 
-                    <TextView
-                        android:id="@+id/team_label_tv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/team_label"
-                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+                <TextView
+                    android:id="@+id/player_id_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:visibility="gone"
+                    android:textColor="@color/sc_text_muted"
+                    android:textSize="12sp" />
 
-                    <TextView
-                        android:id="@+id/team_tv"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:text="@string/no_team"
-                        android:textAppearance="@style/TextAppearance.SimpleCoil.Headline" />
-                </LinearLayout>
+                <!-- The network pill: "Go online", "Searching…" or the players, with the connection's icon -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/use_network_button"
+                    style="@style/Widget.SimpleCoil.Button.Pill"
+                    android:text="@string/use_network_button"
+                    app:icon="@drawable/ic_sc_wifi" />
 
-                <Button
-                    android:id="@+id/team_plus_button"
-                    style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:minWidth="48dp"
-                    android:visibility="invisible"
-                    android:text="@string/team_plus_button" />
             </LinearLayout>
 
             <!-- Health: the bar, the clock and what you're carrying -->
@@ -523,12 +434,18 @@
                 app:chipSpacingHorizontal="6dp"
                 app:chipSpacingVertical="6dp">
 
+                <!-- Offline before a game: step through the teams -->
                 <Button
-                    android:id="@+id/use_network_button"
+                    android:id="@+id/team_minus_button"
                     style="@style/Widget.SimpleCoil.Button.Hud"
-                    android:text="@string/use_network_button"
-                    app:icon="@drawable/ic_sc_wifi"
-                    app:iconSize="18dp" />
+                    android:visibility="gone"
+                    android:text="@string/team_minus_button" />
+
+                <Button
+                    android:id="@+id/team_plus_button"
+                    style="@style/Widget.SimpleCoil.Button.Hud"
+                    android:visibility="gone"
+                    android:text="@string/team_plus_button" />
 
                 <Button
                     android:id="@+id/player_settings_button"
@@ -585,17 +502,6 @@
                     app:icon="@drawable/ic_sc_qr"
                     app:iconSize="18dp" />
             </com.google.android.material.chip.ChipGroup>
-
-            <TextView
-                android:id="@+id/server_ip_tv"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:text=""
-                android:textColor="@color/sc_text_muted"
-                android:textSize="12sp" />
 
             <!-- The map fills the rest -->
             <FrameLayout
