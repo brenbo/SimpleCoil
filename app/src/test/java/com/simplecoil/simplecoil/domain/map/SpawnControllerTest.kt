@@ -182,6 +182,17 @@ class SpawnControllerTest {
     }
 
     @Test
+    fun spawnsChangedBeforeAGame_moveAtOnce_withoutFading() {
+        inGame = false
+        val newRed = Spawn(1, at(60.0, -60.0))
+        field.value = field.value!!.copy(spawns = listOf(newRed, blueSpawn))
+        advance(1_000)
+        assertFalse(controller.isFading())
+        assertEquals(listOf(newRed, blueSpawn), controller.shown().map { it.spawn })
+        assertTrue(controller.shown().all { it.opacity == 1.0 })
+    }
+
+    @Test
     fun manualRespawnNeedsTheSpawnButNoWaitThere() {
         controller.onFix(at(0.0, 0.0), 5f)
         session.value = session.value.copy(spawn = SpawnPhase.AwaitingRespawn("", needsSpawn = false))

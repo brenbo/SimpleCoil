@@ -162,11 +162,13 @@ class SpawnController(
     private fun onField(config: FieldConfig?) {
         val spawns = config?.spawns ?: emptyList()
         if (spawns != current) {
-            previous = current
+            val playing = inGame()
+            // Only a move during a game fades (and keeps the old spots for their grace time);
+            // the host changing the spawns before a game, or the first load, just shows the new ones
+            previous = if (playing) current else emptyList()
             current = spawns
-            // A move from nothing (the first load) just appears; a real move fades
             movedAt = if (previous.isEmpty()) Long.MIN_VALUE else clock()
-            if (previous.isNotEmpty() && spawns.isNotEmpty() && inGame()) onMoved()
+            if (previous.isNotEmpty() && spawns.isNotEmpty() && playing) onMoved()
         }
         update()
     }
