@@ -155,6 +155,14 @@
     <string name="pistol_detected_toast">Pistol Detected! (%1$s)</string>
     <string name="rifle_detected_toast">Rifle Detected! (%1$s)</string>
     <string name="grenade_paired_toast">Grenade paired</string>
+    <string name="grenade_offer_title">Pair a grenade?</string>
+    <!-- The blaster picker (Connect blaster) -->
+    <string name="blaster_picker_title">Choose your blaster</string>
+    <string name="blaster_picker_hint">Turn your blaster on. The closest one has the most bars.</string>
+    <string name="blaster_picker_searching">Looking for blasters…</string>
+    <string name="blaster_picker_known">Previously connected</string>
+    <string name="blaster_picker_signal">Signal %1$d of 4</string>
+    <string name="grenade_offer_message">A grenade is pairing near your blaster. The first player to say yes gets it.</string>
 
     <string name="dedicated_server_button">Start a server</string>
     <string name="dedicated_server_intro">Run the game on this phone: live scores, maps and game modes for everyone. Needs Wi-Fi or a RECOIL hub.</string>

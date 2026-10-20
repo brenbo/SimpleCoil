@@ -124,6 +124,30 @@ class EndGameConfirmDialog : GameDialogFragment() {
             .create()
 }
 
+/** A grenade is pairing near the blaster: take it? On a server the first Yes gets it, and the prompt goes from the other phones. */
+class GrenadeOfferDialog : GameDialogFragment() {
+    private val grenadeId get() = requireArguments().getInt(ARG_GRENADE)
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        alertBuilder()
+            .setTitle(R.string.grenade_offer_title)
+            .setMessage(R.string.grenade_offer_message)
+            .setPositiveButton(R.string.yes) { _, _ -> vm.onGrenadeOfferAnswered(grenadeId, true) }
+            .setNegativeButton(R.string.no) { _, _ -> vm.onGrenadeOfferAnswered(grenadeId, false) }
+            .create()
+
+    override fun onCancel(dialog: DialogInterface) {
+        super.onCancel(dialog)
+        vm.onGrenadeOfferAnswered(grenadeId, false)
+    }
+
+    companion object {
+        private const val ARG_GRENADE = "grenade"
+
+        fun newInstance(grenadeId: Int) = GrenadeOfferDialog().apply { arguments = bundleOf(ARG_GRENADE to grenadeId) }
+    }
+}
+
 /** An admin asked to reset the server after a game. */
 class ResetConfirmDialog : GameDialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =

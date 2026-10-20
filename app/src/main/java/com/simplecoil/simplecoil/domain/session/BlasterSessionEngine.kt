@@ -822,8 +822,8 @@ class BlasterSessionEngine(
         _state.update { it.copy(battery = BatteryLevelPolicy.level(averageBattery, blasterType)) }
 
         if (telemetry.hitByPlayer1 != 0) {
-            applyGrenadePairing(telemetry.hitByPlayer1, telemetry.rawShotIdByte1, useNetwork)
-            applyGrenadePairing(telemetry.hitByPlayer2, telemetry.rawShotIdByte2, useNetwork)
+            applyGrenadePairing(telemetry.hitByPlayer1, telemetry.rawShotIdByte1)
+            applyGrenadePairing(telemetry.hitByPlayer2, telemetry.rawShotIdByte2)
         }
         // The grenade that just eliminated this player can't do it again for a while: its hits
         // are dropped (a second hit in the packet moves up to take the first's place)
@@ -971,25 +971,59 @@ class BlasterSessionEngine(
         }
     }
 
-    private fun applyGrenadePairing(hitBy: Int, shotIdByte: Byte, useNetwork: Boolean) {
+    private fun applyGrenadePairing(hitBy: Int, shotIdByte: Byte) {
         when (GrenadeDecoder.pairingAction(hitBy, shotIdByte)) {
             GrenadeDecoder.PairingAction.PAIR -> {
-                // This is a grenade trying to pair
-                if (config.pairedGrenadeId.toInt() == 0) {
-                    config.pairedGrenadeId = GrenadeDecoder.grenadeId(shotIdByte).toByte()
-                    if (useNetwork) {
-                        // Every blaster near the grenade sees it pair: claim it, and show it only once
-                        // the server says this phone won (confirmGrenade)
-                        grenadePending = true
-                        network?.sendPlayerGrenade()
-                    } else {
-                        showGrenadePaired()
-                    }
+                // A grenade trying to pair: ask the player (it keeps signalling, so ask once, and
+                // not again for a while after a No or after someone else took it)
+                val id = GrenadeDecoder.grenadeId(shotIdByte)
+                val now = clock()
+                if (config.pairedGrenadeId.toInt() == 0 && id != offeredGrenade &&
+                    (grenadeQuietUntil[id] ?: 0L) <= now) {
+                    offeredGrenade = id
+                    emit(SessionEffect.GrenadeOffer(id))
                 }
             }
             GrenadeDecoder.PairingAction.UNPAIR -> forgetGrenade()
             GrenadeDecoder.PairingAction.NONE -> Unit
         }
+    }
+
+    /** The grenade offered to the player now (0 for none). */
+    private var offeredGrenade = 0
+
+    /** Grenades not to offer again until then (a No, or someone else took it). */
+    private val grenadeQuietUntil = HashMap<Int, Long>()
+
+    /**
+     * The player said Yes to [grenadeId]. Offline it's theirs at once; on a server it's claimed,
+     * and shows only once the server says this phone was first (confirmGrenade).
+     */
+    fun claimGrenade(grenadeId: Int) {
+        if (offeredGrenade == grenadeId) offeredGrenade = 0
+        if (config.pairedGrenadeId.toInt() != 0) return
+        config.pairedGrenadeId = grenadeId.toByte()
+        if (network?.useNetwork == true) {
+            grenadePending = true
+            network?.sendPlayerGrenade()
+        } else {
+            showGrenadePaired()
+        }
+    }
+
+    /** The player said No to [grenadeId]: not asked about it again for a while. */
+    fun declineGrenade(grenadeId: Int) {
+        if (offeredGrenade == grenadeId) offeredGrenade = 0
+        grenadeQuietUntil[grenadeId] = clock() + GRENADE_QUIET_MILLIS
+    }
+
+    /** These grenades are someone's now (the server's pairings): an offer for one of them goes away. */
+    fun onGrenadesHeld(grenadeIds: Set<Int>) {
+        val offered = offeredGrenade
+        if (offered == 0 || offered !in grenadeIds) return
+        offeredGrenade = 0
+        grenadeQuietUntil[offered] = clock() + GRENADE_QUIET_MILLIS
+        emit(SessionEffect.GrenadeOfferGone(offered))
     }
 
     private fun applyDamage(healthRemoved: Int, hitById: Byte, useNetwork: Boolean) {
@@ -1082,6 +1116,9 @@ class BlasterSessionEngine(
 
         /** Hit overlay length, also the shot-fired / hit message rate limit (§1.6: 400 ms). */
         const val HIT_ANIMATION_DURATION_MILLISECONDS = 400L
+
+        /** After a No (or someone else took it), a grenade isn't offered again for this long. */
+        const val GRENADE_QUIET_MILLIS = 10_000L
 
         /** Holding the thumb (mode) button this long is a long press. */
         const val THUMB_LONG_PRESS_MILLIS = 2000L

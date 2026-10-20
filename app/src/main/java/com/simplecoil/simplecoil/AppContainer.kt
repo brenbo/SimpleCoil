@@ -102,7 +102,10 @@ class AppContainer(private val app: Application) {
     val bleDeviceRepository: BleDeviceRepository by lazy { BleDeviceRepository(blasterManager) }
 
     val bleConnectionManager: BleConnectionManager by lazy {
-        BleConnectionManager(app, blasterManager, appScope, saveDeviceAddress = { userPreferences.saveDeviceAddress(it) })
+        BleConnectionManager(app, blasterManager, appScope, saveDeviceAddress = {
+            userPreferences.saveDeviceAddress(it)
+            userPreferences.addKnownBlaster(it)
+        })
             .also { it.registerAdapterStateReceiver() }
     }
 

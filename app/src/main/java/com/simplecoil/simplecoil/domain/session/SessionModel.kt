@@ -177,6 +177,12 @@ sealed interface SessionEffect {
     data object TalkStarted : SessionEffect
     data object TalkStopped : SessionEffect
 
+    /** A grenade is pairing near this blaster: ask the player whether to take it. */
+    data class GrenadeOffer(val grenadeId: Int) : SessionEffect
+
+    /** The offered grenade is someone else's now: stop asking. */
+    data class GrenadeOfferGone(val grenadeId: Int) : SessionEffect
+
     /** The game must end (time ran out). */
     data object EndGameRequested : SessionEffect
 }

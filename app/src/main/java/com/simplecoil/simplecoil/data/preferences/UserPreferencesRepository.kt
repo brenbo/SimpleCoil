@@ -94,6 +94,13 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun deviceAddress(): String = prefs.getString(DEVICE_ADDRESS, "") ?: ""
     fun saveDeviceAddress(address: String) = prefs.edit { putString(DEVICE_ADDRESS, address) }
 
+    /** Every blaster this phone has connected to (the blaster picker labels them), the last one included. */
+    fun knownBlasters(): Set<String> = (prefs.getStringSet(KNOWN_BLASTERS, emptySet()) ?: emptySet()) + listOf(deviceAddress()).filter { it.isNotEmpty() }
+    fun addKnownBlaster(address: String) {
+        if (address.isEmpty()) return
+        prefs.edit { putStringSet(KNOWN_BLASTERS, (prefs.getStringSet(KNOWN_BLASTERS, emptySet()) ?: emptySet()) + address) }
+    }
+
     /** The map turns with the phone (heading-up) rather than keeping north up. */
     fun mapHeadingUp(): Boolean = prefs.getBoolean(MAP_HEADING_UP, true)
     fun saveMapHeadingUp(headingUp: Boolean) = prefs.edit { putBoolean(MAP_HEADING_UP, headingUp) }
@@ -142,6 +149,7 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val LIMIT_LIVES = "LivesLimit"
         const val LIMIT_SCORE = "ScoreLimit"
         const val DEVICE_ADDRESS = "DeviceAddress"
+        const val KNOWN_BLASTERS = "KnownBlasters"
         const val GPS_MODE = "GPSMode"
         const val ALLOW_CHOOSE_TEAMS = "AllowChooseTeams"
         const val VOICE_CHAT = "VoiceChat"

@@ -122,6 +122,8 @@ class ClientMessageHandler(
                 if (mine != 0 && holder != null) {
                     events.publish(if (holder == players.playerID.toInt()) ClientEvent.GrenadeConfirmed else ClientEvent.GrenadeTaken)
                 }
+                // A grenade someone has is no longer offered on the other phones
+                events.publish(ClientEvent.GrenadesHeld(message.pairings.map { it.grenadeId }.toSet()))
             }
             is ServerMessage.GpsUpdate -> {
                 synchronized(players) {

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A blaster's signal in the blaster picker: 4 of 4 bars -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#6FD08C"
+        android:pathData="M3,16h3v4h-3z" />
+    <path
+        android:fillColor="#6FD08C"
+        android:pathData="M8.5,12h3v8h-3z" />
+    <path
+        android:fillColor="#6FD08C"
+        android:pathData="M14,8h3v12h-3z" />
+    <path
+        android:fillColor="#6FD08C"
+        android:pathData="M19.5,4h3v16h-3z" />
+</vector>

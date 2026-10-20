@@ -160,6 +160,12 @@ interface GameDialogs {
     fun showDisconnectDialog()
     fun dismissDisconnectDialog()
     fun showBlasterType(rifle: Boolean, address: String)
+    /** "Pair a grenade?" for the grenade [grenadeId] pairing near the blaster. */
+    fun showGrenadeOffer(grenadeId: Int)
+    /** Connect blaster: the blasters in range to pick from, the [known] ones (connected before) labeled. */
+    fun showBlasterPicker(known: Set<String>)
+    /** The offer for [grenadeId] is over (someone has it): close the prompt. */
+    fun dismissGrenadeOffer(grenadeId: Int)
     fun confirmEndGame()
     /** Ask before an admin resets the server; [disconnectedPlayers] would be removed. */
     fun confirmReset(disconnectedPlayers: Int)

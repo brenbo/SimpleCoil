@@ -130,6 +130,8 @@ class BlePermissionController(
             return
         }
 
+        // Connect blaster: the player picks one from the blasters in range first
+        if (vm.choosesBlaster()) return
         if (!vm.startScan(adapter)) {
             Toast.makeText(activity, R.string.error_location_permission_required, Toast.LENGTH_SHORT).show()
         }

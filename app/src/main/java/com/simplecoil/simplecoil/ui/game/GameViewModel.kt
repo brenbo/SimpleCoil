@@ -328,6 +328,22 @@ class GameViewModel(
         screen?.requestConnect()
     }
 
+    /**
+     * Permissions and Bluetooth are ready. With no blaster chosen yet (Connect blaster), the
+     * player picks one from the blasters in range first: true when the picker opened instead.
+     */
+    fun choosesBlaster(): Boolean {
+        if (deviceAddress.isNotEmpty()) return false
+        screen?.showBlasterPicker(prefs.knownBlasters())
+        return true
+    }
+
+    /** A blaster picked in the picker: connect to it. */
+    fun onBlasterPicked(address: String) {
+        setDeviceAddress(address)
+        screen?.requestConnect()
+    }
+
     fun onQrScanned(rawQr: String?) {
         val payload = QrPairingPayload.parse(rawQr)
         if (payload == null) {
@@ -341,6 +357,11 @@ class GameViewModel(
             setPlayerName(payload.playerName)
         }
         screen?.requestConnect()
+    }
+
+    /** The "Pair a grenade?" prompt was answered: Yes claims it (first Yes wins on a server). */
+    fun onGrenadeOfferAnswered(grenadeId: Int, yes: Boolean) {
+        if (yes) engine.claimGrenade(grenadeId) else engine.declineGrenade(grenadeId)
     }
 
     /** The Generate QR button: a pairing label for this blaster, offered between games. */
@@ -505,6 +526,8 @@ class GameViewModel(
             SessionEffect.PlayerIdReported -> displayCurrentTeam()
             SessionEffect.EndGameRequested -> endGame()
             SessionEffect.ThumbLongPressed -> toggleScoreboard()
+            is SessionEffect.GrenadeOffer -> screen?.showGrenadeOffer(effect.grenadeId)
+            is SessionEffect.GrenadeOfferGone -> screen?.dismissGrenadeOffer(effect.grenadeId)
             // Sounds and vibration are played app-side by SessionFeedback; push to talk by the app's voice chat
             SessionEffect.TalkStarted, SessionEffect.TalkStopped -> Unit
             is SessionEffect.Sound, SessionEffect.Vibrate -> Unit
@@ -1262,6 +1285,7 @@ class GameViewModel(
             // Another player's blaster paired the grenade first: it isn't ours
             ClientEvent.GrenadeTaken -> engine.forgetGrenade()
             ClientEvent.GrenadeConfirmed -> engine.confirmGrenade()
+            is ClientEvent.GrenadesHeld -> engine.onGrenadesHeld(event.grenadeIds)
             is ClientEvent.Error -> {
                 val message = event.message
                 if (!message.isNullOrEmpty()) screen?.showText(message) else Log.d(TAG, "No error message given")

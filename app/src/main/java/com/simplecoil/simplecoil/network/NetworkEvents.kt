@@ -59,6 +59,9 @@ sealed interface ClientEvent {
     /** The grenade this phone paired is its own, the server says (it won the race to pair it). */
     data object GrenadeConfirmed : ClientEvent
 
+    /** The grenades paired to someone now, by grenade id (an offer for one of them goes away). */
+    data class GrenadesHeld(val grenadeIds: Set<Int>) : ClientEvent
+
     /** [assignedPlayerId] when the reply carries one. */
     data class ServerReply(val assignedPlayerId: Byte?) : ClientEvent
     data object NetworkConnected : ClientEvent

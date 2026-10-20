@@ -665,13 +665,20 @@ class BlasterSessionEngineTest {
     }
 
     @Test
-    fun grenadePairing_onAServer_claimsIt_andShowsItOnlyOnceTheServerSaysItsOurs() {
+    fun grenadePairing_asksFirst_andOnAServerShowsItOnlyOnceTheServerSaysItsOurs() {
         h.rec.useNetwork = true
         h.connected()
         h.telemetry(Packet().hit1(167, 0x9F))
+        // Asked once, however many pairing packets come
+        h.telemetry(Packet().noHit())
+        h.telemetry(Packet().hit1(167, 0x9F))
+        assertEquals(listOf(SessionEffect.GrenadeOffer(9)), h.effects.filterIsInstance<SessionEffect.GrenadeOffer>())
+        assertEquals(0.toByte(), h.config.pairedGrenadeId)
+        assertTrue(h.rec.net.isEmpty())
+        h.engine.claimGrenade(9)
         assertEquals(9.toByte(), h.config.pairedGrenadeId)
         assertEquals(listOf("GRENADE"), h.rec.net)
-        // Every blaster nearby sees it pair: nothing shows until the server picks who got it
+        // Every blaster nearby may say yes: nothing shows until the server picks who got it
         assertTrue(h.toasts().isEmpty())
         assertFalse(h.state.grenadePaired)
         h.engine.confirmGrenade()
@@ -690,6 +697,7 @@ class BlasterSessionEngineTest {
         h.rec.useNetwork = true
         h.connected()
         h.telemetry(Packet().hit1(167, 0x9F))
+        h.engine.claimGrenade(9)
         h.engine.forgetGrenade() // the server gave it to someone else
         h.engine.confirmGrenade()
         assertTrue(h.toasts().isEmpty())
@@ -697,10 +705,34 @@ class BlasterSessionEngineTest {
     }
 
     @Test
+    fun grenadeOffer_no_isntAskedAgainForAWhile() {
+        h.connected()
+        h.telemetry(Packet().hit1(167, 0x9F))
+        h.engine.declineGrenade(9)
+        h.telemetry(Packet().noHit())
+        h.telemetry(Packet().hit1(167, 0x9F))
+        assertEquals(1, h.effects.filterIsInstance<SessionEffect.GrenadeOffer>().size)
+        assertEquals(0.toByte(), h.config.pairedGrenadeId)
+    }
+
+    @Test
+    fun grenadeOffer_goesAway_onceSomeoneHasIt() {
+        h.rec.useNetwork = true
+        h.connected()
+        h.telemetry(Packet().hit1(167, 0x9F))
+        h.engine.onGrenadesHeld(setOf(3)) // another grenade: still asking
+        assertTrue(h.effects.none { it is SessionEffect.GrenadeOfferGone })
+        h.engine.onGrenadesHeld(setOf(9))
+        assertEquals(listOf(SessionEffect.GrenadeOfferGone(9)), h.effects.filterIsInstance<SessionEffect.GrenadeOfferGone>())
+    }
+
+    @Test
     fun forgetGrenade_unpairsIt() {
         h.connected()
         h.telemetry(Packet().hit1(167, 0x9F))
+        h.engine.claimGrenade(9) // offline: it's ours at once
         assertTrue(h.state.grenadePaired)
+        assertEquals(listOf(SessionToast.GRENADE_PAIRED), h.toasts())
         h.engine.forgetGrenade()
         assertEquals(0.toByte(), h.config.pairedGrenadeId)
         assertFalse(h.state.grenadePaired)
