@@ -119,7 +119,9 @@ class ClientMessageHandler(
                 // Our grenade is someone else's: every blaster near a pairing grenade sees it, and
                 // the server gave it to whoever claimed it first
                 val holder = message.pairings.firstOrNull { it.grenadeId == mine }?.playerId
-                if (mine != 0 && holder != null && holder != players.playerID.toInt()) events.publish(ClientEvent.GrenadeTaken)
+                if (mine != 0 && holder != null) {
+                    events.publish(if (holder == players.playerID.toInt()) ClientEvent.GrenadeConfirmed else ClientEvent.GrenadeTaken)
+                }
             }
             is ServerMessage.GpsUpdate -> {
                 synchronized(players) {

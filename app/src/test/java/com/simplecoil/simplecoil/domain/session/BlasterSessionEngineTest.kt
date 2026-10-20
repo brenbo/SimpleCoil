@@ -665,16 +665,34 @@ class BlasterSessionEngineTest {
     }
 
     @Test
-    fun grenadePairing_storesIdAndTellsTheServer() {
+    fun grenadePairing_onAServer_claimsIt_andShowsItOnlyOnceTheServerSaysItsOurs() {
         h.rec.useNetwork = true
         h.connected()
         h.telemetry(Packet().hit1(167, 0x9F))
         assertEquals(9.toByte(), h.config.pairedGrenadeId)
         assertEquals(listOf("GRENADE"), h.rec.net)
+        // Every blaster nearby sees it pair: nothing shows until the server picks who got it
+        assertTrue(h.toasts().isEmpty())
+        assertFalse(h.state.grenadePaired)
+        h.engine.confirmGrenade()
         assertEquals(listOf(SessionToast.GRENADE_PAIRED), h.toasts())
         assertTrue(h.state.grenadePaired)
+        // The server repeats who has which grenade: no second toast
+        h.engine.confirmGrenade()
+        assertEquals(listOf(SessionToast.GRENADE_PAIRED), h.toasts())
         h.telemetry(Packet().hit1(167, 0x9D)) // disarm
         assertEquals(0.toByte(), h.config.pairedGrenadeId)
+        assertFalse(h.state.grenadePaired)
+    }
+
+    @Test
+    fun grenadePairing_onAServer_lostTheRace_neverShows() {
+        h.rec.useNetwork = true
+        h.connected()
+        h.telemetry(Packet().hit1(167, 0x9F))
+        h.engine.forgetGrenade() // the server gave it to someone else
+        h.engine.confirmGrenade()
+        assertTrue(h.toasts().isEmpty())
         assertFalse(h.state.grenadePaired)
     }
 

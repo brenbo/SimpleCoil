@@ -359,8 +359,24 @@ class BlasterSessionEngine(
         battery.reset()
     }
 
+    /** A grenade claimed on a server, not yet confirmed as ours. */
+    private var grenadePending = false
+
+    /** The server gave our claimed grenade to us: now it shows (once). */
+    fun confirmGrenade() {
+        if (!grenadePending || config.pairedGrenadeId.toInt() == 0) return
+        grenadePending = false
+        showGrenadePaired()
+    }
+
+    private fun showGrenadePaired() {
+        _state.update { it.copy(grenadePaired = true) }
+        emit(SessionEffect.Toast(SessionToast.GRENADE_PAIRED))
+    }
+
     /** Unpairs our grenade; a pairing lasts from game to game, but not past the connect screen or the app. */
     fun forgetGrenade() {
+        grenadePending = false
         config.pairedGrenadeId = 0
         _state.update { it.copy(grenadePaired = false) }
     }
@@ -961,9 +977,14 @@ class BlasterSessionEngine(
                 // This is a grenade trying to pair
                 if (config.pairedGrenadeId.toInt() == 0) {
                     config.pairedGrenadeId = GrenadeDecoder.grenadeId(shotIdByte).toByte()
-                    _state.update { it.copy(grenadePaired = true) }
-                    if (useNetwork) network?.sendPlayerGrenade()
-                    emit(SessionEffect.Toast(SessionToast.GRENADE_PAIRED))
+                    if (useNetwork) {
+                        // Every blaster near the grenade sees it pair: claim it, and show it only once
+                        // the server says this phone won (confirmGrenade)
+                        grenadePending = true
+                        network?.sendPlayerGrenade()
+                    } else {
+                        showGrenadePaired()
+                    }
                 }
             }
             GrenadeDecoder.PairingAction.UNPAIR -> forgetGrenade()
