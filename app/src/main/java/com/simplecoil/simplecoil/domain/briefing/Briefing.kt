@@ -166,6 +166,9 @@ object Briefing {
         return slides
     }
 
+    /** Points you score ("1 point", "5 points"): the map's spots are always "locations", never points. */
+    private fun scorePoints(n: Int) = if (n == 1) "1 point" else "$n points"
+
     private fun goal(mode: GameMode, input: BriefingInputs): Slide {
         val field = input.field
         val obj = field?.objectiveRules
@@ -174,14 +177,14 @@ object Briefing {
             GameMode.CLASSIC -> Slide("mode.goal", Section.MODE, "Classic",
                 "Eliminate the other players. Every elimination scores a point for $side.", SlideArt.CLASSIC)
             GameMode.DOMINATION -> Slide("mode.goal", Section.MODE, "Domination",
-                "Capture the points on your map (A, B, C…) by standing in one for ${obj?.captureSeconds ?: 15} s" +
+                "Capture the locations on your map (A, B, C…) by standing in one for ${obj?.captureSeconds ?: 15} s" +
                     (if (obj?.moreCaptureFaster != false) ", faster with more of $side there" else "") +
-                    ". Every point $side holds scores ${obj?.pointsPerTick ?: 1} every ${obj?.tickSeconds ?: 5} s. " +
+                    ". Every location $side holds scores ${scorePoints(obj?.pointsPerTick ?: 1)} every ${obj?.tickSeconds ?: 5} s. " +
                     "An enemy standing in it stops the capture, so defend what you take.",
                 SlideArt.CAPTURE)
             GameMode.HARDPOINT -> Slide("mode.goal", Section.MODE, "Hardpoint",
-                "One point is live at a time and it moves every ${obj?.moveSeconds ?: 90} s; your map shows where it goes next. " +
-                    "Stand in it to score ${obj?.pointsPerTick ?: 1} every ${obj?.tickSeconds ?: 5} s. With both sides in it, nobody scores.",
+                "One location on the map is live at a time, and it moves every ${obj?.moveSeconds ?: 90} s; your map shows where it goes next. " +
+                    "Stand in it to score ${scorePoints(obj?.pointsPerTick ?: 1)} every ${obj?.tickSeconds ?: 5} s. With both sides in it, nobody scores.",
                 SlideArt.HARDPOINT)
             GameMode.BATTLE_ROYALE -> {
                 val br = field?.battleRoyale
