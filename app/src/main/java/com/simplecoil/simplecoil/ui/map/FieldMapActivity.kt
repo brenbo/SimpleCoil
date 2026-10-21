@@ -51,6 +51,7 @@ import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
 import com.simplecoil.simplecoil.domain.mode.ObjectiveState
+import com.simplecoil.simplecoil.domain.mode.centerFlagSpot
 import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.BorderRules
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
@@ -182,6 +183,8 @@ class FieldMapActivity : AppCompatActivity() {
                         saved?.let { config = it }
                         drawBorder()
                         drawSpawns()
+                        // One-flag Capture the Flag: the Locations tool places the flag
+                        binding.fieldToolObjectivesButton.setText(if (placingFlag) R.string.field_tool_flag else R.string.field_tool_objectives)
                         showStatus()
                     }
                 }
@@ -404,7 +407,9 @@ class FieldMapActivity : AppCompatActivity() {
                 saveConfig(config.copy(spawns = config.spawns.dropLast(1)))
                 drawSpawns()
             }
-            Tool.OBJECTIVES -> if (config.objectives.isNotEmpty()) {
+            Tool.OBJECTIVES -> if (placingFlag) {
+                if (config.centerFlag != null) clearFlag()
+            } else if (config.objectives.isNotEmpty()) {
                 saveConfig(config.copy(objectives = config.objectives.dropLast(1)))
                 drawSpawns()
                 showObjectiveHint()
@@ -478,6 +483,10 @@ class FieldMapActivity : AppCompatActivity() {
     // Capture points (map design: Domination, Hardpoint)
 
     private fun showObjectiveHint() {
+        if (placingFlag) {
+            binding.fieldHintTv.setText(R.string.field_hint_center_flag)
+            return
+        }
         binding.fieldHintTv.text = getString(R.string.field_hint_objectives, Objective.letter(config.objectives.size))
     }
 
@@ -494,6 +503,10 @@ class FieldMapActivity : AppCompatActivity() {
     }
 
     private fun onObjectiveTapped(point: LatLon) {
+        if (placingFlag) {
+            onFlagTapped(point)
+            return
+        }
         val radius = config.objectiveRules.radiusMeters
         val hit = config.objectives.lastOrNull { GeoMath.distanceMeters(it.point, point) <= radius }
         val points = when {
@@ -518,6 +531,10 @@ class FieldMapActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, R.string.field_auto_place_need_border, Toast.LENGTH_LONG).show()
             return
         }
+        if (placingFlag) {
+            autoPlaceFlag(border)
+            return
+        }
         val base = config
         lifecycleScope.launch {
             val placed = withContext(Dispatchers.Default) {
@@ -536,6 +553,10 @@ class FieldMapActivity : AppCompatActivity() {
     }
 
     private fun clearObjectives() {
+        if (placingFlag) {
+            clearFlag()
+            return
+        }
         saveConfig(config.copy(objectives = emptyList()))
         drawSpawns()
         showObjectiveHint()
@@ -544,8 +565,62 @@ class FieldMapActivity : AppCompatActivity() {
 
     private fun drawObjectives() {
         val overlay = objectiveOverlay ?: return
+        if (placingFlag) {
+            drawFlag(overlay)
+            return
+        }
         overlay.update(config.objectives.map { ObjectiveState(it.id, it.point, 0, 0, 0.0, contested = false, active = true, next = false) },
             config.objectiveRules.radiusMeters)
+        map?.let { overlay.place(it.projection) }
+    }
+
+    // Capture the Flag with one flag: the Locations tool puts the flag down
+
+    /** Capture the Flag is set to one flag, so the Locations tool places it instead of capture points. */
+    private val placingFlag: Boolean get() = config.mode == GameMode.CAPTURE_THE_FLAG && config.flag.oneFlag
+
+    /** The teams' bases as the game will pick them: their first spawns. */
+    private fun flagBasesNow(): Map<Int, LatLon> =
+        config.spawns.groupBy { it.team }.filterKeys { it == 1 || it == 2 }.mapValues { it.value.first().point }
+
+    /** A tap on the flag takes it away (it's placed for each game again); anywhere else puts it there. */
+    private fun onFlagTapped(point: LatLon) {
+        val flag = config.centerFlag
+        when {
+            flag != null && GeoMath.distanceMeters(flag, point) <= config.flag.baseRadiusMeters -> {
+                clearFlag()
+                return
+            }
+            outsideBorder(point) -> return
+        }
+        saveConfig(config.copy(centerFlag = point))
+        drawObjectives()
+    }
+
+    /** Puts the flag where a game would: inside the border, as fair to both bases as it can be. */
+    private fun autoPlaceFlag(border: Border) {
+        val spot = centerFlagSpot(border, flagBasesNow(), config.flag.baseRadiusMeters, config.rules.edgeBufferMeters)
+        if (spot == null) {
+            Toast.makeText(applicationContext, R.string.field_auto_place_failed, Toast.LENGTH_LONG).show()
+            return
+        }
+        saveConfig(config.copy(centerFlag = spot))
+        drawObjectives()
+    }
+
+    private fun clearFlag() {
+        saveConfig(config.copy(centerFlag = null))
+        drawObjectives()
+        Toast.makeText(applicationContext, R.string.field_center_flag_cleared, Toast.LENGTH_LONG).show()
+    }
+
+    /** The flag where it's put down, or (dashed) where a game would put it, at its pick-up size. */
+    private fun drawFlag(overlay: ObjectiveOverlay) {
+        val placed = config.centerFlag
+        val auto = if (placed == null) config.border?.let { centerFlagSpot(it, flagBasesNow(), config.flag.baseRadiusMeters, config.rules.edgeBufferMeters) } else null
+        val spot = placed ?: auto
+        overlay.update(listOfNotNull(spot?.let { ObjectiveState(FLAG_LABEL, it, 0, 0, 0.0, contested = false, active = placed != null, next = placed == null) }),
+            config.flag.baseRadiusMeters)
         map?.let { overlay.place(it.projection) }
     }
 
@@ -918,6 +993,7 @@ class FieldMapActivity : AppCompatActivity() {
 
         /** A–E. */
         const val MAX_OBJECTIVES = 5
+        const val FLAG_LABEL = "⚑"
 
         /** About 100 ft: smaller fields are too small for GPS zones. */
         const val SMALL_FIELD_METERS = 30.0

@@ -82,6 +82,8 @@ import com.simplecoil.simplecoil.domain.mode.ObjectiveState
 import com.simplecoil.simplecoil.domain.mode.InfectionEngine
 import com.simplecoil.simplecoil.domain.mode.RoundPhase
 import com.simplecoil.simplecoil.domain.mode.sideOf
+import com.simplecoil.simplecoil.domain.mode.FlagEngine
+import com.simplecoil.simplecoil.domain.mode.flagBaseSpots
 import com.simplecoil.simplecoil.ui.map.CameraLimits
 import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.ZoneLayers
@@ -866,7 +868,7 @@ class MapFragment : Fragment() {
             }
             GameMode.CAPTURE_THE_FLAG -> {
                 // Each base in its team's colour, and the flags where they are
-                points?.update(state.flags.map { ObjectiveState("", it.base, it.team, 0, 0.0, contested = false, active = true, next = false) },
+                points?.update(state.flagBaseSpots().map { (team, base) -> ObjectiveState("", base, team, 0, 0.0, contested = false, active = true, next = false) },
                     state.radiusMeters, letters = false)
                 glyphs?.update(flagGlyphs(state))
             }
@@ -895,8 +897,15 @@ class MapFragment : Fragment() {
      */
     private fun flagGlyphs(state: ModeState): List<GlyphOverlay.Glyph> {
         val myTeam = myTeam()
-        return state.flags.filter { it.carrier == 0 || it.team != myTeam || it.revealed }.map {
-            GlyphOverlay.Glyph("flag${it.team}", it.point, FLAG, objectiveColor(it.team))
+        return state.flags.filter {
+            when {
+                it.carrier == 0 -> true
+                // The one flag: always for the carrier's team, for the other only while revealed
+                it.team == FlagEngine.NEUTRAL -> it.carrierTeam == myTeam || it.revealed
+                else -> it.team != myTeam || it.revealed
+            }
+        }.map {
+            GlyphOverlay.Glyph("flag${it.team}", it.point, FLAG, if (it.team == FlagEngine.NEUTRAL) NEUTRAL_FLAG_COLOR else objectiveColor(it.team))
         }
     }
 
@@ -1047,6 +1056,13 @@ class MapFragment : Fragment() {
     private fun flagStatus(state: ModeState, myTeam: Int): String? {
         val me = container.players.playerID.toInt()
         if (state.flags.any { it.carrier == me }) return getString(R.string.ctf_you_have_flag)
+        val one = state.flags.singleOrNull { it.team == FlagEngine.NEUTRAL }
+        if (one != null) return when {
+            one.carrier == 0 && one.dropped -> getString(R.string.ctf_one_flag_down)
+            one.carrier == 0 -> null
+            one.carrierTeam == myTeam -> getString(R.string.ctf_one_flag_ours)
+            else -> getString(R.string.ctf_one_flag_theirs)
+        }
         val mine = state.flags.firstOrNull { it.team == myTeam } ?: return null
         return when {
             mine.carrier != 0 -> getString(R.string.ctf_flag_taken)
@@ -1238,6 +1254,9 @@ class MapFragment : Fragment() {
         const val BOMB = "💣"
         const val SURVIVOR = "◉"
         const val FLAG = "⚑"
+
+        /** The one neutral flag: white, nobody's color. */
+        const val NEUTRAL_FLAG_COLOR = 0xFFFFFFFF.toInt()
 
         /** About 5 km across on a phone, to a few metres. */
         const val MIN_ZOOM = 13.0

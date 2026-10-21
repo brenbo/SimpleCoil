@@ -4,4 +4,6 @@
     <issue id="MissingTranslation">
         <ignore regexp="not translated in &quot;en&quot;" />
     </issue>
+    <!-- French "one" covers 0 and 1; the plurals there read fine without the number -->
+    <issue id="ImpliedQuantity" severity="ignore" />
 </lint>

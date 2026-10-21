@@ -174,6 +174,8 @@ data class FieldConfig(
     val mode: GameMode = GameMode.CLASSIC,
     /** The capture points; empty means placed for each game by field size. */
     val objectives: List<Objective> = emptyList(),
+    /** Capture the Flag with one flag: where the host put it; null means placed for each game. */
+    val centerFlag: LatLon? = null,
     val objectiveRules: ObjectiveRules = ObjectiveRules(),
     /** Each objective mode's settings as last saved, so switching modes and back keeps them. */
     val modeRules: Map<GameMode, ObjectiveRules> = emptyMap(),
@@ -199,6 +201,7 @@ data class FieldConfig(
             .put("drops", Drop.listToJson(drops))
             .put("mode", mode.wireValue)
             .put("objectives", Objective.listToJson(objectives))
+            .put("centerFlag", centerFlag?.let { JSONArray().put(it.latitude).put(it.longitude) })
             .put("objectiveRules", objectiveRules.toJson())
             .put("modeRules", JSONObject().apply { modeRules.forEach { (mode, r) -> put(mode.wireValue, r.toJson()) } })
             .put("battleRoyale", battleRoyale.toJson())
@@ -246,6 +249,7 @@ data class FieldConfig(
                 drops = Drop.listFromJson(json.optJSONArray("drops")),
                 mode = GameMode.fromWire(json.optString("mode")),
                 objectives = Objective.listFromJson(json.optJSONArray("objectives")),
+                centerFlag = json.optJSONArray("centerFlag")?.let { LatLon(it.getDouble(0), it.getDouble(1)) },
                 objectiveRules = ObjectiveRules.fromJson(json.optJSONObject("objectiveRules")),
                 modeRules = json.optJSONObject("modeRules")?.let { m ->
                     GameMode.entries.filter { it.hasObjectives && m.has(it.wireValue) }.associateWith { ObjectiveRules.fromJson(m.optJSONObject(it.wireValue)) }

@@ -150,6 +150,10 @@ class ModeController(
                 val mine = after.flags.firstOrNull { it.team == team }
                 val was = before.flags.firstOrNull { it.team == team }
                 if (mine != null && was != null && mine.carrier != 0 && was.carrier == 0) cue(SessionSound.FLAG_TAKEN)
+                // One flag: the other team grabbing it
+                val one = after.flags.singleOrNull { it.team == FlagEngine.NEUTRAL }
+                val oneWas = before.flags.singleOrNull { it.team == FlagEngine.NEUTRAL }
+                if (one != null && oneWas != null && one.carrier != 0 && oneWas.carrier == 0 && one.carrierTeam != team) cue(SessionSound.FLAG_TAKEN)
                 return
             }
             GameMode.EXTRACTION -> {

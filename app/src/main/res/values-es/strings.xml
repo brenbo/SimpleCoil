@@ -758,4 +758,24 @@
     <string name="field_map_deleted">Mapa del campo eliminado.</string>
     <string name="field_map_save_error">No se pudo guardar el mapa del campo.</string>
     <string name="field_map_no_location">Aún no se encuentra tu ubicación.</string>
+    <string name="ctf_one_flag">Una bandera en el centro</string>
+    <string name="ctf_one_flag_hint">Ambos equipos compiten por una sola bandera y la llevan a su propia base. Colócala tú con la herramienta Bandera del mapa del campo, o se coloca de forma justa entre las bases.</string>
+    <string name="ctf_one_flag_ours">¡Tu equipo tiene la bandera! Cubre al portador</string>
+    <string name="ctf_one_flag_theirs">¡El otro equipo tiene la bandera! Detén al portador</string>
+    <string name="ctf_one_flag_down">La bandera está en el suelo: cógela</string>
+    <string name="field_tool_flag">Bandera</string>
+    <string name="field_hint_center_flag">Toca para poner la bandera; tócala para quitarla. Hasta entonces, cada partida la pone donde está la bandera discontinua, justa para ambas bases.</string>
+    <string name="field_center_flag_cleared">Bandera quitada. Cada partida la colocará de forma justa entre las bases.</string>
+    <string name="field_background_divider">Datos del fondo del mapa</string>
+    <string name="field_presets_save_new">Guardar el mapa como campo nuevo</string>
+    <string name="field_presets_list">Campos guardados</string>
+    <string name="field_presets_hint">Cargar pone en el mapa el borde, los spawns, las ubicaciones y la foto de un campo. Sobrescribir reemplaza un campo guardado con lo que hay ahora en el mapa y mantiene su nombre.</string>
+    <string name="field_presets_empty">Aún no hay campos guardados.</string>
+    <string name="field_presets_on_map">En el mapa</string>
+    <string name="field_presets_overwrite">Sobrescribir</string>
+    <string name="field_presets_overwrite_title">¿Sobrescribir %1$s?</string>
+    <string name="field_presets_overwrite_body">Su borde, spawns, ubicaciones y foto se reemplazarán con lo que hay ahora en el mapa. Mantiene su nombre.</string>
+    <string name="field_presets_exists_title">%1$s ya está guardado</string>
+    <string name="field_presets_delete_title">¿Eliminar %1$s?</string>
+    <string name="field_presets_delete_body">El campo guardado desaparecerá para siempre. Lo que hay ahora en el mapa se queda.</string>
 </resources>

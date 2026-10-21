@@ -758,4 +758,24 @@
     <string name="field_map_deleted">Spielfeldkarte gelöscht.</string>
     <string name="field_map_save_error">Spielfeldkarte konnte nicht gespeichert werden.</string>
     <string name="field_map_no_location">Standort konnte noch nicht ermittelt werden.</string>
+    <string name="ctf_one_flag">Eine Flagge in der Mitte</string>
+    <string name="ctf_one_flag_hint">Beide Teams rennen um eine einzige Flagge und bringen sie zur eigenen Basis. Lege sie selbst mit dem Flaggen-Werkzeug der Feldkarte ab, sonst wird sie fair zwischen den Basen platziert.</string>
+    <string name="ctf_one_flag_ours">Dein Team hat die Flagge! Gib dem Träger Deckung</string>
+    <string name="ctf_one_flag_theirs">Das andere Team hat die Flagge! Stoppt den Träger</string>
+    <string name="ctf_one_flag_down">Die Flagge liegt am Boden: schnapp sie dir</string>
+    <string name="field_tool_flag">Flagge</string>
+    <string name="field_hint_center_flag">Tippe, um die Flagge abzulegen; tippe sie an, um sie zu entfernen. Bis dahin legt jedes Spiel sie dorthin, wo die gestrichelte Flagge ist, fair für beide Basen.</string>
+    <string name="field_center_flag_cleared">Flagge entfernt. Jedes Spiel platziert sie fair zwischen den Basen.</string>
+    <string name="field_background_divider">Kartenhintergrund-Daten</string>
+    <string name="field_presets_save_new">Karte als neues Feld speichern</string>
+    <string name="field_presets_list">Gespeicherte Felder</string>
+    <string name="field_presets_hint">Laden legt Grenze, Spawns, Orte und Foto eines Feldes auf die Karte. Überschreiben ersetzt ein gespeichertes Feld durch das, was jetzt auf der Karte ist, und behält seinen Namen.</string>
+    <string name="field_presets_empty">Noch keine gespeicherten Felder.</string>
+    <string name="field_presets_on_map">Auf der Karte</string>
+    <string name="field_presets_overwrite">Überschreiben</string>
+    <string name="field_presets_overwrite_title">%1$s überschreiben?</string>
+    <string name="field_presets_overwrite_body">Grenze, Spawns, Orte und Foto werden durch das ersetzt, was jetzt auf der Karte ist. Der Name bleibt.</string>
+    <string name="field_presets_exists_title">%1$s ist schon gespeichert</string>
+    <string name="field_presets_delete_title">%1$s löschen?</string>
+    <string name="field_presets_delete_body">Das gespeicherte Feld ist dann für immer weg. Was jetzt auf der Karte ist, bleibt.</string>
 </resources>

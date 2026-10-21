@@ -758,4 +758,24 @@
     <string name="field_map_deleted">Carte du terrain supprimée.</string>
     <string name="field_map_save_error">Impossible d\'enregistrer la carte du terrain.</string>
     <string name="field_map_no_location">Position introuvable pour le moment.</string>
+    <string name="ctf_one_flag">Un seul drapeau au centre</string>
+    <string name="ctf_one_flag_hint">Les deux équipes se disputent un seul drapeau et le ramènent à leur propre base. Placez-le vous-même avec l\'outil Drapeau de la carte du terrain, sinon il est placé équitablement entre les bases.</string>
+    <string name="ctf_one_flag_ours">Votre équipe a le drapeau ! Couvrez le porteur</string>
+    <string name="ctf_one_flag_theirs">L\'autre équipe a le drapeau ! Arrêtez le porteur</string>
+    <string name="ctf_one_flag_down">Le drapeau est à terre : récupérez-le</string>
+    <string name="field_tool_flag">Drapeau</string>
+    <string name="field_hint_center_flag">Touchez pour poser le drapeau ; touchez-le pour le retirer. D\'ici là, chaque partie le place là où se trouve le drapeau en pointillés, équitable pour les deux bases.</string>
+    <string name="field_center_flag_cleared">Drapeau retiré. Chaque partie le placera équitablement entre les bases.</string>
+    <string name="field_background_divider">Données du fond de carte</string>
+    <string name="field_presets_save_new">Enregistrer la carte comme nouveau terrain</string>
+    <string name="field_presets_list">Terrains enregistrés</string>
+    <string name="field_presets_hint">Charger met sur la carte la limite, les spawns, les emplacements et la photo d\'un terrain. Remplacer écrase un terrain enregistré avec ce qui est sur la carte maintenant, en gardant son nom.</string>
+    <string name="field_presets_empty">Aucun terrain enregistré pour l\'instant.</string>
+    <string name="field_presets_on_map">Sur la carte</string>
+    <string name="field_presets_overwrite">Remplacer</string>
+    <string name="field_presets_overwrite_title">Remplacer %1$s ?</string>
+    <string name="field_presets_overwrite_body">Sa limite, ses spawns, ses emplacements et sa photo seront remplacés par ce qui est sur la carte maintenant. Il garde son nom.</string>
+    <string name="field_presets_exists_title">%1$s est déjà enregistré</string>
+    <string name="field_presets_delete_title">Supprimer %1$s ?</string>
+    <string name="field_presets_delete_body">Le terrain enregistré disparaîtra pour de bon. Ce qui est sur la carte maintenant reste.</string>
 </resources>

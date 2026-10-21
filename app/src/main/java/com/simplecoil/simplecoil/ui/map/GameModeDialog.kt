@@ -131,6 +131,9 @@ object GameModeDialog {
             put(d.ctfShownEt, r.carrierShownEverySeconds)
             put(d.ctfReturnsEt, r.droppedReturnsSeconds)
             d.ctfOwnHomeSwitch.isChecked = r.ownFlagHomeToScore
+            d.ctfOneFlagSwitch.isChecked = r.oneFlag
+            // With one flag there's no flag of your own to have home
+            d.ctfOwnHomeSwitch.isVisible = !r.oneFlag
             put(d.ctfRadiusEt, units.fromMeters(r.baseRadiusMeters).roundToInt())
         }
         fun readFlag(): FlagRules = FlagRules(
@@ -138,8 +141,10 @@ object GameModeDialog {
             carrierShownEverySeconds = int(d.ctfShownEt, config.flag.carrierShownEverySeconds),
             droppedReturnsSeconds = int(d.ctfReturnsEt, config.flag.droppedReturnsSeconds),
             ownFlagHomeToScore = d.ctfOwnHomeSwitch.isChecked,
+            oneFlag = d.ctfOneFlagSwitch.isChecked,
             baseRadiusMeters = d.ctfRadiusEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.flag.baseRadiusMeters,
         ).clamped()
+        d.ctfOneFlagSwitch.setOnCheckedChangeListener { _, on -> d.ctfOwnHomeSwitch.isVisible = !on }
         fun fillExtraction(r: ExtractionRules) {
             put(d.exLootEt, r.lootPoints)
             put(d.exCollectEt, r.collectSeconds)

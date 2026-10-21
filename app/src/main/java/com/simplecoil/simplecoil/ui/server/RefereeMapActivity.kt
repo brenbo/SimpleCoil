@@ -33,8 +33,10 @@ import com.simplecoil.simplecoil.databinding.ActivityRefereeMapBinding
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.mode.FlagEngine
 import com.simplecoil.simplecoil.domain.mode.InfectionEngine
 import com.simplecoil.simplecoil.domain.mode.ObjectiveState
+import com.simplecoil.simplecoil.domain.mode.flagBaseSpots
 import com.simplecoil.simplecoil.network.server.LiveGame
 import com.simplecoil.simplecoil.network.server.SessionPhase
 import com.simplecoil.simplecoil.ui.map.CameraLimits
@@ -238,7 +240,7 @@ class RefereeMapActivity : AppCompatActivity() {
         // The mode's things: points, sites, bases; flags; crates
         points?.update(when (mode?.mode) {
             GameMode.DOMINATION, GameMode.HARDPOINT, GameMode.SEARCH_AND_DESTROY -> mode.objectives
-            GameMode.CAPTURE_THE_FLAG -> mode.flags.map { ObjectiveState("", it.base, it.team, 0, 0.0, false, active = true, next = false) }
+            GameMode.CAPTURE_THE_FLAG -> mode.flagBaseSpots().map { (team, base) -> ObjectiveState("", base, team, 0, 0.0, false, active = true, next = false) }
             GameMode.EXTRACTION -> mode.extraction?.let { e ->
                 // Red until the zones open, then green
                 val open = System.currentTimeMillis() >= e.opensAt
@@ -247,7 +249,7 @@ class RefereeMapActivity : AppCompatActivity() {
             }.orEmpty()
             else -> emptyList()
         }, mode?.radiusMeters ?: 10.0, letters = mode?.mode != GameMode.HARDPOINT)
-        flags?.update(mode?.flags.orEmpty().map { GlyphOverlay.Glyph("flag${it.team}", it.point, FLAG, colorOf(it.team)) })
+        flags?.update(mode?.flags.orEmpty().map { GlyphOverlay.Glyph("flag${it.team}", it.point, FLAG, if (it.team == FlagEngine.NEUTRAL) 0xFFFFFFFF.toInt() else colorOf(it.team)) })
         drops?.update(field?.drops.orEmpty(), System.currentTimeMillis())
         // Everyone, by side: out or with no position shown faded, or left off; not those sitting out (joined too late)
         val sittingOut = mode?.sittingOut.orEmpty()

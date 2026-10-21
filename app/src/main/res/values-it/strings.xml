@@ -758,4 +758,24 @@
     <string name="field_map_deleted">Mappa del campo eliminata.</string>
     <string name="field_map_save_error">Impossibile salvare la mappa del campo.</string>
     <string name="field_map_no_location">Impossibile trovare la tua posizione al momento.</string>
+    <string name="ctf_one_flag">Una bandiera al centro</string>
+    <string name="ctf_one_flag_hint">Entrambe le squadre corrono per un\'unica bandiera e la portano alla propria base. Posizionala tu con lo strumento Bandiera della mappa del campo, oppure viene posizionata in modo equo tra le basi.</string>
+    <string name="ctf_one_flag_ours">La tua squadra ha la bandiera! Copri il portatore</string>
+    <string name="ctf_one_flag_theirs">L\'altra squadra ha la bandiera! Ferma il portatore</string>
+    <string name="ctf_one_flag_down">La bandiera è a terra: prendila</string>
+    <string name="field_tool_flag">Bandiera</string>
+    <string name="field_hint_center_flag">Tocca per posare la bandiera; toccala per toglierla. Finché non lo fai, ogni partita la mette dove si trova la bandiera tratteggiata, equa per entrambe le basi.</string>
+    <string name="field_center_flag_cleared">Bandiera tolta. Ogni partita la posizionerà in modo equo tra le basi.</string>
+    <string name="field_background_divider">Dati di sfondo della mappa</string>
+    <string name="field_presets_save_new">Salva la mappa come nuovo campo</string>
+    <string name="field_presets_list">Campi salvati</string>
+    <string name="field_presets_hint">Carica mette sulla mappa il confine, gli spawn, le posizioni e la foto di un campo. Sovrascrivi sostituisce un campo salvato con ciò che c\'è ora sulla mappa e ne mantiene il nome.</string>
+    <string name="field_presets_empty">Ancora nessun campo salvato.</string>
+    <string name="field_presets_on_map">Sulla mappa</string>
+    <string name="field_presets_overwrite">Sovrascrivi</string>
+    <string name="field_presets_overwrite_title">Sovrascrivere %1$s?</string>
+    <string name="field_presets_overwrite_body">Confine, spawn, posizioni e foto verranno sostituiti con ciò che c\'è ora sulla mappa. Il nome resta.</string>
+    <string name="field_presets_exists_title">%1$s è già salvato</string>
+    <string name="field_presets_delete_title">Eliminare %1$s?</string>
+    <string name="field_presets_delete_body">Il campo salvato sparirà per sempre. Ciò che c\'è ora sulla mappa resta.</string>
 </resources>

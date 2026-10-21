@@ -220,6 +220,8 @@ data class ModeState(
     val out: Set<Int> = emptySet(),
     /** Capture the Flag: each team's flag. */
     val flags: List<FlagState> = emptyList(),
+    /** Capture the Flag with one flag: each team's base, where they bring it to score. */
+    val flagBases: Map<Int, LatLon> = emptyMap(),
     /** Extraction: the loot, the zones and who carries what. */
     val extraction: ExtractionState? = null,
     /** Rounds: the round number (it goes up when everyone respawns). */
@@ -262,8 +264,11 @@ data class ModeState(
             if (flags.isNotEmpty()) put("flags", JSONArray().apply {
                 flags.forEach { f ->
                     put(JSONArray().put(f.team).put(f.base.latitude).put(f.base.longitude).put(f.point.latitude).put(f.point.longitude)
-                        .put(f.carrier).put(if (f.dropped) 1 else 0).put(if (f.revealed) 1 else 0))
+                        .put(f.carrier).put(if (f.dropped) 1 else 0).put(if (f.revealed) 1 else 0).put(f.carrierTeam))
                 }
+            })
+            if (flagBases.isNotEmpty()) put("flagBases", JSONArray().apply {
+                flagBases.toSortedMap().forEach { (team, p) -> put(JSONArray().put(team).put(p.latitude).put(p.longitude)) }
             })
             if (round != 0) put("round", round)
             if (noRespawn) put("noRespawn", true)
@@ -319,9 +324,12 @@ data class ModeState(
                 flags = json.optJSONArray("flags")?.let { a ->
                     (0 until a.length()).map {
                         val f = a.getJSONArray(it)
-                        FlagState(f.getInt(0), LatLon(f.getDouble(1), f.getDouble(2)), LatLon(f.getDouble(3), f.getDouble(4)), f.getInt(5), f.getInt(6) == 1, f.getInt(7) == 1)
+                        FlagState(f.getInt(0), LatLon(f.getDouble(1), f.getDouble(2)), LatLon(f.getDouble(3), f.getDouble(4)), f.getInt(5), f.getInt(6) == 1, f.getInt(7) == 1, f.optInt(8, 0))
                     }
                 } ?: emptyList(),
+                flagBases = json.optJSONArray("flagBases")?.let { a ->
+                    (0 until a.length()).associate { a.getJSONArray(it).let { b -> b.getInt(0) to LatLon(b.getDouble(1), b.getDouble(2)) } }
+                } ?: emptyMap(),
                 round = json.optInt("round", 0),
                 noRespawn = json.optBoolean("noRespawn", false),
                 actor = json.optInt("actor", 0),

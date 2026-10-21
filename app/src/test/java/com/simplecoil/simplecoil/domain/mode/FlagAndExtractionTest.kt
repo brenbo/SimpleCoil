@@ -94,6 +94,99 @@ class FlagAndExtractionTest {
         assertTrue(e.tick(11_000, emptyMap()).flags.all { it.revealed })
     }
 
+    private fun oneFlag() = FlagEngine(rules.copy(oneFlag = true), mapOf(1 to redBase, 2 to blueBase), 0, center)
+
+    @Test
+    fun oneFlag_eitherTeamTakesItHomeToScore() {
+        val e = oneFlag()
+        var state = e.tick(0, emptyMap())
+        assertEquals(listOf(FlagEngine.NEUTRAL), state.flags.map { it.team })
+        assertEquals(mapOf(1 to redBase, 2 to blueBase), state.flagBases)
+        // Blue grabs it in the middle and runs it to blue's base
+        state = e.tick(1_000, mapOf(5 to PlayerInfo(2, center, true)))
+        assertEquals(5, state.flags.single().carrier)
+        assertEquals(2, state.flags.single().carrierTeam)
+        state = e.tick(2_000, mapOf(5 to PlayerInfo(2, blueBase, true)))
+        assertEquals(1, state.scores[2])
+        assertEquals(0, state.scores[1])
+        // Back in the middle
+        assertTrue(state.flags.single().home)
+        assertEquals(center, state.flags.single().point)
+        // The wire carries it all
+        assertEquals(state, ModeState.fromJson(state.toJson()))
+    }
+
+    @Test
+    fun oneFlag_bothTeamsOnItMeansNobodyGetsIt() {
+        val e = oneFlag()
+        var state = e.tick(1_000, mapOf(1 to PlayerInfo(1, center, true), 5 to PlayerInfo(2, at(3.0), true)))
+        assertEquals(0, state.flags.single().carrier)
+        // Still nobody, however long they stand there
+        state = e.tick(9_000, mapOf(1 to PlayerInfo(1, center, true), 5 to PlayerInfo(2, at(3.0), true)))
+        assertEquals(0, state.flags.single().carrier)
+        // Blue steps off: red, still on it, takes it
+        state = e.tick(10_000, mapOf(1 to PlayerInfo(1, center, true), 5 to PlayerInfo(2, at(40.0), true)))
+        assertEquals(1, state.flags.single().carrier)
+        // An eliminated player on it doesn't count
+        val e2 = oneFlag()
+        state = e2.tick(1_000, mapOf(1 to PlayerInfo(1, center, true), 5 to PlayerInfo(2, center, false)))
+        assertEquals(1, state.flags.single().carrier)
+    }
+
+    @Test
+    fun oneFlag_sameTeam_theFirstThereTakesIt() {
+        val e = oneFlag()
+        // Player 9 arrives first, while an enemy is also on it, so nobody takes it yet
+        e.tick(1_000, mapOf(9 to PlayerInfo(1, center, true), 5 to PlayerInfo(2, center, true)))
+        // Teammate 3 arrives after
+        e.tick(2_000, mapOf(9 to PlayerInfo(1, center, true), 3 to PlayerInfo(1, at(2.0), true), 5 to PlayerInfo(2, center, true)))
+        // The enemy leaves: 9 was there first, though 3 has the lower id
+        val state = e.tick(3_000, mapOf(9 to PlayerInfo(1, center, true), 3 to PlayerInfo(1, at(2.0), true)))
+        assertEquals(9, state.flags.single().carrier)
+    }
+
+    @Test
+    fun oneFlag_droppedAnyoneGrabsIt_orItGoesBackToTheMiddle() {
+        val e = oneFlag()
+        e.tick(1_000, mapOf(1 to PlayerInfo(1, center, true)))
+        e.tick(2_000, mapOf(1 to PlayerInfo(1, at(-40.0), true)))
+        e.onEliminated(1, 2_500)
+        var state = e.tick(3_000, emptyMap())
+        assertTrue(state.flags.single().dropped)
+        assertEquals(at(-40.0), state.flags.single().point)
+        // Blue picks it up where it fell
+        state = e.tick(4_000, mapOf(5 to PlayerInfo(2, at(-40.0), true)))
+        assertEquals(5, state.flags.single().carrier)
+        // Dropped and left: back to the middle after the timeout
+        e.onEliminated(5, 5_000)
+        state = e.tick(40_000, emptyMap())
+        assertTrue(state.flags.single().home)
+        assertEquals(center, state.flags.single().point)
+    }
+
+    @Test
+    fun theOneFlagIsPlacedFairlyInsideTheField() {
+        val field = Border.Circle(center, 100.0)
+        val spot = centerFlagSpot(field, mapOf(1 to redBase, 2 to blueBase), 10.0, 10.0)!!
+        assertTrue(field.distanceToEdgeMeters(spot) >= 20.0)
+        val unfair = GeoMath.distanceMeters(spot, redBase) - GeoMath.distanceMeters(spot, blueBase)
+        assertTrue("off by $unfair m", kotlin.math.abs(unfair) < 6.0)
+        assertTrue(GeoMath.distanceMeters(spot, center) < 10.0)
+        // An L-shaped field whose middle is outside it: still inside, and fair
+        val l = Border.Polygon(listOf(GeoMath.offset(center, -100.0, -100.0), GeoMath.offset(center, -100.0, 100.0), GeoMath.offset(center, -40.0, 100.0),
+            GeoMath.offset(center, -40.0, -40.0), GeoMath.offset(center, 100.0, -40.0), GeoMath.offset(center, 100.0, -100.0)))
+        val a = GeoMath.offset(center, -70.0, 80.0)
+        val b = GeoMath.offset(center, 80.0, -70.0)
+        val lSpot = centerFlagSpot(l, mapOf(1 to a, 2 to b), 10.0, 5.0)!!
+        assertTrue(l.contains(lSpot))
+        assertTrue(kotlin.math.abs(GeoMath.distanceMeters(lSpot, a) - GeoMath.distanceMeters(lSpot, b)) < 10.0)
+        // The rules and the hand-placed flag survive saving
+        val config = FieldConfig(border = field, flag = FlagRules(oneFlag = true), centerFlag = at(5.0))
+        val back = FieldConfig.fromJson(JSONObject(config.toJson().toString()))
+        assertTrue(back!!.flag.oneFlag)
+        assertEquals(at(5.0), back.centerFlag)
+    }
+
     @Test
     fun flagBasesAreTheSpawnsOrPlacedApart() {
         val field = Border.Circle(center, 100.0)

@@ -458,6 +458,8 @@
     <string name="ctf_returns">A dropped flag goes home after (10–120 s)</string>
     <string name="ctf_own_home">Your own flag must be home to score</string>
     <string name="ctf_radius">Base radius (%1$s)</string>
+    <string name="ctf_one_flag">One flag in the middle</string>
+    <string name="ctf_one_flag_hint">Both teams race for a single flag and bring it to their own base. Put it down yourself with the field map\'s Flag tool, or it\'s placed fairly between the bases.</string>
     <string name="ex_loot">Loot piles on the field (3–20)</string>
     <string name="ex_collect">Seconds to collect or bank (3–30)</string>
     <string name="ex_opens">Extraction opens after (minutes)</string>
@@ -587,6 +589,9 @@
     <string name="ctf_you_have_flag">You have the flag! Get it home</string>
     <string name="ctf_flag_taken">Your flag is taken!</string>
     <string name="ctf_flag_down">Your flag is down: touch it to send it home</string>
+    <string name="ctf_one_flag_ours">Your team has the flag! Cover the carrier</string>
+    <string name="ctf_one_flag_theirs">The other team has the flag! Stop the carrier</string>
+    <string name="ctf_one_flag_down">The flag is down: grab it</string>
     <string name="ex_zone_label">EX</string>
     <string name="ex_collecting">Collecting loot…</string>
     <string name="ex_extracting">Extracting…</string>
@@ -759,6 +764,9 @@
     <string name="field_small_warning">This field is under 100 ft across. Phone GPS is only good to about 10–25 ft, so spawns, capture locations and drops may not work well here. Classic, or Domination with one location, plays best on a field this small.</string>
     <string name="field_hint_objectives">Tap to add capture location %1$s. Tap a location to remove it. Leave none to have them placed by field size for each game.</string>
     <string name="field_objectives_cleared">Capture locations cleared. They will be placed by field size for each game.</string>
+    <string name="field_tool_flag">Flag</string>
+    <string name="field_hint_center_flag">Tap to put the flag down; tap it to take it away. Until you do, each game puts it where the dashed flag is, fair to both bases.</string>
+    <string name="field_center_flag_cleared">Flag taken away. Each game will place it fairly between the bases.</string>
     <string name="field_objectives_full">Five capture locations at most.</string>
     <string name="field_inside_border_only">Spawns and locations go inside the field\'s border.</string>
     <plurals name="field_status_spawns">

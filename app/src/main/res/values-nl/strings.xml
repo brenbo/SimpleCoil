@@ -758,4 +758,24 @@
     <string name="field_map_deleted">Veldkaart verwijderd.</string>
     <string name="field_map_save_error">Kon de veldkaart niet opslaan.</string>
     <string name="field_map_no_location">Kan je locatie nog niet vinden.</string>
+    <string name="ctf_one_flag">Eén vlag in het midden</string>
+    <string name="ctf_one_flag_hint">Beide teams racen om één vlag en brengen die naar hun eigen basis. Leg hem zelf neer met het Vlag-gereedschap van de veldkaart, anders wordt hij eerlijk tussen de bases geplaatst.</string>
+    <string name="ctf_one_flag_ours">Jouw team heeft de vlag! Dek de drager</string>
+    <string name="ctf_one_flag_theirs">Het andere team heeft de vlag! Stop de drager</string>
+    <string name="ctf_one_flag_down">De vlag ligt op de grond: pak hem</string>
+    <string name="field_tool_flag">Vlag</string>
+    <string name="field_hint_center_flag">Tik om de vlag neer te leggen; tik erop om hem weg te halen. Tot dan legt elk spel hem waar de gestippelde vlag staat, eerlijk voor beide bases.</string>
+    <string name="field_center_flag_cleared">Vlag weggehaald. Elk spel plaatst hem eerlijk tussen de bases.</string>
+    <string name="field_background_divider">Gegevens kaartachtergrond</string>
+    <string name="field_presets_save_new">Kaart opslaan als nieuw veld</string>
+    <string name="field_presets_list">Opgeslagen velden</string>
+    <string name="field_presets_hint">Laden zet de grens, spawns, locaties en foto van een veld op de kaart. Overschrijven vervangt een opgeslagen veld door wat nu op de kaart staat en houdt de naam.</string>
+    <string name="field_presets_empty">Nog geen opgeslagen velden.</string>
+    <string name="field_presets_on_map">Op de kaart</string>
+    <string name="field_presets_overwrite">Overschrijven</string>
+    <string name="field_presets_overwrite_title">%1$s overschrijven?</string>
+    <string name="field_presets_overwrite_body">De grens, spawns, locaties en foto worden vervangen door wat nu op de kaart staat. De naam blijft.</string>
+    <string name="field_presets_exists_title">%1$s is al opgeslagen</string>
+    <string name="field_presets_delete_title">%1$s verwijderen?</string>
+    <string name="field_presets_delete_body">Het opgeslagen veld is dan voorgoed weg. Wat nu op de kaart staat, blijft.</string>
 </resources>

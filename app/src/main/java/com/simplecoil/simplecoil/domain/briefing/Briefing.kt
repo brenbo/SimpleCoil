@@ -196,7 +196,13 @@ object Briefing {
             }
             GameMode.CAPTURE_THE_FLAG -> {
                 val f = field?.flag
-                Slide("mode.goal", Section.MODE, "Capture the Flag",
+                if (f?.oneFlag == true) Slide("mode.goal", Section.MODE, "Capture the Flag: one flag",
+                    "One flag sits in the middle of the field. Grab it and bring it back to your own base to score." +
+                        " While both teams are on it, nobody can take it." +
+                        " A carrier who's eliminated drops the flag; anyone can grab it, and it goes back to the middle after ${f.droppedReturnsSeconds} s." +
+                        " The carrier shows on the other team's map every ${f.carrierShownEverySeconds} s.",
+                    SlideArt.FLAG)
+                else Slide("mode.goal", Section.MODE, "Capture the Flag",
                     "Run to the other team's base, take their flag, and bring it back to yours." +
                         (if (f?.ownFlagHomeToScore != false) " Your own flag has to be home to score." else "") +
                         " A carrier who's eliminated drops the flag; it goes home after ${f?.droppedReturnsSeconds ?: 30} s." +

@@ -16,6 +16,7 @@
 
 package com.simplecoil.simplecoil.domain.mode
 
+import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.LatLon
 import org.json.JSONObject
@@ -31,10 +32,12 @@ data class FlagRules(
     val droppedReturnsSeconds: Int = 30,
     val ownFlagHomeToScore: Boolean = true,
     val baseRadiusMeters: Double = 10.0,
+    /** One neutral flag in the middle of the field instead of one at each team's base. */
+    val oneFlag: Boolean = false,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("toWin", capturesToWin).put("shownEvery", carrierShownEverySeconds).put("returns", droppedReturnsSeconds)
-        .put("ownHome", ownFlagHomeToScore).put("baseRadius", baseRadiusMeters)
+        .put("ownHome", ownFlagHomeToScore).put("baseRadius", baseRadiusMeters).put("oneFlag", oneFlag)
 
     fun clamped(): FlagRules = copy(
         capturesToWin = capturesToWin.coerceIn(1, 10),
@@ -49,7 +52,7 @@ data class FlagRules(
             if (json == null) return d
             return FlagRules(json.optInt("toWin", d.capturesToWin), json.optInt("shownEvery", d.carrierShownEverySeconds),
                 json.optInt("returns", d.droppedReturnsSeconds), json.optBoolean("ownHome", d.ownFlagHomeToScore),
-                json.optDouble("baseRadius", d.baseRadiusMeters)).clamped()
+                json.optDouble("baseRadius", d.baseRadiusMeters), json.optBoolean("oneFlag", d.oneFlag)).clamped()
         }
     }
 }
@@ -65,6 +68,8 @@ data class FlagState(
     val dropped: Boolean,
     /** The carrier shows on the other team's map right now. */
     val revealed: Boolean,
+    /** The carrier's team; 0 if nobody carries it. */
+    val carrierTeam: Int = 0,
 ) {
     val home: Boolean get() = carrier == 0 && !dropped
 }
@@ -74,8 +79,17 @@ data class FlagState(
  * at its base. An enemy walking into the base takes it; walking it back into their own base
  * scores (with their own flag home, if the rules say so). A carrier who is eliminated drops it
  * where they fell; a teammate touching a dropped flag sends it home, and so does time.
+ *
+ * With one flag ([center] set): a single neutral flag sits at [center]. Either team takes it,
+ * scores by carrying it into their own base, and it goes back to the middle. While players from
+ * both teams stand on it nobody takes it; from one team, whoever got there first does.
  */
-class FlagEngine(private val rules: FlagRules, bases: Map<Int, LatLon>, private val startMillis: Long) {
+class FlagEngine(
+    private val rules: FlagRules,
+    private val bases: Map<Int, LatLon>,
+    private val startMillis: Long,
+    center: LatLon? = null,
+) {
 
     private class Flag(val team: Int, val base: LatLon) {
         var carrier = 0
@@ -83,9 +97,13 @@ class FlagEngine(private val rules: FlagRules, bases: Map<Int, LatLon>, private 
         var droppedAt: Long? = null
     }
 
-    private val flags = bases.map { (team, base) -> Flag(team, base) }
+    private val neutral = center != null
+    private val flags = if (center != null) listOf(Flag(NEUTRAL, center)) else bases.map { (team, base) -> Flag(team, base) }
     private val captures = HashMap<Int, Int>()
     private var winner = 0
+
+    /** One flag: when each player near the flag got there, so the first one takes it. */
+    private val nearSince = HashMap<Int, Long>()
 
     /** [playerId] was eliminated: any flag they carry falls where they were. */
     fun onEliminated(playerId: Int, nowMillis: Long) {
@@ -103,6 +121,12 @@ class FlagEngine(private val rules: FlagRules, bases: Map<Int, LatLon>, private 
         flag.point = flag.base
     }
 
+    private fun take(flag: Flag, id: Int, at: LatLon) {
+        flag.carrier = id
+        flag.droppedAt = null
+        flag.point = at
+    }
+
     fun tick(nowMillis: Long, players: Map<Int, PlayerInfo>): ModeState {
         if (winner == 0) {
             for (flag in flags) {
@@ -114,33 +138,17 @@ class FlagEngine(private val rules: FlagRules, bases: Map<Int, LatLon>, private 
                 val dropped = flag.droppedAt
                 if (dropped != null && nowMillis - dropped >= rules.droppedReturnsSeconds * 1000L) sendHome(flag)
             }
-            for ((id, p) in players) {
-                val at = p.point ?: continue
-                if (!p.alive) continue
-                for (flag in flags) {
-                    val near = GeoMath.distanceMeters(at, flag.point) <= rules.baseRadiusMeters
-                    when {
-                        flag.carrier != 0 || !near -> {}
-                        // A teammate touching a dropped flag sends it home
-                        flag.droppedAt != null && p.team == flag.team -> sendHome(flag)
-                        // An enemy takes it, from its base or where it fell
-                        p.team != flag.team && flags.none { it.carrier == id } -> {
-                            flag.carrier = id
-                            flag.droppedAt = null
-                            flag.point = at
-                        }
-                    }
-                }
-            }
-            // Carrying an enemy flag into your own base scores
+            if (neutral) pickUpNeutral(flags.single(), nowMillis, players) else pickUp(players)
+            // Carrying a flag into your own base scores
             for (flag in flags) {
                 val carrierId = flag.carrier
                 if (carrierId == 0) continue
                 val carrier = players[carrierId] ?: continue
-                val home = flags.firstOrNull { it.team == carrier.team } ?: continue
+                val base = bases[carrier.team] ?: continue
                 val at = carrier.point ?: continue
-                val ownHome = home.carrier == 0 && home.droppedAt == null
-                if (GeoMath.distanceMeters(at, home.base) <= rules.baseRadiusMeters && (ownHome || !rules.ownFlagHomeToScore)) {
+                val home = flags.firstOrNull { it.team == carrier.team }
+                val ownHome = home == null || (home.carrier == 0 && home.droppedAt == null)
+                if (GeoMath.distanceMeters(at, base) <= rules.baseRadiusMeters && (ownHome || !rules.ownFlagHomeToScore)) {
                     captures[carrier.team] = (captures[carrier.team] ?: 0) + 1
                     sendHome(flag)
                     if ((captures[carrier.team] ?: 0) >= rules.capturesToWin) winner = carrier.team
@@ -154,13 +162,76 @@ class FlagEngine(private val rules: FlagRules, bases: Map<Int, LatLon>, private 
             else -> ((nowMillis - startMillis) % (rules.carrierShownEverySeconds * 1000L)) < REVEAL_MILLIS
         }
         return ModeState(
-            mode = GameMode.CAPTURE_THE_FLAG, objectives = emptyList(), scores = flags.associate { it.team to (captures[it.team] ?: 0) },
+            mode = GameMode.CAPTURE_THE_FLAG, objectives = emptyList(), scores = bases.keys.associateWith { captures[it] ?: 0 },
             scoreToWin = rules.capturesToWin, radiusMeters = rules.baseRadiusMeters, winner = winner, movesAt = 0L,
-            flags = flags.map { FlagState(it.team, it.base, it.point, it.carrier, it.droppedAt != null, revealed) },
+            flags = flags.map { FlagState(it.team, it.base, it.point, it.carrier, it.droppedAt != null, revealed, players[it.carrier]?.team ?: 0) },
+            flagBases = if (neutral) bases else emptyMap(),
         )
     }
 
-    private companion object {
-        const val REVEAL_MILLIS = 3_000L
+    /** A flag per team: an enemy takes it, a teammate touching it where it fell sends it home. */
+    private fun pickUp(players: Map<Int, PlayerInfo>) {
+        for ((id, p) in players) {
+            val at = p.point ?: continue
+            if (!p.alive) continue
+            for (flag in flags) {
+                val near = GeoMath.distanceMeters(at, flag.point) <= rules.baseRadiusMeters
+                when {
+                    flag.carrier != 0 || !near -> {}
+                    flag.droppedAt != null && p.team == flag.team -> sendHome(flag)
+                    p.team != flag.team && flags.none { it.carrier == id } -> take(flag, id, at)
+                }
+            }
+        }
+    }
+
+    /** The one flag: nobody takes it while both teams are on it; otherwise the first one there does. */
+    private fun pickUpNeutral(flag: Flag, nowMillis: Long, players: Map<Int, PlayerInfo>) {
+        val near = players.filter { (_, p) ->
+            val at = p.point
+            p.alive && at != null && GeoMath.distanceMeters(at, flag.point) <= rules.baseRadiusMeters
+        }
+        nearSince.keys.retainAll(near.keys)
+        near.keys.forEach { nearSince.getOrPut(it) { nowMillis } }
+        if (flag.carrier != 0 || near.isEmpty()) return
+        if (near.values.map { it.team }.toSet().size > 1) return
+        val first = near.keys.minWith(compareBy<Int> { nearSince.getValue(it) }.thenBy { it })
+        take(flag, first, near.getValue(first).point!!)
+    }
+
+    companion object {
+        private const val REVEAL_MILLIS = 3_000L
+
+        /** The one flag's "team": nobody's. */
+        const val NEUTRAL = 0
     }
 }
+
+/**
+ * Where the one flag goes when the host hasn't put it down: inside [border], clear of its edge,
+ * as near the same distance from both [bases] as can be (fair to both teams) and near the middle
+ * between them. Null on a field with no room for it.
+ */
+fun centerFlagSpot(border: Border, bases: Map<Int, LatLon>, radiusMeters: Double, edgeBufferMeters: Double): LatLon? {
+    val b = border.bounds
+    val target = if (bases.size >= 2) bases.values.let { v -> LatLon(v.map { it.latitude }.average(), v.map { it.longitude }.average()) } else b.center
+    val grid = (0..GRID).flatMap { i ->
+        (0..GRID).map { j -> LatLon(b.south + (b.north - b.south) * i / GRID, b.west + (b.east - b.west) * j / GRID) }
+    }.filter { border.contains(it) }
+    // Room for the flag's circle inside the edge, loosening on a small field
+    for (buffer in listOf(edgeBufferMeters + radiusMeters, radiusMeters, 0.0)) {
+        val usable = grid.filter { border.distanceToEdgeMeters(it) >= buffer }
+        if (usable.isEmpty()) continue
+        return usable.minBy { spot ->
+            val distances = bases.values.map { GeoMath.distanceMeters(spot, it) }
+            val unfair = if (distances.size >= 2) distances.max() - distances.min() else 0.0
+            unfair * 2 + GeoMath.distanceMeters(spot, target)
+        }
+    }
+    return null
+}
+
+private const val GRID = 40
+
+/** Each team's base: where its flag sits, or with one flag, where the team scores it. */
+fun ModeState.flagBaseSpots(): Map<Int, LatLon> = flagBases.ifEmpty { flags.associate { it.team to it.base } }

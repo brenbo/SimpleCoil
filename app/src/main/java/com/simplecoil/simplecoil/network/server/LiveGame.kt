@@ -41,6 +41,7 @@ import com.simplecoil.simplecoil.domain.mode.ObjectiveRules
 import com.simplecoil.simplecoil.domain.mode.FlagEngine
 import com.simplecoil.simplecoil.domain.mode.PlayerInfo
 import com.simplecoil.simplecoil.domain.mode.flagBases
+import com.simplecoil.simplecoil.domain.mode.centerFlagSpot
 import com.simplecoil.simplecoil.domain.mode.MarksmanEngine
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.mode.ZonePlan
@@ -295,7 +296,11 @@ class LiveGame(
             }
             GameMode.CAPTURE_THE_FLAG -> {
                 val border = base.border ?: return
-                val engine = FlagEngine(base.flag, flagBases(border, base.spawns, base.rules.edgeBufferMeters, random), wallClock())
+                val bases = flagBases(border, base.spawns, base.rules.edgeBufferMeters, random)
+                // One flag: where the host put it (if it's still inside the border), else the fair middle
+                val center = if (!base.flag.oneFlag) null else base.centerFlag?.takeIf { border.contains(it) }
+                    ?: centerFlagSpot(border, bases, base.flag.baseRadiusMeters, base.rules.edgeBufferMeters)
+                val engine = FlagEngine(base.flag, bases, wallClock(), center)
                 flags = engine;
                 { engine.tick(wallClock(), playerInfos()) }
             }
