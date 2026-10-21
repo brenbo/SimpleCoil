@@ -65,11 +65,32 @@
                 style="@style/DialogRadio"
                 android:id="@+id/mode_infection"
                 android:text="@string/mode_infection" />
-        </RadioGroup>
 
-        <TextView
-            style="@style/DialogHint"
-            android:id="@+id/mode_about_tv" />
+            <LinearLayout
+                android:id="@+id/mode_about_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/bg_blurb_card"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <com.simplecoil.simplecoil.ui.briefing.BriefingArtView
+                    android:id="@+id/mode_about_art"
+                    android:layout_width="match_parent"
+                    android:layout_height="140dp" />
+
+                <TextView
+                    style="@style/DialogHint"
+                    android:id="@+id/mode_about_tv"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+        </RadioGroup>
 
         <LinearLayout
             android:id="@+id/mode_settings"
@@ -133,21 +154,11 @@
                 android:inputType="number"
                 android:maxLength="3" />
 
-            <!-- Advanced: collapsed until tapped. -->
-            <TextView
-                style="@style/DialogSection"
-                android:id="@+id/mode_advanced_tv"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:text="@string/mode_advanced_closed" />
-
             <LinearLayout
                 android:id="@+id/mode_advanced"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:orientation="vertical">
 
                 <TextView
                     style="@style/DialogLabel"

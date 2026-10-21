@@ -72,9 +72,12 @@ class BriefingActivity : AppCompatActivity() {
         slides = Briefing.slides(hostInputs(container))
         binding.briefingControls.visibility = android.view.View.VISIBLE
         val imagery = container.fieldImageryServer
-        // A new showing from the first slide, or the one it was on (the screen turned)
+        val startIdx = intent.getIntExtra(EXTRA_START_INDEX, 0)
+        // A new showing from the requested slide index (or first slide), or the one it was on (the screen turned)
         val id = imagery.briefing?.takeIf { savedInstanceState != null }?.id ?: System.currentTimeMillis()
-        val key = imagery.briefing?.takeIf { savedInstanceState != null }?.slide ?: slides.first().key
+        val key = imagery.briefing?.takeIf { savedInstanceState != null }?.slide
+            ?: slides.getOrNull(startIdx)?.key
+            ?: slides.first().key
         imagery.briefing = BriefingNow(id, key)
         goTo(key)
         binding.briefingNextButton.setOnClickListener {
@@ -176,6 +179,7 @@ class BriefingActivity : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_HOST = "host"
+        private const val EXTRA_START_INDEX = "start_index"
         private const val SLIDE_MILLIS = 350L
 
         /** A player's briefing is on screen (so the play screen doesn't open a second). */
@@ -183,7 +187,10 @@ class BriefingActivity : AppCompatActivity() {
         var showing = false
             private set
 
-        fun hostIntent(context: Context) = Intent(context, BriefingActivity::class.java).putExtra(EXTRA_HOST, true)
+        fun hostIntent(context: Context, startIndex: Int = 0) =
+            Intent(context, BriefingActivity::class.java)
+                .putExtra(EXTRA_HOST, true)
+                .putExtra(EXTRA_START_INDEX, startIndex)
         fun playerIntent(context: Context) = Intent(context, BriefingActivity::class.java)
 
         /** The game as the server will run it. */

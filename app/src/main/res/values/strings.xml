@@ -47,7 +47,7 @@
     <string name="no_team">Auto sort</string>
     <string name="auto_sort_team">Auto sort</string>
     <string name="switch_team_button">Switch team</string>
-    <string name="shuffle_teams_button">Shuffle</string>
+    <string name="shuffle_teams_button">Shuffle\nplayers</string>
     <string name="error_team_full">Team %1$d is full</string>
     <string name="team_full_switch_with">Team is full. Switch with?</string>
     <!-- The player settings dialog's team button once a player to switch with is picked: team, then that player's name. -->
@@ -198,7 +198,7 @@
     <string name="dedicated_gps_forced">GPS is on for everyone: this game mode needs it</string>
     <string name="dedicated_allow_join">Let players join a game in progress</string>
     <string name="dedicated_server_settings_only">Use the server\'s settings for everyone</string>
-    <string name="gps_mode_label">GPS</string>
+    <string name="gps_mode_label">GPS: Show players location to…</string>
     <string name="gps_mode_disabled">Off</string>
     <string name="gps_mode_teammate">Teammates</string>
     <string name="gps_mode_all">All</string>
@@ -424,9 +424,9 @@
     <string name="mode_classic">Classic</string>
     <string name="mode_domination">Domination</string>
     <string name="mode_hardpoint">Hardpoint</string>
-    <string name="mode_about_classic">Score by eliminating players, with the game limits as always.</string>
-    <string name="mode_about_domination">Capture points A, B and C by standing in them. Every point your team holds scores. Needs a field border.</string>
-    <string name="mode_about_hardpoint">One point counts at a time and it moves on a timer. Hold it alone to score. Needs a field border.</string>
+    <string name="mode_about_classic">Standard laser tag: eliminate opponents to score points and win.</string>
+    <string name="mode_about_domination">Capture locations A, B, and C on the map by standing near them. Every location your team holds scores points over time. Needs a field border.</string>
+    <string name="mode_about_hardpoint">A single active location moves around the map on a timer. Stand near it alone to score points for your team. Needs a field border.</string>
     <string name="mode_battle_royale">Battle Royale</string>
     <string name="mode_marksman">Marksman</string>
     <string name="mode_about_battle_royale">A safe zone shrinks in phases. Outside it you lose health. Once respawns are over, an elimination puts you out; the last team standing wins. Needs a field border.</string>
@@ -434,7 +434,7 @@
     <string name="mode_ctf">Capture the Flag</string>
     <string name="mode_extraction">Extraction</string>
     <string name="mode_about_ctf">Each team\'s flag sits at its base (its first spawn, or one end of the field). Walk into the enemy base to take theirs, and back to yours to score. A carrier who is eliminated drops it. Needs a field border.</string>
-    <string name="mode_about_extraction">Stand on loot to pick it up. It only counts once you stand in an extraction zone after it opens; if you are eliminated you drop it all. Needs a field border.</string>
+    <string name="mode_about_extraction">Pick up loot on the field and bring it to an extraction zone once it opens to score points. If eliminated, you drop all carried loot. Needs a field border.</string>
     <string name="mode_snd">Search &amp; Destroy</string>
     <string name="mode_infection">Infection</string>
     <string name="mode_about_snd">Two teams, rounds with no respawns. One attacker carries the bomb: plant it at a site, or the defenders stop you. Everyone comes back for the next round, and the teams swap at half time. Needs a field border.</string>
@@ -509,18 +509,18 @@
     <string name="team_mode_set_for_mode">Teams set to %1$s for %2$s</string>
     <string name="team_mode_not_for_mode">%1$s is played as %2$s</string>
     <string name="mode_score_to_win">Score to win (50–1000)</string>
-    <string name="mode_points">Points (0 = by field size, up to 5)</string>
+    <string name="mode_points">Locations (0 = by field size, up to 5)</string>
     <string name="mode_capture_seconds">Seconds to capture (5–60)</string>
-    <string name="mode_move_seconds">Point moves every (30–300 s)</string>
+    <string name="mode_move_seconds">Location moves every (30–300 s)</string>
     <string name="mode_advanced_closed">Advanced ›</string>
     <string name="mode_advanced_open">Advanced ⌄</string>
-    <string name="mode_radius">Point radius (%1$s)</string>
+    <string name="mode_radius">Location radius (%1$s)</string>
     <string name="mode_points_per_tick">Points scored each time (1–10)</string>
     <string name="mode_tick_seconds">Scored every (1–10 s)</string>
     <string name="mode_more_faster">More players capture faster</string>
-    <string name="mode_show_next">Show the next point this early (0–120 s, 0 = off)</string>
-    <string name="mode_small_field">One point on fields under (%1$s)</string>
-    <string name="mode_large_field">Three points on fields over (%1$s)</string>
+    <string name="mode_show_next">Show the next location this early (0–120 s, 0 = off)</string>
+    <string name="mode_small_field">One location on fields under (%1$s)</string>
+    <string name="mode_large_field">Three locations on fields over (%1$s)</string>
     <string name="mode_reset">Reset to mode defaults</string>
     <string name="mode_changed">%1$s  •</string>
     <string name="mode_needs_border">Domination and Hardpoint need a field border: draw one in the field map.</string>
@@ -596,10 +596,10 @@
     </plurals>
     <string name="ex_open">extraction open</string>
     <string name="ex_opens_in">extraction opens in %1$s</string>
-    <string name="mode_hp_contested">Point contested</string>
-    <string name="mode_hp_holding">Holding the point</string>
-    <string name="mode_hp_secured">Point taken</string>
-    <string name="mode_hp_moved">The point moved</string>
+    <string name="mode_hp_contested">Location contested</string>
+    <string name="mode_hp_holding">Holding the location</string>
+    <string name="mode_hp_secured">Location taken</string>
+    <string name="mode_hp_moved">The location moved</string>
     <string name="mode_victory_big">VICTORY</string>
     <string name="mode_defeat_big">DEFEAT</string>
     <string name="mode_draw_big">DRAW</string>
@@ -755,12 +755,12 @@
     <string name="field_auto_place_relaxed">The field is small, so some spawns are closer than the rules ask.</string>
     <string name="field_auto_place_failed">Couldn\'t find room for the spawns. Try a bigger border or a smaller spawn.</string>
     <string name="field_spawns_cleared">Spawns cleared.</string>
-    <string name="field_tool_objectives">Points</string>
-    <string name="field_small_warning">This field is under 100 ft across. Phone GPS is only good to about 10–25 ft, so spawns, capture points and drops may not work well here. Classic, or Domination with one point, plays best on a field this small.</string>
-    <string name="field_hint_objectives">Tap to add capture point %1$s. Tap a point to remove it. Leave none to have them placed by field size for each game.</string>
-    <string name="field_objectives_cleared">Capture points cleared. They will be placed by field size for each game.</string>
-    <string name="field_objectives_full">Five capture points at most.</string>
-    <string name="field_inside_border_only">Spawns and points go inside the field\'s border.</string>
+    <string name="field_tool_objectives">Locations</string>
+    <string name="field_small_warning">This field is under 100 ft across. Phone GPS is only good to about 10–25 ft, so spawns, capture locations and drops may not work well here. Classic, or Domination with one location, plays best on a field this small.</string>
+    <string name="field_hint_objectives">Tap to add capture location %1$s. Tap a location to remove it. Leave none to have them placed by field size for each game.</string>
+    <string name="field_objectives_cleared">Capture locations cleared. They will be placed by field size for each game.</string>
+    <string name="field_objectives_full">Five capture locations at most.</string>
+    <string name="field_inside_border_only">Spawns and locations go inside the field\'s border.</string>
     <plurals name="field_status_spawns">
         <item quantity="one">%1$d spawn</item>
         <item quantity="other">%1$d spawns</item>

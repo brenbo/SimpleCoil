@@ -27,6 +27,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.databinding.DialogGameModeBinding
+import com.simplecoil.simplecoil.domain.briefing.SlideArt
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.mode.BattleRoyaleRules
@@ -231,6 +232,26 @@ object GameModeDialog {
                 GameMode.SEARCH_AND_DESTROY -> R.string.mode_about_snd
                 GameMode.INFECTION -> R.string.mode_about_infection
             })
+            d.modeAboutArt.art = when (mode) {
+                GameMode.CLASSIC -> SlideArt.CLASSIC
+                GameMode.DOMINATION -> SlideArt.CAPTURE
+                GameMode.HARDPOINT -> SlideArt.HARDPOINT
+                GameMode.BATTLE_ROYALE -> SlideArt.ZONE
+                GameMode.MARKSMAN -> SlideArt.MARKSMAN
+                GameMode.CAPTURE_THE_FLAG -> SlideArt.FLAG
+                GameMode.EXTRACTION -> SlideArt.LOOT
+                GameMode.SEARCH_AND_DESTROY -> SlideArt.BOMB
+                GameMode.INFECTION -> SlideArt.INFECTION
+            }
+            val checkedId = d.modeGroup.checkedRadioButtonId
+            val checkedView = d.modeGroup.findViewById<android.view.View>(checkedId)
+            if (checkedView != null) {
+                d.modeGroup.removeView(d.modeAboutCard)
+                val index = d.modeGroup.indexOfChild(checkedView)
+                if (index >= 0) {
+                    d.modeGroup.addView(d.modeAboutCard, index + 1)
+                }
+            }
             d.modeSettings.isVisible = mode.hasObjectives
             d.brSettings.isVisible = mode == GameMode.BATTLE_ROYALE
             d.marksmanSettings.isVisible = mode == GameMode.MARKSMAN
@@ -297,10 +318,6 @@ object GameModeDialog {
         listOf(d.modeToWinEt, d.modePointsEt, d.modeCaptureEt, d.modeMoveEt, d.modeRadiusEt, d.modePerTickEt, d.modeTickEt,
             d.modeShowNextEt, d.modeSmallEt, d.modeLargeEt).forEach { it.addTextChangedListener(watcher) }
         d.modeFasterSwitch.setOnCheckedChangeListener { _, _ -> markChanged() }
-        d.modeAdvancedTv.setOnClickListener {
-            d.modeAdvanced.isVisible = !d.modeAdvanced.isVisible
-            d.modeAdvancedTv.setText(if (d.modeAdvanced.isVisible) R.string.mode_advanced_open else R.string.mode_advanced_closed)
-        }
 
         val dialog = AlertDialog.Builder(context, R.style.AppDialogTheme)
             .setView(d.root)

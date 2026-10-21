@@ -472,7 +472,6 @@
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_marginStart="8dp"
-                                        android:maxLines="1"
                                         android:text="@string/shuffle_teams_button"
                                         app:icon="@drawable/ic_sc_shuffle"
                                         app:iconTint="@color/sc_text" />

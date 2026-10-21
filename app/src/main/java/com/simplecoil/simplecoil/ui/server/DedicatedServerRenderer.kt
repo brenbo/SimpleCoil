@@ -112,6 +112,7 @@ class DedicatedServerRenderer(
         if (allowJoinSwitch.isChecked != state.allowJoin) allowJoinSwitch.isChecked = state.allowJoin
         if (onlyServerSettingsSwitch.isChecked != state.onlyServerSettings) onlyServerSettingsSwitch.isChecked = state.onlyServerSettings
         if (allowChooseTeamsSwitch.isChecked != state.allowChooseTeams) allowChooseTeamsSwitch.isChecked = state.allowChooseTeams
+        allowChooseTeamsSwitch.isEnabled = !state.teamMode.isFreeForAll
     }
 
     /** Buttons and status for the server's session phase (reconnect design §3.1). */
