@@ -25,6 +25,14 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketTimeoutException
 
+/** A server discovered on the LAN. */
+data class DiscoveredServer(
+    val ip: String,
+    val name: String,
+    val pingMs: Long,
+    val lastSeenMs: Long = android.os.SystemClock.elapsedRealtime(),
+)
+
 /**
  * Finds a server on the LAN: listens for beacons on UDP 17500 and broadcasts a query every
  * second until one answers, on its own thread.
@@ -35,7 +43,7 @@ class DiscoveryClient(
     private val localAddress: () -> InetAddress?,
 ) {
     interface Listener {
-        fun onServerDiscovered(serverIp: String, serverName: String)
+        fun onServerDiscovered(serverIp: String, serverName: String, pingMs: Long)
         fun onDiscoveryFailed(errorReason: String?)
     }
 
@@ -64,22 +72,27 @@ class DiscoveryClient(
             val s = DiscoveryNetwork.bindDiscoverySocket()
             socket = s
             Log.d(TAG, "Client discovery listening on port ${WireProtocol.DISCOVERY_PORT}")
+            var lastQuerySent = android.os.SystemClock.elapsedRealtime()
             sendQuery()
             val packet = DatagramPacket(ByteArray(DiscoveryNetwork.RECEIVE_BUFFER_SIZE), DiscoveryNetwork.RECEIVE_BUFFER_SIZE)
             while (running) {
                 try {
                     s.receive(packet)
                     if (packet.address == localAddress()) continue // Ignore self
+                    val pingMs = (android.os.SystemClock.elapsedRealtime() - lastQuerySent).coerceAtLeast(1)
                     val msg = String(packet.data, 0, packet.length).trim()
                     if (msg.startsWith(WireProtocol.BEACON_PREFIX) || msg.startsWith(WireProtocol.MESSAGE_PREFIX + WireProtocol.NETMSG_SERVERREPLY)) {
                         val serverIp = packet.address.hostAddress ?: continue
                         val serverName = if (msg.startsWith(WireProtocol.BEACON_PREFIX)) msg.substring(WireProtocol.BEACON_PREFIX.length) else "SimpleCoil Server"
-                        Log.i(TAG, "Discovered server: $serverName at $serverIp")
-                        listener?.onServerDiscovered(serverIp, serverName)
+                        Log.i(TAG, "Discovered server: $serverName at $serverIp (ping $pingMs ms)")
+                        listener?.onServerDiscovered(serverIp, serverName, pingMs)
                     }
                 } catch (ignored: SocketTimeoutException) {
                     // Send query again periodically
-                    if (running) sendQuery()
+                    if (running) {
+                        lastQuerySent = android.os.SystemClock.elapsedRealtime()
+                        sendQuery()
+                    }
                 }
             }
         } catch (e: IOException) {

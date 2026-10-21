@@ -128,6 +128,10 @@ class DialogCoordinator(
 
     override fun showBlasterPicker(known: Set<String>) = show(TAG_BLASTER_PICKER) { BlasterPickerDialog.newInstance(known) }
 
+    override fun showServerPicker() = show(TAG_SERVER_PICKER) { ServerPickerDialog.newInstance() }
+
+    override fun dismissServerPicker() = dismiss(TAG_SERVER_PICKER)
+
     override fun showBlasterType(rifle: Boolean, address: String) {
         // We'll automatically assume that anything but a rifle is a pistol
         val text = appContext.getString(if (rifle) R.string.rifle_detected_toast else R.string.pistol_detected_toast, address)
@@ -353,6 +357,7 @@ class DialogCoordinator(
         private const val TAG_RESET = "resetGame"
         private const val TAG_GRENADE_OFFER = "grenadeOffer"
         private const val TAG_BLASTER_PICKER = "blasterPicker"
+        private const val TAG_SERVER_PICKER = "serverPicker"
         private const val TAG_PLAYER_NAME = "playerName"
         private const val TAG_SERVER_IP = "serverIp"
         private const val TAG_QR_NAME = "qrName"

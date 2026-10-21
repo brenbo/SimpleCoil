@@ -87,6 +87,10 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun allowChooseTeams(): Boolean = prefs.getBoolean(ALLOW_CHOOSE_TEAMS, true)
     fun saveAllowChooseTeams(allow: Boolean) = prefs.edit { putBoolean(ALLOW_CHOOSE_TEAMS, allow) }
 
+    /** The name of the active game preset on the dedicated server. */
+    fun activePresetName(): String? = prefs.getString(ACTIVE_PRESET_NAME, null)
+    fun saveActivePresetName(name: String?) = prefs.edit { putString(ACTIVE_PRESET_NAME, name) }
+
     /** The server's voice chat switch: off unless the operator turns it on. */
     fun voiceChat(): Boolean = prefs.getBoolean(VOICE_CHAT, false)
     fun saveVoiceChat(on: Boolean) = prefs.edit { putBoolean(VOICE_CHAT, on) }
@@ -152,6 +156,7 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val KNOWN_BLASTERS = "KnownBlasters"
         const val GPS_MODE = "GPSMode"
         const val ALLOW_CHOOSE_TEAMS = "AllowChooseTeams"
+        const val ACTIVE_PRESET_NAME = "ActivePresetName"
         const val VOICE_CHAT = "VoiceChat"
         const val MAP_HEADING_UP = "MapHeadingUp"
         const val MAP_AUTO_ZOOM = "MapAutoZoom"

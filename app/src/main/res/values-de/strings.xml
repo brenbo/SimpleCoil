@@ -137,6 +137,10 @@
     <string name="player_id_ffa_label">(%1$d)</string>
     <string name="player_name">Spielernamen ändern:</string>
     <string name="server_ip">Server-IP:</string>
+    <string name="server_picker_title">Wähle deinen Server</string>
+    <string name="server_picker_hint">Schalte deinen Server ein. Niedrigerer Ping hat mehr Balken.</string>
+    <string name="server_picker_searching">Suche nach Servern…</string>
+    <string name="server_picker_autoconnect">Verbinden in %1$d s</string>
     <string name="game_limit_button">Spiellimits</string>
     <string name="offline_game_settings">Spieleinstellungen</string>
     <string name="game_limit_title">Wann soll das Spiel enden?</string>
@@ -400,8 +404,11 @@
     <string name="game_presets_title">Spielvoreinstellungen</string>
     <string name="game_presets_save">Diese Konfiguration speichern…</string>
     <string name="game_presets_name_hint">Name, wie Samstag-Herrschaft</string>
+    <string name="game_presets_hint">Tippe auf Laden, um Einstellungen und Servernamen zu verwenden. Überschreiben aktualisiert sie mit den aktuellen Regeln, Limits und dem Servernamen.</string>
     <string name="game_presets_saved">Konfiguration gespeichert als %1$s.</string>
     <string name="game_presets_loaded">Geladen %1$s.</string>
+    <string name="game_presets_overwrite_body">Dies aktualisiert die Voreinstellung mit dem aktuellen Spielmodus, Regeln, Limits und Servernamen.</string>
+    <string name="game_presets_delete_body">Dies löscht diese gespeicherte Voreinstellung dauerhaft.</string>
 
     <string name="mode_title">Spielmodus</string>
     <string name="mode_classic">Klassisch</string>

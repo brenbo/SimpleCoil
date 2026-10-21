@@ -90,17 +90,23 @@ class UDPListenerService : Service() {
         if (serverIP != null) joinServer(serverIP.hostAddress) else sendFailedJoin()
     }
 
+    private val _discoveredServers = kotlinx.coroutines.flow.MutableStateFlow<List<com.simplecoil.simplecoil.network.discovery.DiscoveredServer>>(emptyList())
+    val discoveredServers: kotlinx.coroutines.flow.StateFlow<List<com.simplecoil.simplecoil.network.discovery.DiscoveredServer>> get() = _discoveredServers
+    private val serverMap = java.util.concurrent.ConcurrentHashMap<String, com.simplecoil.simplecoil.network.discovery.DiscoveredServer>()
+
     fun startDiscovery() {
         client.start(object : DiscoveryClient.Listener {
-            override fun onServerDiscovered(serverIp: String, serverName: String) {
-                try {
-                    gameState.serverIP = InetAddress.getByName(serverIp)
-                    client.stop()
-                    clientEvents.publish(ClientEvent.ServerReply(null))
-                } catch (e: UnknownHostException) {
-                    Log.e(TAG, "Invalid discovered server IP: $serverIp", e)
-                    sendFailedJoin()
+            override fun onServerDiscovered(serverIp: String, serverName: String, pingMs: Long) {
+                val now = android.os.SystemClock.elapsedRealtime()
+                val old = serverMap[serverIp]
+                val smoothedPing = if (old != null && old.pingMs > 0) {
+                    (old.pingMs * 0.7 + pingMs * 0.3).toLong()
+                } else {
+                    pingMs
                 }
+                serverMap[serverIp] = com.simplecoil.simplecoil.network.discovery.DiscoveredServer(serverIp, serverName, smoothedPing, now)
+                val active = serverMap.values.filter { now - it.lastSeenMs < 2_500L }
+                _discoveredServers.value = active
             }
 
             override fun onDiscoveryFailed(errorReason: String?) {
@@ -111,7 +117,11 @@ class UDPListenerService : Service() {
     }
 
     /** Stops looking for a server. */
-    fun stopListen() = client.stop()
+    fun stopListen() {
+        client.stop()
+        serverMap.clear()
+        _discoveredServers.value = emptyList()
+    }
 
     fun endScanning() = stopListen()
 

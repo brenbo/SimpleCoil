@@ -131,7 +131,8 @@ class TcpServer : Service() {
         serving = true
         server.loadSettings(saved)
         server.start()
-        beacon.start(SERVER_NAME)
+        val serverName = container.userPreferences.activePresetName()?.ifBlank { null } ?: SERVER_NAME
+        beacon.start(serverName)
         // The field the game and the phones get: the spawns for the team mode being played
         val teamSpawns = TeamSpawnsCache()
         container.fieldImageryServer.prepareConfig = { teamSpawns.forMode(it, serverSettings.teamLayout.mode) }
@@ -143,6 +144,10 @@ class TcpServer : Service() {
         server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
         startAsForeground()
         updateWifiLock()
+    }
+
+    fun updateServerName(name: String) {
+        beacon.updateServerName(name)
     }
 
     /** Kicks every player, then stops the beacon and the server and leaves the foreground. */

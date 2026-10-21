@@ -919,9 +919,18 @@ class GameViewModel(
     private fun setNetworkMenu(type: Int) {
         networkMenuType = type
         when (type) {
-            NETWORK_TYPE_ENABLED -> screen?.showNetworkButton(NetworkButton.MENU)
-            NETWORK_TYPE_JOINING -> screen?.showNetworkButton(NetworkButton.SEARCHING)
-            NETWORK_TYPE_JOINED -> screen?.showNetworkButton(NetworkButton.DISABLE)
+            NETWORK_TYPE_ENABLED -> {
+                screen?.showNetworkButton(NetworkButton.MENU)
+                screen?.dismissServerPicker()
+            }
+            NETWORK_TYPE_JOINING -> {
+                screen?.showNetworkButton(NetworkButton.SEARCHING)
+                screen?.showServerPicker()
+            }
+            NETWORK_TYPE_JOINED -> {
+                screen?.showNetworkButton(NetworkButton.DISABLE)
+                screen?.dismissServerPicker()
+            }
         }
         screen?.rebuildNetworkMenu()
         updatePreGameButtonVisibilities()
@@ -965,9 +974,15 @@ class GameViewModel(
         searchTimeout = null
     }
 
+    fun onServerSearchCancelled() {
+        stopServerSearch(false)
+        setNetworkMenu(NETWORK_TYPE_ENABLED)
+    }
+
     private fun stopServerSearch(disableNetwork: Boolean) {
         cancelServerSearchTimeout()
         net.udp?.endScanning()
+        screen?.dismissServerPicker()
         ready = false
         setReady(disableNetwork)
         if (disableNetwork) {
@@ -1325,6 +1340,7 @@ class GameViewModel(
             }
             is ClientEvent.ServerReply -> {
                 cancelServerSearchTimeout()
+                screen?.dismissServerPicker()
                 val assigned = event.assignedPlayerId
                 if (assigned != null && assigned.toInt() != 0) {
                     playerRepo.playerID = assigned

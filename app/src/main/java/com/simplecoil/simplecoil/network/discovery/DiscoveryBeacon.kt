@@ -38,19 +38,28 @@ class DiscoveryBeacon(context: Context) {
     @Volatile
     private var socket: DatagramSocket? = null
 
+    @Volatile
+    private var currentServerName = "SimpleCoil Server"
+
+    /** Updates the server name broadcast in beacons. */
+    fun updateServerName(name: String) {
+        currentServerName = name
+    }
+
     /** Starts broadcasting [serverName], unless the beacon is already on. */
     @Synchronized
     fun start(serverName: String) {
+        currentServerName = serverName
         if (running) {
             Log.d(TAG, "Server beacon already running")
             return
         }
         network.acquireMulticastLock()
         running = true
-        Thread { run(serverName) }.start()
+        Thread { run() }.start()
     }
 
-    private fun run(serverName: String) {
+    private fun run() {
         try {
             val s = DiscoveryNetwork.bindDiscoverySocket()
             socket = s
@@ -59,8 +68,9 @@ class DiscoveryBeacon(context: Context) {
             var lastBeaconTime = 0L
             while (running) {
                 val now = System.currentTimeMillis()
+                val name = currentServerName
                 if (now - lastBeaconTime >= BEACON_INTERVAL_MS) {
-                    for (address in network.broadcastAddresses()) sendBeacon(address, serverName)
+                    for (address in network.broadcastAddresses()) sendBeacon(address, name)
                     lastBeaconTime = now
                 }
                 try {
@@ -68,7 +78,7 @@ class DiscoveryBeacon(context: Context) {
                     val msg = String(packet.data, 0, packet.length).trim()
                     if (msg.startsWith(WireProtocol.DISCOVER_MSG) || msg.startsWith(WireProtocol.MESSAGE_PREFIX + WireProtocol.NETMSG_JOIN)) {
                         Log.d(TAG, "Received discovery query from " + packet.address.hostAddress)
-                        sendBeacon(packet.address, serverName)
+                        sendBeacon(packet.address, currentServerName)
                     }
                 } catch (ignored: SocketTimeoutException) {
                     // Timeout expected to allow periodic beacon loop

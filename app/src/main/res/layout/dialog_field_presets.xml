@@ -18,11 +18,13 @@
         android:text="@string/field_presets_save_new" />
 
     <TextView
+        android:id="@+id/presets_list_title_tv"
         style="@style/DialogSection"
         android:layout_marginTop="18dp"
         android:text="@string/field_presets_list" />
 
     <TextView
+        android:id="@+id/presets_hint_tv"
         style="@style/DialogHint"
         android:layout_width="match_parent"
         android:layout_marginTop="2dp"

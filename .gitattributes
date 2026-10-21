@@ -1,2 +1,0 @@
-# Ensure wire fixture files always use LF line endings on all operating systems
-app/src/test/resources/wire/** text eol=lf

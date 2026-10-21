@@ -137,6 +137,10 @@
     <string name="player_id_ffa_label">(%1$d)</string>
     <string name="player_name">Cambia nome giocatore:</string>
     <string name="server_ip">IP Server:</string>
+    <string name="server_picker_title">Scegli il tuo server</string>
+    <string name="server_picker_hint">Accendi il tuo server. Un ping più basso ha più tacche.</string>
+    <string name="server_picker_searching">Ricerca server in corso…</string>
+    <string name="server_picker_autoconnect">Connessione tra %1$d s</string>
     <string name="game_limit_button">Limiti partita</string>
     <string name="offline_game_settings">Impostazioni partita</string>
     <string name="game_limit_title">Quando deve terminare la partita?</string>
@@ -400,8 +404,11 @@
     <string name="game_presets_title">Preimpostazioni partita</string>
     <string name="game_presets_save">Salva questa configurazione…</string>
     <string name="game_presets_name_hint">Nome, es. Dominio Sabato</string>
+    <string name="game_presets_hint">Tocca Carica per usare una configurazione e nome server. Sovrascrivi la aggiorna con le regole, limiti e nome server attuali.</string>
     <string name="game_presets_saved">Configurazione salvata come %1$s.</string>
     <string name="game_presets_loaded">Caricata %1$s.</string>
+    <string name="game_presets_overwrite_body">Questo aggiorna la preimpostazione con la modalità di gioco, regole, limiti e nome server attuali.</string>
+    <string name="game_presets_delete_body">Questo rimuove permanentemente questa preimpostazione salvata.</string>
 
     <string name="mode_title">Modalità di gioco</string>
     <string name="mode_classic">Classica</string>

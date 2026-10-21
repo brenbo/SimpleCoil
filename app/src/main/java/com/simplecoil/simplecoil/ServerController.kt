@@ -82,6 +82,7 @@ interface ServerController {
     fun setAllowJoinInProgress(allow: Boolean)
     fun setOnlyServerSettings(only: Boolean)
     fun setAllowChooseTeams(allow: Boolean)
+    fun updateServerName(name: String)
 
     /** Everyone's player settings again, so phones fetch what goes with them (voice chat). */
     fun resendPlayerSettings()
@@ -198,6 +199,10 @@ class TcpServerController(
 
     override fun setAllowChooseTeams(allow: Boolean) {
         server?.setAllowChooseTeams(allow)
+    }
+
+    override fun updateServerName(name: String) {
+        service?.updateServerName(name)
     }
 
     override fun resendPlayerSettings() {

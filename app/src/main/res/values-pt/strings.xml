@@ -137,6 +137,10 @@
     <string name="player_id_ffa_label">(%1$d)</string>
     <string name="player_name">Alterar nome do jogador:</string>
     <string name="server_ip">IP do servidor:</string>
+    <string name="server_picker_title">Escolha seu servidor</string>
+    <string name="server_picker_hint">Ligue seu servidor. Ping mais baixo tem mais barras.</string>
+    <string name="server_picker_searching">Procurando servidores…</string>
+    <string name="server_picker_autoconnect">Conectando em %1$d s</string>
     <string name="game_limit_button">Limites do jogo</string>
     <string name="offline_game_settings">Configurações do jogo</string>
     <string name="game_limit_title">Quando o jogo deve terminar?</string>
@@ -400,8 +404,11 @@
     <string name="game_presets_title">Predefinições de jogo</string>
     <string name="game_presets_save">Salvar esta configuração…</string>
     <string name="game_presets_name_hint">Nome, como Dominação Sábado</string>
+    <string name="game_presets_hint">Toque em Carregar para usar uma configuração e nome de servidor. Sobrescrever atualiza com as regras, limites e nome atuais.</string>
     <string name="game_presets_saved">Configuração salva como %1$s.</string>
     <string name="game_presets_loaded">Carregado %1$s.</string>
+    <string name="game_presets_overwrite_body">Isso atualiza a predefinição com o modo de jogo, regras, limites e nome de servidor atuais.</string>
+    <string name="game_presets_delete_body">Isso remove permanentemente esta predefinição salva.</string>
 
     <string name="mode_title">Modo de jogo</string>
     <string name="mode_classic">Clássico</string>

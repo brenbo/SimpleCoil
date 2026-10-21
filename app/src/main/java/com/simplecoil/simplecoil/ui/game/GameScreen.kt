@@ -164,6 +164,9 @@ interface GameDialogs {
     fun showGrenadeOffer(grenadeId: Int)
     /** Connect blaster: the blasters in range to pick from, the [known] ones (connected before) labeled. */
     fun showBlasterPicker(known: Set<String>)
+    /** Connect to server: available servers on the LAN to pick from. */
+    fun showServerPicker()
+    fun dismissServerPicker()
     /** The offer for [grenadeId] is over (someone has it): close the prompt. */
     fun dismissGrenadeOffer(grenadeId: Int)
     fun confirmEndGame()

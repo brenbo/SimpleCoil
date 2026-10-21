@@ -277,18 +277,51 @@ class DedicatedServerActivity : AppCompatActivity() {
 
     private fun showPresets() {
         val container = (application as SimpleCoilApp).container
+        val activeName = container.userPreferences.activePresetName()
         lifecycleScope.launch {
             val names = withContext(Dispatchers.IO) { container.gamePresets.names() }
-            val items = (listOf(getString(R.string.game_presets_save)) + names).toTypedArray()
-            AlertDialog.Builder(this@DedicatedServerActivity, R.style.AppDialogTheme)
+            val view = com.simplecoil.simplecoil.databinding.DialogFieldPresetsBinding.inflate(layoutInflater)
+            view.presetsSaveNewButton.setText(R.string.game_presets_save)
+            view.presetsListTitleTv.setText(R.string.game_presets_title)
+            view.presetsHintTv.setText(R.string.game_presets_hint)
+            val dialog = AlertDialog.Builder(this@DedicatedServerActivity, R.style.AppDialogTheme)
                 .setTitle(R.string.game_presets_title)
-                .setItems(items) { _, which -> if (which == 0) askPresetName() else presetOptions(names[which - 1]) }
+                .setView(view.root)
                 .setNegativeButton(R.string.field_dialog_cancel, null)
-                .show()
+                .create()
+            view.presetsSaveNewButton.setOnClickListener {
+                askPresetName(names) {
+                    dialog.dismiss()
+                    showPresets()
+                }
+            }
+            view.presetsEmptyTv.isVisible = names.isEmpty()
+            for (name in names) {
+                val row = com.simplecoil.simplecoil.databinding.DialogFieldPresetRowBinding.inflate(layoutInflater, view.presetsRows, true)
+                row.presetNameTv.text = name
+                row.presetOnMapTv.isVisible = name == activeName
+                row.presetLoadButton.setOnClickListener {
+                    dialog.dismiss()
+                    loadPreset(name)
+                }
+                row.presetOverwriteButton.setOnClickListener {
+                    confirmPresetOverwrite(name, getString(R.string.field_presets_overwrite_title, name)) {
+                        dialog.dismiss()
+                        showPresets()
+                    }
+                }
+                row.presetDeleteButton.setOnClickListener {
+                    confirmPresetDelete(name) {
+                        dialog.dismiss()
+                        showPresets()
+                    }
+                }
+            }
+            dialog.show()
         }
     }
 
-    private fun askPresetName() {
+    private fun askPresetName(taken: List<String>, onSaved: (() -> Unit)? = null) {
         val dialog = DialogFieldNameBinding.inflate(layoutInflater)
         dialog.fieldNameTitleTv.setText(R.string.game_presets_save)
         dialog.fieldNameLabelTv.setText(R.string.game_presets_name_hint)
@@ -296,13 +329,40 @@ class DedicatedServerActivity : AppCompatActivity() {
             .setView(dialog.root)
             .setPositiveButton(R.string.field_dialog_save) { _, _ ->
                 val name = dialog.fieldNameEt.text.toString().trim()
-                if (name.isNotEmpty()) savePreset(name)
+                val existing = taken.firstOrNull { it.equals(name, ignoreCase = true) }
+                when {
+                    name.isEmpty() -> Unit
+                    existing != null -> confirmPresetOverwrite(existing, getString(R.string.field_presets_exists_title, existing), onSaved)
+                    else -> savePreset(name, onSaved)
+                }
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .show()
     }
 
-    private fun savePreset(name: String) {
+    private fun confirmPresetOverwrite(
+        name: String,
+        title: String = getString(R.string.field_presets_overwrite_title, name),
+        onSaved: (() -> Unit)? = null,
+    ) {
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setTitle(title)
+            .setMessage(R.string.game_presets_overwrite_body)
+            .setPositiveButton(R.string.field_presets_overwrite) { _, _ -> savePreset(name, onSaved) }
+            .setNegativeButton(R.string.field_dialog_cancel, null)
+            .show()
+    }
+
+    private fun confirmPresetDelete(name: String, onDeleted: (() -> Unit)? = null) {
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setTitle(getString(R.string.field_presets_delete_title, name))
+            .setMessage(R.string.game_presets_delete_body)
+            .setPositiveButton(R.string.field_presets_delete) { _, _ -> deletePreset(name, onDeleted) }
+            .setNegativeButton(R.string.field_dialog_cancel, null)
+            .show()
+    }
+
+    private fun savePreset(name: String, onSaved: (() -> Unit)? = null) {
         val container = (application as SimpleCoilApp).container
         val state = vm.state.value ?: return
         lifecycleScope.launch {
@@ -324,19 +384,14 @@ class DedicatedServerActivity : AppCompatActivity() {
                     false
                 }
             }
+            if (ok) {
+                container.userPreferences.saveActivePresetName(name)
+                container.serverController.updateServerName(name)
+                onSaved?.invoke()
+            }
             Toast.makeText(applicationContext, if (ok) getString(R.string.game_presets_saved, name) else getString(R.string.field_presets_error),
                 Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun presetOptions(name: String) {
-        AlertDialog.Builder(this, R.style.AppDialogTheme)
-            .setTitle(name)
-            .setItems(arrayOf(getString(R.string.field_presets_load), getString(R.string.field_presets_delete))) { _, which ->
-                if (which == 0) loadPreset(name) else deletePreset(name)
-            }
-            .setNegativeButton(R.string.field_dialog_cancel, null)
-            .show()
     }
 
     /** The preset's server settings go through the same paths as the controls; its rules onto the saved field. */
@@ -344,6 +399,8 @@ class DedicatedServerActivity : AppCompatActivity() {
         val container = (application as SimpleCoilApp).container
         lifecycleScope.launch {
             val preset = withContext(Dispatchers.IO) { container.gamePresets.load(name) } ?: return@launch
+            container.userPreferences.saveActivePresetName(name)
+            container.serverController.updateServerName(name)
             vm.onTeamModeSelected(preset.teamMode)
             vm.onGpsModeSelected(preset.gpsMode)
             vm.onGameLimitsEntered(mapOf(
@@ -358,10 +415,15 @@ class DedicatedServerActivity : AppCompatActivity() {
         }
     }
 
-    private fun deletePreset(name: String) {
+    private fun deletePreset(name: String, onDeleted: (() -> Unit)? = null) {
         val container = (application as SimpleCoilApp).container
         lifecycleScope.launch {
             withContext(Dispatchers.IO) { container.gamePresets.delete(name) }
+            if (container.userPreferences.activePresetName() == name) {
+                container.userPreferences.saveActivePresetName(null)
+                container.serverController.updateServerName("SimpleCoil Dedicated Server")
+            }
+            onDeleted?.invoke()
             Toast.makeText(applicationContext, getString(R.string.field_presets_deleted, name), Toast.LENGTH_SHORT).show()
         }
     }

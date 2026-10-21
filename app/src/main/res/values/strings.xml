@@ -141,6 +141,10 @@
     <string name="player_id_ffa_label">(%1$d)</string>
     <string name="player_name">Change Player Name:</string>
     <string name="server_ip">Server IP:</string>
+    <string name="server_picker_title">Choose your server</string>
+    <string name="server_picker_hint">Turn your server on. Lower ping has more bars.</string>
+    <string name="server_picker_searching">Looking for servers…</string>
+    <string name="server_picker_autoconnect">Connecting in %1$d s</string>
     <string name="game_limit_button">Game limits</string>
     <!-- Offline, before a game: the game limits and the team mode -->
     <string name="offline_game_settings">Game settings</string>
@@ -416,8 +420,11 @@
     <string name="game_presets_title">Game presets</string>
     <string name="game_presets_save">Save this setup…</string>
     <string name="game_presets_name_hint">Name, like Saturday Domination</string>
+    <string name="game_presets_hint">Tap Load to use a setup and server name. Save over updates it with current rules, limits and server name.</string>
     <string name="game_presets_saved">Saved the setup as %1$s.</string>
     <string name="game_presets_loaded">Loaded %1$s.</string>
+    <string name="game_presets_overwrite_body">This updates the saved preset with current game mode, rules, limits and server name.</string>
+    <string name="game_presets_delete_body">This permanently removes this saved preset.</string>
 
     <!-- The game mode sheet -->
     <string name="mode_title">Game mode</string>

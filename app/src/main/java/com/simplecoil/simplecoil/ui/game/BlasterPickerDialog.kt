@@ -90,8 +90,8 @@ class BlasterPickerDialog : GameDialogFragment() {
     }
 
     private fun row(blaster: FoundBlaster): View {
-        // The screen's themed context: the row's press ripple is a theme attribute
-        val row = BlasterPickerRowBinding.inflate(LayoutInflater.from(requireContext()), binding!!.blasterPickerRows, false)
+        val ctx = context ?: return View(requireContext())
+        val row = BlasterPickerRowBinding.inflate(LayoutInflater.from(ctx), binding!!.blasterPickerRows, false)
         val bars = SignalBars.of(blaster.rssi)
         row.blasterSignalIv.setImageResource(when (bars) {
             4 -> R.drawable.ic_signal_4
