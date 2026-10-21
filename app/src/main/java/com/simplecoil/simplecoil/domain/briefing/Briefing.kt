@@ -237,9 +237,9 @@ object Briefing {
         input.freeForAll -> Slide("mode.teams", Section.MODE, "Everyone for themselves",
             "No teams: every other player is an enemy. Trust nobody.", SlideArt.FREE_FOR_ALL)
         else -> Slide("mode.teams", Section.MODE, "${input.teamCount} teams",
-            "Your team's colour is on your screen." +
+            "Your team's color is on your screen." +
                 (if (input.voiceChat) " Hold the weapon switch to talk to them." else "") +
-                " Friendly fire doesn't count, so shoot the other colours.",
+                " Friendly fire doesn't count, so shoot the other colors.",
             if (input.teamCount == 4) SlideArt.FOUR_TEAMS else SlideArt.TEAMS)
     }
 

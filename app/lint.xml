@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- values-en and values-en-r* only hold the strings spelled differently (British vs American), not translations -->
+    <issue id="MissingTranslation">
+        <ignore regexp="not translated in &quot;en&quot;" />
+    </issue>
+</lint>

@@ -653,7 +653,7 @@
     <string name="rules_grace">Grace time before counting as outside (0–10 s)</string>
     <string name="rules_units">Distances in</string>
     <string name="rules_units_feet">Feet</string>
-    <string name="rules_units_meters">Metres</string>
+    <string name="rules_units_meters">Meters</string>
     <string name="rules_leave_margin">Leave margin past the line (%1$s)</string>
     <string name="rules_accuracy_gate">Ignore GPS worse than (%1$s, 0 = off)</string>
     <string name="rules_edge_buffer">Keep auto-placed things this far inside (%1$s)</string>

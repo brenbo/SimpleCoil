@@ -37,6 +37,7 @@ import com.simplecoil.simplecoil.domain.briefing.Section
 import com.simplecoil.simplecoil.domain.briefing.Slide
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.hardware.blaster.GattProtocolHandler
+import com.simplecoil.simplecoil.ui.Spelling
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsValues
 import kotlinx.coroutines.launch
 
@@ -149,8 +150,8 @@ class BriefingActivity : AppCompatActivity() {
             Section.DROPS -> R.string.briefing_section_drops
             else -> R.string.briefing_section_mode
         })
-        b.briefingTitleTv.text = slide?.title ?: ""
-        b.briefingBodyTv.text = slide?.body ?: getString(R.string.briefing_waiting)
+        b.briefingTitleTv.text = Spelling.local(this, slide?.title ?: "")
+        b.briefingBodyTv.text = slide?.body?.let { Spelling.local(this, it) } ?: getString(R.string.briefing_waiting)
         slide?.let {
             b.briefingArt.art = it.art
             b.briefingArt.drop = it.drop

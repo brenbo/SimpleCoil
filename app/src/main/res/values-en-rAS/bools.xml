@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English that spells the American way (overrides values-en) -->
+<resources>
+    <bool name="british_spelling">false</bool>
+</resources>
