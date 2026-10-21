@@ -454,9 +454,13 @@
 
                     <TextView
                         android:id="@+id/recoil_tv"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLines="1"
+                        app:autoSizeMaxTextSize="20sp"
+                        app:autoSizeMinTextSize="11sp"
+                        app:autoSizeStepGranularity="1sp"
+                        app:autoSizeTextType="uniform"
                         android:text="@string/recoil_enabled"
                         android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
                         android:textSize="20sp" />
@@ -475,9 +479,13 @@
 
                     <TextView
                         android:id="@+id/shot_mode_tv"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLines="1"
+                        app:autoSizeMaxTextSize="20sp"
+                        app:autoSizeMinTextSize="11sp"
+                        app:autoSizeStepGranularity="1sp"
+                        app:autoSizeTextType="uniform"
                         android:text="@string/shot_mode_single"
                         android:textAppearance="@style/TextAppearance.SimpleCoil.Value"
                         android:textSize="20sp" />

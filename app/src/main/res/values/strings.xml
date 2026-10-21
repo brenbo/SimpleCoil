@@ -459,7 +459,6 @@
     <string name="ctf_own_home">Your own flag must be home to score</string>
     <string name="ctf_radius">Base radius (%1$s)</string>
     <string name="ctf_one_flag">One flag in the middle</string>
-    <string name="ctf_one_flag_hint">Both teams race for a single flag and bring it to their own base. Put it down yourself with the field map\'s Flag tool, or it\'s placed fairly between the bases.</string>
     <string name="ex_loot">Loot piles on the field (3–20)</string>
     <string name="ex_collect">Seconds to collect or bank (3–30)</string>
     <string name="ex_opens">Extraction opens after (minutes)</string>

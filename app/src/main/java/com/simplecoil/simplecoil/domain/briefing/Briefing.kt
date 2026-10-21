@@ -27,7 +27,7 @@ import kotlin.math.roundToInt
 enum class SlideArt {
     TRIGGER, RELOAD, THUMB, POWER,
     DROP, AMMO, KILLSTREAK,
-    CLASSIC, CAPTURE, HARDPOINT, ZONE, MARKSMAN, FLAG, LOOT, BOMB, INFECTION,
+    CLASSIC, CAPTURE, HARDPOINT, ZONE, MARKSMAN, FLAG, ONE_FLAG, LOOT, BOMB, INFECTION,
     TEAMS, FREE_FOR_ALL, RESPAWN, NO_RESPAWN, BORDER, WIN,
     /** Four teams: four groups of players (TEAMS is two). */
     FOUR_TEAMS,
@@ -201,7 +201,7 @@ object Briefing {
                         " While both teams are on it, nobody can take it." +
                         " A carrier who's eliminated drops the flag; anyone can grab it, and it goes back to the middle after ${f.droppedReturnsSeconds} s." +
                         " The carrier shows on the other team's map every ${f.carrierShownEverySeconds} s.",
-                    SlideArt.FLAG)
+                    SlideArt.ONE_FLAG)
                 else Slide("mode.goal", Section.MODE, "Capture the Flag",
                     "Run to the other team's base, take their flag, and bring it back to yours." +
                         (if (f?.ownFlagHomeToScore != false) " Your own flag has to be home to score." else "") +

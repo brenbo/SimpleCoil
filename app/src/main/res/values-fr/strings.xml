@@ -492,18 +492,18 @@
     <string name="team_mode_set_for_mode">Équipes réglées sur %1$s pour %2$s</string>
     <string name="team_mode_not_for_mode">%1$s se joue en %2$s</string>
     <string name="mode_score_to_win">Score pour gagner (50–1000)</string>
-    <string name="mode_points">Points (0 = selon la taille du terrain, jusqu\'à 5)</string>
+    <string name="mode_points">Emplacements (0 = selon la taille du terrain, jusqu\'à 5)</string>
     <string name="mode_capture_seconds">Secondes pour capturer (5–60)</string>
-    <string name="mode_move_seconds">Le point bouge toutes les (30–300 s)</string>
+    <string name="mode_move_seconds">L\'emplacement change toutes les (30–300 s)</string>
     <string name="mode_advanced_closed">Avancé ›</string>
     <string name="mode_advanced_open">Avancé ⌄</string>
-    <string name="mode_radius">Rayon du point (%1$s)</string>
+    <string name="mode_radius">Rayon de l\'emplacement (%1$s)</string>
     <string name="mode_points_per_tick">Points accordés chaque fois (1–10)</string>
     <string name="mode_tick_seconds">Accordés toutes les (1–10 s)</string>
     <string name="mode_more_faster">Plus de joueurs capturent plus vite</string>
-    <string name="mode_show_next">Afficher le point suivant à l\'avance (0–120 s, 0 = désactivé)</string>
-    <string name="mode_small_field">Un point sur les terrains de moins de (%1$s)</string>
-    <string name="mode_large_field">Trois points sur les terrains de plus de (%1$s)</string>
+    <string name="mode_show_next">Afficher l\'emplacement suivant à l\'avance (0–120 s, 0 = non)</string>
+    <string name="mode_small_field">Un emplacement sur les terrains de moins de (%1$s)</string>
+    <string name="mode_large_field">Trois emplacements sur les terrains de plus de (%1$s)</string>
     <string name="mode_reset">Réinitialiser aux valeurs par défaut</string>
     <string name="mode_changed">%1$s  •</string>
     <string name="mode_needs_border">Domination et Point chaud nécessitent une limite de terrain : dessinez-en une sur la carte.</string>
@@ -578,10 +578,10 @@
     </plurals>
     <string name="ex_open">extraction ouverte</string>
     <string name="ex_opens_in">l\'extraction s\'ouvre dans %1$s</string>
-    <string name="mode_hp_contested">Point contesté</string>
-    <string name="mode_hp_holding">Maintien du point</string>
-    <string name="mode_hp_secured">Point capturé</string>
-    <string name="mode_hp_moved">Le point s\'est déplacé</string>
+    <string name="mode_hp_contested">Emplacement disputé</string>
+    <string name="mode_hp_holding">Emplacement tenu</string>
+    <string name="mode_hp_secured">Emplacement pris</string>
+    <string name="mode_hp_moved">L\'emplacement a bougé</string>
     <string name="mode_victory_big">VICTOIRE</string>
     <string name="mode_defeat_big">DÉFAITE</string>
     <string name="mode_draw_big">ÉGALITÉ</string>
@@ -598,7 +598,7 @@
     <string name="field_undo">Annuler</string>
     <string name="field_clear">Effacer</string>
     <string name="field_rules">Règles</string>
-    <string name="field_presets">Enregistrés</string>
+    <string name="field_presets">Enregistrer/Charger</string>
     <string name="field_status_border_none">Aucune limite</string>
     <string name="field_status_border_circle">Limite circulaire, %1$s de diamètre</string>
     <plurals name="field_status_border_polygon">
@@ -612,7 +612,7 @@
     <string name="field_walk_too_short">Le parcours nécessite au moins 3 coins. Parcourez tout le bord et réessayez.</string>
     <string name="field_border_saved">Limite enregistrée. Les téléphones la reçoivent lors de la connexion ou du début de partie.</string>
     <string name="field_border_cleared">Limite effacée.</string>
-    <string name="field_presets_title">Terrains enregistrés</string>
+    <string name="field_presets_title">Enregistrer ou charger un terrain</string>
     <string name="field_presets_save">Enregistrer ce terrain sous…</string>
     <string name="field_presets_name_hint">Nom du terrain</string>
     <string name="field_presets_saved">Enregistré sous %1$s.</string>
@@ -724,12 +724,12 @@
     <string name="field_auto_place_relaxed">Le terrain est petit, certaines zones sont donc plus proches que prévu.</string>
     <string name="field_auto_place_failed">Impossible de trouver de la place pour les zones. Essayez une plus grande limite ou moins de zones.</string>
     <string name="field_spawns_cleared">Zones de réapparition effacées.</string>
-    <string name="field_tool_objectives">Points</string>
-    <string name="field_small_warning">Ce terrain fait moins de 30 m (100 ft) de large. Le GPS du téléphone a une précision de 3–8 m, les points et largages peuvent mal fonctionner ici. Les modes Classique ou Domination à 1 point sont préférables.</string>
-    <string name="field_hint_objectives">Appuyez pour ajouter le point %1$s. Appuyez sur un point pour le retirer. Laissez vide pour les placer selon la taille du terrain.</string>
-    <string name="field_objectives_cleared">Points de capture effacés. Ils seront placés selon la taille du terrain lors de chaque partie.</string>
-    <string name="field_objectives_full">Cinq points de capture au maximum.</string>
-    <string name="field_inside_border_only">Les zones de réapparition et points se placent dans les limites du terrain.</string>
+    <string name="field_tool_objectives">Emplacements</string>
+    <string name="field_small_warning">Ce terrain fait moins de 30 m (100 ft) de large. Le GPS d\'un téléphone n\'est précis qu\'à 3–8 m environ, donc les spawns, les emplacements de capture et les largages risquent de mal fonctionner ici. Le mode Classique, ou Domination avec un seul emplacement, convient le mieux à un si petit terrain.</string>
+    <string name="field_hint_objectives">Touchez pour ajouter l\'emplacement de capture %1$s. Touchez un emplacement pour le retirer. Sans emplacement, ils sont placés selon la taille du terrain à chaque partie.</string>
+    <string name="field_objectives_cleared">Emplacements de capture effacés. Ils seront placés selon la taille du terrain à chaque partie.</string>
+    <string name="field_objectives_full">Cinq emplacements de capture au maximum.</string>
+    <string name="field_inside_border_only">Les spawns et les emplacements se placent à l\'intérieur de la limite du terrain.</string>
     <plurals name="field_status_spawns">
         <item quantity="one">%1$d zone de réapparition</item>
         <item quantity="other">%1$d zones de réapparition</item>
@@ -759,7 +759,6 @@
     <string name="field_map_save_error">Impossible d\'enregistrer la carte du terrain.</string>
     <string name="field_map_no_location">Position introuvable pour le moment.</string>
     <string name="ctf_one_flag">Un seul drapeau au centre</string>
-    <string name="ctf_one_flag_hint">Les deux équipes se disputent un seul drapeau et le ramènent à leur propre base. Placez-le vous-même avec l\'outil Drapeau de la carte du terrain, sinon il est placé équitablement entre les bases.</string>
     <string name="ctf_one_flag_ours">Votre équipe a le drapeau ! Couvrez le porteur</string>
     <string name="ctf_one_flag_theirs">L\'autre équipe a le drapeau ! Arrêtez le porteur</string>
     <string name="ctf_one_flag_down">Le drapeau est à terre : récupérez-le</string>

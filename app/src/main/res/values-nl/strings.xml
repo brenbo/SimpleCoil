@@ -69,7 +69,7 @@
     <string name="shot_mode_burst3">Salvo 3</string>
     <string name="shot_mode_auto">Auto</string>
     <string name="recoil_label">Terugslag</string>
-    <string name="recoil_enabled">Informatief</string>
+    <string name="recoil_enabled">Ingeschakeld</string>
     <string name="recoil_disabled">Uitgeschakeld</string>
     <string name="score_label">Score</string>
     <string name="team_score_label">Team</string>
@@ -239,12 +239,12 @@
     <string name="cd_blaster_rifle">Geweer</string>
     <string name="cd_blaster_pistol">Pistool</string>
     <string name="cd_grenade_paired">Granaat gekoppeld</string>
-    <string name="scoreboard_disconnected">Verbinding verbbroken</string>
+    <string name="scoreboard_disconnected">Verbinding verbroken</string>
     <string name="score_matrix">Scorematrix</string>
     <string name="scoreboard">Scorebord</string>
     <string name="score_matrix_empty">Nog geen eliminaties</string>
     <string name="score_matrix_unsupported">Deze server ondersteunt de scorematrix niet</string>
-    <string name="longest_shots">Lángste schoten</string>
+    <string name="longest_shots">Langste schoten</string>
     <string name="longest_shots_empty">Nog geen gemeten schoten. Schotafstand vereist GPS van beide spelers.</string>
     <string name="longest_shots_unsupported">Deze server meet geen schoten</string>
     <string name="longest_shots_rank">%1$d.</string>
@@ -492,18 +492,18 @@
     <string name="team_mode_set_for_mode">Teams ingesteld op %1$s voor %2$s</string>
     <string name="team_mode_not_for_mode">%1$s wordt gespeeld als %2$s</string>
     <string name="mode_score_to_win">Score om te winnen (50–1000)</string>
-    <string name="mode_points">Punten (0 = op basis van veldgrootte, tot 5)</string>
+    <string name="mode_points">Locaties (0 = op veldgrootte, tot 5)</string>
     <string name="mode_capture_seconds">Seconden om te veroveren (5–60)</string>
-    <string name="mode_move_seconds">Punt verplaatst elke (30–300 s)</string>
+    <string name="mode_move_seconds">Locatie wisselt elke (30–300 s)</string>
     <string name="mode_advanced_closed">Geavanceerd ›</string>
     <string name="mode_advanced_open">Geavanceerd ⌄</string>
-    <string name="mode_radius">Puntradius (%1$s)</string>
+    <string name="mode_radius">Straal van de locatie (%1$s)</string>
     <string name="mode_points_per_tick">Punten gescoord per keer (1–10)</string>
     <string name="mode_tick_seconds">Gescoord elke (1–10 s)</string>
     <string name="mode_more_faster">Meer spelers veroveren sneller</string>
-    <string name="mode_show_next">Toon het volgende punt zo vroeg (0–120 s, 0 = uit)</string>
-    <string name="mode_small_field">Eén punt op velden kleiner dan (%1$s)</string>
-    <string name="mode_large_field">Drie punten op velden groter dan (%1$s)</string>
+    <string name="mode_show_next">Volgende locatie zo vroeg tonen (0–120 s, 0 = uit)</string>
+    <string name="mode_small_field">Eén locatie op velden kleiner dan (%1$s)</string>
+    <string name="mode_large_field">Drie locaties op velden groter dan (%1$s)</string>
     <string name="mode_reset">Herstellen naar standaard</string>
     <string name="mode_changed">%1$s  •</string>
     <string name="mode_needs_border">Dominantie en Hardpoint hebben een veldgrens nodig: teken er een op de kaart.</string>
@@ -578,10 +578,10 @@
     </plurals>
     <string name="ex_open">extractie open</string>
     <string name="ex_opens_in">extractie opent over %1$s</string>
-    <string name="mode_hp_contested">Punt betwist</string>
-    <string name="mode_hp_holding">Punt vasthouden</string>
-    <string name="mode_hp_secured">Punt veroverd</string>
-    <string name="mode_hp_moved">Het punt is verplaatst</string>
+    <string name="mode_hp_contested">Locatie betwist</string>
+    <string name="mode_hp_holding">Locatie wordt vastgehouden</string>
+    <string name="mode_hp_secured">Locatie veroverd</string>
+    <string name="mode_hp_moved">De locatie is verplaatst</string>
     <string name="mode_victory_big">OVERWINNING</string>
     <string name="mode_defeat_big">NEDERLAAG</string>
     <string name="mode_draw_big">GELIJKSPEL</string>
@@ -598,7 +598,7 @@
     <string name="field_undo">Ongedaan maken</string>
     <string name="field_clear">Wissen</string>
     <string name="field_rules">Regels</string>
-    <string name="field_presets">Opgeslagen</string>
+    <string name="field_presets">Opslaan/Laden</string>
     <string name="field_status_border_none">Geen grens</string>
     <string name="field_status_border_circle">Cirkelgrens, %1$s doorsnee</string>
     <plurals name="field_status_border_polygon">
@@ -612,7 +612,7 @@
     <string name="field_walk_too_short">Het lopen heeft minstens 3 hoeken nodig. Loop de hele rand af en probeer opnieuw.</string>
     <string name="field_border_saved">Grens opgeslagen. Telefoons ontvangen deze bij verbinding of spelstart.</string>
     <string name="field_border_cleared">Grens gewist.</string>
-    <string name="field_presets_title">Opgeslagen velden</string>
+    <string name="field_presets_title">Veld opslaan of laden</string>
     <string name="field_presets_save">Dit veld opslaan als…</string>
     <string name="field_presets_name_hint">Veldnaam</string>
     <string name="field_presets_saved">Opgeslagen als %1$s.</string>
@@ -724,12 +724,12 @@
     <string name="field_auto_place_relaxed">Het veld is klein, dus sommige spawns staan dichter bij elkaar dan de regels vragen.</string>
     <string name="field_auto_place_failed">Kon geen ruimte vinden voor de spawns. Probeer een grotere grens of minder spawns.</string>
     <string name="field_spawns_cleared">Spawns gewist.</string>
-    <string name="field_tool_objectives">Punten</string>
-    <string name="field_small_warning">Dit veld is minder dan 30 m (100 ft) breed. Telefoon-GPS is nauwkeurig tot 3–8 m, dus spawns en punten werken hier mogelijk niet optimaal. Klassiek of Dominantie met één punt werkt het beste.</string>
-    <string name="field_hint_objectives">Tik om veroveringspunt %1$s toe te voegen. Tik op een punt om te verwijderen. Laat leeg om ze per spel op veldgrootte te laten plaatsen.</string>
-    <string name="field_objectives_cleared">Veroveringspunten gewist. Ze worden per spel geplaatst op basis van veldgrootte.</string>
-    <string name="field_objectives_full">Maximaal vijf veroveringspunten.</string>
-    <string name="field_inside_border_only">Spawns en punten horen binnen de veldgrens te staan.</string>
+    <string name="field_tool_objectives">Locaties</string>
+    <string name="field_small_warning">Dit veld is minder dan 30 m (100 ft) breed. Telefoon-GPS is maar tot zo\'n 3–8 m nauwkeurig, dus spawns, veroverlocaties en drops werken hier misschien slecht. Klassiek, of Dominantie met één locatie, werkt het best op zo\'n klein veld.</string>
+    <string name="field_hint_objectives">Tik om veroverlocatie %1$s toe te voegen. Tik op een locatie om die te verwijderen. Zonder locaties worden ze elk spel op veldgrootte geplaatst.</string>
+    <string name="field_objectives_cleared">Veroverlocaties gewist. Ze worden elk spel op veldgrootte geplaatst.</string>
+    <string name="field_objectives_full">Maximaal vijf veroverlocaties.</string>
+    <string name="field_inside_border_only">Spawns en locaties horen binnen de veldgrens.</string>
     <plurals name="field_status_spawns">
         <item quantity="one">%1$d spawn</item>
         <item quantity="other">%1$d spawns</item>
@@ -759,7 +759,6 @@
     <string name="field_map_save_error">Kon de veldkaart niet opslaan.</string>
     <string name="field_map_no_location">Kan je locatie nog niet vinden.</string>
     <string name="ctf_one_flag">Eén vlag in het midden</string>
-    <string name="ctf_one_flag_hint">Beide teams racen om één vlag en brengen die naar hun eigen basis. Leg hem zelf neer met het Vlag-gereedschap van de veldkaart, anders wordt hij eerlijk tussen de bases geplaatst.</string>
     <string name="ctf_one_flag_ours">Jouw team heeft de vlag! Dek de drager</string>
     <string name="ctf_one_flag_theirs">Het andere team heeft de vlag! Stop de drager</string>
     <string name="ctf_one_flag_down">De vlag ligt op de grond: pak hem</string>

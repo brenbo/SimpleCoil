@@ -49,6 +49,20 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
             invalidate()
         }
 
+    /** Search & Destroy: the fuse the bomb's timer counts down from. */
+    var fuseSeconds = 45
+        set(value) {
+            field = value
+            invalidate()
+        }
+
+    /** Marksman: distances in feet. */
+    var feet = false
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     /** The player's blaster: a pistol, else a rifle. */
     var pistol = false
         set(value) {
@@ -108,7 +122,7 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
             SlideArt.CLASSIC, SlideArt.MARKSMAN -> shot(canvas, cx, cy, s, art == SlideArt.MARKSMAN)
             SlideArt.CAPTURE, SlideArt.HARDPOINT -> capture(canvas, cx, cy, s, art == SlideArt.HARDPOINT)
             SlideArt.ZONE -> zone(canvas, cx, cy, s)
-            SlideArt.FLAG -> flag(canvas, cx, cy, s)
+            SlideArt.FLAG, SlideArt.ONE_FLAG -> flag(canvas, cx, cy, s, art == SlideArt.ONE_FLAG)
             SlideArt.LOOT -> loot(canvas, cx, cy, s)
             SlideArt.BOMB -> bomb(canvas, cx, cy, s)
             SlideArt.INFECTION -> infection(canvas, cx, cy, s)
@@ -336,7 +350,7 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
         if (distance && hit) {
             text.color = HIGHLIGHT
             text.textSize = s * 0.09f
-            canvas.drawText("+42 m", cx, cy - s * 0.12f, text)
+            canvas.drawText(if (feet) "+138 ft" else "+42 m", cx, cy - s * 0.12f, text)
         } else if (hit) {
             text.color = HIGHLIGHT
             text.textSize = s * 0.09f
@@ -380,9 +394,9 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
         dot(canvas, cx + outer * 0.75f, cy + outer * 0.3f, s * 0.035f, TeamColors.colorOf(2))
     }
 
-    private fun flag(canvas: Canvas, cx: Float, cy: Float, s: Float) {
-        // Carried from the far base to the near one
-        val x = cx - s * 0.35f + s * 0.7f * t
+    private fun flag(canvas: Canvas, cx: Float, cy: Float, s: Float, one: Boolean) {
+        // Carried from the far base to the near one; with one flag, from the middle to a base
+        val x = if (one) cx + s * 0.35f * t else cx - s * 0.35f + s * 0.7f * t
         val pole = s * 0.45f
         stroke.color = OUTLINE
         canvas.drawLine(x, cy + pole / 2, x, cy - pole / 2, stroke)
@@ -393,7 +407,7 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
         path.lineTo(x + s * 0.22f, cy - pole / 2 + s * 0.16f)
         path.quadTo(x + s * 0.12f, cy - pole / 2 + s * 0.12f - wave, x, cy - pole / 2 + s * 0.13f)
         path.close()
-        fill.color = TeamColors.colorOf(2)
+        fill.color = if (one) 0xFFFFFFFF.toInt() else TeamColors.colorOf(2)
         canvas.drawPath(path, fill)
         stroke.color = TeamColors.colorOf(2)
         canvas.drawCircle(cx - s * 0.35f, cy + pole / 2, s * 0.07f, stroke)
@@ -436,7 +450,7 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
         canvas.drawCircle(cx, cy - r * 0.2f, r * 0.22f, fill)
         text.color = 0xFFFFFFFF.toInt()
         text.textSize = s * 0.08f
-        canvas.drawText(String.format(java.util.Locale.ROOT, "0:%02d", (45 * (1 - t)).toInt()), cx, cy + r * 0.6f, text)
+        canvas.drawText(String.format(java.util.Locale.ROOT, "%d:%02d", (fuseSeconds * (1 - t)).toInt() / 60, (fuseSeconds * (1 - t)).toInt() % 60), cx, cy + r * 0.6f, text)
     }
 
     private fun infection(canvas: Canvas, cx: Float, cy: Float, s: Float) {

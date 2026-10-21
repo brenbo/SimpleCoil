@@ -37,6 +37,7 @@ import com.simplecoil.simplecoil.domain.briefing.Section
 import com.simplecoil.simplecoil.domain.briefing.Slide
 import com.simplecoil.simplecoil.domain.mode.GameMode
 import com.simplecoil.simplecoil.hardware.blaster.GattProtocolHandler
+import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.ui.Spelling
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsValues
 import kotlinx.coroutines.launch
@@ -158,6 +159,10 @@ class BriefingActivity : AppCompatActivity() {
         slide?.let {
             b.briefingArt.art = it.art
             b.briefingArt.drop = it.drop
+            // The settings the pictures show: the fuse, feet or meters
+            val field = (if (host) container.serverFieldConfig else container.playerFieldConfig).config.value
+            b.briefingArt.fuseSeconds = field?.bomb?.fuseSeconds ?: 45
+            b.briefingArt.feet = field?.rules?.units == DistanceUnits.FEET
         }
         b.briefingArt.pistol = !host && container.sessionEngine.state.value.blasterType == GattProtocolHandler.BLASTER_TYPE_PISTOL
         b.briefingProgressTv.text = if (index >= 0) getString(R.string.briefing_progress, index + 1, total) else ""

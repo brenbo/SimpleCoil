@@ -492,18 +492,18 @@
     <string name="team_mode_set_for_mode">Squadre impostate su %1$s per %2$s</string>
     <string name="team_mode_not_for_mode">%1$s si gioca come %2$s</string>
     <string name="mode_score_to_win">Punti per vincere (50–1000)</string>
-    <string name="mode_points">Punti (0 = in base al campo, fino a 5)</string>
+    <string name="mode_points">Posizioni (0 = in base al campo, fino a 5)</string>
     <string name="mode_capture_seconds">Secondi per catturare (5–60)</string>
-    <string name="mode_move_seconds">Il punto si sposta ogni (30–300 s)</string>
+    <string name="mode_move_seconds">La posizione cambia ogni (30–300 s)</string>
     <string name="mode_advanced_closed">Avanzate ›</string>
     <string name="mode_advanced_open">Avanzate ⌄</string>
-    <string name="mode_radius">Raggio punto (%1$s)</string>
+    <string name="mode_radius">Raggio della posizione (%1$s)</string>
     <string name="mode_points_per_tick">Punti assegnati ogni volta (1–10)</string>
     <string name="mode_tick_seconds">Assegnati ogni (1–10 s)</string>
     <string name="mode_more_faster">Più giocatori catturano più velocemente</string>
-    <string name="mode_show_next">Mostra il punto successivo con questo anticipo (0–120 s, 0 = disattivo)</string>
-    <string name="mode_small_field">Un punto su campi inferiori a (%1$s)</string>
-    <string name="mode_large_field">Tre punti su campi superiori a (%1$s)</string>
+    <string name="mode_show_next">Mostra la posizione successiva in anticipo (0–120 s, 0 = no)</string>
+    <string name="mode_small_field">Una posizione nei campi sotto (%1$s)</string>
+    <string name="mode_large_field">Tre posizioni nei campi sopra (%1$s)</string>
     <string name="mode_reset">Ripristina valori predefiniti</string>
     <string name="mode_changed">%1$s  •</string>
     <string name="mode_needs_border">Dominio e Punto strategico necessitano di un confine: disegnane uno sulla mappa.</string>
@@ -578,10 +578,10 @@
     </plurals>
     <string name="ex_open">estrazione aperta</string>
     <string name="ex_opens_in">l\'estrazione si apre tra %1$s</string>
-    <string name="mode_hp_contested">Punto conteso</string>
-    <string name="mode_hp_holding">Mantenimento del punto</string>
-    <string name="mode_hp_secured">Punto preso</string>
-    <string name="mode_hp_moved">Il punto si è spostato</string>
+    <string name="mode_hp_contested">Posizione contesa</string>
+    <string name="mode_hp_holding">Posizione tenuta</string>
+    <string name="mode_hp_secured">Posizione presa</string>
+    <string name="mode_hp_moved">La posizione si è spostata</string>
     <string name="mode_victory_big">VITTORIA</string>
     <string name="mode_defeat_big">SCONFITTA</string>
     <string name="mode_draw_big">PAREGGIO</string>
@@ -598,7 +598,7 @@
     <string name="field_undo">Annulla</string>
     <string name="field_clear">Cancella</string>
     <string name="field_rules">Regole</string>
-    <string name="field_presets">Salvati</string>
+    <string name="field_presets">Salva/Carica</string>
     <string name="field_status_border_none">Nessun confine</string>
     <string name="field_status_border_circle">Confine circolare, %1$s di diametro</string>
     <plurals name="field_status_border_polygon">
@@ -612,7 +612,7 @@
     <string name="field_walk_too_short">Il percorso necessita di almeno 3 angoli. Cammina lungo tutto il bordo e riprova.</string>
     <string name="field_border_saved">Confine salvato. I telefoni lo ricevono quando si uniscono o all\'inizio di una partita.</string>
     <string name="field_border_cleared">Confine cancellato.</string>
-    <string name="field_presets_title">Campi salvati</string>
+    <string name="field_presets_title">Salva o carica un campo</string>
     <string name="field_presets_save">Salva questo campo come…</string>
     <string name="field_presets_name_hint">Nome campo</string>
     <string name="field_presets_saved">Salvato come %1$s.</string>
@@ -724,12 +724,12 @@
     <string name="field_auto_place_relaxed">Il campo è piccolo, quindi alcuni punti di rientro sono più vicini del previsto.</string>
     <string name="field_auto_place_failed">Impossibile trovare spazio per i punti di rientro. Prova con un confine più grande o meno punti.</string>
     <string name="field_spawns_cleared">Punti di rientro cancellati.</string>
-    <string name="field_tool_objectives">Punti</string>
-    <string name="field_small_warning">Questo campo è largo meno di 30 m (100 ft). Il GPS del telefono è preciso solo fino a 3–8 m, quindi i punti e i rifornimenti potrebbero non funzionare al meglio. La modalità Classica o Dominio a un punto funzionano meglio.</string>
-    <string name="field_hint_objectives">Tocca per aggiungere il punto di cattura %1$s. Tocca un punto per rimuoverlo. Lascia vuoto per posizionarli in base al campo ad ogni partita.</string>
-    <string name="field_objectives_cleared">Punti di cattura cancellati. Verranno posizionati in base alle dimensioni del campo per ogni partita.</string>
-    <string name="field_objectives_full">Massimo cinque punti di cattura.</string>
-    <string name="field_inside_border_only">Punti di rientro e cattura vanno all\'interno del confine del campo.</string>
+    <string name="field_tool_objectives">Posizioni</string>
+    <string name="field_small_warning">Questo campo è largo meno di 30 m (100 ft). Il GPS del telefono è preciso solo a circa 3–8 m, quindi spawn, posizioni di cattura e rifornimenti potrebbero non funzionare bene qui. Classica, o Dominio con una posizione, è la scelta migliore su un campo così piccolo.</string>
+    <string name="field_hint_objectives">Tocca per aggiungere la posizione di cattura %1$s. Tocca una posizione per rimuoverla. Senza posizioni, vengono piazzate in base al campo a ogni partita.</string>
+    <string name="field_objectives_cleared">Posizioni di cattura cancellate. Verranno piazzate in base al campo a ogni partita.</string>
+    <string name="field_objectives_full">Al massimo cinque posizioni di cattura.</string>
+    <string name="field_inside_border_only">Spawn e posizioni vanno dentro il confine del campo.</string>
     <plurals name="field_status_spawns">
         <item quantity="one">%1$d punto di rientro</item>
         <item quantity="other">%1$d punti di rientro</item>
@@ -759,7 +759,6 @@
     <string name="field_map_save_error">Impossibile salvare la mappa del campo.</string>
     <string name="field_map_no_location">Impossibile trovare la tua posizione al momento.</string>
     <string name="ctf_one_flag">Una bandiera al centro</string>
-    <string name="ctf_one_flag_hint">Entrambe le squadre corrono per un\'unica bandiera e la portano alla propria base. Posizionala tu con lo strumento Bandiera della mappa del campo, oppure viene posizionata in modo equo tra le basi.</string>
     <string name="ctf_one_flag_ours">La tua squadra ha la bandiera! Copri il portatore</string>
     <string name="ctf_one_flag_theirs">L\'altra squadra ha la bandiera! Ferma il portatore</string>
     <string name="ctf_one_flag_down">La bandiera è a terra: prendila</string>

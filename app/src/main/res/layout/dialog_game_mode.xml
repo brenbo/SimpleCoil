@@ -429,13 +429,6 @@
                 android:text="@string/ctf_one_flag" />
 
             <TextView
-                style="@style/DialogHint"
-                android:id="@+id/ctf_one_flag_hint"
-                android:layout_width="match_parent"
-                android:layout_marginTop="0dp"
-                android:text="@string/ctf_one_flag_hint" />
-
-            <TextView
                 style="@style/DialogLabel"
                 android:id="@+id/ctf_to_win_label"
                 android:labelFor="@+id/ctf_to_win_et"

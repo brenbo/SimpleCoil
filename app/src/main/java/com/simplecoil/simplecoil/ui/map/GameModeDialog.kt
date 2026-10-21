@@ -144,7 +144,6 @@ object GameModeDialog {
             oneFlag = d.ctfOneFlagSwitch.isChecked,
             baseRadiusMeters = d.ctfRadiusEt.text?.toString()?.toDoubleOrNull()?.let { units.toMeters(it) } ?: config.flag.baseRadiusMeters,
         ).clamped()
-        d.ctfOneFlagSwitch.setOnCheckedChangeListener { _, on -> d.ctfOwnHomeSwitch.isVisible = !on }
         fun fillExtraction(r: ExtractionRules) {
             put(d.exLootEt, r.lootPoints)
             put(d.exCollectEt, r.collectSeconds)
@@ -243,11 +242,13 @@ object GameModeDialog {
                 GameMode.HARDPOINT -> SlideArt.HARDPOINT
                 GameMode.BATTLE_ROYALE -> SlideArt.ZONE
                 GameMode.MARKSMAN -> SlideArt.MARKSMAN
-                GameMode.CAPTURE_THE_FLAG -> SlideArt.FLAG
+                GameMode.CAPTURE_THE_FLAG -> if (d.ctfOneFlagSwitch.isChecked) SlideArt.ONE_FLAG else SlideArt.FLAG
                 GameMode.EXTRACTION -> SlideArt.LOOT
                 GameMode.SEARCH_AND_DESTROY -> SlideArt.BOMB
                 GameMode.INFECTION -> SlideArt.INFECTION
             }
+            d.modeAboutArt.feet = feet
+            d.modeAboutArt.fuseSeconds = int(d.sndrFuseEt, config.bomb.fuseSeconds)
             val checkedId = d.modeGroup.checkedRadioButtonId
             val checkedView = d.modeGroup.findViewById<android.view.View>(checkedId)
             if (checkedView != null) {
@@ -337,6 +338,16 @@ object GameModeDialog {
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .create()
+        // The mode's picture follows the settings it shows: one flag, the fuse
+        d.ctfOneFlagSwitch.setOnCheckedChangeListener { _, on ->
+            d.ctfOwnHomeSwitch.isVisible = !on
+            if (mode == GameMode.CAPTURE_THE_FLAG) d.modeAboutArt.art = if (on) SlideArt.ONE_FLAG else SlideArt.FLAG
+        }
+        d.sndrFuseEt.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) { d.modeAboutArt.fuseSeconds = int(d.sndrFuseEt, config.bomb.fuseSeconds) }
+        })
         d.modeResetButton.setOnClickListener {
             when (mode) {
                 GameMode.BATTLE_ROYALE -> fillBattleRoyale(BattleRoyaleRules())

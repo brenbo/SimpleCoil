@@ -267,6 +267,10 @@
                                     android:layout_weight="1"
                                     android:layout_marginEnd="4dp"
                                     android:maxLines="1"
+                                    app:autoSizeMaxTextSize="14sp"
+                                    app:autoSizeMinTextSize="9sp"
+                                    app:autoSizeStepGranularity="1sp"
+                                    app:autoSizeTextType="uniform"
                                     android:paddingStart="8dp"
                                     android:paddingEnd="8dp"
                                     android:text="@string/game_limit_button" />
@@ -280,6 +284,10 @@
                                     android:layout_marginStart="4dp"
                                     android:layout_marginEnd="4dp"
                                     android:maxLines="1"
+                                    app:autoSizeMaxTextSize="14sp"
+                                    app:autoSizeMinTextSize="9sp"
+                                    app:autoSizeStepGranularity="1sp"
+                                    app:autoSizeTextType="uniform"
                                     android:paddingStart="8dp"
                                     android:paddingEnd="8dp"
                                     android:text="@string/starting_timer_button" />
@@ -292,6 +300,10 @@
                                     android:layout_weight="1"
                                     android:layout_marginStart="4dp"
                                     android:maxLines="1"
+                                    app:autoSizeMaxTextSize="14sp"
+                                    app:autoSizeMinTextSize="9sp"
+                                    app:autoSizeStepGranularity="1sp"
+                                    app:autoSizeTextType="uniform"
                                     android:paddingStart="8dp"
                                     android:paddingEnd="8dp"
                                     android:text="@string/game_presets_button" />
