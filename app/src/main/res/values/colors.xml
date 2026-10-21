@@ -19,7 +19,7 @@
     <!-- The accent: the orange of the Recoil blasters -->
     <color name="sc_orange">#FF6A1A</color>
     <color name="sc_orange_pressed">#E85A0C</color>
-    <color name="sc_on_orange">#1A0A00</color>
+    <color name="sc_on_orange">#3A3F47</color>
     <color name="sc_orange_container">#3A2214</color>
     <color name="sc_on_orange_container">#FFB48A</color>
 
