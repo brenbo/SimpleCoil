@@ -20,13 +20,19 @@ import android.content.Context
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
-import android.widget.EditText
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import android.widget.CompoundButton
+import android.widget.EditText
+import android.widget.RadioButton
+import com.simplecoil.simplecoil.ui.Spelling
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.databinding.DialogGameModeBinding
+import com.simplecoil.simplecoil.domain.briefing.Briefing
 import com.simplecoil.simplecoil.domain.briefing.SlideArt
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
@@ -221,34 +227,22 @@ object GameModeDialog {
             }
         }
 
+        // The blurb and picture: the how-to-play slides' first game slide, for the settings as they are in the dialog now
+        fun showAbout() {
+            val now = config.copy(mode = mode, objectiveRules = if (mode.hasObjectives) read() else config.objectiveRules,
+                battleRoyale = readBattleRoyale(), marksman = readMarksman(), flag = readFlag(), extraction = readExtraction(), bomb = readBomb(), infection = readInfection())
+            val slide = Briefing.goalSlide(now)
+            d.modeAboutTv.text = Spelling.local(context, slide.body)
+            d.modeAboutArt.art = slide.art
+            d.modeAboutArt.feet = feet
+            d.modeAboutArt.fuseSeconds = now.bomb.fuseSeconds
+        }
+
         // Only what applies: no settings for Classic, the move timer only for Hardpoint
         fun showMode() {
+            showAbout()
             val domination = mode == GameMode.DOMINATION
             val hardpoint = mode == GameMode.HARDPOINT
-            d.modeAboutTv.setText(when (mode) {
-                GameMode.CLASSIC -> R.string.mode_about_classic
-                GameMode.DOMINATION -> R.string.mode_about_domination
-                GameMode.HARDPOINT -> R.string.mode_about_hardpoint
-                GameMode.BATTLE_ROYALE -> R.string.mode_about_battle_royale
-                GameMode.MARKSMAN -> R.string.mode_about_marksman
-                GameMode.CAPTURE_THE_FLAG -> R.string.mode_about_ctf
-                GameMode.EXTRACTION -> R.string.mode_about_extraction
-                GameMode.SEARCH_AND_DESTROY -> R.string.mode_about_snd
-                GameMode.INFECTION -> R.string.mode_about_infection
-            })
-            d.modeAboutArt.art = when (mode) {
-                GameMode.CLASSIC -> SlideArt.CLASSIC
-                GameMode.DOMINATION -> SlideArt.CAPTURE
-                GameMode.HARDPOINT -> SlideArt.HARDPOINT
-                GameMode.BATTLE_ROYALE -> SlideArt.ZONE
-                GameMode.MARKSMAN -> SlideArt.MARKSMAN
-                GameMode.CAPTURE_THE_FLAG -> if (d.ctfOneFlagSwitch.isChecked) SlideArt.ONE_FLAG else SlideArt.FLAG
-                GameMode.EXTRACTION -> SlideArt.LOOT
-                GameMode.SEARCH_AND_DESTROY -> SlideArt.BOMB
-                GameMode.INFECTION -> SlideArt.INFECTION
-            }
-            d.modeAboutArt.feet = feet
-            d.modeAboutArt.fuseSeconds = int(d.sndrFuseEt, config.bomb.fuseSeconds)
             val checkedId = d.modeGroup.checkedRadioButtonId
             val checkedView = d.modeGroup.findViewById<android.view.View>(checkedId)
             if (checkedView != null) {
@@ -338,16 +332,22 @@ object GameModeDialog {
             }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .create()
-        // The mode's picture follows the settings it shows: one flag, the fuse
-        d.ctfOneFlagSwitch.setOnCheckedChangeListener { _, on ->
-            d.ctfOwnHomeSwitch.isVisible = !on
-            if (mode == GameMode.CAPTURE_THE_FLAG) d.modeAboutArt.art = if (on) SlideArt.ONE_FLAG else SlideArt.FLAG
-        }
-        d.sndrFuseEt.addTextChangedListener(object : TextWatcher {
+        d.ctfOneFlagSwitch.setOnCheckedChangeListener { _, on -> d.ctfOwnHomeSwitch.isVisible = !on }
+        // Every setting typed or switched updates the blurb and picture, like the slides would show it
+        val aboutWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) { d.modeAboutArt.fuseSeconds = int(d.sndrFuseEt, config.bomb.fuseSeconds) }
-        })
+            override fun afterTextChanged(s: Editable?) = showAbout()
+        }
+        fun watch(view: View) {
+            when (view) {
+                is EditText -> view.addTextChangedListener(aboutWatcher)
+                is RadioButton -> {}
+                is CompoundButton -> view.setOnClickListener { showAbout() }
+                is ViewGroup -> for (i in 0 until view.childCount) watch(view.getChildAt(i))
+            }
+        }
+        watch(d.root)
         d.modeResetButton.setOnClickListener {
             when (mode) {
                 GameMode.BATTLE_ROYALE -> fillBattleRoyale(BattleRoyaleRules())

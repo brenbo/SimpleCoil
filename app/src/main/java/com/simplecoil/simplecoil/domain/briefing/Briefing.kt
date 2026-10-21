@@ -21,6 +21,7 @@ import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.OutOfBoundsPenalty
 import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.team.TeamMode
 import kotlin.math.roundToInt
 
 /** What a slide's picture shows; the briefing screen draws it (and animates it). */
@@ -70,6 +71,10 @@ object Briefing {
 
     /** Where "skip to the game mode" goes. */
     fun firstModeSlide(slides: List<Slide>): Slide? = slides.firstOrNull { it.section == Section.MODE }
+
+    /** The game mode's first slide (what the mode is) for [field] as set: the game mode pop-up shows it too. */
+    fun goalSlide(field: FieldConfig): Slide = goal(field.mode, BriefingInputs(field, freeForAll = field.mode.teamModes == setOf(TeamMode.FREE_FOR_ALL),
+        teamCount = 2, respawnSeconds = 0, manualRespawn = false, livesLimit = 0, timeLimitMinutes = 0, scoreLimit = 0, voiceChat = false))
 
     private fun buttons(input: BriefingInputs): List<Slide> {
         val limited = input.field?.loadout?.ammo?.let { it != AmmoMode.UNLIMITED } == true
