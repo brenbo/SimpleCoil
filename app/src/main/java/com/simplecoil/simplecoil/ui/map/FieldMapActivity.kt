@@ -42,6 +42,8 @@ import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.databinding.ActivityFieldMapBinding
 import com.simplecoil.simplecoil.databinding.DialogBorderRulesBinding
 import com.simplecoil.simplecoil.databinding.DialogFieldNameBinding
+import com.simplecoil.simplecoil.databinding.DialogFieldPresetRowBinding
+import com.simplecoil.simplecoil.databinding.DialogFieldPresetsBinding
 import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.loadout.LoadoutRules
@@ -725,29 +727,76 @@ class FieldMapActivity : AppCompatActivity() {
 
     // Saved fields
 
+    /** Save/Load: a button to save the map as a new field, then a card for each saved field with Load, Save over and Delete. */
     private fun showPresets() {
         lifecycleScope.launch {
             val names = withContext(Dispatchers.IO) { container.fieldPresets.names() }
-            val items = (listOf(getString(R.string.field_presets_save)) + names).toTypedArray()
-            AlertDialog.Builder(this@FieldMapActivity, R.style.AppDialogTheme)
+            val view = DialogFieldPresetsBinding.inflate(layoutInflater)
+            val dialog = AlertDialog.Builder(this@FieldMapActivity, R.style.AppDialogTheme)
                 .setTitle(R.string.field_presets_title)
-                .setItems(items) { _, which ->
-                    if (which == 0) askPresetName() else presetOptions(names[which - 1])
-                }
+                .setView(view.root)
                 .setNegativeButton(R.string.field_dialog_cancel, null)
-                .show()
+                .create()
+            view.presetsSaveNewButton.setOnClickListener {
+                dialog.dismiss()
+                askPresetName(names)
+            }
+            view.presetsEmptyTv.isVisible = names.isEmpty()
+            for (name in names) {
+                val row = DialogFieldPresetRowBinding.inflate(layoutInflater, view.presetsRows, true)
+                row.presetNameTv.text = name
+                row.presetOnMapTv.isVisible = name == config.name
+                row.presetLoadButton.setOnClickListener {
+                    dialog.dismiss()
+                    loadPreset(name)
+                }
+                row.presetOverwriteButton.setOnClickListener {
+                    dialog.dismiss()
+                    confirmOverwrite(name, getString(R.string.field_presets_overwrite_title, name))
+                }
+                row.presetDeleteButton.setOnClickListener {
+                    dialog.dismiss()
+                    confirmDelete(name)
+                }
+            }
+            dialog.show()
         }
     }
 
-    private fun askPresetName() {
+    /** A name for a new saved field; a name that's already saved asks before saving over it. */
+    private fun askPresetName(taken: List<String>) {
         val dialog = DialogFieldNameBinding.inflate(layoutInflater)
-        dialog.fieldNameEt.setText(config.name)
+        // A new field: the loaded field's name would only save over it
+        dialog.fieldNameEt.setText(config.name.takeIf { it !in taken } ?: "")
         AlertDialog.Builder(this, R.style.AppDialogTheme)
             .setView(dialog.root)
             .setPositiveButton(R.string.field_dialog_save) { _, _ ->
                 val name = dialog.fieldNameEt.text.toString().trim()
-                if (name.isNotEmpty()) savePreset(name)
+                val existing = taken.firstOrNull { it.equals(name, ignoreCase = true) }
+                when {
+                    name.isEmpty() -> Unit
+                    existing != null -> confirmOverwrite(existing, getString(R.string.field_presets_exists_title, existing))
+                    else -> savePreset(name)
+                }
             }
+            .setNegativeButton(R.string.field_dialog_cancel, null)
+            .show()
+    }
+
+    private fun confirmOverwrite(name: String, title: String) {
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setTitle(title)
+            .setMessage(R.string.field_presets_overwrite_body)
+            .setPositiveButton(R.string.field_presets_overwrite) { _, _ -> savePreset(name) }
+            .setNegativeButton(R.string.field_dialog_cancel, null)
+            .show()
+    }
+
+    private fun confirmDelete(name: String) {
+        AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setTitle(getString(R.string.field_presets_delete_title, name))
+            .setMessage(R.string.field_presets_delete_body)
+            .setPositiveButton(R.string.field_presets_delete) { _, _ -> deletePreset(name) }
             .setNegativeButton(R.string.field_dialog_cancel, null)
             .show()
     }
@@ -768,16 +817,6 @@ class FieldMapActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, if (ok) getString(R.string.field_presets_saved, name) else getString(R.string.field_presets_error),
                 Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun presetOptions(name: String) {
-        AlertDialog.Builder(this, R.style.AppDialogTheme)
-            .setTitle(name)
-            .setItems(arrayOf(getString(R.string.field_presets_load), getString(R.string.field_presets_delete))) { _, which ->
-                if (which == 0) loadPreset(name) else deletePreset(name)
-            }
-            .setNegativeButton(R.string.field_dialog_cancel, null)
-            .show()
     }
 
     private fun loadPreset(name: String) {

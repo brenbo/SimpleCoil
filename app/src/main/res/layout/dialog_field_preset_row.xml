@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One saved field in Save/Load: its name, and Load, Save over and Delete. The card itself isn't
+     a button; only the buttons are. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:background="@drawable/bg_icon_tile"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/preset_name_tv"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:singleLine="true"
+            android:textColor="@color/sc_text"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/preset_on_map_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill"
+            android:backgroundTint="@color/sc_orange_container"
+            android:maxLines="1"
+            android:paddingStart="8dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="2dp"
+            android:text="@string/field_presets_on_map"
+            android:textColor="@color/sc_on_orange_container"
+            android:textSize="11sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/preset_load_button"
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="3dp"
+            android:backgroundTint="@color/sc_orange"
+            android:text="@string/field_presets_load"
+            android:textColor="@color/sc_on_orange" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/preset_overwrite_button"
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp"
+            android:text="@string/field_presets_overwrite" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/preset_delete_button"
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="3dp"
+            android:text="@string/field_presets_delete"
+            android:textColor="@color/sc_danger" />
+    </LinearLayout>
+</LinearLayout>

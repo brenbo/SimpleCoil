@@ -616,7 +616,7 @@
     <string name="field_undo">Undo</string>
     <string name="field_clear">Clear</string>
     <string name="field_rules">Rules</string>
-    <string name="field_presets">Saved</string>
+    <string name="field_presets">Save/Load</string>
     <string name="field_status_border_none">No border</string>
     <string name="field_status_border_circle">Circle border, %1$s across</string>
     <plurals name="field_status_border_polygon">
@@ -630,7 +630,7 @@
     <string name="field_walk_too_short">The walk needs at least 3 corners. Walk the whole edge and try again.</string>
     <string name="field_border_saved">Border saved. Phones get it when they join or a game starts.</string>
     <string name="field_border_cleared">Border cleared.</string>
-    <string name="field_presets_title">Saved fields</string>
+    <string name="field_presets_title">Save or load a field</string>
     <string name="field_presets_save">Save this field as…</string>
     <string name="field_presets_name_hint">Field name</string>
     <string name="field_presets_saved">Saved as %1$s.</string>
@@ -639,6 +639,18 @@
     <string name="field_presets_load">Load</string>
     <string name="field_presets_delete">Delete</string>
     <string name="field_presets_error">Couldn\'t do that. Try again.</string>
+    <string name="field_presets_save_new">Save the map as a new field</string>
+    <string name="field_presets_list">Saved fields</string>
+    <string name="field_presets_hint">Load puts a field\'s border, spawns, points and photo on the map. Save over replaces a saved field with what\'s on the map now, and keeps its name.</string>
+    <string name="field_presets_empty">No saved fields yet.</string>
+    <string name="field_presets_on_map">On the map</string>
+    <string name="field_presets_overwrite">Save over</string>
+    <string name="field_presets_overwrite_title">Save over %1$s?</string>
+    <string name="field_presets_overwrite_body">Its border, spawns, points and photo will be replaced with what\'s on the map now. It keeps its name.</string>
+    <string name="field_presets_exists_title">%1$s is already saved</string>
+    <string name="field_presets_delete_title">Delete %1$s?</string>
+    <string name="field_presets_delete_body">The saved field is gone for good. What\'s on the map now stays.</string>
+    <string name="field_background_divider">Map background data</string>
     <string name="field_dialog_save">Save</string>
     <string name="field_dialog_cancel">Cancel</string>
     <string name="rules_title">Rules</string>
