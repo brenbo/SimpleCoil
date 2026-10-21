@@ -1,0 +1,92 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Subtle radial background aura -->
+    <path
+        android:pathData="M 54,9 C 78.85,9 99,29.15 99,54 C 99,78.85 78.85,99 54,99 C 29.15,99 9,78.85 9,54 C 9,29.15 29.15,9 54,9 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="45"
+                android:type="radial"
+                android:startX="54"
+                android:startY="54"
+                android:endX="99"
+                android:endY="54">
+                <item android:offset="0.0" android:color="#3BFF9E00" />
+                <item android:offset="0.6" android:color="#12FF9E00" />
+                <item android:offset="1.0" android:color="#00FF9E00" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Outer Soft Glow for Reticle -->
+    <path
+        android:pathData="M 60.77,26.83 A 28,28 0 0,1 81.17,47.23 M 81.17,60.77 A 28,28 0 0,1 60.77,81.17 M 47.23,81.17 A 28,28 0 0,1 26.83,60.77 M 26.83,47.23 A 28,28 0 0,1 47.23,26.83 M 54,35 L 54,10 M 54,73 L 54,98 M 10,54 L 35,54 M 73,54 L 98,54"
+        android:strokeColor="#33FF9E00"
+        android:strokeWidth="9"
+        android:strokeLineCap="round" />
+
+    <!-- Laser Beam Glow -->
+    <path
+        android:pathData="M -5,113 L 54,54"
+        android:strokeColor="#33FF9E00"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+
+    <!-- Laser Beam Core Line -->
+    <path
+        android:pathData="M -5,113 L 54,54"
+        android:strokeColor="#FFA000"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round" />
+
+    <!-- Reticle Ring Arcs -->
+    <path
+        android:pathData="M 60.77,26.83 A 28,28 0 0,1 81.17,47.23 M 81.17,60.77 A 28,28 0 0,1 60.77,81.17 M 47.23,81.17 A 28,28 0 0,1 26.83,60.77 M 26.83,47.23 A 28,28 0 0,1 47.23,26.83"
+        android:strokeColor="#FFA000"
+        android:strokeWidth="4.8"
+        android:strokeLineCap="round" />
+
+    <!-- Reticle Crosshair Ticks -->
+    <path
+        android:pathData="M 54,35 L 54,10 M 54,73 L 54,98 M 10,54 L 35,54 M 73,54 L 98,54"
+        android:strokeColor="#FFA000"
+        android:strokeWidth="4.8"
+        android:strokeLineCap="round" />
+
+    <!-- Center Dot Glow -->
+    <path
+        android:pathData="M 54,43 C 60.08,43 65,47.92 65,54 C 65,60.08 60.08,65 54,65 C 47.92,65 43,60.08 43,54 C 43,47.92 47.92,43 54,43 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="11"
+                android:type="radial"
+                android:startX="54"
+                android:startY="54"
+                android:endX="65"
+                android:endY="54">
+                <item android:offset="0.0" android:color="#70FFA000" />
+                <item android:offset="1.0" android:color="#00FFA000" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Center Dot Outer Ring / Fill -->
+    <path
+        android:pathData="M 54,48.8 C 56.87,48.8 59.2,51.13 59.2,54 C 59.2,56.87 56.87,59.2 54,59.2 C 51.13,59.2 48.8,56.87 48.8,54 C 48.8,51.13 51.13,48.8 54,48.8 Z"
+        android:fillColor="#FFE29C" />
+
+    <!-- Center Dot Inner Core -->
+    <path
+        android:pathData="M 54,51.4 C 55.44,51.4 56.6,52.56 56.6,54 C 56.6,55.44 55.44,56.6 54,56.6 C 52.56,56.6 51.4,55.44 51.4,54 C 51.4,52.56 52.56,51.4 54,51.4 Z"
+        android:fillColor="#FFFFFF" />
+
+</vector>
