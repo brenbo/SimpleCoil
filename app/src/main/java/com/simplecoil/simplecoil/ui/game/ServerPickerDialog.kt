@@ -86,7 +86,7 @@ class ServerPickerDialog : GameDialogFragment() {
 
                 val servers = u.discoveredServers.value
 
-                if (servers.size == 1) {
+                if (servers.size == 1 && servers.first().canJoin) {
                     val singleServer = servers.first()
                     if (trackedSingleServerIp != singleServer.ip) {
                         trackedSingleServerIp = singleServer.ip
@@ -160,30 +160,20 @@ class ServerPickerDialog : GameDialogFragment() {
             })
             row.serverNameTv.text = server.name
             row.serverAddressTv.text = server.ip
-            val isSingle = (itemCount == 1)
-            val secondsLeft = ceil(countdownMs / 1000.0).toInt().coerceIn(1, 5)
-            if (isSingle && countdownMs > 0) {
-                row.serverStatusTv.visibility = View.VISIBLE
-                row.serverStatusTv.text = getString(R.string.server_picker_autoconnect, secondsLeft)
-            } else {
-                row.serverStatusTv.visibility = View.GONE
-            }
-            row.root.setOnClickListener { onClick(server) }
-        }
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-            if (payloads.isNotEmpty()) {
-                val server = getItem(position)
-                val row = holder.binding
-                val bars = signalBarsOfPing(server.pingMs)
-                row.serverSignalIv.setImageResource(when (bars) {
-                    4 -> R.drawable.ic_signal_4
-                    3 -> R.drawable.ic_signal_3
-                    2 -> R.drawable.ic_signal_2
-                    else -> R.drawable.ic_signal_1
-                })
-                row.serverNameTv.text = server.name
-                row.serverAddressTv.text = server.ip
+            val alpha = if (server.canJoin) 1.0f else 0.4f
+            row.root.alpha = alpha
+            row.serverSignalIv.alpha = alpha
+            row.serverNameTv.alpha = alpha
+            row.serverAddressTv.alpha = alpha
+            row.root.isEnabled = server.canJoin
+
+            if (!server.canJoin) {
+                row.root.setOnClickListener(null)
+                row.serverStatusTv.visibility = View.VISIBLE
+                row.serverStatusTv.text = getString(R.string.server_picker_in_progress)
+            } else {
+                row.root.setOnClickListener { onClick(server) }
                 val isSingle = (itemCount == 1)
                 val secondsLeft = ceil(countdownMs / 1000.0).toInt().coerceIn(1, 5)
                 if (isSingle && countdownMs > 0) {
@@ -192,9 +182,11 @@ class ServerPickerDialog : GameDialogFragment() {
                 } else {
                     row.serverStatusTv.visibility = View.GONE
                 }
-            } else {
-                super.onBindViewHolder(holder, position, payloads)
             }
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+            onBindViewHolder(holder, position)
         }
     }
 
@@ -205,6 +197,7 @@ class ServerPickerDialog : GameDialogFragment() {
         override fun areContentsTheSame(oldItem: DiscoveredServer, newItem: DiscoveredServer): Boolean =
             oldItem.name == newItem.name &&
                 oldItem.ip == newItem.ip &&
+                oldItem.canJoin == newItem.canJoin &&
                 signalBarsOfPing(oldItem.pingMs) == signalBarsOfPing(newItem.pingMs)
 
         override fun getChangePayload(oldItem: DiscoveredServer, newItem: DiscoveredServer): Any =

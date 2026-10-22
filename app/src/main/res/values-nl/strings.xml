@@ -141,6 +141,7 @@
     <string name="server_picker_hint">Schakel je server in. Lagere ping heeft meer streepjes.</string>
     <string name="server_picker_searching">Zoeken naar servers…</string>
     <string name="server_picker_autoconnect">Verbinden over %1$d s</string>
+    <string name="server_picker_in_progress">Spel bezig: wacht om deel te nemen</string>
     <string name="game_limit_button">Spellimieten</string>
     <string name="offline_game_settings">Spelinstellingen</string>
     <string name="game_limit_title">Wanneer moet het spel eindigen?</string>

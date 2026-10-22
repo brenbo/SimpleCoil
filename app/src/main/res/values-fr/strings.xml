@@ -141,6 +141,7 @@
     <string name="server_picker_hint">Allumez votre serveur. Un ping plus bas a plus de barres.</string>
     <string name="server_picker_searching">Recherche de serveurs…</string>
     <string name="server_picker_autoconnect">Connexion dans %1$d s</string>
+    <string name="server_picker_in_progress">Partie en cours : veuillez patienter pour rejoindre</string>
     <string name="game_limit_button">Limites de partie</string>
     <string name="offline_game_settings">Paramètres de partie</string>
     <string name="game_limit_title">Quand la partie doit-elle se terminer ?</string>

@@ -41,6 +41,7 @@ class SnapshotBuilder(
     private val settings: GameSettingsRepository,
     private val players: PlayerRepository,
     private val gameState: GameStateRepository,
+    private val liveGame: () -> LiveGame? = { null },
 ) {
     /** Nobody to tell: no connection, or no player has said hello. */
     private fun nobodyThere(): Boolean = roster.isEmpty() || players.teamIPMap.isEmpty()
@@ -101,7 +102,14 @@ class SnapshotBuilder(
     fun playerData(): ServerMessage.PlayerData? {
         if (nobodyThere()) return null
         val withGrenade = grenadeHolders()
-        return ServerMessage.PlayerData(players.teamIPMap.entries.map { (id, address) ->
+        val phase = roster.phase()
+        val lg = liveGame()
+        val entries = if (phase != SessionPhase.LOBBY && lg != null) {
+            players.teamIPMap.entries.filter { (id, _) -> !lg.isLate(id.toInt()) }
+        } else {
+            players.teamIPMap.entries
+        }
+        return ServerMessage.PlayerData(entries.map { (id, address) ->
             val score = roster.score(id)
             WireScore(id.toInt(), players.getPlayerName(id), ipString(address), score?.points ?: 0, score?.eliminated ?: 0, score?.connected,
                 roster.record(id)?.blasterType, id.toInt() in withGrenade)
@@ -110,7 +118,8 @@ class SnapshotBuilder(
 
     /** Who eliminated whom in the current game (score matrix design §3.4); sent in every phase. */
     fun scoreMatrix(): ServerMessage.ScoreMatrix {
-        val matrix = roster.scoreMatrix()
+        val lg = liveGame()
+        val matrix = roster.scoreMatrix(isLate = if (lg != null) { id -> lg.isLate(id.toInt()) } else null)
         return ServerMessage.ScoreMatrix(
             players = matrix.players.map { WireMatrixPlayer(it.playerId.toInt(), it.name ?: "", it.team, it.connected) },
             cells = matrix.cells.map { WireMatrixCell(it.shooterId.toInt(), it.victimId.toInt(), it.count) },

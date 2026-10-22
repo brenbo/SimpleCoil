@@ -141,6 +141,7 @@
     <string name="server_picker_hint">Accendi il tuo server. Un ping più basso ha più tacche.</string>
     <string name="server_picker_searching">Ricerca server in corso…</string>
     <string name="server_picker_autoconnect">Connessione tra %1$d s</string>
+    <string name="server_picker_in_progress">Partita in corso: attendi per unirti</string>
     <string name="game_limit_button">Limiti partita</string>
     <string name="offline_game_settings">Impostazioni partita</string>
     <string name="game_limit_title">Quando deve terminare la partita?</string>

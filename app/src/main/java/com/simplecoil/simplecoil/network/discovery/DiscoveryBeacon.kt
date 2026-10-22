@@ -41,6 +41,19 @@ class DiscoveryBeacon(context: Context) {
     @Volatile
     private var currentServerName = "SimpleCoil Server"
 
+    @Volatile
+    private var inGame = false
+
+    @Volatile
+    private var allowJoinInProgress = true
+
+    /** Updates the server name, game phase and join setting broadcast in beacons. */
+    fun updateBeaconState(name: String, inGame: Boolean, allowJoin: Boolean) {
+        currentServerName = name
+        this.inGame = inGame
+        this.allowJoinInProgress = allowJoin
+    }
+
     /** Updates the server name broadcast in beacons. */
     fun updateServerName(name: String) {
         currentServerName = name
@@ -95,7 +108,10 @@ class DiscoveryBeacon(context: Context) {
 
     private fun sendBeacon(destination: InetAddress, serverName: String) {
         try {
-            network.send(WireProtocol.BEACON_PREFIX + serverName, destination)
+            val payload = WireProtocol.BEACON_PREFIX + serverName +
+                "|inGame=" + (if (inGame) 1 else 0) +
+                "|allowJoin=" + (if (allowJoinInProgress) 1 else 0)
+            network.send(payload, destination)
         } catch (e: IOException) {
             Log.e(TAG, "Error sending discovery beacon packet", e)
         }

@@ -145,6 +145,7 @@
     <string name="server_picker_hint">Turn your server on. Lower ping has more bars.</string>
     <string name="server_picker_searching">Looking for servers…</string>
     <string name="server_picker_autoconnect">Connecting in %1$d s</string>
+    <string name="server_picker_in_progress">Game in progress: please wait to join</string>
     <string name="game_limit_button">Game limits</string>
     <!-- Offline, before a game: the game limits and the team mode -->
     <string name="offline_game_settings">Game settings</string>

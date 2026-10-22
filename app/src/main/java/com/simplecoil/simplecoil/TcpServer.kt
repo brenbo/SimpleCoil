@@ -105,7 +105,8 @@ class TcpServer : Service() {
         serverSettings = settings
         serverPlayers = PlayerRepository(settings, gameState)
         server = GameServer(settings, serverPlayers, gameState, container.serverEvents, container.clock,
-            saveTeamMode = { container.userPreferences.saveTeamMode(it) })
+            saveTeamMode = { container.userPreferences.saveTeamMode(it) },
+            liveGameProvider = { liveGame })
         beacon = DiscoveryBeacon(this)
     }
 
@@ -133,6 +134,14 @@ class TcpServer : Service() {
         server.start()
         val serverName = container.userPreferences.activePresetName()?.ifBlank { null } ?: SERVER_NAME
         beacon.start(serverName)
+        scope.launch {
+            server.snapshot.collect { snapshot ->
+                val inGame = (snapshot.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING)
+                val allowJoin = serverSettings.isAllowJoinInProgress
+                val name = container.userPreferences.activePresetName()?.ifBlank { null } ?: SERVER_NAME
+                beacon.updateBeaconState(name, inGame, allowJoin)
+            }
+        }
         // The field the game and the phones get: the spawns for the team mode being played
         val teamSpawns = TeamSpawnsCache()
         container.fieldImageryServer.prepareConfig = { teamSpawns.forMode(it, serverSettings.teamLayout.mode) }
@@ -147,7 +156,9 @@ class TcpServer : Service() {
     }
 
     fun updateServerName(name: String) {
-        beacon.updateServerName(name)
+        val inGame = (server.snapshot.value.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING)
+        val allowJoin = serverSettings.isAllowJoinInProgress
+        beacon.updateBeaconState(name, inGame, allowJoin)
     }
 
     /** Kicks every player, then stops the beacon and the server and leaves the foreground. */

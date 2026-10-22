@@ -31,7 +31,11 @@ data class DiscoveredServer(
     val name: String,
     val pingMs: Long,
     val lastSeenMs: Long = android.os.SystemClock.elapsedRealtime(),
-)
+    val inGame: Boolean = false,
+    val allowJoinInProgress: Boolean = true,
+) {
+    val canJoin: Boolean get() = !inGame || allowJoinInProgress
+}
 
 /**
  * Finds a server on the LAN: listens for beacons on UDP 17500 and broadcasts a query every
@@ -43,7 +47,13 @@ class DiscoveryClient(
     private val localAddress: () -> InetAddress?,
 ) {
     interface Listener {
-        fun onServerDiscovered(serverIp: String, serverName: String, pingMs: Long)
+        fun onServerDiscovered(
+            serverIp: String,
+            serverName: String,
+            pingMs: Long,
+            inGame: Boolean = false,
+            allowJoinInProgress: Boolean = true,
+        )
         fun onDiscoveryFailed(errorReason: String?)
     }
 
@@ -83,9 +93,13 @@ class DiscoveryClient(
                     val msg = String(packet.data, 0, packet.length).trim()
                     if (msg.startsWith(WireProtocol.BEACON_PREFIX) || msg.startsWith(WireProtocol.MESSAGE_PREFIX + WireProtocol.NETMSG_SERVERREPLY)) {
                         val serverIp = packet.address.hostAddress ?: continue
-                        val serverName = if (msg.startsWith(WireProtocol.BEACON_PREFIX)) msg.substring(WireProtocol.BEACON_PREFIX.length) else "SimpleCoil Server"
-                        Log.i(TAG, "Discovered server: $serverName at $serverIp (ping $pingMs ms)")
-                        listener?.onServerDiscovered(serverIp, serverName, pingMs)
+                        val rawPayload = if (msg.startsWith(WireProtocol.BEACON_PREFIX)) msg.substring(WireProtocol.BEACON_PREFIX.length) else "SimpleCoil Server"
+                        val parts = rawPayload.split("|")
+                        val serverName = parts[0]
+                        val inGame = parts.any { it == "inGame=1" }
+                        val allowJoin = !parts.any { it == "allowJoin=0" }
+                        Log.i(TAG, "Discovered server: $serverName at $serverIp (ping $pingMs ms, inGame $inGame, allowJoin $allowJoin)")
+                        listener?.onServerDiscovered(serverIp, serverName, pingMs, inGame, allowJoin)
                     }
                 } catch (ignored: SocketTimeoutException) {
                     // Send query again periodically

@@ -141,6 +141,7 @@
     <string name="server_picker_hint">Schalte deinen Server ein. Niedrigerer Ping hat mehr Balken.</string>
     <string name="server_picker_searching">Suche nach Servern…</string>
     <string name="server_picker_autoconnect">Verbinden in %1$d s</string>
+    <string name="server_picker_in_progress">Spiel läuft: bitte warten zum Beitreten</string>
     <string name="game_limit_button">Spiellimits</string>
     <string name="offline_game_settings">Spieleinstellungen</string>
     <string name="game_limit_title">Wann soll das Spiel enden?</string>

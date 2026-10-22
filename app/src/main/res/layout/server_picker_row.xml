@@ -37,36 +37,30 @@
             android:textSize="16sp"
             android:fontFamily="sans-serif-medium" />
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/server_address_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:maxLines="1"
+            android:textColor="@color/sc_text_muted"
+            android:textSize="12sp" />
 
-            <TextView
-                android:id="@+id/server_address_tv"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textColor="@color/sc_text_muted"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/server_status_tv"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_pill"
-                android:backgroundTint="@color/sc_orange_container"
-                android:maxLines="1"
-                android:paddingStart="8dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="2dp"
-                android:textColor="@color/sc_on_orange_container"
-                android:textSize="11sp"
-                android:visibility="gone" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/server_status_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_pill"
+            android:backgroundTint="@color/sc_orange_container"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:paddingStart="8dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="2dp"
+            android:textColor="@color/sc_on_orange_container"
+            android:textSize="11sp"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

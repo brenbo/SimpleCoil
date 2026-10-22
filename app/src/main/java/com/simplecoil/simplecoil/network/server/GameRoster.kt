@@ -111,6 +111,8 @@ class GameRoster @JvmOverloads constructor(
     private val connections = LinkedHashMap<Int, Connection>()
     /** Eliminations in the current game: [pairKey] (shooter id, victim id) → count. Cleared with the scores. */
     private val eliminationCounts = HashMap<Int, Int>()
+    /** Players who were present when the game started. Late joiners are excluded from scoreboards until reset. */
+    private val starters = HashSet<Byte>()
 
     // ---------------------------------------------------------------------------------------
     // Connections
@@ -219,6 +221,8 @@ class GameRoster @JvmOverloads constructor(
         gameId = 1L + random.nextInt(Int.MAX_VALUE - 1)
         resetScoresLocked()
         cacheByMac.clear()
+        starters.clear()
+        starters.addAll(byId.keys)
         for (record in byId.values) {
             if (record.blasterMac.isNotEmpty()) cacheByMac[record.blasterMac] = record
         }
@@ -258,10 +262,14 @@ class GameRoster @JvmOverloads constructor(
         repo.purgeDisconnectedPlayers(remainingIds)
         resetScoresLocked()
         cacheByMac.clear()
+        starters.clear()
         gameId = 0
         phase = SessionPhase.LOBBY
         return removed
     }
+
+    @Synchronized
+    fun starters(): Set<Byte> = HashSet(starters)
 
     @Synchronized
     fun resetScores() {
@@ -498,13 +506,20 @@ class GameRoster @JvmOverloads constructor(
 
     /** Who eliminated whom in the current game: every player in id order, and the non-zero cells. */
     @Synchronized
-    fun scoreMatrix(): Matrix {
+    fun scoreMatrix(isLate: ((Byte) -> Boolean)? = null): Matrix {
         val layout = settings.teamLayout
-        val players = byId.values.map {
+        val activeRecords = if (phase != SessionPhase.LOBBY && isLate != null) {
+            byId.values.filter { !isLate(it.playerId) }
+        } else {
+            byId.values
+        }
+        val players = activeRecords.map {
             val team = if (layout.mode.isFreeForAll) 1 else layout.teamOf(it.playerId)
             MatrixPlayer(it.playerId, it.name, team, it.connection != null)
         }
+        val activeIds = activeRecords.map { it.playerId.toInt() and 0xFF }.toSet()
         val cells = eliminationCounts.entries
+            .filter { (key, _) -> (key shr 8) in activeIds && (key and 0xFF) in activeIds }
             .sortedBy { it.key }
             .map { (key, count) -> MatrixCell((key shr 8).toByte(), key.toByte(), count) }
         return Matrix(players, cells, gameId)

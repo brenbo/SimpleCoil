@@ -56,7 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * A plain class; TcpServer, the service, hosts it.
  */
-class GameServer(
+class GameServer @JvmOverloads constructor(
     private val settings: GameSettingsRepository,
     private val players: PlayerRepository,
     private val gameState: GameStateRepository,
@@ -65,6 +65,7 @@ class GameServer(
     clock: () -> Long,
     /** Saves an admin's team mode as the operator's own choice. */
     saveTeamMode: (TeamMode) -> Unit = {},
+    liveGameProvider: () -> LiveGame? = { null },
 ) {
     @Volatile
     private var keepListening = false
@@ -81,7 +82,7 @@ class GameServer(
 
     @get:VisibleForTesting
     val roster = GameRoster(settings, players)
-    private val snapshots = SnapshotBuilder(roster, settings, players, gameState)
+    private val snapshots = SnapshotBuilder(roster, settings, players, gameState, liveGame = liveGameProvider)
     private val handler = ServerMessageHandler(this, roster, settings, players, gameState, events, saveTeamMode)
 
     @Volatile

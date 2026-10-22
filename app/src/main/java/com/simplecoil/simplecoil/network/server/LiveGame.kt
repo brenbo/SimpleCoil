@@ -108,6 +108,11 @@ class LiveGame(
     /** The game as played, for the post-game map. */
     val recorder = GameRecorder()
 
+    /** Players who joined late during this game and are sitting out until reset. */
+    val late: MutableSet<Int> = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<Int, Boolean>())
+
+    fun isLate(playerId: Int): Boolean = playerId in late
+
     /** What the last game's post-game map shows (kept after it ends). */
     @Volatile
     private var postGameMap = PostGameMap.FULL
@@ -341,7 +346,7 @@ class LiveGame(
         // a phone that drops and comes back keeps its place). Anyone new after that is a late
         // joiner, whom the mode may sit out
         val starters = roster().toHashSet()
-        val late = HashSet<Int>()
+        late.clear()
         while (true) {
             for (id in players().keys) {
                 if (id in starters || id in late) continue

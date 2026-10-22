@@ -356,6 +356,9 @@ class BlasterSessionEngine(
     /** Full disconnect: forget the shot count and restart the battery average. */
     fun onBlasterReset() {
         lastShotCount = 0
+        savedShots = null
+        savedReserve = null
+        isReconnecting = false
         battery.reset()
     }
 
@@ -415,8 +418,8 @@ class BlasterSessionEngine(
             reloading = RELOADING_OUT_OF_BOUNDS
             return
         }
-        // A reload the player asked for uses a magazine from a limited reserve; a respawn doesn't
-        if (reloading == RELOADING_STARTED) reserve?.let {
+        // A reload the player asked for uses a magazine from a limited reserve; a respawn or reconnection doesn't
+        if (reloading == RELOADING_STARTED && !isReconnecting) reserve?.let {
             setAmmoReserve((it - 1).coerceAtLeast(0))
             // That was the last spare: this magazine is all there is
             if (it == 1) emit(SessionEffect.Sound(SessionSound.LAST_MAG))
@@ -424,8 +427,9 @@ class BlasterSessionEngine(
         reloading = RELOADING_FINISHING
         emptyTriggerCount = 0
         Log.d(TAG, "Finishing reload")
-        setShotsRemaining(config.fullReload)
-        blaster.finishReload(config.playerId, config.fullReload)
+        val targetShots = if (isReconnecting) (savedShots ?: config.fullReload) else config.fullReload
+        setShotsRemaining(targetShots)
+        blaster.finishReload(config.playerId, targetShots)
     }
 
     private fun onWriteFinished() {
@@ -543,6 +547,9 @@ class BlasterSessionEngine(
 
     /** Magazines left with limited ammo; null for unlimited. */
     private var reserve: Int? = null
+    private var savedShots: Byte? = null
+    private var savedReserve: Int? = null
+    private var isReconnecting = false
 
     /** Shot modes a power-up allows on top of the server's, until the player is eliminated. */
     private var grantedShotModes = emptySet<Int>()
@@ -552,6 +559,7 @@ class BlasterSessionEngine(
     /** Limited ammo: [magazines] left (null: unlimited, as before). */
     fun setAmmoReserve(magazines: Int?) {
         reserve = magazines
+        savedReserve = magazines
         _state.update { it.copy(reserve = magazines) }
     }
 
@@ -642,6 +650,7 @@ class BlasterSessionEngine(
     private fun setShotsRemaining(shotsRemaining: Byte) {
         _state.update { it.copy(shotsRemaining = shotsRemaining) }
         lastShotCount = shotsRemaining
+        savedShots = shotsRemaining
     }
 
     // ---------------------------------------------------------------------------------------
@@ -769,6 +778,7 @@ class BlasterSessionEngine(
     private fun processTelemetry(telemetry: GattProtocolHandler.TelemetryData) {
         val shotsRemaining = telemetry.shotsRemaining
         val useNetwork = network?.useNetwork == true
+        val isReconnection = hasConnectedToBlaster && (savedShots != null || savedReserve != null)
         if (!isCommunicating) {
             isCommunicating = true
             hasConnectedToBlaster = true
@@ -795,6 +805,23 @@ class BlasterSessionEngine(
                 delay(FIRST_PACKET_RECOIL_DELAY_MILLIS)
                 applyCurrentRecoilSetting()
             }
+            if (isReconnection) {
+                val restoreShots = savedShots ?: config.fullReload
+                val restoreReserve = savedReserve
+                Log.d(TAG, "Reconnecting blaster: restoring shots=$restoreShots, reserve=$restoreReserve")
+                isReconnecting = true
+                if (restoreReserve != null) {
+                    setAmmoReserve(restoreReserve)
+                }
+                setShotsRemaining(restoreShots)
+                if (restoreShots != config.fullReload) {
+                    blaster.finishReload(config.playerId, restoreShots)
+                }
+                scope.launch {
+                    delay(2000L)
+                    isReconnecting = false
+                }
+            }
             emit(SessionEffect.CommunicationStarted)
         }
         if (telemetry.triggerCounter != lastTriggerCount) {
@@ -810,7 +837,7 @@ class BlasterSessionEngine(
            press toggles exactly once however many packets show the button held down. */
         if (telemetry.reloadCounter != lastReloadButtonCount) {
             lastReloadButtonCount = telemetry.reloadCounter
-            if (shotsRemaining != config.fullReload) startReload()
+            if (shotsRemaining != config.fullReload && !isReconnecting) startReload()
         }
         processThumbButton(telemetry)
         processReloadHold(telemetry)
@@ -890,15 +917,20 @@ class BlasterSessionEngine(
 
         /* We monitor the last shot count rather than trigger pulls here so we know when to
            update the displayed shots remaining and play shooting sounds. pew! pew! */
-        if (lastShotCount != shotsRemaining) {
-            setShotsRemaining(shotsRemaining)
-            if (shotsRemaining != config.fullReload && reloading == RELOADING_NONE) {
+        val effectiveShots = if (isReconnecting && telemetry.shotsRemaining.toInt() == 0) {
+            savedShots ?: config.fullReload
+        } else {
+            telemetry.shotsRemaining
+        }
+        if (lastShotCount != effectiveShots) {
+            setShotsRemaining(effectiveShots)
+            if (effectiveShots != config.fullReload && reloading == RELOADING_NONE && !isReconnecting) {
                 emit(SessionEffect.Sound(if (currentShotMode == GameSettingsRepository.SHOT_MODE_SINGLE) SessionSound.SHOT else SessionSound.SHOT_AUTO))
                 if (useNetwork && lastShotFired < wallClock()) {
                     lastShotFired = wallClock() + HIT_ANIMATION_DURATION_MILLISECONDS
                     network?.sendShotFired()
                 }
-                if (config.reloadOnEmpty && shotsRemaining.toInt() == 0 && config.gameState != GameStateRepository.GAME_STATE_NONE) startReload()
+                if (config.reloadOnEmpty && effectiveShots.toInt() == 0 && config.gameState != GameStateRepository.GAME_STATE_NONE) startReload()
             }
         }
     }

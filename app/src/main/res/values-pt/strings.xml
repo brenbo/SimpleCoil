@@ -141,6 +141,7 @@
     <string name="server_picker_hint">Ligue seu servidor. Ping mais baixo tem mais barras.</string>
     <string name="server_picker_searching">Procurando servidores…</string>
     <string name="server_picker_autoconnect">Conectando em %1$d s</string>
+    <string name="server_picker_in_progress">Jogo em andamento: aguarde para entrar</string>
     <string name="game_limit_button">Limites do jogo</string>
     <string name="offline_game_settings">Configurações do jogo</string>
     <string name="game_limit_title">Quando o jogo deve terminar?</string>

@@ -96,7 +96,13 @@ class UDPListenerService : Service() {
 
     fun startDiscovery() {
         client.start(object : DiscoveryClient.Listener {
-            override fun onServerDiscovered(serverIp: String, serverName: String, pingMs: Long) {
+            override fun onServerDiscovered(
+                serverIp: String,
+                serverName: String,
+                pingMs: Long,
+                inGame: Boolean,
+                allowJoinInProgress: Boolean,
+            ) {
                 val now = android.os.SystemClock.elapsedRealtime()
                 val old = serverMap[serverIp]
                 val smoothedPing = if (old != null && old.pingMs > 0) {
@@ -104,7 +110,9 @@ class UDPListenerService : Service() {
                 } else {
                     pingMs
                 }
-                serverMap[serverIp] = com.simplecoil.simplecoil.network.discovery.DiscoveredServer(serverIp, serverName, smoothedPing, now)
+                serverMap[serverIp] = com.simplecoil.simplecoil.network.discovery.DiscoveredServer(
+                    serverIp, serverName, smoothedPing, now, inGame, allowJoinInProgress
+                )
                 val active = serverMap.values.filter { now - it.lastSeenMs < 2_500L }
                 _discoveredServers.value = active
             }
