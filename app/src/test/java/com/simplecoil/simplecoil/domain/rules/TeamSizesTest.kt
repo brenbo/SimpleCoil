@@ -24,31 +24,31 @@ class TeamSizesTest {
 
     @Test
     fun settingATeam_theLastTeamGetsTheRest() {
-        assertArrayEquals(intArrayOf(20, 43), TeamSizes.adjust(intArrayOf(32, 31), 0, 20))
-        assertArrayEquals(intArrayOf(16, 30, 16, 1), TeamSizes.adjust(intArrayOf(16, 16, 16, 15), 1, 30))
+        assertArrayEquals(intArrayOf(20, 44), TeamSizes.adjust(intArrayOf(32, 32), 0, 20))
+        assertArrayEquals(intArrayOf(16, 30, 16, 2), TeamSizes.adjust(intArrayOf(16, 16, 16, 16), 1, 30))
     }
 
     @Test
     fun noTeamGoesBelowOne() {
-        assertArrayEquals(intArrayOf(62, 1), TeamSizes.adjust(intArrayOf(32, 31), 0, 99))
-        assertArrayEquals(intArrayOf(1, 62), TeamSizes.adjust(intArrayOf(32, 31), 0, 0))
+        assertArrayEquals(intArrayOf(63, 1), TeamSizes.adjust(intArrayOf(32, 32), 0, 99))
+        assertArrayEquals(intArrayOf(1, 63), TeamSizes.adjust(intArrayOf(32, 32), 0, 0))
         // Four teams: the last keeps one, whatever the others take
-        assertArrayEquals(intArrayOf(16, 16, 30, 1), TeamSizes.adjust(intArrayOf(16, 16, 16, 15), 2, 40))
+        assertArrayEquals(intArrayOf(16, 16, 31, 1), TeamSizes.adjust(intArrayOf(16, 16, 16, 16), 2, 40))
     }
 
     @Test
     fun settingTheLastTeam_theTeamBeforeItGetsTheRest() {
-        assertArrayEquals(intArrayOf(53, 10), TeamSizes.adjust(intArrayOf(32, 31), 1, 10))
-        assertArrayEquals(intArrayOf(16, 16, 11, 20), TeamSizes.adjust(intArrayOf(16, 16, 16, 15), 3, 20))
-        assertArrayEquals(intArrayOf(16, 16, 1, 30), TeamSizes.adjust(intArrayOf(16, 16, 16, 15), 3, 99))
+        assertArrayEquals(intArrayOf(54, 10), TeamSizes.adjust(intArrayOf(32, 32), 1, 10))
+        assertArrayEquals(intArrayOf(16, 16, 12, 20), TeamSizes.adjust(intArrayOf(16, 16, 16, 16), 3, 20))
+        assertArrayEquals(intArrayOf(16, 16, 1, 31), TeamSizes.adjust(intArrayOf(16, 16, 16, 16), 3, 99))
     }
 
     @Test
     fun evenSplits_alwaysFillEverySlot() {
-        assertArrayEquals(intArrayOf(32, 31), TeamSizes.even(2))
-        assertArrayEquals(intArrayOf(16, 16, 16, 15), TeamSizes.even(4))
-        assertEquals(63, TeamSizes.even(3).sum())
-        assertEquals(62, TeamSizes.maxSize(2))
-        assertEquals(60, TeamSizes.maxSize(4))
+        assertArrayEquals(intArrayOf(32, 32), TeamSizes.even(2))
+        assertArrayEquals(intArrayOf(16, 16, 16, 16), TeamSizes.even(4))
+        assertEquals(64, TeamSizes.even(3).sum())
+        assertEquals(63, TeamSizes.maxSize(2))
+        assertEquals(61, TeamSizes.maxSize(4))
     }
 }

@@ -38,7 +38,7 @@ SimpleCoil:07JSON
   "gamemode": 2,
   "teamsizes": [
     32,
-    31
+    32
   ],
   "allowchooseteams": true,
   "gamestate": 0,

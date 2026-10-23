@@ -24,7 +24,7 @@ import com.simplecoil.simplecoil.data.repository.PlayerRepository
  * takes one instance sees a consistent mode and sizes even while another thread swaps in a new
  * layout (STATE_CONSOLIDATION_DESIGN.md §3.3).
  *
- * Player ids 1..[MAX_PLAYER_ID] (63) are dealt out to the teams in order: with sizes [16, 16, 16, 15],
+ * Player ids 1..[MAX_PLAYER_ID] (64) are dealt out to the teams in order: with sizes [16, 16, 16, 16],
  * ids 1-16 are team 1, 17-32 team 2, and so on. Free for all keeps a two-team size array, as the
  * protocol always has, so older clients and servers read it the same way.
  */
@@ -95,8 +95,8 @@ class TeamLayout private constructor(
 
         @JvmStatic
         fun defaultFor(mode: TeamMode): TeamLayout =
-            if (mode == TeamMode.FOUR_TEAMS) TeamLayout(mode, intArrayOf(16, 16, 16, 15))
-            else TeamLayout(mode, intArrayOf(32, 31))
+            if (mode == TeamMode.FOUR_TEAMS) TeamLayout(mode, intArrayOf(16, 16, 16, 16))
+            else TeamLayout(mode, intArrayOf(32, 32))
 
         /** [mode] with [sizes] (see [withSizes]). */
         @JvmStatic

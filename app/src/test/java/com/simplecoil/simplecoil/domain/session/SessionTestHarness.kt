@@ -118,7 +118,7 @@ class SessionTestHarness {
     /** Packet builder starting from an idle pistol: 30 shots, battery 0x10, player 5. */
     class Packet {
         val bytes: ByteArray = RecoilProtocolFixtures.GOLDEN_IDLE.clone().also {
-            it[GattProtocolHandler.RECOIL_OFFSET_TEAM] = 5
+            it[GattProtocolHandler.RECOIL_OFFSET_TEAM] = 4 // the blaster's id for player 5 (one less)
         }
         fun set(offset: Int, value: Int) = apply { bytes[offset] = value.toByte() }
         fun shots(n: Int) = set(GattProtocolHandler.RECOIL_OFFSET_SHOTS_REMAINING, n)
@@ -130,10 +130,15 @@ class SessionTestHarness {
         fun power(n: Int) = set(GattProtocolHandler.RECOIL_OFFSET_POWER_COUNTER, n)
         fun thumbHeld() = set(GattProtocolHandler.RECOIL_OFFSET_BUTTONS, GattProtocolHandler.RECOIL_BUTTON_THUMB)
         fun reloadHeld() = set(GattProtocolHandler.RECOIL_OFFSET_BUTTONS, GattProtocolHandler.RECOIL_BUTTON_RELOAD)
-        fun player(n: Int) = set(GattProtocolHandler.RECOIL_OFFSET_TEAM, n)
+        // Player [n] as the app numbers players: the blaster sends one less
+        fun player(n: Int) = set(GattProtocolHandler.RECOIL_OFFSET_TEAM, n - 1)
         fun battery(n: Int) = set(GattProtocolHandler.RECOIL_OFFSET_BATTERY_LEVEL, n)
-        fun hit1(hitBy: Int, shotIdByte: Int) = set(GattProtocolHandler.RECOIL_OFFSET_HIT_BY1, hitBy)
+        // A hit by [hitBy] as the app sees it (a player id shifted up two bits, or a grenade): the
+        // blaster sends the shooter's id one less, with the sensor that took it
+        fun hit1(hitBy: Int, shotIdByte: Int) = set(GattProtocolHandler.RECOIL_OFFSET_HIT_BY1, blasterHitBy(hitBy))
+            .set(GattProtocolHandler.RECOIL_OFFSET_HIT_SENSORS1, if (hitBy == 0) 0 else 1)
             .set(GattProtocolHandler.RECOIL_OFFSET_HIT_BY1_SHOTID, shotIdByte)
+        private fun blasterHitBy(hitBy: Int) = when (hitBy) { 0, PlayerRepository.GRENADE_PLAYER_ID -> hitBy; else -> hitBy - 4 }
         fun noHit() = hit1(0, 0)
     }
 

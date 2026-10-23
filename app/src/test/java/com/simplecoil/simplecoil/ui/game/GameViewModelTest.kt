@@ -165,7 +165,16 @@ class GameViewModelTest {
         vm.onTeamPlusPressed()
         assertEquals(1.toByte(), players.playerID)
         assertEquals(1, prefs.values["SelectedPlayerID"])
-        assertEquals(listOf("team:63", "team:1"), rec.ble)
+        assertEquals(listOf("team:64", "team:1"), rec.ble)
+    }
+
+    @Test
+    fun offline_noPlayerYet_isPlayerOne_neverAutoSort() {
+        // e.g. the id saved from auto sort on a server: offline there's nothing to sort
+        players.playerID = 0
+        vm.onPlayerNameEntered("Zed") // shows the team again
+        verify(screen, never()).showTeam(TeamDisplay.AutoSort)
+        assertEquals(1.toByte(), players.playerID)
     }
 
     @Test
@@ -607,9 +616,9 @@ class GameViewModelTest {
     @Test
     fun teamSizes_fromTheDialog_areSentToTheServer_unlessTheyDontFillEverySlot() {
         assertFalse(vm.onTeamSizesEntered(intArrayOf(10, 10)))
-        assertFalse(vm.onTeamSizesEntered(intArrayOf(0, 63)))
-        assertTrue(vm.onTeamSizesEntered(intArrayOf(40, 23)))
-        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_TEAMSIZES40,23")
+        assertFalse(vm.onTeamSizesEntered(intArrayOf(0, 64)))
+        assertTrue(vm.onTeamSizesEntered(intArrayOf(40, 24)))
+        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_TEAMSIZES40,24")
     }
 
     private fun joinServer() {

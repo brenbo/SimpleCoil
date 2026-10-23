@@ -34,9 +34,10 @@ public class GameSettingsRepository {
     }
 
     // Constants
-    // The most players: a blaster reports who hit it as their id shifted up 2 bits in one byte, so
-    // ids above 63 can't come back (and 0 is "no hit")
-    public static final byte MAX_PLAYER_ID = (byte) 0x3F;
+    // The most players, 64. A blaster reports who hit it as their id shifted up 2 bits in one byte,
+    // so its ids are 0..63; the app numbers players 1..64 (0 is "nobody") and tells the blaster one
+    // less (GattProtocolHandler.blasterId). A hit from IR id 0 is told from no hit by its sensor byte.
+    public static final byte MAX_PLAYER_ID = (byte) 64;
     public static final byte RELOAD_COUNT = (byte) 30;
     public static final long RESPAWN_TIME_SECONDS = 10;
     public static final long RESPAWN_SHIELD_TIME_SECONDS = 3;

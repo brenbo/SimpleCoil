@@ -58,18 +58,18 @@ public class GameSettingsRepositoryTest {
     public void testTeamSizeCalculation2Teams() {
         repository.setTeamMode(TeamMode.TWO_TEAMS);
         TeamLayout layout = repository.getTeamLayout();
-        assertArrayEquals(new int[]{32, 31}, layout.teamSizes());
+        assertArrayEquals(new int[]{32, 32}, layout.teamSizes());
         assertEquals(1, layout.teamStartId(1));
         assertEquals(32, layout.teamEndId(1));
         assertEquals(33, layout.teamStartId(2));
-        assertEquals(63, layout.teamEndId(2));
+        assertEquals(64, layout.teamEndId(2));
     }
 
     @Test
     public void testTeamSizeCalculation4Teams() {
         repository.setTeamMode(TeamMode.FOUR_TEAMS);
         TeamLayout layout = repository.getTeamLayout();
-        assertArrayEquals(new int[]{16, 16, 16, 15}, layout.teamSizes());
+        assertArrayEquals(new int[]{16, 16, 16, 16}, layout.teamSizes());
         assertEquals(1, layout.teamStartId(1));
         assertEquals(16, layout.teamEndId(1));
         assertEquals(17, layout.teamStartId(2));
@@ -77,45 +77,45 @@ public class GameSettingsRepositoryTest {
         assertEquals(33, layout.teamStartId(3));
         assertEquals(48, layout.teamEndId(3));
         assertEquals(49, layout.teamStartId(4));
-        assertEquals(63, layout.teamEndId(4));
+        assertEquals(64, layout.teamEndId(4));
     }
 
     @Test
     public void testCustomTeamSizes() {
         repository.setTeamMode(TeamMode.TWO_TEAMS);
-        repository.setTeamSizes(new int[]{20, 43});
-        assertArrayEquals(new int[]{20, 43}, repository.getTeamLayout().teamSizes());
+        repository.setTeamSizes(new int[]{20, 44});
+        assertArrayEquals(new int[]{20, 44}, repository.getTeamLayout().teamSizes());
 
         // Setting the same team mode again keeps custom team sizes
         repository.setTeamMode(TeamMode.TWO_TEAMS);
         TeamLayout layout = repository.getTeamLayout();
-        assertArrayEquals(new int[]{20, 43}, layout.teamSizes());
+        assertArrayEquals(new int[]{20, 44}, layout.teamSizes());
 
         assertEquals(1, layout.teamStartId(1));
         assertEquals(20, layout.teamEndId(1));
         assertEquals(21, layout.teamStartId(2));
-        assertEquals(63, layout.teamEndId(2));
+        assertEquals(64, layout.teamEndId(2));
 
         // A different mode starts from its defaults
         repository.setTeamMode(TeamMode.FOUR_TEAMS);
-        assertArrayEquals(new int[]{16, 16, 16, 15}, repository.getTeamLayout().teamSizes());
+        assertArrayEquals(new int[]{16, 16, 16, 16}, repository.getTeamLayout().teamSizes());
     }
 
     @Test
     public void testInvalidTeamSizesFallBackToDefaults() {
         repository.setTeamMode(TeamMode.FOUR_TEAMS);
         repository.setTeamSizes(new int[]{32, 32}); // two sizes for four teams
-        assertArrayEquals(new int[]{16, 16, 16, 15}, repository.getTeamLayout().teamSizes());
+        assertArrayEquals(new int[]{16, 16, 16, 16}, repository.getTeamLayout().teamSizes());
         repository.setTeamSizes(new int[]{10, 10, 10, 10}); // doesn't add up to MAX_PLAYER_ID
-        assertArrayEquals(new int[]{16, 16, 16, 15}, repository.getTeamLayout().teamSizes());
+        assertArrayEquals(new int[]{16, 16, 16, 16}, repository.getTeamLayout().teamSizes());
     }
 
     @Test
     public void testServerGameInfoAppliesModeAndSizesTogether() {
-        repository.setTeamModeAndSizes(TeamMode.FOUR_TEAMS, new int[]{5, 9, 9, 40});
+        repository.setTeamModeAndSizes(TeamMode.FOUR_TEAMS, new int[]{5, 9, 9, 41});
         TeamLayout layout = repository.getTeamLayout();
         assertEquals(TeamMode.FOUR_TEAMS, layout.getMode());
-        assertArrayEquals(new int[]{5, 9, 9, 40}, layout.teamSizes());
+        assertArrayEquals(new int[]{5, 9, 9, 41}, layout.teamSizes());
         assertEquals(2, layout.teamOf((byte) 6));
     }
 
@@ -127,13 +127,13 @@ public class GameSettingsRepositoryTest {
         try {
             repository.setTeamMode(TeamMode.TWO_TEAMS); // unchanged
             repository.setTeamMode(TeamMode.FREE_FOR_ALL);
-            repository.setTeamSizes(new int[]{20, 43});
+            repository.setTeamSizes(new int[]{20, 44});
         } finally {
             repository.removeTeamLayoutListener(listener);
         }
         assertEquals(2, heard.size());
         assertEquals(TeamMode.FREE_FOR_ALL, heard.get(0).getMode());
-        assertArrayEquals(new int[]{20, 43}, heard.get(1).teamSizes());
+        assertArrayEquals(new int[]{20, 44}, heard.get(1).teamSizes());
     }
 
     @Test
@@ -166,7 +166,7 @@ public class GameSettingsRepositoryTest {
                     for (int j = 0; j < iterations; j++) {
                         if (threadId % 2 == 0) {
                             repository.setTeamMode((j % 2 == 0) ? TeamMode.FOUR_TEAMS : TeamMode.TWO_TEAMS);
-                            if (j % 3 == 0) repository.setTeamSizes(new int[]{20, 43});
+                            if (j % 3 == 0) repository.setTeamSizes(new int[]{20, 44});
                         } else {
                             TeamLayout layout = repository.getTeamLayout();
                             int[] sizes = layout.teamSizes();

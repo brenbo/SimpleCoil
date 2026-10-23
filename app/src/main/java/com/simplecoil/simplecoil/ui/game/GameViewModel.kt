@@ -586,7 +586,8 @@ class GameViewModel(
     }
 
     private fun displayCurrentTeam() {
-        if ((net.useNetwork || selectedPlayerId.toInt() == 0) && playerRepo.playerID.toInt() == 0) {
+        // Auto sort is the server's: offline, no player yet means player 1
+        if (net.useNetwork && playerRepo.playerID.toInt() == 0) {
             screen?.showTeam(TeamDisplay.AutoSort)
             return
         }

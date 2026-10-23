@@ -506,7 +506,7 @@ class TcpServerLoopbackTest {
         a.mesg(WireProtocol.NETMSG_PLAYERDATAREQUEST) // processed after the mode change
         a.awaitJson(WireKeys.PLAYERDATA)
         assertEquals(TeamMode.TWO_TEAMS, settings.teamMode)
-        assertArrayEquals(intArrayOf(32, 31), settings.teamLayout.teamSizes())
+        assertArrayEquals(intArrayOf(32, 32), settings.teamLayout.teamSizes())
     }
 
     // ------------------------------------------------------------------------------------------
@@ -901,7 +901,7 @@ class TcpServerLoopbackTest {
 
     @Test
     fun applyPlayerSettings_toAFullTeam_storesTheSettingsWhereThePlayerIs() {
-        settings.setTeamSizes(intArrayOf(62, 1))
+        settings.setTeamSizes(intArrayOf(63, 1))
         val joined = listOf(join("Alpha", "AA:00").second, join("Bravo", "BB:00").second)
         val layout = settings.teamLayout
         val onSmallTeam = joined.single { layout.teamOf(it) == 2 } // the one slot on team 2 is taken
@@ -1004,10 +1004,10 @@ class TcpServerLoopbackTest {
     @Test
     fun changeTeamMode_afterAGame_resetsFirst_andUsesTheDefaultSizes() {
         val (_, _, idB) = endedGameWithBravoAway()
-        settings.setTeamSizes(intArrayOf(10, 53))
+        settings.setTeamSizes(intArrayOf(10, 54))
         assertTrue(server.changeTeamMode(TeamMode.TWO_TEAMS))
         assertEquals(SessionPhase.LOBBY, server.snapshot.value.phase)
-        assertArrayEquals(intArrayOf(32, 31), server.snapshot.value.settings.teamLayout.teamSizes())
+        assertArrayEquals(intArrayOf(32, 32), server.snapshot.value.settings.teamLayout.teamSizes())
         assertNull(score(idB))
         assertFalse(server.changeTeamMode(TeamMode.FOUR_TEAMS)) // nothing left to reset
     }

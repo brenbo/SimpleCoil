@@ -108,11 +108,15 @@ class BlasterManager(private val scope: CoroutineScope) : GattEventSink {
         }
     }
 
+    /** The blaster's IR id for the app's player [playerId] (one less; see GattProtocolHandler.blasterId). */
+    private fun irId(playerId: Byte): Byte = GattProtocolHandler.blasterId(maxOf(playerId, 1.toByte()))
+
+    /** Sets the blaster to the app's player [playerId] (1..64). */
     fun setTeam(playerId: Byte) {
         val service = bluetoothLeService ?: return
         val characteristic = commandCharacteristic ?: return
         if (playerId < 1) return
-        val command = GattProtocolHandler.buildSetTeamCommand(commandId, playerId)
+        val command = GattProtocolHandler.buildSetTeamCommand(commandId, GattProtocolHandler.blasterId(playerId))
         commandId = (commandId + GattProtocolHandler.COMMAND_ID_INCREMENT).toByte()
         service.writeCharacteristic(characteristic, command, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }
@@ -120,7 +124,7 @@ class BlasterManager(private val scope: CoroutineScope) : GattEventSink {
     fun startReload(playerId: Byte) {
         val service = bluetoothLeService ?: return
         val characteristic = commandCharacteristic ?: return
-        val command = GattProtocolHandler.buildStartReloadCommand(commandId, playerId)
+        val command = GattProtocolHandler.buildStartReloadCommand(commandId, irId(playerId))
         commandId = (commandId + GattProtocolHandler.COMMAND_ID_INCREMENT).toByte()
         service.writeCharacteristic(characteristic, command, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }
@@ -128,7 +132,7 @@ class BlasterManager(private val scope: CoroutineScope) : GattEventSink {
     fun finishReload(playerId: Byte, fullReloadCount: Byte) {
         val service = bluetoothLeService ?: return
         val characteristic = commandCharacteristic ?: return
-        val command = GattProtocolHandler.buildFinishReloadCommand(commandId, playerId, weaponProfile, fullReloadCount)
+        val command = GattProtocolHandler.buildFinishReloadCommand(commandId, irId(playerId), weaponProfile, fullReloadCount)
         commandId = (commandId + GattProtocolHandler.COMMAND_ID_INCREMENT).toByte()
         service.writeCharacteristic(characteristic, command, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
     }

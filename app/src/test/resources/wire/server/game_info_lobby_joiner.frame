@@ -27,7 +27,7 @@ SimpleCoil:07JSON
   "limits": {},
   "teamsizes": [
     32,
-    31
+    32
   ],
   "onlyserversettings": false,
   "allowchooseteams": true

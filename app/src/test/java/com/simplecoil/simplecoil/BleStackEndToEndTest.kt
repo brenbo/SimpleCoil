@@ -188,7 +188,7 @@ class BleStackEndToEndTest {
         events.clear()
         service.getGattCallback().onCharacteristicChanged(callbackGatt, telemetryChar, RecoilProtocolFixtures.GOLDEN_DOUBLE_HIT)
         scope.testScheduler.runCurrent()
-        assertEquals(listOf("telemetry", "playerId:1", "battery", "hit:4/3/1", "hit:12/6/2"), events)
+        assertEquals(listOf("telemetry", "playerId:2", "battery", "hit:8/3/1", "hit:16/6/2"), events)
     }
 
     @Test
@@ -203,10 +203,11 @@ class BleStackEndToEndTest {
         service.getGattCallback().onCharacteristicWrite(callbackGatt, commandChar, BluetoothGatt.GATT_SUCCESS)
         scope.testScheduler.runCurrent()
 
+        // The app's player 5 is the blaster's IR id 4
         assertEquals(listOf(
-            "00 00 80 00 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
-            "10 00 02 00 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
-            "20 00 04 00 05 00 1E 00 00 00 00 00 00 00 00 00 00 00 00 00",
+            "00 00 80 00 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+            "10 00 02 00 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
+            "20 00 04 00 04 00 1E 00 00 00 00 00 00 00 00 00 00 00 00 00",
         ), writes(commandChar))
         assertEquals(listOf("writeFinished", "writeFinished"), events)
     }
@@ -218,7 +219,7 @@ class BleStackEndToEndTest {
         service.getGattCallback().onCharacteristicChanged(callbackGatt, telemetryChar, RecoilProtocolFixtures.GOLDEN_IDLE)
         service.getGattCallback().onCharacteristicWrite(callbackGatt, configChar, BluetoothGatt.GATT_SUCCESS)
         scope.testScheduler.runCurrent()
-        assertEquals(listOf("connected", "servicesDiscovered", "telemetry", "playerId:1", "battery", "writeFinished"), events)
+        assertEquals(listOf("connected", "servicesDiscovered", "telemetry", "playerId:2", "battery", "writeFinished"), events)
     }
 
     @Test

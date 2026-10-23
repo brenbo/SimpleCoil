@@ -45,12 +45,12 @@ class GattProtocolHandlerTest {
         val telemetry = GattProtocolHandler.parseTelemetry(data)
         assertNotNull(telemetry)
         telemetry!!
-        assertNum(3, telemetry.playerId)
+        assertNum(4, telemetry.playerId) // IR id 3 is the app's player 4
         assertNum(25, telemetry.shotsRemaining)
         assertNum(4, telemetry.triggerCounter)
         assertNum(0x20.toByte(), telemetry.reloadCounter)
         assertNum(12, telemetry.batteryLevel)
-        assertNum(5, telemetry.hitByPlayer1)
+        assertNum(9, telemetry.hitByPlayer1) // the IR id moved up one (still shifted two bits)
         assertNum(3, telemetry.shotId1)
     }
 

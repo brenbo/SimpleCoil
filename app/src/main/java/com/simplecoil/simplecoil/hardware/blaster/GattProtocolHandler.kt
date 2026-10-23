@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil.hardware.blaster
 
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
+import com.simplecoil.simplecoil.data.repository.PlayerRepository
 
 /**
  * Telemetry byte offset parsing and command/config packet construction for Bluetooth LE
@@ -33,8 +34,11 @@ object GattProtocolHandler {
     const val RECOIL_OFFSET_BATTERY_LEVEL = 7
     const val RECOIL_OFFSET_HIT_BY1_SHOTID = 8
     const val RECOIL_OFFSET_HIT_BY1 = 9
+    /** Which of the blaster's sensors took hit 1 (a bit each): non-zero for any hit, even from IR id 0. */
+    const val RECOIL_OFFSET_HIT_SENSORS1 = 10
     const val RECOIL_OFFSET_HIT_BY2_SHOTID = 11
     const val RECOIL_OFFSET_HIT_BY2 = 12
+    const val RECOIL_OFFSET_HIT_SENSORS2 = 13
     const val RECOIL_OFFSET_SHOTS_REMAINING = 14
     const val RECOIL_OFFSET_STATUS = 15
 
@@ -55,7 +59,33 @@ object GattProtocolHandler {
     private const val MIN_TELEMETRY_LENGTH = 16
 
     /**
-     * A parsed telemetry packet. [shotId1]/[shotId2] are the shot ids (low three bits);
+     * The blaster's IR id for the app's player [playerId]. The app numbers players 1..64 and keeps
+     * 0 for "nobody"; the blaster's ids are 0..63 (it reports a hit as its shooter's id shifted up
+     * two bits in one byte), so the blaster is always told one less.
+     */
+    @JvmStatic
+    fun blasterId(playerId: Byte): Byte = (playerId - 1).toByte()
+
+    /** The app's player for the blaster's IR id [blasterId] (see [blasterId]). */
+    @JvmStatic
+    fun appPlayerId(blasterId: Byte): Byte = (blasterId + 1).toByte()
+
+    /**
+     * Who hit the blaster, in the app's numbering, from the hit byte [raw] and its sensor byte
+     * [sensors]: 0 for no hit; a grenade's id as it comes; a player's id moved up one (it is still
+     * shifted up two bits, as the blaster sends it). A hit from IR id 0 has a raw byte of 0, so
+     * it's told from no hit by the sensors that took it.
+     */
+    @JvmStatic
+    fun appHitBy(raw: Int, sensors: Int): Int = when {
+        raw == PlayerRepository.GRENADE_PLAYER_ID -> raw
+        raw == 0 && sensors == 0 -> 0
+        else -> raw + (1 shl 2)
+    }
+
+    /**
+     * A parsed telemetry packet, in the app's player numbering ([playerId], [hitByPlayer1] and
+     * [hitByPlayer2]: see [blasterId]). [shotId1]/[shotId2] are the shot ids (low three bits);
      * [rawShotIdByte1]/[rawShotIdByte2] are the unmasked bytes, which grenades use to carry their
      * id (high nibble) and event (low nibble). [buttonsHeld] is the buttons-held bitmask
      * (RECOIL_BUTTON_*).
@@ -94,7 +124,7 @@ object GattProtocolHandler {
         val rawShotIdByte1 = data[RECOIL_OFFSET_HIT_BY1_SHOTID]
         val rawShotIdByte2 = data[RECOIL_OFFSET_HIT_BY2_SHOTID]
         return TelemetryData(
-            playerId = data[RECOIL_OFFSET_TEAM],
+            playerId = appPlayerId(data[RECOIL_OFFSET_TEAM]),
             shotsRemaining = data[RECOIL_OFFSET_SHOTS_REMAINING],
             triggerCounter = (reloadTrigger and 0x0F).toByte(),
             reloadCounter = (reloadTrigger and 0xF0).toByte(),
@@ -102,10 +132,10 @@ object GattProtocolHandler {
             powerCounter = data[RECOIL_OFFSET_POWER_COUNTER],
             batteryLevel = data[RECOIL_OFFSET_BATTERY_LEVEL],
             // Unsigned: IR ids above 127 (e.g. grenades, 167) are negative bytes.
-            hitByPlayer1 = data[RECOIL_OFFSET_HIT_BY1].toInt() and 0xFF,
+            hitByPlayer1 = appHitBy(data[RECOIL_OFFSET_HIT_BY1].toInt() and 0xFF, data[RECOIL_OFFSET_HIT_SENSORS1].toInt() and 0xFF),
             shotId1 = (rawShotIdByte1.toInt() and 0x07).toByte(),
             chargeLevel1 = (rawShotIdByte1.toInt() and 0x38).toByte(),
-            hitByPlayer2 = data[RECOIL_OFFSET_HIT_BY2].toInt() and 0xFF,
+            hitByPlayer2 = appHitBy(data[RECOIL_OFFSET_HIT_BY2].toInt() and 0xFF, data[RECOIL_OFFSET_HIT_SENSORS2].toInt() and 0xFF),
             shotId2 = (rawShotIdByte2.toInt() and 0x07).toByte(),
             chargeLevel2 = (rawShotIdByte2.toInt() and 0x38).toByte(),
             status = data[RECOIL_OFFSET_STATUS],

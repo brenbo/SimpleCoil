@@ -186,11 +186,11 @@ class SessionEndToEndTest {
         ), writes(commandChar))
         writeFinished()
 
-        // Hit by player 2 (IR 0x08), then the lethal hit.
-        notify(packet().also { it[9] = 0x08; it[8] = 0x3D })
+        // Hit by player 2 (IR id 1, 0x04 on the wire), then the lethal hit.
+        notify(packet().also { it[9] = 0x04; it[8] = 0x3D })
         notify(packet())
         advance(401) // HIT/OUT messages are limited to one per 400 ms
-        notify(packet().also { it[9] = 0x08; it[8] = 0x3E })
+        notify(packet().also { it[9] = 0x04; it[8] = 0x3E })
         assertEquals(listOf("SimpleCoil:07MESGHIT2", "SimpleCoil:07MESGOUT2", "ELIMINATED2 (reliable)"), sent())
         // Eliminated: stage 1 locks the blaster.
         assertEquals("20 00 02 00 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", writes(commandChar).last())

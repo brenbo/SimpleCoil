@@ -259,22 +259,22 @@ class BlasterManagerGattTest {
     @Test
     fun setTeam_writesToCommandCharacteristic() {
         connect()
-        manager.setTeam(5)
-        assertEquals("00 00 80 00 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
+        manager.setTeam(5) // the app's player 5 is the blaster's IR id 4
+        assertEquals("00 00 80 00 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
     }
 
     @Test
     fun startReload_writesToCommandCharacteristic() {
         connect()
         manager.startReload(7)
-        assertEquals("00 00 02 00 07 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
+        assertEquals("00 00 02 00 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
     }
 
     @Test
     fun finishReload_writesToCommandCharacteristicWithProfile0() {
         connect()
         manager.finishReload(7, 30)
-        assertEquals("00 00 04 00 07 00 1E 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
+        assertEquals("00 00 04 00 06 00 1E 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
     }
 
     @Test
@@ -333,7 +333,7 @@ class BlasterManagerGattTest {
         verifyNoWrites()
 
         manager.setTeam(0x7F)
-        assertEquals("00 00 80 00 7F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
+        assertEquals("00 00 80 00 7E 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", toHex(captureSingleWrite(commandChar)))
     }
 
     @Test
@@ -410,8 +410,8 @@ class BlasterManagerGattTest {
         serviceEvents.tryEmit(GattEvent.Telemetry(GOLDEN_HIT_BY_PLAYER_2))
         serviceEvents.tryEmit(GattEvent.Action(BluetoothLeService.CHARACTERISTIC_WRITE_FINISHED))
         advance(0)
-        assertEquals(listOf("connected:null", "type:1", "telemetry", "playerId:1", "battery:15/1",
-            "hit:8/5/primary", "writeFinished"), events)
+        assertEquals(listOf("connected:null", "type:1", "telemetry", "playerId:2", "battery:15/1",
+            "hit:12/5/primary", "writeFinished"), events)
     }
 
     @Test
@@ -440,7 +440,7 @@ class BlasterManagerGattTest {
     fun telemetry_idleFirstPacketReportsPlayerIdAndBattery() {
         deliverTelemetry(GOLDEN_IDLE)
         // Player id 1 differs from the initial 0; battery is (seed 16 + 16) / 2.
-        assertEquals(listOf("telemetry", "playerId:1", "battery:16/2"), events)
+        assertEquals(listOf("telemetry", "playerId:2", "battery:16/2"), events)
     }
 
     @Test
@@ -534,15 +534,15 @@ class BlasterManagerGattTest {
     @Test
     fun telemetry_singleHitReportedAsPrimary() {
         deliverTelemetry(GOLDEN_HIT_BY_PLAYER_2)
-        assertEquals(1, count("hit:8/5/primary"))
+        assertEquals(1, count("hit:12/5/primary"))
         assertEquals(0, countPrefix("hit:0"))
     }
 
     @Test
     fun telemetry_doubleHitReportsBothSlots() {
         deliverTelemetry(GOLDEN_DOUBLE_HIT)
-        val primary = events.indexOf("hit:4/3/primary")
-        val secondary = events.indexOf("hit:12/6/secondary")
+        val primary = events.indexOf("hit:8/3/primary")
+        val secondary = events.indexOf("hit:16/6/secondary")
         assertTrue(primary >= 0)
         assertTrue("primary is reported before secondary", secondary > primary)
     }
@@ -560,7 +560,7 @@ class BlasterManagerGattTest {
         // consumer's job (HitResolver).
         deliverTelemetry(GOLDEN_HIT_BY_PLAYER_2)
         deliverTelemetry(GOLDEN_HIT_BY_PLAYER_2)
-        assertEquals(2, count("hit:8/5/primary"))
+        assertEquals(2, count("hit:12/5/primary"))
     }
 
     @Test
@@ -570,7 +570,7 @@ class BlasterManagerGattTest {
         deliverTelemetry(telemetry(
             GattProtocolHandler.RECOIL_OFFSET_HIT_BY2, 0x10,
             GattProtocolHandler.RECOIL_OFFSET_HIT_BY2_SHOTID, 0x02))
-        assertEquals(1, count("hit:16/2/secondary"))
+        assertEquals(1, count("hit:20/2/secondary"))
         assertEquals(0, countSuffix("/primary"))
     }
 
@@ -610,7 +610,7 @@ class BlasterManagerGattTest {
         connect()
         `when`(telemetryChar.value).thenReturn(GOLDEN_HIT_BY_PLAYER_2)
         deliverTelemetry(null)
-        assertEquals(1, count("hit:8/5/primary"))
+        assertEquals(1, count("hit:12/5/primary"))
     }
 
     @Test

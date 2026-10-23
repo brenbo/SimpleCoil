@@ -27,10 +27,10 @@ class TeamLayoutTest {
 
     @Test
     fun defaults_perMode() {
-        assertArrayEquals(intArrayOf(32, 31), TeamLayout.defaultFor(TeamMode.TWO_TEAMS).teamSizes())
-        assertArrayEquals(intArrayOf(16, 16, 16, 15), TeamLayout.defaultFor(TeamMode.FOUR_TEAMS).teamSizes())
+        assertArrayEquals(intArrayOf(32, 32), TeamLayout.defaultFor(TeamMode.TWO_TEAMS).teamSizes())
+        assertArrayEquals(intArrayOf(16, 16, 16, 16), TeamLayout.defaultFor(TeamMode.FOUR_TEAMS).teamSizes())
         // Free for all carries the two-team sizes the protocol has always sent.
-        assertArrayEquals(intArrayOf(32, 31), TeamLayout.defaultFor(TeamMode.FREE_FOR_ALL).teamSizes())
+        assertArrayEquals(intArrayOf(32, 32), TeamLayout.defaultFor(TeamMode.FREE_FOR_ALL).teamSizes())
         assertEquals(TeamLayout.defaultFor(TeamMode.TWO_TEAMS), TeamLayout.DEFAULT)
     }
 
@@ -51,13 +51,13 @@ class TeamLayoutTest {
 
     @Test
     fun teamOf_customSizes_andStartEndIds() {
-        val layout = TeamLayout.of(TeamMode.FOUR_TEAMS, intArrayOf(5, 9, 9, 40))
+        val layout = TeamLayout.of(TeamMode.FOUR_TEAMS, intArrayOf(5, 9, 9, 41))
         assertEquals(1, layout.teamOf(5))
         assertEquals(2, layout.teamOf(6))
         assertEquals(6, layout.teamStartId(2))
         assertEquals(14, layout.teamEndId(2))
         assertEquals(24, layout.teamStartId(4))
-        assertEquals(63, layout.teamEndId(4))
+        assertEquals(64, layout.teamEndId(4))
     }
 
     @Test
@@ -65,21 +65,21 @@ class TeamLayoutTest {
         val ffa = TeamLayout.defaultFor(TeamMode.FREE_FOR_ALL)
         assertEquals(7, ffa.teamOf(7))
         assertEquals(PlayerRepository.INVALID_PLAYER_ID, ffa.teamOf(0))
-        assertEquals(PlayerRepository.INVALID_PLAYER_ID, TeamLayout.DEFAULT.teamOf(64))
+        assertEquals(PlayerRepository.INVALID_PLAYER_ID, TeamLayout.DEFAULT.teamOf(65))
         assertEquals(PlayerRepository.INVALID_PLAYER_ID, TeamLayout.DEFAULT.teamOf(167.toByte())) // grenade id
     }
 
     @Test
     fun teamEndId_ofAMissingTeamIsTheLastId() {
-        assertEquals(63, TeamLayout.DEFAULT.teamEndId(3))
-        assertEquals(63, TeamLayout.DEFAULT.teamEndId(0))
+        assertEquals(64, TeamLayout.DEFAULT.teamEndId(3))
+        assertEquals(64, TeamLayout.DEFAULT.teamEndId(0))
     }
 
     @Test
     fun withSizes_rejectsSizesThatDontFit() {
         val four = TeamLayout.defaultFor(TeamMode.FOUR_TEAMS)
         assertEquals(four, four.withSizes(intArrayOf(32, 32)))          // wrong team count
-        assertEquals(four, four.withSizes(intArrayOf(10, 10, 10, 10)))  // doesn't add up to 63
+        assertEquals(four, four.withSizes(intArrayOf(10, 10, 10, 10)))  // doesn't add up to 64
         assertSame(four, four.withSizes(null))                          // null keeps the sizes
     }
 
@@ -94,7 +94,7 @@ class TeamLayoutTest {
     fun teamSizes_isACopy() {
         val layout = TeamLayout.DEFAULT
         layout.teamSizes()[0] = 1
-        assertArrayEquals(intArrayOf(32, 31), layout.teamSizes())
+        assertArrayEquals(intArrayOf(32, 32), layout.teamSizes())
     }
 
     @Test

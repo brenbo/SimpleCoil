@@ -119,7 +119,7 @@ class TelemetryParsingProtocolTest {
     @Test
     fun idlePacket() {
         val t = parse(GOLDEN_IDLE)
-        assertNum(1, t.playerId)
+        assertNum(2, t.playerId) // the blaster says IR id 1: the app's player 2
         assertNum(30, t.shotsRemaining)
         assertNum(0, t.triggerCounter)
         assertNum(0, t.reloadCounter)
@@ -152,8 +152,8 @@ class TelemetryParsingProtocolTest {
     @Test
     fun singleHitPacket() {
         val t = parse(GOLDEN_HIT_BY_PLAYER_2)
-        assertNum(0x08, t.hitByPlayer1)
-        assertNum(2, networkPlayerId(t.hitByPlayer1))
+        assertNum(0x0C, t.hitByPlayer1) // IR id 2 is the app's player 3
+        assertNum(3, networkPlayerId(t.hitByPlayer1))
         assertNum(5, t.shotId1) // 0x3D & 0x07
         assertNum(0, t.hitByPlayer2)
         assertNum(0x0F, t.batteryLevel)
@@ -162,12 +162,12 @@ class TelemetryParsingProtocolTest {
     @Test
     fun doubleHitPacket() {
         val t = parse(GOLDEN_DOUBLE_HIT)
-        assertNum(0x04, t.hitByPlayer1)
+        assertNum(0x08, t.hitByPlayer1) // IR ids 1 and 3: the app's players 2 and 4
         assertNum(3, t.shotId1) // 0x3B & 0x07
-        assertNum(0x0C, t.hitByPlayer2)
+        assertNum(0x10, t.hitByPlayer2)
         assertNum(6, t.shotId2) // 0x3E & 0x07
-        assertNum(1, networkPlayerId(t.hitByPlayer1))
-        assertNum(3, networkPlayerId(t.hitByPlayer2))
+        assertNum(2, networkPlayerId(t.hitByPlayer1))
+        assertNum(4, networkPlayerId(t.hitByPlayer2))
     }
 
     @Test
@@ -223,8 +223,8 @@ class TelemetryParsingProtocolTest {
     fun hitByBytes_areDecodedUnsigned_allValues() {
         for (v in 0..255) {
             val t = parse(telemetry(RECOIL_OFFSET_HIT_BY1, v, RECOIL_OFFSET_HIT_BY2, 255 - v))
-            assertNum(v, t.hitByPlayer1)
-            assertNum(255 - v, t.hitByPlayer2)
+            assertNum(GattProtocolHandler.appHitBy(v, 0), t.hitByPlayer1)
+            assertNum(GattProtocolHandler.appHitBy(255 - v, 0), t.hitByPlayer2)
             assertTrue(t.hitByPlayer1 >= 0 && t.hitByPlayer2 >= 0)
         }
     }
@@ -240,7 +240,7 @@ class TelemetryParsingProtocolTest {
 
     @Test
     fun rawByteFields_arePassedThroughUnmasked_allValues() {
-        // player id, thumb, power, battery, shots remaining and status are full raw bytes.
+        // Thumb, power, battery, shots remaining and status are full raw bytes; the player id is one more.
         for (v in 0..255) {
             val t = parse(telemetry(
                 RECOIL_OFFSET_TEAM, v,
@@ -249,7 +249,7 @@ class TelemetryParsingProtocolTest {
                 RECOIL_OFFSET_BATTERY_LEVEL, v,
                 RECOIL_OFFSET_SHOTS_REMAINING, v,
                 RECOIL_OFFSET_STATUS, v))
-            assertNum(v.toByte(), t.playerId)
+            assertNum(GattProtocolHandler.appPlayerId(v.toByte()), t.playerId)
             assertNum(v.toByte(), t.thumbCounter)
             assertNum(v.toByte(), t.powerCounter)
             assertNum(v.toByte(), t.batteryLevel)
@@ -260,8 +260,8 @@ class TelemetryParsingProtocolTest {
 
     @Test
     fun ignoredBytes_doNotAffectParsedResult() {
-        // Bytes 0, 2, 6, 10, 13 and 16-19 are not consumed by the decoder.
-        val ignored = intArrayOf(0, 2, 6, 10, 13, 16, 17, 18, 19)
+        // Bytes 0, 2, 6 and 16-19 are not consumed by the decoder.
+        val ignored = intArrayOf(0, 2, 6, 16, 17, 18, 19)
         val base = parseTelemetry(GOLDEN_DOUBLE_HIT)
         val noisy = GOLDEN_DOUBLE_HIT.clone()
         for (i in ignored) noisy[i] = 0xFF.toByte()
@@ -306,8 +306,8 @@ class TelemetryParsingProtocolTest {
     fun allOnesPacket_parsesWithoutError() {
         val ff = ByteArray(20) { 0xFF.toByte() }
         val t = parse(ff)
-        assertNum(255, t.hitByPlayer1)
-        assertNum(255, t.hitByPlayer2)
+        assertNum(255 + 4, t.hitByPlayer1) // an IR id moved up one, still shifted two bits
+        assertNum(255 + 4, t.hitByPlayer2) // an IR id moved up one, still shifted two bits
         assertNum(7, t.shotId1)
         assertNum(0x0F.toByte(), t.triggerCounter)
         assertNum(0xF0.toByte(), t.reloadCounter)

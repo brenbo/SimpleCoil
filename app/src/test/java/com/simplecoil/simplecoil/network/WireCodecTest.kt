@@ -215,7 +215,7 @@ class WireCodecTest {
     )
 
     private val lobby = ServerMessage.GameInfo(
-        players = players, limits = WireLimits(null, null, null), gameMode = 2, teamSizes = listOf(32, 31), gameState = 0,
+        players = players, limits = WireLimits(null, null, null), gameMode = 2, teamSizes = listOf(32, 32), gameState = 0,
         timeRemaining = null, sessionPhase = 0, gameId = null, gpsMode = null, allowPlayerSettings = false,
         playerSettings = emptyList(), onlyServerSettings = false, allowChooseTeams = true, startTime = 5, playerUpdate = null,
     )

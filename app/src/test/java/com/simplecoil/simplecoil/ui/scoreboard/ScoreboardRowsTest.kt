@@ -93,7 +93,7 @@ class ScoreboardRowsTest {
         )
         // Column header, team 2 (50), 33, team 1 (20), 2 (15), 1 (5)
         assertEquals(6, rows.size)
-        assertEquals(ScoreboardRow.TeamHeader(2, 1, 31, 50, true), rows[1])
+        assertEquals(ScoreboardRow.TeamHeader(2, 1, 32, 50, true), rows[1])
         assertEquals(33, (rows[2] as ScoreboardRow.Player).playerId.toInt())
         assertEquals(ScoreboardRow.TeamHeader(1, 2, 32, 20, true), rows[3])
         assertEquals(listOf(33, 2, 1), rows.playerIds())

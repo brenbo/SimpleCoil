@@ -56,7 +56,7 @@
         android:contentDescription="@string/team_ratio_slider"
         android:stepSize="1"
         android:valueFrom="1"
-        android:valueTo="63"
+        android:valueTo="64"
         app:labelBehavior="gone"
         app:tickVisible="false"
         xmlns:app="http://schemas.android.com/apk/res-auto" />
