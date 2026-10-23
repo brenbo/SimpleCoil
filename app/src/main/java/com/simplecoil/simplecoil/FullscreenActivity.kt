@@ -137,7 +137,8 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         serverOnly = BlasterSupport.isServerOnly(packageManager)
         renderer = GameScreenRenderer(binding, WindowController(window), lifecycleScope, serverOnly,
             onTeamTapped = { vm.onTeamLabelPressed() }, onPlayerNameTapped = { vm.onPlayerNamePressed() },
-            onShotModeTapped = { vm.onShotModePressed() }, onRecoilTapped = { vm.onRecoilPressed() }) { vm.openScoreboard() }
+            onShotModeTapped = { vm.onShotModePressed() }, onRecoilTapped = { vm.onRecoilPressed() },
+            onGrenadeTapped = { vm.onGrenadeIconClicked() }, onScoresTapped = { vm.openScoreboard() })
         vm = ViewModelProvider(this, GameViewModelFactory(application as SimpleCoilApp))[GameViewModel::class.java]
         dialogs = DialogCoordinator(this, vm, binding.useNetworkButton, binding.gameLimitButton, binding.teamLabelTv)
         vm.screen = CompositeGameScreen(renderer, dialogs, this)

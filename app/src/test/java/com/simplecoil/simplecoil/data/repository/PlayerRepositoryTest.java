@@ -98,6 +98,22 @@ public class PlayerRepositoryTest {
     }
 
     @Test
+    public void testPairGrenadeUnpairsPreviousAndUnpairsOnZero() {
+        playerRepo.clearGrenadePairings();
+        playerRepo.pairGrenade(3, 5);
+        assertEquals(5, playerRepo.getGrenadePairing(3));
+
+        // Pairing a different grenade (4) to player 5 should unpair grenade 3
+        playerRepo.pairGrenade(4, 5);
+        assertEquals(PlayerRepository.INVALID_PLAYER_ID, playerRepo.getGrenadePairing(3));
+        assertEquals(5, playerRepo.getGrenadePairing(4));
+
+        // Pairing grenade 0 (unpair) to player 5 should remove grenade 4
+        playerRepo.pairGrenade(0, 5);
+        assertEquals(PlayerRepository.INVALID_PLAYER_ID, playerRepo.getGrenadePairing(4));
+    }
+
+    @Test
     public void testAutoSortPlayerIDDedicatedServer() throws Exception {
         settingsRepo.setTeamMode(TeamMode.TWO_TEAMS);
 

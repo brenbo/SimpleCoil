@@ -163,17 +163,15 @@ class ServerMessageHandler(
             is ClientMessage.TeamChangeRequest -> handleTeamChangeRequest(client, message.team, message.swapWith)
             is ClientMessage.GrenadePairing -> {
                 // Pairing and announcing run on the dispatcher, so two pairings can't go out in the wrong order.
-                // Every blaster near a pairing grenade sees its signal: the first to claim it keeps it, and
-                // another phone can take it over only once that pairing is a few seconds old (handing it on).
-                // Everyone hears who has it, so the phones that lost the race let it go.
-                val now = System.nanoTime() / 1_000_000L
-                val holder = players.getGrenadePairing(message.grenadeId)
-                val since = grenadePairedAt[message.grenadeId]
-                val taken = holder != PlayerRepository.INVALID_PLAYER_ID && holder != message.playerId &&
-                    since != null && now - since < GRENADE_PAIR_LOCK_MILLIS
-                if (!taken) {
+                // If a second player pairs a grenade that already has an owner, the most recent pairing wins (GRENADES.md §2).
+                if (message.grenadeId <= 0) {
+                    players.pairGrenade(0, message.playerId)
+                } else {
                     players.pairGrenade(message.grenadeId, message.playerId)
-                    grenadePairedAt[message.grenadeId] = now
+                    grenadePairedAt[message.grenadeId] = System.nanoTime() / 1_000_000L
+                }
+                grenadePairedAt.keys.retainAll { gid ->
+                    players.getGrenadePairing(gid) != PlayerRepository.INVALID_PLAYER_ID
                 }
                 server.sendGrenadePairings()
                 server.sendPlayerData(GameServer.SEND_ALL) // the scoreboard shows who has a grenade
@@ -425,9 +423,6 @@ class ServerMessageHandler(
 
     private companion object {
         const val TAG = "TCPServer"
-
-        /** A grenade's first pairing holds this long against other phones claiming it too. */
-        const val GRENADE_PAIR_LOCK_MILLIS = 10_000L
 
         /** A MESG frame carrying [command]. */
         fun command(command: ServerCommand): String = WireCodec.encode(ServerMessage.Command(command))

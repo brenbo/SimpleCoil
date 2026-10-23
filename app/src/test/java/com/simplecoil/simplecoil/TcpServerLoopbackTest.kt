@@ -139,19 +139,47 @@ class TcpServerLoopbackTest {
     }
 
     @Test
-    fun aGrenadeClaimedByTwoPhonesAtOnce_staysWithTheFirst() {
-        // Every blaster near a pairing grenade sees its signal, so both phones claim it
+    fun aGrenadeClaimedByASecondPhone_overwritesTheFirst() {
         val (a, idA) = join("Alpha", "AA:00")
         val (b, idB) = join("Bravo", "BB:00")
         a.json(org.json.JSONObject().put(WireKeys.PLAYERID, idA).put(WireKeys.PAIRED_GRENADE_ID, 3))
         awaitTrue(3000, "A has it") { players.getGrenadePairing(3) == idA }
         b.json(org.json.JSONObject().put(WireKeys.PLAYERID, idB).put(WireKeys.PAIRED_GRENADE_ID, 3))
-        // B hears that A has it, so B's phone lets it go
-        awaitTrue(3000, "B told A has it") {
-            val pairings = b.lastJson(WireKeys.GRENADE_PAIRINGS)?.getJSONArray(WireKeys.GRENADE_PAIRINGS) ?: return@awaitTrue false
-            pairings.length() == 1 && pairings.getJSONObject(0).toString().contains(idA.toString())
+        // Most recent pairing wins (GRENADES.md §2): B takes over grenade 3, A is notified
+        awaitTrue(3000, "B has it now") { players.getGrenadePairing(3) == idB }
+        awaitTrue(3000, "A told B has it") {
+            val pairings = a.lastJson(WireKeys.GRENADE_PAIRINGS)?.getJSONArray(WireKeys.GRENADE_PAIRINGS) ?: return@awaitTrue false
+            pairings.length() == 1 && pairings.getJSONObject(0).toString().contains(idB.toString())
         }
-        assertEquals(idA, players.getGrenadePairing(3))
+        assertEquals(idB, players.getGrenadePairing(3))
+    }
+
+    @Test
+    fun unpairingGrenade_removesPairingOnServer() {
+        val (a, idA) = join("Alpha", "AA:00")
+        a.json(org.json.JSONObject().put(WireKeys.PLAYERID, idA).put(WireKeys.PAIRED_GRENADE_ID, 3))
+        awaitTrue(3000, "A has grenade 3") { players.getGrenadePairing(3) == idA }
+
+        a.json(org.json.JSONObject().put(WireKeys.PLAYERID, idA).put(WireKeys.PAIRED_GRENADE_ID, 0))
+        awaitTrue(3000, "A unpaired grenade 3") { players.getGrenadePairing(3) == PlayerRepository.INVALID_PLAYER_ID }
+    }
+
+    @Test
+    fun pairingDifferentGrenade_unpairsPreviousGrenadeOnServer() {
+        val (a, idA) = join("Alpha", "AA:00")
+        val (b, idB) = join("Bravo", "BB:00")
+        a.json(org.json.JSONObject().put(WireKeys.PLAYERID, idA).put(WireKeys.PAIRED_GRENADE_ID, 3))
+        awaitTrue(3000, "A has grenade 3") { players.getGrenadePairing(3) == idA }
+
+        // A pairs a different grenade (4): grenade 3 should be freed and grenade 4 paired to A
+        a.json(org.json.JSONObject().put(WireKeys.PLAYERID, idA).put(WireKeys.PAIRED_GRENADE_ID, 4))
+        awaitTrue(3000, "A has grenade 4 and not 3") {
+            players.getGrenadePairing(3) == PlayerRepository.INVALID_PLAYER_ID && players.getGrenadePairing(4) == idA
+        }
+
+        // B can now pair grenade 3 without issue
+        b.json(org.json.JSONObject().put(WireKeys.PLAYERID, idB).put(WireKeys.PAIRED_GRENADE_ID, 3))
+        awaitTrue(3000, "B has grenade 3") { players.getGrenadePairing(3) == idB }
     }
 
     @Test

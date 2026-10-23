@@ -728,14 +728,50 @@ class BlasterSessionEngineTest {
 
     @Test
     fun forgetGrenade_unpairsIt() {
+        h.rec.useNetwork = true
         h.connected()
         h.telemetry(Packet().hit1(167, 0x9F))
-        h.engine.claimGrenade(9) // offline: it's ours at once
-        assertTrue(h.state.grenadePaired)
-        assertEquals(listOf(SessionToast.GRENADE_PAIRED), h.toasts())
+        h.engine.claimGrenade(9)
+        assertTrue(h.rec.net.contains("GRENADE"))
+        h.rec.net.clear()
+
         h.engine.forgetGrenade()
         assertEquals(0.toByte(), h.config.pairedGrenadeId)
         assertFalse(h.state.grenadePaired)
+        assertTrue(h.rec.net.contains("GRENADE"))
+    }
+
+    @Test
+    fun unpairSignalFromDifferentGrenade_isIgnored() {
+        h.connected()
+        h.engine.claimGrenade(9) // Paired with grenade 9
+        assertTrue(h.state.grenadePaired)
+
+        // Telemetry packet with UNPAIR event (0x0E) from grenade 3 (0x3E)
+        h.telemetry(Packet().hit1(167, 0x3E))
+        // Phone 1 should remain paired with grenade 9
+        assertEquals(9.toByte(), h.config.pairedGrenadeId)
+        assertTrue(h.state.grenadePaired)
+
+        // Telemetry packet with UNPAIR event (0x0E) from grenade 9 (0x9E)
+        h.telemetry(Packet().hit1(167, 0x9E))
+        // Phone 1 unpairs from grenade 9
+        assertEquals(0.toByte(), h.config.pairedGrenadeId)
+        assertFalse(h.state.grenadePaired)
+    }
+
+    @Test
+    fun pairSignal_forGrenadeOwnedByAnotherPlayer_isNotOffered() {
+        h.connected()
+        h.config.pairedGrenadeId = 0
+        // Grenade 9 is owned by player 2 on the server
+        h.config.pairings[9] = 2
+
+        // Telemetry packet with PAIR event (0x0F) from grenade 9 (0x9F)
+        h.telemetry(Packet().hit1(167, 0x9F))
+
+        // Phone 1 should NOT be offered grenade 9 because player 2 owns it on the server
+        assertTrue(h.effects.none { it is SessionEffect.GrenadeOffer })
     }
 
     @Test

@@ -70,6 +70,8 @@ class GameScreenRenderer(
     private val onShotModeTapped: () -> Unit = {},
     /** The recoil tile was tapped while the server lets the player choose. */
     private val onRecoilTapped: () -> Unit = {},
+    /** The grenade icon on the HUD was tapped. */
+    private val onGrenadeTapped: () -> Unit = {},
     /** The score readout was tapped while a scoreboard is available. */
     private val onScoresTapped: () -> Unit = {},
 ) : GameView {
@@ -640,7 +642,13 @@ class GameScreenRenderer(
             }
         }
         if (p == null || p.grenadePaired != s.grenadePaired) {
-            if (s.grenadePaired) showIcon(b.grenadeIv, R.drawable.ic_grenade, R.string.cd_grenade_paired) else b.grenadeIv.visibility = View.GONE
+            if (s.grenadePaired) {
+                showIcon(b.grenadeIv, R.drawable.ic_grenade, R.string.cd_grenade_paired)
+                b.grenadeIv.setOnClickListener { onGrenadeTapped() }
+            } else {
+                b.grenadeIv.visibility = View.GONE
+                b.grenadeIv.setOnClickListener(null)
+            }
         }
         if (p == null || p.hitOverlay != s.hitOverlay) renderHitOverlay(s)
         if (p == null || p.spawn != s.spawn) renderSpawn(s.spawn)

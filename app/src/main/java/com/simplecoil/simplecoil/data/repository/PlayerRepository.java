@@ -113,9 +113,14 @@ public class PlayerRepository {
         }
     }
 
-    /** Pairs [grenadeId] with [playerId]; ignores ids outside the grenade range. */
+    /** Pairs [grenadeId] with [playerId]; unpairs any previous grenade for [playerId]. If [grenadeId] is <= 0 or invalid, unpairs [playerId]. */
     public synchronized void pairGrenade(int grenadeId, int playerId) {
-        setGrenadePairing(grenadeId, playerId);
+        if (playerId != INVALID_PLAYER_ID) {
+            removeGrenadePairings((byte) playerId);
+        }
+        if (grenadeId > 0 && grenadeId < MAX_GRENADE_IDS) {
+            setGrenadePairing(grenadeId, playerId);
+        }
     }
 
     public synchronized void clearGrenadePairings() {

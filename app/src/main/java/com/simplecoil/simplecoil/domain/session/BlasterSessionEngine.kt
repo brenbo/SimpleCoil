@@ -379,9 +379,13 @@ class BlasterSessionEngine(
 
     /** Unpairs our grenade; a pairing lasts from game to game, but not past the connect screen or the app. */
     fun forgetGrenade() {
+        val wasPaired = config.pairedGrenadeId.toInt() != 0 || grenadePending
         grenadePending = false
         config.pairedGrenadeId = 0
         _state.update { it.copy(grenadePaired = false) }
+        if (wasPaired && network?.useNetwork == true) {
+            network?.sendPlayerGrenade()
+        }
     }
 
     val eliminations: Int get() = eliminationCount
@@ -848,7 +852,7 @@ class BlasterSessionEngine(
         val averageBattery = battery.add(telemetry.batteryLevel)
         _state.update { it.copy(battery = BatteryLevelPolicy.level(averageBattery, blasterType)) }
 
-        if (telemetry.hitByPlayer1 != 0) {
+        if (telemetry.hitByPlayer1 == PlayerRepository.GRENADE_PLAYER_ID || telemetry.hitByPlayer2 == PlayerRepository.GRENADE_PLAYER_ID) {
             applyGrenadePairing(telemetry.hitByPlayer1, telemetry.rawShotIdByte1)
             applyGrenadePairing(telemetry.hitByPlayer2, telemetry.rawShotIdByte2)
         }
@@ -1004,19 +1008,26 @@ class BlasterSessionEngine(
     }
 
     private fun applyGrenadePairing(hitBy: Int, shotIdByte: Byte) {
+        val id = GrenadeDecoder.grenadeId(shotIdByte)
         when (GrenadeDecoder.pairingAction(hitBy, shotIdByte)) {
             GrenadeDecoder.PairingAction.PAIR -> {
                 // A grenade trying to pair: ask the player (it keeps signalling, so ask once, and
-                // not again for a while after a No or after someone else took it)
-                val id = GrenadeDecoder.grenadeId(shotIdByte)
+                // not again for a while after a No or after someone else took it, or if another player owns it on the server)
                 val now = clock()
-                if (config.pairedGrenadeId.toInt() == 0 && id != offeredGrenade &&
+                val serverHolder = config.grenadePairing(id)
+                val isFreeOnServer = serverHolder == PlayerRepository.INVALID_PLAYER_ID || serverHolder == config.playerId.toInt()
+                if (config.pairedGrenadeId.toInt() == 0 && isFreeOnServer && id != offeredGrenade &&
                     (grenadeQuietUntil[id] ?: 0L) <= now) {
                     offeredGrenade = id
                     emit(SessionEffect.GrenadeOffer(id))
                 }
             }
-            GrenadeDecoder.PairingAction.UNPAIR -> forgetGrenade()
+            GrenadeDecoder.PairingAction.UNPAIR -> {
+                if (offeredGrenade == id) offeredGrenade = 0
+                if (config.pairedGrenadeId.toInt() == id) {
+                    forgetGrenade()
+                }
+            }
             GrenadeDecoder.PairingAction.NONE -> Unit
         }
     }

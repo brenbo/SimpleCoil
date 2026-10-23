@@ -364,6 +364,11 @@ class GameViewModel(
         if (yes) engine.claimGrenade(grenadeId) else engine.declineGrenade(grenadeId)
     }
 
+    /** Tapping the grenade icon on the HUD unpairs / drops the grenade. */
+    fun onGrenadeIconClicked() {
+        engine.forgetGrenade()
+    }
+
     /** The Generate QR button: a pairing label for this blaster, offered between games. */
     fun onGenerateQrPressed() {
         if (gameStateRepo.gameState != GameStateRepository.GAME_STATE_NONE) return

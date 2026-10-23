@@ -54,10 +54,11 @@ class FakeGameConfig : GameConfig {
     override var teamLayout = TeamLayout.DEFAULT
     var names = mutableMapOf<Byte, String>()
     var damage = mutableMapOf<Byte, Int>()
+    var pairings = mutableMapOf<Int, Int>()
 
     override fun playerName(playerId: Byte) = names[playerId]
     override fun playerDamage(playerId: Byte) = damage[playerId]
-    override fun grenadePairing(grenadeId: Int) = PlayerRepository.INVALID_PLAYER_ID
+    override fun grenadePairing(grenadeId: Int) = pairings[grenadeId] ?: PlayerRepository.INVALID_PLAYER_ID
 }
 
 /** Records blaster commands, network sends and persisted settings as compact strings. */
