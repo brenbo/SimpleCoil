@@ -184,6 +184,14 @@ class AppContainer(private val app: Application) {
         FieldImageryClient(playerFieldStore, appScope, dispatchers.io, clock, configs = playerFieldConfig)
     }
 
+    /**
+     * In a game on a server: only then do the field and rules a server sent apply on this phone
+     * (border, spawns, drops and ammo, game modes, the zone). The phone keeps the last server's
+     * field, but an offline game has none of them.
+     */
+    private fun inServerGame(): Boolean =
+        gameState.gameState != GameStateRepository.GAME_STATE_NONE && networkGateway.useNetwork
+
     /** Walk-back respawn and moving spawns on this phone (map design: Respawn points). */
     val spawnController: SpawnController by lazy {
         val engine = sessionEngine
@@ -195,7 +203,7 @@ class AppContainer(private val app: Application) {
                 override fun endShield() = engine.endRespawnShield()
             },
             myTeam = { settings.teamLayout.let { it.teamOf(players.playerID) to it.mode.isFreeForAll } },
-            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            inGame = ::inServerGame,
             scope = appScope,
             clock = clock,
             // With "start at spawn", the game starts for nobody until everyone is at theirs
@@ -234,7 +242,7 @@ class AppContainer(private val app: Application) {
                 val layout = settings.teamLayout
                 id to if (layout.mode.isFreeForAll) id else layout.teamOf(id)
             },
-            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            inGame = ::inServerGame,
             inOwnSpawn = { spawnController.isInOwnSpawn() },
             feedback = object : LoadoutController.Feedback {
                 override fun play(sound: SessionSound) = soundEffects.play(sound)
@@ -261,7 +269,7 @@ class AppContainer(private val app: Application) {
                 val layout = settings.teamLayout
                 id to if (layout.mode.isFreeForAll) id else layout.teamOf(id)
             },
-            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            inGame = ::inServerGame,
             feedback = object : ModeController.Feedback {
                 override fun play(sound: SessionSound) = soundEffects.play(sound)
                 override fun vibrate() = haptics.vibrate()
@@ -285,7 +293,7 @@ class AppContainer(private val app: Application) {
                 override fun setHitsPaused(on: Boolean) = engine.setHitsPaused(on)
                 override fun sitOut(untilNextRound: Boolean) = engine.sitOut(untilNextRound)
             },
-            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            inGame = ::inServerGame,
             feedback = object : ZoneController.Feedback {
                 override fun play(sound: SessionSound) = soundEffects.play(sound)
                 override fun vibrate() = haptics.vibrate()
@@ -307,7 +315,7 @@ class AppContainer(private val app: Application) {
                 override fun damage(amount: Int) = engine.applyOutOfBoundsDamage(amount)
                 override fun eliminate() = engine.eliminateOutOfBounds()
             },
-            inGame = { gameState.gameState != GameStateRepository.GAME_STATE_NONE },
+            inGame = ::inServerGame,
             feedback = object : BorderController.Feedback {
                 override fun play(sound: SessionSound) = soundEffects.play(sound)
                 override fun vibrate() = haptics.vibrate()

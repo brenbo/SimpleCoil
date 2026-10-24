@@ -34,6 +34,7 @@ import com.simplecoil.simplecoil.domain.session.Recorder
 import com.simplecoil.simplecoil.domain.session.RepositoryGameConfig
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.domain.team.TeamColors
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.hardware.audio.SoundEffectPlayer
 import com.simplecoil.simplecoil.hardware.blaster.BlasterEvent
@@ -53,6 +54,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -490,6 +492,35 @@ class GameViewModelTest {
         assertEquals(emptyList<SwitchTeamEntry>(), vm.switchTeamEntries())
         emitNetwork(ClientEvent.ListPlayers(null, null, SessionPhase.LOBBY.wireValue, 0))
         assertEquals(entries, vm.switchTeamEntries())
+    }
+
+    @Test
+    fun goingOffline_bringsBackThePlayersOwnSettings_notTheLastServers() {
+        settings.fullHealth = 80
+        settings.respawnTime = 12
+        vm.onNetworkButtonPressed()
+        vm.onNetworkMenuEntry(NetworkMenuEntry.Join)
+        emitNetwork(ClientEvent.ServerReply(1))
+        // The server's settings for this player, its limits and teams
+        settings.fullHealth = 200
+        settings.damage = -40
+        settings.respawnTime = 30
+        settings.isOverrideLives = true
+        settings.overrideLivesVal = 2
+        settings.isAllowPlayerSettings = false
+        settings.timeLimit = 7
+        settings.setTeamSizes(intArrayOf(10, 54))
+        players.isAdmin = true
+
+        vm.onNetworkMenuEntry(NetworkMenuEntry.DisableNetwork)
+        assertEquals(80, settings.fullHealth)
+        assertEquals(GameSettingsRepository.DAMAGE_PER_HIT, settings.damage)
+        assertEquals(12L, settings.respawnTime)
+        assertFalse(settings.isOverrideLives)
+        assertTrue(settings.isAllowPlayerSettings)
+        assertEquals(0, settings.timeLimit) // none saved for offline play
+        assertArrayEquals(TeamLayout.defaultFor(settings.teamMode).teamSizes(), settings.teamLayout.teamSizes())
+        assertFalse(players.isAdmin)
     }
 
     @Test

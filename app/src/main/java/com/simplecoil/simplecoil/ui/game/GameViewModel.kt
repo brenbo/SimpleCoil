@@ -236,7 +236,18 @@ class GameViewModel(
         selectedPlayerId = prefs.selectedPlayerId().toByte()
         playerRepo.playerID = selectedPlayerId
         engine.restore(prefs.shotMode(GameSettingsRepository.SHOT_MODE_SINGLE), prefs.recoilEnabled())
+        loadOwnTeamModeAndLimits()
+        setDeviceAddress(prefs.deviceAddress())
+        screen?.setReconnectVisible(deviceAddress.isNotEmpty())
+        screen?.showNetworkOptions(false, freeForAll())
+        setGameLimit()
+        updatePlayerSettings()
+    }
+
+    /** The team mode (with its usual team sizes) and game limits saved for playing offline. */
+    private fun loadOwnTeamModeAndLimits() {
         settingsRepo.setTeamMode(prefs.teamMode())
+        settingsRepo.resetDefaultTeamSizes()
         screen?.showTeamMode(settingsRepo.teamMode)
         var gameLimit = GameSettingsRepository.GAME_LIMIT_NONE
         settingsRepo.timeLimit = prefs.timeLimit()
@@ -246,11 +257,34 @@ class GameViewModel(
         settingsRepo.scoreLimit = prefs.scoreLimit()
         if (settingsRepo.scoreLimit != 0) gameLimit += GameSettingsRepository.GAME_LIMIT_SCORE
         settingsRepo.gameLimit = gameLimit
-        setDeviceAddress(prefs.deviceAddress())
-        screen?.setReconnectVisible(deviceAddress.isNotEmpty())
-        screen?.showNetworkOptions(false, freeForAll())
-        setGameLimit()
-        updatePlayerSettings()
+    }
+
+    /**
+     * The player's own settings (health, damage, reload, respawn, lives, shot modes...), kept while
+     * a server's take their place, and put back on going offline.
+     */
+    private var ownSettings: PlayerSettingsValues? = null
+
+    private fun keepOwnSettings() {
+        if (ownSettings == null) ownSettings = PlayerSettingsValues.of(settingsRepo)
+    }
+
+    /**
+     * Offline again: the player's own settings, team mode and limits, none of the last server's.
+     * The firing mode (indoor or outdoor) stays: it is about where the player is, not the game.
+     */
+    private fun restoreOwnSettings() {
+        val firingMode = settingsRepo.currentFiringMode
+        ownSettings?.copy(firingMode = firingMode)?.applyTo(settingsRepo)
+        ownSettings = null
+        // Offline, every shot mode, recoil and the player settings are the player's own
+        settingsRepo.isAllowSingleShotMode = true
+        settingsRepo.isAllowBurst3ShotMode = true
+        settingsRepo.isAllowAutoShotMode = true
+        settingsRepo.serverRecoilSetting = GameSettingsRepository.RECOIL_SETTING_DEFAULT
+        settingsRepo.isAllowPlayerSettings = true
+        playerRepo.isAdmin = false
+        loadOwnTeamModeAndLimits()
     }
 
     fun saveState() = SavedGameScreen(selectedPlayerId, deviceAddress, net.useNetwork, networkMenuType)
@@ -834,6 +868,7 @@ class GameViewModel(
 
     /** Networking on, to search for a server or connect to one; the screen stays offline until one answers. */
     private fun startNetworking() {
+        keepOwnSettings()
         net.useNetwork = true
         playerRepo.playerID = selectedPlayerId
         setTeam()
@@ -1008,11 +1043,8 @@ class GameViewModel(
                 playerRepo.playerID = if (selectedPlayerId.toInt() != 0) selectedPlayerId else 1
             }
             setTeam()
-            // Drop the shot mode and recoil restrictions a server may have set.
-            settingsRepo.isAllowSingleShotMode = true
-            settingsRepo.isAllowBurst3ShotMode = true
-            settingsRepo.isAllowAutoShotMode = true
-            settingsRepo.serverRecoilSetting = GameSettingsRepository.RECOIL_SETTING_DEFAULT
+            // Drop everything a server set: its player settings, limits, teams and restrictions
+            restoreOwnSettings()
             updatePlayerSettings()
         } else {
             setNetworkMenu(NETWORK_TYPE_ENABLED)
@@ -1032,6 +1064,7 @@ class GameViewModel(
             }
             autoScanStarted = true
             Log.d(TAG, "autoStartServerScan: starting automatic server discovery on launch")
+            keepOwnSettings()
             net.useNetwork = true
             playerRepo.playerID = selectedPlayerId
             setNetworkMenu(NETWORK_TYPE_JOINING)
