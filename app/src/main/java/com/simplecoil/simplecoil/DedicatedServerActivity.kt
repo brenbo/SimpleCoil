@@ -18,15 +18,8 @@ package com.simplecoil.simplecoil
 
 import android.content.Intent
 import android.os.Bundle
-import android.transition.ChangeBounds
-import android.transition.Fade
-import android.transition.TransitionManager
-import android.transition.TransitionSet
 import android.view.View
-import android.view.ViewGroup
-import android.view.animation.PathInterpolator
 import android.view.WindowManager
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -54,7 +47,7 @@ import com.simplecoil.simplecoil.ui.dialogs.TeamRatioDialog
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsDialog
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardAdapter
 import com.simplecoil.simplecoil.ui.server.DedicatedServerRenderer
-import com.simplecoil.simplecoil.ui.server.PaneDivider
+import com.simplecoil.simplecoil.ui.server.ServerPanes
 import com.simplecoil.simplecoil.ui.server.RefereeMapActivity
 import com.simplecoil.simplecoil.ui.server.RefereeMapFragment
 import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
@@ -84,7 +77,6 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 import java.io.IOException
-import kotlin.math.roundToInt
 
 /**
  * The dedicated server's screen (dedicated server design §6.2). The server runs in its own
@@ -125,7 +117,7 @@ class DedicatedServerActivity : AppCompatActivity() {
         // After the Back above, so an expanded sheet collapses before Back asks to stop the server
         attachPlayerSheet()
         // Wide windows: the panes (and Back from a full-window one, ahead of the rest)
-        setUpPanes(savedInstanceState)
+        setUpPanes()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -514,7 +506,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             val running = vm.state.value?.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
             when {
                 // A wide window already shows the live map: fill the window with it
-                running && mapPane != null -> showFull(Pane.MAP)
+                running && mapPane != null -> panes?.showMapFull()
                 else -> startActivity(Intent(this@DedicatedServerActivity, if (running) RefereeMapActivity::class.java else FieldMapActivity::class.java))
             }
         }
@@ -547,23 +539,21 @@ class DedicatedServerActivity : AppCompatActivity() {
         }
     }
 
-    /** The players in a bottom sheet under the controls, never over Start/End/Reset; the large-screen layout shows them beside the controls instead. */
-    /** A pane of a wide window that can fill it. */
-    private enum class Pane { MAP, PLAYERS }
-
-    /** The pane filling the window, or null for every pane side by side. */
-    private var fullPane: Pane? = null
+    /** The wide window's panes side by side; null on a phone, whose layout has none. */
+    private var panes: ServerPanes? = null
 
     private val leaveFullPane = object : OnBackPressedCallback(false) {
-        override fun handleOnBackPressed() = showFull(null)
+        override fun handleOnBackPressed() {
+            panes?.leaveFull()
+        }
     }
 
     /**
      * A wide window (a Chromebook, a big tablet) has the settings, the live map and the players
-     * side by side (or the settings and the players, if it's less wide); the map and the players
-     * can each fill the window. A phone's layout has none of these panes.
+     * side by side (or the settings and the players, if it's less wide), sized, closed and
+     * filling the window as [ServerPanes] has it.
      */
-    private fun setUpPanes(savedInstanceState: Bundle?) {
+    private fun setUpPanes() {
         val b = binding
         if (b.mapPane != null && supportFragmentManager.findFragmentById(R.id.referee_map_container) == null) {
             supportFragmentManager.beginTransaction()
@@ -572,232 +562,17 @@ class DedicatedServerActivity : AppCompatActivity() {
         }
         // The map pane's corners are rounded like the others' (its map draws as a texture, so it's clipped)
         b.mapPane?.clipToOutline = true
-        setUpDividers()
-        b.mapExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.MAP) null else Pane.MAP) }
-        b.playersExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.PLAYERS) null else Pane.PLAYERS) }
-        onBackPressedDispatcher.addCallback(this, leaveFullPane)
-        savedInstanceState?.getString(STATE_FULL_PANE)?.let { name -> showFull(Pane.entries.firstOrNull { it.name == name }, animate = false) }
-    }
-
-    /** Fills the window with [pane], or shows every pane again (null), the panes moving into place. */
-    private fun showFull(pane: Pane?, animate: Boolean = true) {
-        val b = binding
-        val playersPane = b.playersPane ?: return
-        if (animate) (playersPane.parent as? ViewGroup)?.let { row ->
-            // The other panes fade as this one grows (or the reverse), rather than jumping
-            TransitionManager.beginDelayedTransition(row, TransitionSet()
-                .addTransition(Fade(Fade.OUT))
-                .addTransition(ChangeBounds())
-                .addTransition(Fade(Fade.IN))
-                .setOrdering(TransitionSet.ORDERING_TOGETHER)
-                .setDuration(PANE_ANIMATION_MILLIS)
-                .setInterpolator(PathInterpolator(0.4f, 0f, 0.2f, 1f))) // fast out, slow in
-        }
-        val was = fullPane
-        fullPane = pane
-        b.settingsPane?.let { it.isVisible = pane == null && it !in closedPanes }
-        b.mapPane?.isVisible = pane == null || pane == Pane.MAP
-        playersPane.isVisible = pane == Pane.PLAYERS || pane == null && playersPane !in closedPanes
-        b.dividerLeft?.isVisible = pane == null
-        b.dividerRight?.isVisible = pane == null
-        // The players' pane may have a set width beside the others; alone it takes the window
-        (playersPane.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
-            if (pane == Pane.PLAYERS && was != Pane.PLAYERS) playersWidth = lp.width to lp.weight
-            if (pane == Pane.PLAYERS) {
-                lp.width = 0
-                lp.weight = 1f
-            } else if (was == Pane.PLAYERS) {
-                playersWidth?.let { (width, weight) ->
-                    lp.width = width
-                    lp.weight = weight
-                }
-            }
-            playersPane.layoutParams = lp
-        }
-        fun look(button: ImageButton?, full: Boolean) {
-            button?.setImageResource(if (full) R.drawable.ic_sc_fullscreen_exit else R.drawable.ic_sc_fullscreen)
-            button?.contentDescription = getString(if (full) R.string.pane_fullscreen_exit else R.string.pane_fullscreen)
-        }
-        look(b.mapExpandButton, pane == Pane.MAP)
-        look(b.playersExpandButton, pane == Pane.PLAYERS)
-        leaveFullPane.isEnabled = pane != null
-    }
-
-    /** The players' pane's width and weight beside the others, kept while it fills the window. */
-    private var playersWidth: Pair<Int, Float>? = null
-
-    /** The panes closed by dragging their divider all the way over. */
-    private val closedPanes = mutableSetOf<View>()
-
-    /**
-     * A divider and the panes either side of it, as with split screen: dragging it sets the
-     * width of [sized] (the settings or the players, at the window's edge), and [rest] takes
-     * what's left. Dragged most of the way over, a pane closes; the divider then waits at the
-     * edge as a tab that a tap or a drag pulls it back out of. Only the settings and the players
-     * close ([rest] when [restCloses]): the map stays, as it has its own full-screen button.
-     */
-    private inner class Split(
-        val divider: PaneDivider,
-        val sized: View,
-        val rest: View,
-        val sizedAtStart: Boolean,
-        val restCloses: Boolean,
-        val widthKey: String,
-    ) {
-        private val row = sized.parent as ViewGroup
-        private val min = toPx(MIN_PANE_DP)
-        /** Where the drag has the sized pane, as several moves can come before the next layout. */
-        private var width = 0f
-        /** What the two panes share: the row less everything else in it. */
-        private var room = 0
-
-        init {
-            divider.onDragStart = ::startDrag
-            divider.onDrag = { dx -> drag(if (sizedAtStart) dx else -dx) }
-            divider.onDragEnd = ::endDrag
-            divider.setOnClickListener { reopen() }
-        }
-
-        private fun startDrag() {
-            when {
-                sized in closedPanes -> { show(sized); setWidth(0f) }
-                rest in closedPanes -> { show(rest); setWidth(sized.width.toFloat()) }
-                else -> width = sized.width.toFloat()
-            }
-            divider.closed = PaneDivider.Closed.NONE
-            room = measureRoom()
-        }
-
-        private fun drag(by: Float) {
-            // Free to go past the minimum, as far as the edge, so a pane can be closed
-            setWidth((width + by).coerceIn(0f, (room - if (restCloses) 0 else min).toFloat()))
-        }
-
-        private fun endDrag() {
-            animatePanes()
-            when {
-                width < min / 2 -> close(sized)
-                width < min -> setWidth(min.toFloat())
-                restCloses && room - width < min / 2 -> close(rest)
-                room - width < min -> setWidth((room - min).toFloat())
-            }
-            save()
-        }
-
-        /** A tap on the tab brings the closed pane back at the width it had. */
-        private fun reopen() {
-            val closed = when {
-                sized in closedPanes -> sized
-                rest in closedPanes -> rest
-                else -> return
-            }
-            animatePanes()
-            show(closed)
-            divider.closed = PaneDivider.Closed.NONE
-            room = measureRoom()
-            val open = if (closed === sized) panePrefs.getInt(widthKey, 0).let(::toPx) else room / 2
-            setWidth(open.coerceIn(min, (room - min).coerceAtLeast(min)).toFloat())
-            save()
-        }
-
-        /** Closes [pane], the divider becoming a tab at that side. */
-        fun close(pane: View) {
-            pane.isVisible = false
-            closedPanes += pane
-            if (pane === rest) stretch(sized)
-            divider.closed = if ((pane === sized) == sizedAtStart) PaneDivider.Closed.START else PaneDivider.Closed.END
-        }
-
-        private fun show(pane: View) {
-            closedPanes -= pane
-            pane.isVisible = true
-            if (pane === rest) stretch(rest)
-        }
-
-        private fun stretch(pane: View) = (pane.layoutParams as LinearLayout.LayoutParams).let { lp ->
-            lp.width = 0
-            lp.weight = 1f
-            pane.layoutParams = lp
-        }
-
-        /** Restores the width last kept, kept in range now that the window is laid out. */
-        fun restore() {
-            room = measureRoom()
-            panePrefs.getInt(widthKey, 0).takeIf { it > 0 }?.let { dp ->
-                setWidth(toPx(dp).coerceIn(min, (room - min).coerceAtLeast(min)).toFloat())
-            }
-        }
-
-        private fun setWidth(px: Float) {
-            width = px
-            val lp = sized.layoutParams as LinearLayout.LayoutParams
-            lp.width = px.roundToInt()
-            lp.weight = 0f
-            sized.layoutParams = lp
-        }
-
-        private fun measureRoom(): Int {
-            var room = row.width - row.paddingLeft - row.paddingRight
-            for (i in 0 until row.childCount) {
-                val child = row.getChildAt(i)
-                if (!child.isVisible) continue
-                val lp = child.layoutParams as LinearLayout.LayoutParams
-                room -= lp.leftMargin + lp.rightMargin
-                if (child !== sized && child !== rest) room -= child.width
-            }
-            return room
-        }
-
-        private fun save() {
-            panePrefs.edit().apply {
-                if (sized !in closedPanes && rest !in closedPanes) putInt(widthKey, toDp(width.roundToInt()))
-                putBoolean(closedKey(sized), sized in closedPanes)
-                if (restCloses) putBoolean(closedKey(rest), rest in closedPanes)
-            }.apply()
-        }
-
-        private fun animatePanes() = TransitionManager.beginDelayedTransition(row, ChangeBounds()
-            .setDuration(PANE_ANIMATION_MILLIS)
-            .setInterpolator(PathInterpolator(0.4f, 0f, 0.2f, 1f)))
-    }
-
-    private val panePrefs by lazy { getSharedPreferences(PANES_PREFS, MODE_PRIVATE) }
-
-    private fun closedKey(pane: View) = if (pane === binding.settingsPane) PANE_SETTINGS_CLOSED else PANE_PLAYERS_CLOSED
-
-    /**
-     * The dividers between the panes: the left one sizes the settings, the right one the
-     * players; the map, or in the two-pane layout the players, takes what's left. The widths,
-     * and which panes are closed, are kept for next time.
-     */
-    private fun setUpDividers() {
-        val b = binding
         val settings = b.settingsPane ?: return
         val players = b.playersPane ?: return
-        val splits = listOfNotNull(
-            b.dividerLeft?.let { Split(it, settings, b.mapPane ?: players, sizedAtStart = true, restCloses = b.mapPane == null, PANE_SETTINGS_DP) },
-            b.dividerRight?.let { divider -> b.mapPane?.let { Split(divider, players, it, sizedAtStart = false, restCloses = false, PANE_PLAYERS_DP) } },
-        )
-        // As they were left
-        settings.post {
-            for (split in splits) {
-                split.restore()
-                when {
-                    panePrefs.getBoolean(closedKey(split.sized), false) -> split.close(split.sized)
-                    split.restCloses && panePrefs.getBoolean(closedKey(split.rest), false) -> split.close(split.rest)
-                }
-            }
+        val divider = b.dividerLeft ?: return
+        onBackPressedDispatcher.addCallback(this, leaveFullPane)
+        panes = ServerPanes(settings.parent as LinearLayout, settings, b.mapPane, players, divider, b.dividerRight,
+            b.mapExpandButton, b.playersExpandButton, getSharedPreferences(PANES_PREFS, MODE_PRIVATE)) { full ->
+            leaveFullPane.isEnabled = full
         }
     }
 
-    private fun toPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
-    private fun toDp(px: Int): Int = (px / resources.displayMetrics.density).toInt()
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        fullPane?.let { outState.putString(STATE_FULL_PANE, it.name) }
-    }
-
+    /** The players in a bottom sheet under the controls, never over Start/End/Reset; the large-screen layout shows them beside the controls instead. */
     private fun attachPlayerSheet() {
         val b = binding
         val sheet = b.playerSheet ?: return
@@ -873,15 +648,7 @@ class DedicatedServerActivity : AppCompatActivity() {
     private fun quantity(id: Int, count: Int): String = resources.getQuantityString(id, count, count)
 
     private companion object {
-        const val STATE_FULL_PANE = "fullPane"
-        const val PANE_ANIMATION_MILLIS = 300L
         const val PANES_PREFS = "serverPanes"
-        const val PANE_SETTINGS_DP = "settingsDp"
-        const val PANE_PLAYERS_DP = "playersDp"
-        const val PANE_SETTINGS_CLOSED = "settingsClosed"
-        const val PANE_PLAYERS_CLOSED = "playersClosed"
-        /** No pane narrower than this when dragging a divider. */
-        const val MIN_PANE_DP = 280
         const val REQUEST_RESET = "serverReset"
         const val REQUEST_STOP = "serverStop"
         const val REQUEST_END = "serverEnd"

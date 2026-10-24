@@ -59,6 +59,13 @@ class PaneDivider @JvmOverloads constructor(context: Context, attrs: AttributeSe
             invalidate()
         }
 
+    /** How far below the middle the tab sits, so two tabs at the same edge read as two. */
+    var tabOffset = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     private val density = resources.displayMetrics.density
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val grip = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ContextCompat.getColor(context, R.color.sc_text_secondary) }
@@ -87,7 +94,7 @@ class PaneDivider @JvmOverloads constructor(context: Context, attrs: AttributeSe
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cx = width / 2f
-        val cy = height / 2f
+        val cy = height / 2f + if (closed != Closed.NONE) tabOffset else 0f
         if (closed != Closed.NONE) {
             // A tab with an arrow pointing away from the edge the pane went into
             val half = 6 * density
