@@ -93,6 +93,8 @@ class RefereeMapFragment : Fragment() {
     private var dots: GlyphOverlay? = null
     private var names: GlyphOverlay? = null
     private var placed = false
+    /** The border the camera frames, kept framed as the pane changes size; null once someone pans or zooms. */
+    private var framed: List<LatLon>? = null
     private var framesRunning = false
 
     /** A pane of the server screen, rather than a screen of its own. */
@@ -119,6 +121,10 @@ class RefereeMapFragment : Fragment() {
         _binding = b
         b.refMapView.onCreate(savedInstanceState)
         b.refMapView.getMapAsync { onMapReady(it) }
+        // A pane dragged wider or narrower, or filling the window: the field still in view
+        b.refMapView.addOnLayoutChangeListener { v, l, t, r, bottom, oldL, oldT, oldR, oldBottom ->
+            if (r - l != oldR - oldL || bottom - t != oldBottom - oldT) v.post { framed?.let(::fit) }
+        }
         val context = requireContext()
         points = ObjectiveOverlay(context, b.refObjectivesLayer) { colorOf(it) }
         drops = DropOverlay(context, b.refDropsLayer)
@@ -220,6 +226,9 @@ class RefereeMapFragment : Fragment() {
     private fun onMapReady(map: MapLibreMap) {
         this.map = map
         map.addOnMapClickListener { onMapTapped(LatLon(it.latitude, it.longitude)) }
+        map.addOnCameraMoveStartedListener { reason ->
+            if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) framed = null
+        }
         map.setMinZoomPreference(MIN_ZOOM)
         map.setMaxZoomPreference(MAX_ZOOM)
         map.uiSettings.apply {
@@ -338,6 +347,7 @@ class RefereeMapFragment : Fragment() {
     private fun fit(ring: List<LatLon>) {
         val map = map ?: return
         placed = true
+        framed = ring
         CameraLimits.keepNear(map, ring)
         val bounds = LatLngBounds.Builder().apply { ring.forEach { include(LatLng(it.latitude, it.longitude)) } }.build()
         map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, (48 * resources.displayMetrics.density).toInt()))
