@@ -44,6 +44,7 @@ import com.simplecoil.simplecoil.network.voice.VoicePeer
 import com.simplecoil.simplecoil.network.voice.VoiceRelay
 import com.simplecoil.simplecoil.network.WireCodec
 import com.simplecoil.simplecoil.network.discovery.DiscoveryBeacon
+import com.simplecoil.simplecoil.network.discovery.DiscoveryNetwork
 import com.simplecoil.simplecoil.network.server.GameServer
 import com.simplecoil.simplecoil.network.server.LiveGame
 import com.simplecoil.simplecoil.network.server.ServerGps
@@ -156,7 +157,11 @@ class TcpServer : Service() {
         container.fieldImageryServer.voice.addressOf = { id -> serverPlayers.teamIPMap[id.toByte()] }
         container.fieldImageryServer.voice.forgetKeys()
         voiceRelay = VoiceRelay(container.fieldImageryServer.voice, ::voicePeers, { serverSettings.teamLayout.mode.isFreeForAll }).also { it.start() }
-        server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
+        // On a Chromebook, Android only sees ChromeOS's internal address (100.115.92.x), which
+        // phones can't reach: show the address phones reach it at, once one has asked (TCP beacon)
+        val chromebook = DiscoveryNetwork.isChromebook(this)
+        server.setServerIp(if (chromebook) null else PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
+        beacon.onReachedAt = { ip -> if (chromebook) server.setServerIp(ip) }
         startAsForeground()
         updateWifiLock()
     }

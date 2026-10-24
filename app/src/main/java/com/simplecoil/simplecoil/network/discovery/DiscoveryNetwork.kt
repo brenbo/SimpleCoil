@@ -99,6 +99,14 @@ internal class DiscoveryNetwork(private val context: Context) {
 
     companion object {
         private const val TAG = "ServerDiscoveryMgr"
+
+        /**
+         * Running on a Chromebook: Android there sits behind ChromeOS's NAT, so it sees only an
+         * internal address, and UDP from the Wi-Fi doesn't reach it (TCP does).
+         */
+        fun isChromebook(context: Context): Boolean = context.packageManager.let {
+            it.hasSystemFeature("org.chromium.arc") || it.hasSystemFeature("org.chromium.arc.device_management")
+        }
         const val TIMEOUT_MS = 1000
         const val RECEIVE_BUFFER_SIZE = 1024
 

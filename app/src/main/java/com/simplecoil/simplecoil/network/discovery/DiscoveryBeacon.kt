@@ -19,15 +19,21 @@ package com.simplecoil.simplecoil.network.discovery
 import android.content.Context
 import android.util.Log
 import com.simplecoil.simplecoil.network.WireProtocol
+import java.io.BufferedReader
 import java.io.IOException
+import java.io.InputStreamReader
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
 import java.net.SocketTimeoutException
 
 /**
  * The server's discovery beacon: broadcasts the server's name on UDP 17500 every second, and
- * answers every query at once, on its own thread.
+ * answers every query at once, on its own thread; and answers over TCP 17513 too, where UDP
+ * doesn't get through (a Chromebook).
  */
 class DiscoveryBeacon(context: Context) {
     private val network = DiscoveryNetwork(context)
@@ -74,6 +80,7 @@ class DiscoveryBeacon(context: Context) {
         network.acquireMulticastLock()
         running = true
         Thread { run() }.start()
+        Thread({ runTcp() }, "BeaconTcpAccept").start()
     }
 
     private fun run() {
@@ -112,13 +119,71 @@ class DiscoveryBeacon(context: Context) {
 
     private fun sendBeacon(destination: InetAddress, serverName: String) {
         try {
-            val payload = WireProtocol.BEACON_PREFIX + serverName +
-                "|inGame=" + (if (inGame) 1 else 0) +
-                "|allowJoin=" + (if (allowJoinInProgress) 1 else 0) +
-                (fingerprint?.let { "|" + WireProtocol.BEACON_TLS + it } ?: "")
-            network.send(payload, destination)
+            network.send(payload(serverName), destination)
         } catch (e: IOException) {
             Log.e(TAG, "Error sending discovery beacon packet", e)
+        }
+    }
+
+    /** The beacon: name, whether a game is on, whether joining one is allowed, the certificate's fingerprint. */
+    private fun payload(serverName: String): String =
+        WireProtocol.BEACON_PREFIX + serverName +
+            "|inGame=" + (if (inGame) 1 else 0) +
+            "|allowJoin=" + (if (allowJoinInProgress) 1 else 0) +
+            (fingerprint?.let { "|" + WireProtocol.BEACON_TLS + it } ?: "")
+
+    /**
+     * Where phones reach this server, as they say when they ask over TCP. A Chromebook can't see
+     * its own Wi-Fi address (Android there sits behind ChromeOS's NAT), so it learns it this way.
+     */
+    @Volatile
+    var onReachedAt: ((String) -> Unit)? = null
+
+    @Volatile
+    private var tcpSocket: ServerSocket? = null
+
+    /**
+     * The beacon over TCP (17513), for phones that can't hear it over UDP: ChromeOS passes TCP
+     * through to the app, but not UDP. A phone connects, sends DISCOVER (and the address it used),
+     * and gets the beacon back.
+     */
+    private fun runTcp() {
+        val server = try {
+            ServerSocket().apply {
+                reuseAddress = true
+                bind(InetSocketAddress(WireProtocol.BEACON_TCP_PORT))
+            }
+        } catch (e: IOException) {
+            Log.w(TAG, "No TCP beacon: " + e.message)
+            return
+        }
+        tcpSocket = server
+        try {
+            while (running) {
+                val client = server.accept()
+                Thread({ answer(client) }, "BeaconTcp").start()
+            }
+        } catch (e: IOException) {
+            if (running) Log.w(TAG, "TCP beacon stopped: " + e.message)
+        } finally {
+            server.close()
+        }
+    }
+
+    private fun answer(client: Socket) {
+        try {
+            client.use {
+                it.soTimeout = TCP_READ_TIMEOUT_MS
+                val line = BufferedReader(InputStreamReader(it.getInputStream(), Charsets.US_ASCII)).readLine() ?: return
+                if (!line.startsWith(WireProtocol.DISCOVER_MSG)) return
+                line.removePrefix(WireProtocol.DISCOVER_MSG).trim().takeIf { ip -> IPV4.matches(ip) }?.let { ip -> onReachedAt?.invoke(ip) }
+                it.getOutputStream().apply {
+                    write((payload(currentServerName) + "\n").toByteArray(Charsets.UTF_8))
+                    flush()
+                }
+            }
+        } catch (e: IOException) {
+            // A phone that gave up: nothing to do
         }
     }
 
@@ -127,10 +192,17 @@ class DiscoveryBeacon(context: Context) {
     fun stop() {
         running = false
         socket?.close()
+        try {
+            tcpSocket?.close()
+        } catch (ignored: IOException) {
+        }
+        tcpSocket = null
     }
 
     private companion object {
         const val TAG = "ServerDiscoveryMgr"
         const val BEACON_INTERVAL_MS = 1000
+        const val TCP_READ_TIMEOUT_MS = 2_000
+        val IPV4 = Regex("""\d{1,3}(\.\d{1,3}){3}""")
     }
 }

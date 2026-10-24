@@ -872,7 +872,7 @@ class FieldMapActivity : AppCompatActivity() {
     }
 
     private fun confirmOverwrite(name: String, title: String) {
-        AlertDialog.Builder(this, R.style.AppDialogTheme)
+        AlertDialog.Builder(this, R.style.AppDialogTheme_Confirm)
             .setTitle(title)
             .setMessage(R.string.field_presets_overwrite_body)
             .setPositiveButton(R.string.field_presets_overwrite) { _, _ -> savePreset(name) }
@@ -881,7 +881,7 @@ class FieldMapActivity : AppCompatActivity() {
     }
 
     private fun confirmDelete(name: String) {
-        AlertDialog.Builder(this, R.style.AppDialogTheme)
+        AlertDialog.Builder(this, R.style.AppDialogTheme_Confirm)
             .setTitle(getString(R.string.field_presets_delete_title, name))
             .setMessage(R.string.field_presets_delete_body)
             .setPositiveButton(R.string.field_presets_delete) { _, _ -> deletePreset(name) }

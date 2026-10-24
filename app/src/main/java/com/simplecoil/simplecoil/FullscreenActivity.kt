@@ -131,6 +131,7 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         ScreenOrientation.portraitOnPhones(this)
         binding = ActivityFullscreenBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        fitHomeToWindow()
         // Back keeps the session running: send the task to the background instead of finishing.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -214,6 +215,29 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
     }
 
     /** The home screen's top bar: About (the game screen hides the bar). */
+    /**
+     * On a tablet or Chromebook the home screen's cards are three quarters of the window wide,
+     * centred, rather than stretched edge to edge; a phone's are the full width.
+     */
+    private fun fitHomeToWindow() {
+        val config = resources.configuration
+        val content = binding.connectContent
+        val lp = content.layoutParams as? android.widget.FrameLayout.LayoutParams ?: return
+        if (config.smallestScreenWidthDp >= ScreenOrientation.LARGE_SCREEN_DP) {
+            lp.width = (config.screenWidthDp * HOME_WIDTH_SHARE * resources.displayMetrics.density).toInt()
+            lp.gravity = android.view.Gravity.CENTER_HORIZONTAL
+        } else {
+            lp.width = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+        }
+        content.layoutParams = lp
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // This screen keeps itself across size changes (the manifest): refit the home screen
+        fitHomeToWindow()
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.home_menu, menu)
         return true
@@ -292,6 +316,8 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
     }
 
     companion object {
+        /** How much of a tablet or Chromebook window the home screen's cards take. */
+        private const val HOME_WIDTH_SHARE = 0.75f
         private const val TAG = "scmain"
 
         /**

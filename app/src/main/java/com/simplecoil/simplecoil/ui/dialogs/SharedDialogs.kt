@@ -26,6 +26,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
@@ -56,7 +57,7 @@ abstract class AppDialogFragment : DialogFragment() {
     @Suppress("UseGetLayoutInflater")
     protected val appInflater: LayoutInflater get() = LayoutInflater.from(requireContext().applicationContext)
 
-    protected fun alertBuilder() = AlertDialog.Builder(requireContext(), R.style.AppDialogTheme)
+    protected fun alertBuilder(@StyleRes theme: Int = R.style.AppDialogTheme) = AlertDialog.Builder(requireContext(), theme)
 
     /**
      * Marks each of [fields] holding a number above [max] with an error, and greys out OK while
@@ -318,7 +319,7 @@ class TeamSwapDialog : AppDialogFragment() {
 class ConfirmDialog : AppDialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val args = requireArguments()
-        return alertBuilder()
+        return alertBuilder(R.style.AppDialogTheme_Confirm)
             .setMessage(args.getString(ARG_MESSAGE))
             .setPositiveButton(args.getInt(ARG_CONFIRM)) { _, _ ->
                 parentFragmentManager.setFragmentResult(args.getString(ARG_REQUEST_KEY)!!, Bundle.EMPTY)

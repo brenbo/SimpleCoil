@@ -73,6 +73,9 @@ object WireProtocol {
 
     /** A client's query; servers answer it with a beacon. */
     const val DISCOVER_MSG = MESSAGE_PREFIX + "DISCOVER"
+
+    /** The beacon over TCP: DISCOVER and the address the phone used, a line; the beacon back. For where UDP doesn't get through (a Chromebook). */
+    const val BEACON_TCP_PORT = 17513
 }
 
 /** The JSON keys of the v07 and v08 frames. Frozen (network design §1): a key's name, type and presence never change. */

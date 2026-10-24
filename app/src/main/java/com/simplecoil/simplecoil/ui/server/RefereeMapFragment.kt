@@ -147,7 +147,7 @@ class RefereeMapFragment : Fragment() {
             Toast.makeText(context.applicationContext, if (closed) R.string.ref_zone_closing else R.string.ref_zone_cant, Toast.LENGTH_SHORT).show()
         }
         b.refEndButton.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AppDialogTheme)
+            AlertDialog.Builder(context, R.style.AppDialogTheme_Confirm)
                 .setMessage(R.string.ref_end_confirm)
                 .setPositiveButton(R.string.ref_end_game) { _, _ -> container.serverController.endGame() }
                 .setNegativeButton(R.string.field_dialog_cancel, null)

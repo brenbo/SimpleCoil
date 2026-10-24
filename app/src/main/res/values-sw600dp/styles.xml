@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- A tablet or Chromebook: a yes/no question in a box sized for it, not two thirds of the window -->
+    <style name="AppDialogTheme.Confirm">
+        <item name="android:windowMinWidthMajor">30%</item>
+        <item name="android:windowMinWidthMinor">45%</item>
+    </style>
+</resources>

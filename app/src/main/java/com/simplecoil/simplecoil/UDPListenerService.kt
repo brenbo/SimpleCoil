@@ -86,6 +86,12 @@ class UDPListenerService : Service() {
                     startDiscovery()
                     val until = SystemClock.elapsedRealtime() + PIN_WAIT_MS
                     while (!pins.has(key) && key !in olderServers && SystemClock.elapsedRealtime() < until) {
+                        // Over TCP first: it gets through where UDP doesn't (a server on a Chromebook)
+                        client.fetchBeacon(address)?.let { beacon ->
+                            val fingerprint = beacon.fingerprint
+                            if (fingerprint != null) pins.put(key, fingerprint) else olderServers += key
+                        }
+                        if (pins.has(key) || key in olderServers) break
                         client.ask(address)
                         Thread.sleep(ASK_INTERVAL_MS)
                     }

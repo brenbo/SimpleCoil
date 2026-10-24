@@ -35,6 +35,12 @@ UDP is used for discovery only.
   stops listening.
 - A player can also type the server's IP address in. The phone then asks that address for its
   beacon directly, for the server's certificate fingerprint (see Encryption).
+- Every server also answers on TCP port 17513: a phone sends `SimpleCoil:DISCOVER <the address it
+  used>` and a newline, and gets the beacon back as a line. A server on a Chromebook needs this:
+  ChromeOS passes TCP through to Android apps but not UDP, and Android there sees only an internal
+  address (100.115.92.x), so the server shows the address phones say they used. While the server
+  list is open, phones also try 17513 on every address of their Wi-Fi /24, and a typed address
+  is asked over TCP first.
 
 ## 2. The connection (TCP, port 17510)
 

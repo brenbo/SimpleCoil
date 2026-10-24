@@ -18,7 +18,13 @@ package com.simplecoil.simplecoil
 
 import android.content.Intent
 import android.os.Bundle
+import android.transition.ChangeBounds
+import android.transition.Fade
+import android.transition.TransitionManager
+import android.transition.TransitionSet
 import android.view.View
+import android.view.ViewGroup
+import android.view.animation.PathInterpolator
 import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -355,7 +361,7 @@ class DedicatedServerActivity : AppCompatActivity() {
         title: String = getString(R.string.field_presets_overwrite_title, name),
         onSaved: (() -> Unit)? = null,
     ) {
-        AlertDialog.Builder(this, R.style.AppDialogTheme)
+        AlertDialog.Builder(this, R.style.AppDialogTheme_Confirm)
             .setTitle(title)
             .setMessage(R.string.game_presets_overwrite_body)
             .setPositiveButton(R.string.field_presets_overwrite) { _, _ -> savePreset(name, onSaved) }
@@ -364,7 +370,7 @@ class DedicatedServerActivity : AppCompatActivity() {
     }
 
     private fun confirmPresetDelete(name: String, onDeleted: (() -> Unit)? = null) {
-        AlertDialog.Builder(this, R.style.AppDialogTheme)
+        AlertDialog.Builder(this, R.style.AppDialogTheme_Confirm)
             .setTitle(getString(R.string.field_presets_delete_title, name))
             .setMessage(R.string.game_presets_delete_body)
             .setPositiveButton(R.string.field_presets_delete) { _, _ -> deletePreset(name, onDeleted) }
@@ -565,13 +571,23 @@ class DedicatedServerActivity : AppCompatActivity() {
         b.mapExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.MAP) null else Pane.MAP) }
         b.playersExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.PLAYERS) null else Pane.PLAYERS) }
         onBackPressedDispatcher.addCallback(this, leaveFullPane)
-        savedInstanceState?.getString(STATE_FULL_PANE)?.let { name -> showFull(Pane.entries.firstOrNull { it.name == name }) }
+        savedInstanceState?.getString(STATE_FULL_PANE)?.let { name -> showFull(Pane.entries.firstOrNull { it.name == name }, animate = false) }
     }
 
-    /** Fills the window with [pane], or shows every pane again (null). */
-    private fun showFull(pane: Pane?) {
+    /** Fills the window with [pane], or shows every pane again (null), the panes moving into place. */
+    private fun showFull(pane: Pane?, animate: Boolean = true) {
         val b = binding
         val playersPane = b.playersPane ?: return
+        if (animate) (playersPane.parent as? ViewGroup)?.let { row ->
+            // The other panes fade as this one grows (or the reverse), rather than jumping
+            TransitionManager.beginDelayedTransition(row, TransitionSet()
+                .addTransition(Fade(Fade.OUT))
+                .addTransition(ChangeBounds())
+                .addTransition(Fade(Fade.IN))
+                .setOrdering(TransitionSet.ORDERING_TOGETHER)
+                .setDuration(PANE_ANIMATION_MILLIS)
+                .setInterpolator(PathInterpolator(0.4f, 0f, 0.2f, 1f))) // fast out, slow in
+        }
         fullPane = pane
         b.settingsPane?.isVisible = pane == null
         b.mapPane?.isVisible = pane == null || pane == Pane.MAP
@@ -677,6 +693,7 @@ class DedicatedServerActivity : AppCompatActivity() {
 
     private companion object {
         const val STATE_FULL_PANE = "fullPane"
+        const val PANE_ANIMATION_MILLIS = 300L
         const val REQUEST_RESET = "serverReset"
         const val REQUEST_STOP = "serverStop"
         const val REQUEST_END = "serverEnd"

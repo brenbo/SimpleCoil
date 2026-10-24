@@ -475,6 +475,11 @@
         <item name="android:backgroundTint">@color/sc_orange</item>
     </style>
 
+    <!-- Yes/no confirmations (save over, delete, stop the server): like AppDialogTheme, but
+         narrower on a tablet or Chromebook (values-sw600dp), where a short question looks lost
+         in a wide box -->
+    <style name="AppDialogTheme.Confirm" />
+
     <style name="AppDialogTheme" parent="ThemeOverlay.Material3.Dialog.Alert">
         <item name="colorPrimary">@color/sc_orange</item>
         <item name="colorOnPrimary">@color/sc_on_orange</item>
