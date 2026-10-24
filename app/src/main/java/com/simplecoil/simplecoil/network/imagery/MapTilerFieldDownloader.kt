@@ -29,7 +29,7 @@ import java.net.HttpURLConnection
 /**
  * Downloads a field's aerial photo from MapTiler's satellite tiles: the tileset's TileJSON (its
  * tile URL and deepest zoom), then the tiles under the field's square at a zoom sharp enough,
- * stitched, cut to the square and shrunk to fit by [stitcher]. 50 to 80 requests a field.
+ * stitched, cut to the square and shrunk to fit by [stitcher]. About 20 tiles a field.
  */
 class MapTilerFieldDownloader(
     private val key: String,
@@ -54,8 +54,8 @@ class MapTilerFieldDownloader(
     @Throws(DownloadException::class)
     override fun download(center: LatLon, sideMeters: Double): FieldPack {
         val (template, maxZoom) = tileJson()
-        // Tiles are usually 256 pixels; the first one says what they really are
-        var photo = MapTilerImagery.fieldPhoto(center, sideMeters, ASSUMED_TILE_PX, maxZoom)
+        // The tiles are 512 pixels; the first one says if that ever changes
+        var photo = MapTilerImagery.fieldPhoto(center, sideMeters, MapTilerImagery.TILE_PX, maxZoom)
         var first = tile(template, photo.tiles.zoom, photo.tiles.x0, photo.tiles.y0)
         if (first != null) {
             val px = stitcher.widthOf(first) ?: throw DownloadException(Reason.NETWORK, "MapTiler sent a tile that isn't an image")
@@ -108,7 +108,6 @@ class MapTilerFieldDownloader(
     }
 
     private companion object {
-        const val ASSUMED_TILE_PX = 256
         const val TOO_MANY_REQUESTS = 429
     }
 }

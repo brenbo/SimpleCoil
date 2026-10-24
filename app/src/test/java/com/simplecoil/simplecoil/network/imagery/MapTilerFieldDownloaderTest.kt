@@ -43,7 +43,7 @@ class MapTilerFieldDownloaderTest {
         }
     }
 
-    private fun downloader(stitcher: MapTilerFieldDownloader.TileStitcher = FakeStitcher(256), tile: (String) -> FieldDownloader.Response) =
+    private fun downloader(stitcher: MapTilerFieldDownloader.TileStitcher = FakeStitcher(512), tile: (String) -> FieldDownloader.Response) =
         MapTilerFieldDownloader("K", stitcher, clock = { 99L }) { url ->
             asked += url
             if (url.contains("tiles.json")) FieldDownloader.Response(200, "application/json", tileJson.toByteArray()) else tile(url)
@@ -62,12 +62,12 @@ class MapTilerFieldDownloaderTest {
 
     @Test
     fun theTilesAroundTheField_stitchIntoOnePack_thePhonesCanDraw() {
-        val stitcher = FakeStitcher(256)
+        val stitcher = FakeStitcher(512) // MapTiler's satellite tiles
         val pack = downloader(stitcher) { ok() }.download(center, UsgsImagery.FIELD_SIDE_METERS)
         val photo = stitcher.stitched!!
         val columns = photo.tiles.columns
         val rows = photo.tiles.rows
-        assertEquals(256, photo.tiles.tilePx)
+        assertEquals(512, photo.tiles.tilePx)
         assertEquals(photo.sizePx, pack.info.widthPx)
         assertEquals(photo.sizePx, pack.info.heightPx)
         assertTrue(pack.info.widthPx <= UsgsImagery.MAX_PIXELS)
@@ -77,12 +77,12 @@ class MapTilerFieldDownloaderTest {
         assertEquals(99L, pack.info.createdAtMillis)
         // The TileJSON, then each tile once: a few dozen requests, with the key
         assertEquals(1 + columns * rows, asked.size)
-        assertTrue(asked.size < 100)
+        assertTrue(asked.size < 40)
         assertTrue(asked.all { it.contains("key=K") })
     }
 
     @Test
-    fun biggerTiles_meanOneZoomLess_forTheSamePhoto() {
+    fun otherTileSizes_areMeasured_andTheZoomFollows() {
         val small = FakeStitcher(256)
         downloader(small) { ok() }.download(center, UsgsImagery.FIELD_SIDE_METERS)
         val big = FakeStitcher(512)

@@ -27,13 +27,16 @@ import kotlin.math.roundToInt
  * the US. Used when the build has a MapTiler key (BuildConfig.MAPTILER_KEY, kept out of the
  * source: see app/build.gradle.kts); a build without one uses USGS.
  *
- * The free plan allows 100,000 requests a month (a 256-pixel tile is one), so only the server
- * loads it: the field picker's map, and one photo per field, cut from 50 to 80 tiles and shared
- * with the phones.
+ * The free plan allows 100,000 requests a month, so only the server loads it: the field picker's
+ * map, and one photo per field, cut from about 20 of its 512-pixel tiles and shared with the
+ * phones.
  */
 object MapTilerImagery {
     /** The credit MapTiler asks for wherever its maps are shown. */
     const val CREDIT = "© MapTiler © OpenStreetMap contributors"
+
+    /** The satellite tiles' size: 512 pixels (the TileJSON's "scale": 2). The downloader measures them anyway. */
+    const val TILE_PX = 512
 
     /** The satellite tileset's TileJSON: its tile URL template and zoom range. */
     fun tileJsonUrl(key: String): String = "https://api.maptiler.com/tiles/satellite-v2/tiles.json?key=$key"

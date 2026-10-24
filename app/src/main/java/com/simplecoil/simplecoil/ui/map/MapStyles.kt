@@ -18,6 +18,7 @@ package com.simplecoil.simplecoil.ui.map
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.simplecoil.simplecoil.domain.map.MapTilerImagery
 import com.simplecoil.simplecoil.domain.map.UsgsImagery
 import com.simplecoil.simplecoil.network.imagery.FieldPack
 import org.json.JSONArray
@@ -46,11 +47,11 @@ object MapStyles {
 
     /**
      * The server's field picker: aerial tiles for finding the field. MapTiler's satellite when the
-     * build has its key (256-pixel tiles, one request each), USGS's imagery with roads and names otherwise.
+     * build has its key (512-pixel tiles), USGS's imagery with roads and names otherwise.
      */
     fun browseStyle(): Style.Builder = Style.Builder().fromJson(styleJson(
-        MapImagery.browseTileJson?.let { tileJson -> JSONObject().put("url", tileJson) }
-            ?: JSONObject().put("tiles", JSONArray().put(UsgsImagery.BROWSE_TILES)).put("maxzoom", UsgsImagery.TILES_MAX_ZOOM)))
+        MapImagery.browseTileJson?.let { tileJson -> JSONObject().put("url", tileJson).put("tileSize", MapTilerImagery.TILE_PX) }
+            ?: JSONObject().put("tiles", JSONArray().put(UsgsImagery.BROWSE_TILES)).put("maxzoom", UsgsImagery.TILES_MAX_ZOOM).put("tileSize", 256)))
 
     private fun styleJson(browse: JSONObject?): String {
         val sources = JSONObject()
@@ -58,7 +59,7 @@ object MapStyles {
             .put(JSONObject().put("id", BACKGROUND_LAYER).put("type", "background")
                 .put("paint", JSONObject().put("background-color", BACKGROUND_COLOR)))
         if (browse != null) {
-            sources.put(BROWSE_SOURCE, browse.put("type", "raster").put("tileSize", 256))
+            sources.put(BROWSE_SOURCE, browse.put("type", "raster"))
             layers.put(JSONObject().put("id", BROWSE_SOURCE).put("type", "raster").put("source", BROWSE_SOURCE))
         }
         return JSONObject()
