@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The field map on a wide window (a Chromebook, a tablet held sideways): the map on the left,
+     the controls in a column on the right, rather than stacked under a map laid out for a tall
+     phone. The same ids and views as the phone layout, so the screen's code is the same. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:baselineAligned="false"
+    android:background="@color/sc_background"
+    android:fitsSystemWindows="true"
+    android:orientation="horizontal">
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+
+        <org.maplibre.android.maps.MapView
+            android:id="@+id/field_map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Capture points, drawn over the map at their real size; taps go through to the map. -->
+        <FrameLayout
+            android:id="@+id/field_objectives_layer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/field_hint_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:background="#B30E1116"
+            android:padding="8dp"
+            android:text="@string/field_map_hint"
+            android:textColor="@color/sc_text"
+            android:textSize="14sp" />
+
+        <!-- The imagery's credit, in the map's corner -->
+        <TextView
+            android:id="@+id/field_credit_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="6dp"
+            android:background="#990E1116"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:text="@string/map_credit_short"
+            android:textColor="#AAFFFFFF"
+            android:textSize="11sp" />
+    </FrameLayout>
+
+    <ScrollView
+        android:layout_width="380dp"
+        android:layout_height="match_parent"
+        android:background="#F20E1116">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+    <TextView
+        android:id="@+id/field_status_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/sc_text"
+        android:textSize="14sp" />
+
+    <ProgressBar
+        android:id="@+id/field_progress"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/field_border_label"
+        android:textColor="@color/sc_text"
+        android:textSize="12sp" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/field_tool_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:singleSelection="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/field_tool_circle_button"
+            style="@style/FieldToolSegment"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/field_tool_circle" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/field_tool_polygon_button"
+            style="@style/FieldToolSegment"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/field_tool_polygon" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/field_tool_walk_button"
+            style="@style/FieldToolSegment"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/field_tool_walk" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/field_tool_spawns_button"
+            style="@style/FieldToolSegment"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/field_tool_spawns" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/field_tool_objectives_button"
+            style="@style/FieldToolSegment"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/field_tool_objectives" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- With the Spawns tool: which team a tap adds a spawn for, and Auto-place. -->
+    <LinearLayout
+        android:id="@+id/field_spawn_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_spawn_team_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp" />
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_auto_place_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:text="@string/field_auto_place" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal">
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_undo_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:text="@string/field_undo" />
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_clear_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:text="@string/field_clear" />
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_presets_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:text="@string/field_presets" />
+    </LinearLayout>
+
+    <!-- Below: the map's photo the phones get, not the field's layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="@color/sc_outline_strong" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:letterSpacing="0.06"
+            android:text="@string/field_background_divider"
+            android:textAllCaps="true"
+            android:textColor="@color/sc_text_secondary"
+            android:textSize="11sp" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:background="@color/sc_outline_strong" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal">
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_my_location_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:text="@string/field_map_my_location" />
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_download_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:text="@string/field_map_download" />
+
+        <Button
+            style="@style/Widget.SimpleCoil.Button.Compact"
+            android:id="@+id/field_delete_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:text="@string/field_map_delete" />
+    </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

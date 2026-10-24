@@ -151,7 +151,10 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
         // Laid out in a box of boxW x boxH units, scaled to fit
         val boxW = if (pistol) 106f else 140f
         val boxH = if (pistol) 80f else 44f
-        val scale = min(w / boxW, h / boxH) * 0.92f
+        // Room all round for the pulse ring (up to 10 units out), which can sit at the very edge
+        // (reload, under the grip): on a short, wide window the gun fills the height, and the
+        // ring was cut off
+        val scale = min(w / (boxW + 2 * RING_ROOM), h / (boxH + 2 * RING_ROOM))
         val ox = (w - boxW * scale) / 2
         val oy = (h - boxH * scale) / 2
         fun x(v: Float) = ox + v * scale
@@ -551,6 +554,8 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
     }
 
     private companion object {
+        /** Space round the blaster for the pulse ring, in the drawing's units. */
+        const val RING_ROOM = 12f
         const val LOOP_MILLIS = 2_400L
         const val OUTLINE = 0xFFB0BEC5.toInt()
         const val HIGHLIGHT = 0xFFFF9800.toInt()

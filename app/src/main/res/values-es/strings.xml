@@ -10,6 +10,7 @@
     <string name="player_sheet_title">Jugadores: toca uno para sus ajustes</string>
     <string name="pane_fullscreen">Llenar la ventana</string>
     <string name="pane_fullscreen_exit">Mostrar todos los paneles</string>
+    <string name="pane_divider">Arrastra para cambiar el tamaño de los paneles</string>
 
     <string name="reconnect_weapon_button">Reconectar</string>
     <string name="connect_weapon_button">Conectar blaster</string>

@@ -83,6 +83,7 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 import java.io.IOException
+import kotlin.math.roundToInt
 
 /**
  * The dedicated server's screen (dedicated server design §6.2). The server runs in its own
@@ -568,6 +569,9 @@ class DedicatedServerActivity : AppCompatActivity() {
                 .replace(R.id.referee_map_container, RefereeMapFragment.newInstance(embedded = true))
                 .commit()
         }
+        // The map pane's corners are rounded like the others' (its map draws as a texture, so it's clipped)
+        b.mapPane?.clipToOutline = true
+        setUpDividers()
         b.mapExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.MAP) null else Pane.MAP) }
         b.playersExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.PLAYERS) null else Pane.PLAYERS) }
         onBackPressedDispatcher.addCallback(this, leaveFullPane)
@@ -588,16 +592,25 @@ class DedicatedServerActivity : AppCompatActivity() {
                 .setDuration(PANE_ANIMATION_MILLIS)
                 .setInterpolator(PathInterpolator(0.4f, 0f, 0.2f, 1f))) // fast out, slow in
         }
+        val was = fullPane
         fullPane = pane
         b.settingsPane?.isVisible = pane == null
         b.mapPane?.isVisible = pane == null || pane == Pane.MAP
         playersPane.isVisible = pane == null || pane == Pane.PLAYERS
-        // The players' pane has a set width beside the map; alone it takes the window
+        b.dividerLeft?.isVisible = pane == null
+        b.dividerRight?.isVisible = pane == null
+        // The players' pane may have a set width beside the others; alone it takes the window
         (playersPane.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
-            if (playersWidth == null) playersWidth = lp.width to lp.weight
-            val (width, weight) = if (pane == Pane.PLAYERS) 0 to 1f else playersWidth!!
-            lp.width = width
-            lp.weight = weight
+            if (pane == Pane.PLAYERS && was != Pane.PLAYERS) playersWidth = lp.width to lp.weight
+            if (pane == Pane.PLAYERS) {
+                lp.width = 0
+                lp.weight = 1f
+            } else if (was == Pane.PLAYERS) {
+                playersWidth?.let { (width, weight) ->
+                    lp.width = width
+                    lp.weight = weight
+                }
+            }
             playersPane.layoutParams = lp
         }
         fun look(button: ImageButton?, full: Boolean) {
@@ -611,6 +624,61 @@ class DedicatedServerActivity : AppCompatActivity() {
 
     /** The players' pane's width and weight beside the others, kept while it fills the window. */
     private var playersWidth: Pair<Int, Float>? = null
+
+    /**
+     * The dividers between the panes: dragging one sizes the pane at its side (the settings for
+     * the left one, the players for the right), as with split screen. The map, or in the
+     * two-pane layout the players, takes what's left. The widths are kept for next time.
+     */
+    private fun setUpDividers() {
+        val b = binding
+        val settings = b.settingsPane ?: return
+        val panes = getSharedPreferences(PANES_PREFS, MODE_PRIVATE)
+        b.dividerLeft?.let { divider ->
+            divider.onDrag = { dx -> resize(settings, dx) }
+            divider.onDragEnd = { panes.edit().putInt(PANE_SETTINGS_DP, toDp(settings.layoutParams.width)).apply() }
+        }
+        b.playersPane?.let { players ->
+            b.dividerRight?.let { divider ->
+                divider.onDrag = { dx -> resize(players, -dx) }
+                divider.onDragEnd = { panes.edit().putInt(PANE_PLAYERS_DP, toDp(players.layoutParams.width)).apply() }
+            }
+        }
+        // As they were left (kept in range once the window is laid out)
+        settings.post {
+            panes.getInt(PANE_SETTINGS_DP, 0).takeIf { it > 0 }?.let { resize(settings, toPx(it) - settings.width.toFloat()) }
+            b.playersPane?.takeIf { b.dividerRight != null }?.let { players ->
+                panes.getInt(PANE_PLAYERS_DP, 0).takeIf { it > 0 }?.let { resize(players, toPx(it) - players.width.toFloat()) }
+            }
+        }
+    }
+
+    /**
+     * Makes [pane] [by] pixels wider (narrower if negative), as a set width, no narrower than
+     * [MIN_PANE_DP] and leaving at least that much to the pane that takes the rest.
+     */
+    private fun resize(pane: View, by: Float) {
+        val row = pane.parent as? ViewGroup ?: return
+        val lp = pane.layoutParams as? LinearLayout.LayoutParams ?: return
+        val min = toPx(MIN_PANE_DP)
+        // What the other panes need: their set widths, and the minimum for the one that stretches
+        var others = row.paddingLeft + row.paddingRight + lp.leftMargin + lp.rightMargin
+        for (i in 0 until row.childCount) {
+            val child = row.getChildAt(i)
+            if (child === pane || !child.isVisible) continue
+            val clp = child.layoutParams as LinearLayout.LayoutParams
+            others += clp.leftMargin + clp.rightMargin + if (clp.weight > 0f) min else child.width
+        }
+        val max = (row.width - others).coerceAtLeast(min)
+        // From the width last set: several moves can come before the next layout
+        val from = if (lp.weight == 0f && lp.width > 0) lp.width else pane.width
+        lp.width = (from + by).roundToInt().coerceIn(min, max)
+        lp.weight = 0f
+        pane.layoutParams = lp
+    }
+
+    private fun toPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
+    private fun toDp(px: Int): Int = (px / resources.displayMetrics.density).toInt()
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -694,6 +762,11 @@ class DedicatedServerActivity : AppCompatActivity() {
     private companion object {
         const val STATE_FULL_PANE = "fullPane"
         const val PANE_ANIMATION_MILLIS = 300L
+        const val PANES_PREFS = "serverPanes"
+        const val PANE_SETTINGS_DP = "settingsDp"
+        const val PANE_PLAYERS_DP = "playersDp"
+        /** No pane narrower than this when dragging a divider. */
+        const val MIN_PANE_DP = 280
         const val REQUEST_RESET = "serverReset"
         const val REQUEST_STOP = "serverStop"
         const val REQUEST_END = "serverEnd"

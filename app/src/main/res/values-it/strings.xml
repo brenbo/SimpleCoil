@@ -10,6 +10,7 @@
     <string name="player_sheet_title">Giocatori: tocca uno per le sue impostazioni</string>
     <string name="pane_fullscreen">Riempi la finestra</string>
     <string name="pane_fullscreen_exit">Mostra tutti i pannelli</string>
+    <string name="pane_divider">Trascina per ridimensionare i pannelli</string>
 
     <string name="reconnect_weapon_button">Riconnetti</string>
     <string name="connect_weapon_button">Connetti blaster</string>

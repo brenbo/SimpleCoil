@@ -46,6 +46,7 @@ import com.simplecoil.simplecoil.network.server.SessionPhase
 import com.simplecoil.simplecoil.ui.map.CameraLimits
 import com.simplecoil.simplecoil.ui.map.DropOverlay
 import com.simplecoil.simplecoil.ui.map.GlyphOverlay
+import com.simplecoil.simplecoil.ui.map.MapCredit
 import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
 import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
@@ -172,6 +173,8 @@ class RefereeMapFragment : Fragment() {
                     // a pane stays, its game controls only shown during a game
                     if (!running && !embedded) requireActivity().finish()
                     binding.refControls.isVisible = running
+                    // The credit sits above the referee's controls while they show
+                    binding.refControls.post { _binding?.let { b -> b.refCreditTv.translationY = if (running) -b.refControls.height.toFloat() else 0f } }
                     if (!running) stopPlacing()
                 }
             }
@@ -243,6 +246,11 @@ class RefereeMapFragment : Fragment() {
                             container.serverFieldStore.load()?.let { pack -> MapStyles.decodeFieldPhoto(pack)?.let { pack to it } }
                         }
                         style?.let { MapStyles.showFieldPhoto(it, photo?.first, photo?.second) }
+                        // Its credit, as every map shows (MapTiler's or USGS's, as the photo says)
+                        _binding?.refCreditTv?.let { credit ->
+                            credit.isVisible = photo != null
+                            photo?.let { MapCredit.attach(credit, MapCredit.isMapTiler(it.first.info.credit)) }
+                        }
                         // A new field: fit it again
                         placed = false
                     }
