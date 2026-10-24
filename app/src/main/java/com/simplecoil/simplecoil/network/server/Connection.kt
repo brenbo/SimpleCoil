@@ -26,6 +26,7 @@ import java.io.IOException
 import java.net.InetAddress
 import java.net.Socket
 import java.util.concurrent.ArrayBlockingQueue
+import javax.net.ssl.SSLSocket
 
 /**
  * One per accepted socket. Has no game state. Keyed in [GameRoster] by its connection id,
@@ -70,6 +71,21 @@ class Connection(val connectionId: Int, private val socket: Socket?) {
     }
 
     val inetAddress: InetAddress? get() = socket?.inetAddress
+
+    /**
+     * Finishes the TLS handshake (v08), waiting up to [timeoutMillis] for it; nothing to do on a
+     * plain socket. For the reader thread, before its first read.
+     *
+     * @throws IOException if it fails: a phone on an older version, or not a phone at all
+     */
+    @Throws(IOException::class)
+    fun handshake(timeoutMillis: Int) {
+        val tls = socket as? SSLSocket ?: return
+        val readTimeout = tls.soTimeout
+        tls.soTimeout = timeoutMillis
+        tls.startHandshake()
+        tls.soTimeout = readTimeout
+    }
 
     /**
      * Queues [message] for the writer and returns at once. False if the connection is closed, or

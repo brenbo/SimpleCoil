@@ -24,8 +24,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.BufferedOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.ServerSocket
+import javax.net.ServerSocketFactory
 import java.net.Socket
 import java.net.SocketException
 import java.util.concurrent.ExecutorService
@@ -53,6 +55,8 @@ class FieldImageryServer(
     private val port: Int = FieldImageryProtocol.PORT,
     /** The server's wall clock, sent with the config so phones can time drops. */
     private val clock: () -> Long = System::currentTimeMillis,
+    /** TLS under the server's identity (v08); plain in tests. Asked for when the service starts. */
+    private val serverSockets: () -> ServerSocketFactory = { ServerSocketFactory.getDefault() },
 ) {
     /** What a game answers beyond the field itself (map design: phase 4); null outside a game. */
     interface Extras {
@@ -88,7 +92,8 @@ class FieldImageryServer(
     @Volatile
     var briefing: com.simplecoil.simplecoil.domain.briefing.BriefingNow? = null
 
-    private fun serveExtra(request: FieldImageryProtocol.Request, out: java.io.OutputStream) {
+    /** A game extra for [request]; [from] is the asking phone's address (a voice key goes only to its own player). */
+    private fun serveExtra(request: FieldImageryProtocol.Request, out: java.io.OutputStream, from: InetAddress?) {
         val extras = extras
         val reply: String
         var body: ByteArray? = null
@@ -106,7 +111,7 @@ class FieldImageryServer(
                     FieldImageryProtocol.Kind.REPLAY -> extras?.replay()
                     FieldImageryProtocol.Kind.READY -> extras?.ready()
                     FieldImageryProtocol.Kind.SOUND -> request.knownId.toIntOrNull()?.let { sounds.body(it) }
-                    FieldImageryProtocol.Kind.VOICE -> request.knownId.toIntOrNull()?.let { voice.body(it) }
+                    FieldImageryProtocol.Kind.VOICE -> request.knownId.toIntOrNull()?.let { voice.body(it, from) }
                     FieldImageryProtocol.Kind.BRIEF -> briefing?.toBytes()
                     else -> extras?.stats()
                 }
@@ -135,7 +140,7 @@ class FieldImageryServer(
     fun start() {
         if (socket != null) return
         val server = try {
-            ServerSocket().apply {
+            serverSockets().createServerSocket().apply {
                 reuseAddress = true
                 bind(InetSocketAddress(port))
             }
@@ -220,7 +225,7 @@ class FieldImageryServer(
             when (request.kind) {
                 FieldImageryProtocol.Kind.CLAIM, FieldImageryProtocol.Kind.UAV, FieldImageryProtocol.Kind.STATS, FieldImageryProtocol.Kind.MODE,
                 FieldImageryProtocol.Kind.REPLAY, FieldImageryProtocol.Kind.READY, FieldImageryProtocol.Kind.SOUND, FieldImageryProtocol.Kind.VOICE, FieldImageryProtocol.Kind.BRIEF -> {
-                    serveExtra(request, out)
+                    serveExtra(request, out, client.inetAddress)
                     out.flush()
                     return
                 }

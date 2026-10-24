@@ -20,6 +20,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
@@ -77,14 +78,43 @@ class UDPListenerService : Service() {
         val ip = serverIP.removePrefix("/")
         Thread {
             try {
-                gameState.serverIP = InetAddress.getByName(ip)
-                clientEvents.publish(ClientEvent.ServerReply(null))
+                val address = InetAddress.getByName(ip)
+                val key = address.hostAddress ?: ip
+                // v08: connect only once the server has named its certificate in a beacon. A typed
+                // address may not have sent one here yet, so ask it directly.
+                if (!pins.has(key)) {
+                    startDiscovery()
+                    val until = SystemClock.elapsedRealtime() + PIN_WAIT_MS
+                    while (!pins.has(key) && key !in olderServers && SystemClock.elapsedRealtime() < until) {
+                        client.ask(address)
+                        Thread.sleep(ASK_INTERVAL_MS)
+                    }
+                }
+                when {
+                    pins.has(key) -> {
+                        gameState.serverIP = address
+                        clientEvents.publish(ClientEvent.ServerReply(null))
+                    }
+                    key in olderServers -> clientEvents.publish(ClientEvent.VersionError)
+                    else -> {
+                        Log.w(TAG, "No SimpleCoil server answered at $ip")
+                        sendFailedJoin()
+                    }
+                }
             } catch (e: UnknownHostException) {
                 Log.e(TAG, "Failed to resolve server IP: $ip", e)
+                sendFailedJoin()
+            } catch (e: InterruptedException) {
                 sendFailedJoin()
             }
         }.start()
     }
+
+    /** Each server's certificate fingerprint, from its beacon (v08). */
+    private val pins get() = (application as SimpleCoilApp).container.serverPins
+
+    /** Servers whose beacon named no certificate: an older SimpleCoil, which this one can't join. */
+    private val olderServers: MutableSet<String> = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap())
 
     fun joinServer(serverIP: InetAddress?) {
         if (serverIP != null) joinServer(serverIP.hostAddress) else sendFailedJoin()
@@ -102,8 +132,15 @@ class UDPListenerService : Service() {
                 pingMs: Long,
                 inGame: Boolean,
                 allowJoinInProgress: Boolean,
+                fingerprint: String?,
             ) {
                 val now = android.os.SystemClock.elapsedRealtime()
+                if (fingerprint != null) {
+                    pins.put(serverIp, fingerprint)
+                    olderServers -= serverIp
+                } else {
+                    olderServers += serverIp
+                }
                 val old = serverMap[serverIp]
                 val smoothedPing = if (old != null && old.pingMs > 0) {
                     (old.pingMs * 0.7 + pingMs * 0.3).toLong()
@@ -139,5 +176,8 @@ class UDPListenerService : Service() {
 
     private companion object {
         const val TAG = "UDPSvc"
+        /** How long a typed address has to send its beacon. */
+        const val PIN_WAIT_MS = 4_000L
+        const val ASK_INTERVAL_MS = 500L
     }
 }

@@ -26,8 +26,9 @@ import com.simplecoil.simplecoil.domain.map.FieldConfig
 import com.simplecoil.simplecoil.domain.map.Readiness
 import com.simplecoil.simplecoil.domain.mode.ModeState
 import com.simplecoil.simplecoil.domain.postgame.GameRecord
-import com.simplecoil.simplecoil.network.voice.VoiceAccess
+import com.simplecoil.simplecoil.network.voice.VoiceGrant
 import org.json.JSONObject
+import com.simplecoil.simplecoil.network.tls.SecureConnector
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -53,8 +54,24 @@ class FieldImageryClient(
     private val port: Int = FieldImageryProtocol.PORT,
     private val minIntervalMillis: Long = MIN_INTERVAL_MILLIS,
     private val configs: FieldConfigStore? = null,
+    /** TLS to the server, checking its certificate (v08); plain in tests. */
+    private val connector: SecureConnector = SecureConnector.PLAIN,
 ) {
     enum class Result { UPDATED, SAME, NONE, FAILED }
+
+    /** A connection to the field service on [server], over TLS (v08). */
+    @Throws(IOException::class)
+    private fun open(server: InetAddress): Socket {
+        val plain = Socket()
+        try {
+            plain.connect(InetSocketAddress(server, port), FieldImageryProtocol.CONNECT_TIMEOUT_MS)
+            plain.soTimeout = FieldImageryProtocol.READ_TIMEOUT_MS
+            return connector.secure(plain, server, port)
+        } catch (e: IOException) {
+            plain.close()
+            throw e
+        }
+    }
 
     /** The server's clock minus this phone's, from the last config reply. */
     @Volatile
@@ -118,9 +135,7 @@ class FieldImageryClient(
         onNone: () -> Unit,
         onPack: (ByteArray) -> Unit,
     ): Result = try {
-        Socket().use { socket ->
-            socket.connect(InetSocketAddress(server, port), FieldImageryProtocol.CONNECT_TIMEOUT_MS)
-            socket.soTimeout = FieldImageryProtocol.READ_TIMEOUT_MS
+        open(server).use { socket ->
             val sentAt = System.currentTimeMillis()
             socket.getOutputStream().apply {
                 write(FieldImageryProtocol.requestLine(knownId, kind).toByteArray(Charsets.US_ASCII))
@@ -192,11 +207,11 @@ class FieldImageryClient(
         kotlin.Result.success(body?.let { BriefingNow.fromBytes(it) })
     } ?: kotlin.Result.failure(java.io.IOException("no answer about the briefing"))
 
-    /** What [playerId] may do with voice chat; off if the server can't say (an older one). */
-    fun voice(server: InetAddress, playerId: Int): VoiceAccess = exchange(server,
+    /** What [playerId] may do with voice chat, and their voice key (v08); off if the server can't say. */
+    fun voice(server: InetAddress, playerId: Int): VoiceGrant = exchange(server,
         FieldImageryProtocol.requestLine(playerId.toString(), FieldImageryProtocol.Kind.VOICE)) { _, body ->
-        VoiceAccess.fromBody(body?.let { String(it, Charsets.US_ASCII) })
-    } ?: VoiceAccess.OFF
+        VoiceGrant.fromBody(body?.let { String(it, Charsets.US_ASCII) })
+    } ?: VoiceGrant.OFF
 
     /** The last game for the post-game map; null if the server keeps none (or can't say). */
     fun replay(server: InetAddress): GameRecord? = exchange(server,
@@ -222,9 +237,7 @@ class FieldImageryClient(
 
     /** Sends [line], reads the reply (and its body, if it has one) and makes something of them; null on any failure. */
     private fun <T> exchange(server: InetAddress, line: String, read: (FieldImageryProtocol.Reply, ByteArray?) -> T?): T? = try {
-        Socket().use { socket ->
-            socket.connect(InetSocketAddress(server, port), FieldImageryProtocol.CONNECT_TIMEOUT_MS)
-            socket.soTimeout = FieldImageryProtocol.READ_TIMEOUT_MS
+        open(server).use { socket ->
             socket.getOutputStream().apply {
                 write(line.toByteArray(Charsets.US_ASCII))
                 flush()

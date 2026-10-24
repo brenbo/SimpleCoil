@@ -106,7 +106,8 @@ class TcpServer : Service() {
         serverPlayers = PlayerRepository(settings, gameState)
         server = GameServer(settings, serverPlayers, gameState, container.serverEvents, container.clock,
             saveTeamMode = { container.userPreferences.saveTeamMode(it) },
-            liveGameProvider = { liveGame })
+            liveGameProvider = { liveGame },
+            serverSockets = container.serverIdentity.serverSocketFactory)
         beacon = DiscoveryBeacon(this)
     }
 
@@ -133,6 +134,8 @@ class TcpServer : Service() {
         server.loadSettings(saved)
         server.start()
         val serverName = container.userPreferences.activePresetName()?.ifBlank { null } ?: SERVER_NAME
+        // v08: phones accept only the certificate this fingerprint names
+        beacon.fingerprint = container.serverIdentity.fingerprint
         beacon.start(serverName)
         scope.launch {
             server.snapshot.collect { snapshot ->
@@ -149,6 +152,9 @@ class TcpServer : Service() {
         startLiveGame()
         // An admin may talk to everyone even with voice chat off
         container.fieldImageryServer.voice.isAdmin = { id -> serverPlayers.playerSettings[id.toByte()]?.isAdmin == true }
+        // v08: a player's voice key goes only to their own phone; a new server run, new keys
+        container.fieldImageryServer.voice.addressOf = { id -> serverPlayers.teamIPMap[id.toByte()] }
+        container.fieldImageryServer.voice.forgetKeys()
         voiceRelay = VoiceRelay(container.fieldImageryServer.voice, ::voicePeers, { serverSettings.teamLayout.mode.isFreeForAll }).also { it.start() }
         server.setServerIp(PlayerRepository.getIPAddress()?.hostAddress ?: PlayerRepository.getIPAddressStr())
         startAsForeground()

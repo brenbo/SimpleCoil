@@ -29,6 +29,7 @@ import com.simplecoil.simplecoil.network.WireCodec
 import com.simplecoil.simplecoil.network.WirePending
 import com.simplecoil.simplecoil.network.WirePlayerSettings
 import com.simplecoil.simplecoil.network.server.SessionPhase
+import com.simplecoil.simplecoil.network.tls.SecureConnector
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -45,6 +46,8 @@ class GameClient(
     private val foreground: Foreground,
     network: () -> Network? = { null },
     io: CoroutineDispatcher = Dispatchers.IO,
+    /** TLS to the server (v08); plain in tests that read the frames themselves. */
+    connector: SecureConnector = SecureConnector.PLAIN,
 ) {
     /** The network notification, while the client is connected or rejoining. */
     interface Foreground {
@@ -68,7 +71,7 @@ class GameClient(
         override fun onConnected(rejoin: Boolean) = sendPlayerInfo(rejoin)
 
         override fun onStopped() = foreground.stop()
-    }, network, io)
+    }, network, io, connector)
 
     /** The server's session phase, from the latest game info. */
     val sessionPhase: SessionPhase get() = handler.sessionPhase

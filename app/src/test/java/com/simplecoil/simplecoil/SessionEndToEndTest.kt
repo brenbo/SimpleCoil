@@ -191,7 +191,7 @@ class SessionEndToEndTest {
         notify(packet())
         advance(401) // HIT/OUT messages are limited to one per 400 ms
         notify(packet().also { it[9] = 0x04; it[8] = 0x3E })
-        assertEquals(listOf("SimpleCoil:07MESGHIT2", "SimpleCoil:07MESGOUT2", "ELIMINATED2 (reliable)"), sent())
+        assertEquals(listOf("SimpleCoil:08MESGHIT2", "SimpleCoil:08MESGOUT2", "ELIMINATED2 (reliable)"), sent())
         // Eliminated: stage 1 locks the blaster.
         assertEquals("20 00 02 00 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", writes(commandChar).last())
     }

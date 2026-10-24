@@ -55,16 +55,16 @@ class NetworkSessionGatewayTest {
 
     @Test
     fun messageFormat_isPrefixVersionMesgPayload() {
-        assertEquals("SimpleCoil:07MESGHIT2", NetworkSessionGateway.command(ClientCommand.Hit(2)))
-        assertEquals("SimpleCoil:07MESGOUT32", NetworkSessionGateway.command(ClientCommand.Out(32)))
-        assertEquals("SimpleCoil:07MESGSHOTFIRED", NetworkSessionGateway.command(ClientCommand.ShotFired))
-        assertEquals("SimpleCoil:07MESGELIMINATED7", NetworkSessionGateway.command(ClientCommand.Eliminated(7)))
-        assertEquals("SimpleCoil:07MESGTEAMELIMINATED", NetworkSessionGateway.command(ClientCommand.TeamEliminated))
-        assertEquals("SimpleCoil:07MESGPLAYERDATAREQUEST", NetworkSessionGateway.command(ClientCommand.PlayerDataRequest))
-        assertEquals("SimpleCoil:07MESGSTARTGAME", NetworkSessionGateway.command(ClientCommand.StartGame))
-        assertEquals("SimpleCoil:07MESGADMIN_GAMEMODE4", NetworkSessionGateway.command(ClientCommand.AdminGameMode(4)))
-        assertEquals("SimpleCoil:07MESGADMIN_TEAMSIZES16,16", NetworkSessionGateway.command(ClientCommand.AdminTeamSizes(listOf(16, 16))))
-        assertEquals("SimpleCoil:07MESGADMIN_RESET", NetworkSessionGateway.command(ClientCommand.AdminReset))
+        assertEquals("SimpleCoil:08MESGHIT2", NetworkSessionGateway.command(ClientCommand.Hit(2)))
+        assertEquals("SimpleCoil:08MESGOUT32", NetworkSessionGateway.command(ClientCommand.Out(32)))
+        assertEquals("SimpleCoil:08MESGSHOTFIRED", NetworkSessionGateway.command(ClientCommand.ShotFired))
+        assertEquals("SimpleCoil:08MESGELIMINATED7", NetworkSessionGateway.command(ClientCommand.Eliminated(7)))
+        assertEquals("SimpleCoil:08MESGTEAMELIMINATED", NetworkSessionGateway.command(ClientCommand.TeamEliminated))
+        assertEquals("SimpleCoil:08MESGPLAYERDATAREQUEST", NetworkSessionGateway.command(ClientCommand.PlayerDataRequest))
+        assertEquals("SimpleCoil:08MESGSTARTGAME", NetworkSessionGateway.command(ClientCommand.StartGame))
+        assertEquals("SimpleCoil:08MESGADMIN_GAMEMODE4", NetworkSessionGateway.command(ClientCommand.AdminGameMode(4)))
+        assertEquals("SimpleCoil:08MESGADMIN_TEAMSIZES16,16", NetworkSessionGateway.command(ClientCommand.AdminTeamSizes(listOf(16, 16))))
+        assertEquals("SimpleCoil:08MESGADMIN_RESET", NetworkSessionGateway.command(ClientCommand.AdminReset))
     }
 
     private fun gateway(client: TcpClient? = mock(TcpClient::class.java)) =
@@ -78,9 +78,9 @@ class NetworkSessionGatewayTest {
         g.sendOut(3)
         g.sendShotFired()
         g.sendEliminated(4)
-        verify(client).sendTCPMessage("SimpleCoil:07MESGHIT2")
-        verify(client).sendTCPMessage("SimpleCoil:07MESGOUT3")
-        verify(client).sendTCPMessage("SimpleCoil:07MESGSHOTFIRED")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGHIT2")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGOUT3")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGSHOTFIRED")
         verify(client).sendReliable("ELIMINATED4")
     }
 

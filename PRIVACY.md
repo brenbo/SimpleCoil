@@ -27,7 +27,7 @@ The server keeps the photo on its device and sends it to the phones that join it
 SimpleCoil uses Bluetooth to find and connect to your blaster. The app remembers your blaster's Bluetooth address so it can reconnect to it. When you join a network game, that address is sent to the game server so the server can recognize your blaster if you rejoin.
 
 ### Local network
-Network games run over your local Wi-Fi network. The app finds game servers on that network and connects to them directly. The game server and the other players can see each device's local network (IP) address, and the scoreboard shows it. These addresses only work inside your local network.
+Network games run over your local Wi-Fi network. The app finds game servers on that network and connects to them directly. Everything a game sends between phones, including locations and voice chat, is encrypted. The game server and the other players can see each device's local network (IP) address, and the scoreboard shows it. These addresses only work inside your local network.
 
 ### Camera
 The camera is used only to scan QR codes, such as the code that pairs a phone with a blaster. Images are processed on your device and are never saved or sent anywhere.

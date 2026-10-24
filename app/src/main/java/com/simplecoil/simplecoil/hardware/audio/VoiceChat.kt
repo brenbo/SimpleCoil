@@ -97,6 +97,10 @@ class VoiceChat(
         _muted.value = if (mute) _muted.value + playerIds else _muted.value - playerIds.toSet()
     }
 
+    /** This phone's voice key from the server (v08): it seals what this phone says and opens what it hears. */
+    @Volatile
+    var key: ByteArray? = null
+
     /** With voice chat off, an admin talks only to everyone (no team chat). */
     @Volatile
     private var broadcastOnly = false
@@ -195,7 +199,8 @@ class VoiceChat(
                 if (read < frame.size) continue
                 val to = server() ?: continue
                 val s = socket ?: break
-                val bytes = VoiceProtocol.encode(VoiceProtocol.Packet(playerId(), everyone(), seq, frame))
+                val sealWith = key ?: continue // no key from the server: nobody could open it
+                val bytes = VoiceProtocol.seal(VoiceProtocol.Packet(playerId(), everyone(), seq, frame), sealWith)
                 seq = (seq + 1) and 0xFF
                 try {
                     s.send(DatagramPacket(bytes, bytes.size, to, VoiceProtocol.PORT))
@@ -222,7 +227,7 @@ class VoiceChat(
                 try {
                     packet.setLength(buffer.size)
                     s.receive(packet)
-                    val voice = VoiceProtocol.decode(buffer, packet.length)
+                    val voice = key?.let { VoiceProtocol.open(buffer, packet.length, it) }
                     // Muted here, unless an admin is talking to everyone (the server marks only those)
                     if (voice != null && voice.playerId != playerId() && (voice.everyone || voice.playerId !in _muted.value)) {
                         val speaker = speakers.getOrPut(voice.playerId) { Speaker(newTrack(), now) }

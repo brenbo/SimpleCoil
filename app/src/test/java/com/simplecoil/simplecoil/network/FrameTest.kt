@@ -31,14 +31,14 @@ class FrameTest {
 
     @Test
     fun mesg_bodyIsTheCommand() {
-        assertFrame("SimpleCoil:07MESGELIMINATED7", Kind.MESG, "ELIMINATED7")
-        assertFrame("SimpleCoil:07MESG", Kind.MESG, "")
+        assertFrame("SimpleCoil:08MESGELIMINATED7", Kind.MESG, "ELIMINATED7")
+        assertFrame("SimpleCoil:08MESG", Kind.MESG, "")
     }
 
     @Test
     fun json_bodyIsTheJsonText() {
-        assertFrame("SimpleCoil:07JSON{\"playerID\":3}", Kind.JSON, "{\"playerID\":3}")
-        assertFrame("SimpleCoil:07JSON", Kind.JSON, "")
+        assertFrame("SimpleCoil:08JSON{\"playerID\":3}", Kind.JSON, "{\"playerID\":3}")
+        assertFrame("SimpleCoil:08JSON", Kind.JSON, "")
     }
 
     @Test
@@ -58,17 +58,17 @@ class FrameTest {
     fun shortOrGarbageFrames_areUnknown() {
         assertFrame(null, Kind.UNKNOWN)
         assertFrame("", Kind.UNKNOWN)
-        assertFrame("SimpleCoil:07", Kind.UNKNOWN)
-        assertFrame("SimpleCoil:07JS", Kind.UNKNOWN)
-        assertFrame("SimpleCoil:07X", Kind.UNKNOWN)
-        assertFrame("SimpleCoil:07XXXXELIMINATED7", Kind.UNKNOWN)
+        assertFrame("SimpleCoil:08", Kind.UNKNOWN)
+        assertFrame("SimpleCoil:08JS", Kind.UNKNOWN)
+        assertFrame("SimpleCoil:08X", Kind.UNKNOWN)
+        assertFrame("SimpleCoil:08XXXXELIMINATED7", Kind.UNKNOWN)
         assertFrame("hello", Kind.UNKNOWN)
         assertFrame("Pong", Kind.UNKNOWN)
     }
 
     @Test
     fun nonAscii_isKeptInTheBody() {
-        assertFrame("SimpleCoil:07JSON{\"playername\":\"Zoë ✓ 名前\"}", Kind.JSON, "{\"playername\":\"Zoë ✓ 名前\"}")
+        assertFrame("SimpleCoil:08JSON{\"playername\":\"Zoë ✓ 名前\"}", Kind.JSON, "{\"playername\":\"Zoë ✓ 名前\"}")
         assertFrame("Ü", Kind.UNKNOWN)
     }
 }

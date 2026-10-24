@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.ServerSocket
+import javax.net.ServerSocketFactory
 import java.net.SocketTimeoutException
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -66,6 +67,8 @@ class GameServer @JvmOverloads constructor(
     /** Saves an admin's team mode as the operator's own choice. */
     saveTeamMode: (TeamMode) -> Unit = {},
     liveGameProvider: () -> LiveGame? = { null },
+    /** TLS under the server's identity (v08); plain in tests that read the frames themselves. */
+    private val serverSockets: ServerSocketFactory = ServerSocketFactory.getDefault(),
 ) {
     @Volatile
     private var keepListening = false
@@ -700,7 +703,7 @@ class GameServer @JvmOverloads constructor(
         players.clearGrenadePairings()
         var ss: ServerSocket? = null
         try {
-            ss = ServerSocket(WireProtocol.TCP_SERVER_PORT)
+            ss = serverSockets.createServerSocket(WireProtocol.TCP_SERVER_PORT)
             ss.soTimeout = 1000
             synchronized(lock) {
                 if (!keepListening) return // stopped while binding
@@ -754,6 +757,8 @@ class GameServer @JvmOverloads constructor(
         var pinged1 = false
         var pinged2 = false
         try {
+            // TLS first (v08), with time to finish it; an older phone fails here and is let go
+            client.handshake(HANDSHAKE_TIMEOUT_MS)
             while (keepListening) {
                 val raw = client.poll()
                 if (raw != null) {
@@ -818,6 +823,7 @@ class GameServer @JvmOverloads constructor(
 
         /** Read timeout on every socket: the granularity of ping and drop timing (network design Q5). */
         private const val READ_WAIT_MS = 100
+        private const val HANDSHAKE_TIMEOUT_MS = 5_000
 
         /** Drop a connection after this long without a byte from it; ping it after 1 s and 2 s. */
         const val SILENCE_DROP_MS = 3500L

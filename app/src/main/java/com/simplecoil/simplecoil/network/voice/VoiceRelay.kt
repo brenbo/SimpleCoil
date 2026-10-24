@@ -19,6 +19,7 @@ package com.simplecoil.simplecoil.network.voice
 import android.util.Log
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketException
 import java.util.concurrent.ConcurrentHashMap
@@ -48,16 +49,35 @@ class VoiceSettings {
     @Volatile
     var isAdmin: (Int) -> Boolean = { false }
 
+    /** Where each player's phone is (the server sets it): a voice key goes only there. */
+    @Volatile
+    var addressOf: (Int) -> InetAddress? = { null }
+
+    /** Each player's voice key (v08), made when their phone first asks; until then nobody can hear them, or be heard. */
+    private val keys = ConcurrentHashMap<Int, ByteArray>()
+
+    /** [playerId]'s key, if their phone has been given one. */
+    fun keyOf(playerId: Int): ByteArray? = keys[playerId]
+
+    /** Every key forgotten: a new session, new keys. */
+    fun forgetKeys() = keys.clear()
+
     /**
-     * The VOICE reply's body for [playerId]: "1" to talk and listen, "L" to listen only. With voice
-     * chat off: "A" for an admin who may still talk to everyone, "E" for everyone else, who hear
-     * only that (older phones read both as off).
+     * The VOICE reply's body for [playerId], asked by the phone at [from]: "1" to talk and listen,
+     * "L" to listen only. With voice chat off: "A" for an admin who may still talk to everyone, "E"
+     * for everyone else, who hear only that. Then a space and the player's voice key in hex, but
+     * only if [from] is that player's phone: anyone else asking gets no key, so can't listen in.
      */
-    fun body(playerId: Int): ByteArray = when {
-        !enabled -> if (isAdmin(playerId) && allowedFor(playerId)) "A" else "E"
-        allowed(playerId) -> "1"
-        else -> "L"
-    }.toByteArray(Charsets.US_ASCII)
+    fun body(playerId: Int, from: InetAddress?): ByteArray {
+        val access = when {
+            !enabled -> if (isAdmin(playerId) && allowedFor(playerId)) "A" else "E"
+            allowed(playerId) -> "1"
+            else -> "L"
+        }
+        val mine = from != null && from == addressOf(playerId)
+        val key = if (mine) keys.getOrPut(playerId) { VoiceProtocol.newKey() } else null
+        return (if (key != null) access + " " + VoiceProtocol.keyToText(key) else access).toByteArray(Charsets.US_ASCII)
+    }
 }
 
 /**
@@ -105,13 +125,18 @@ class VoiceRelay(
             try {
                 incoming.setLength(buffer.size)
                 s.receive(incoming)
-                val packet = VoiceProtocol.decode(buffer, incoming.length) ?: continue
+                // Opened with the speaker's own key: a packet anyone else sealed (or changed) is dropped
+                val speaker = VoiceProtocol.speakerOf(buffer, incoming.length) ?: continue
+                val packet = settings.keyOf(speaker)?.let { VoiceProtocol.open(buffer, incoming.length, it) } ?: continue
                 val delivery = VoiceRules.recipients(packet.playerId, incoming.address, packet.everyone, settings.enabled,
                     settings::allowedFor, peers(), freeForAll())
                 // Marked "to everyone" only if it really is an admin's, so nobody else gets past a mute
-                buffer[VoiceProtocol.FLAGS_OFFSET] = (if (delivery.toEveryone) VoiceProtocol.FLAG_EVERYONE else 0).toByte()
+                val passed = packet.copy(everyone = delivery.toEveryone)
                 for (peer in delivery.to) {
-                    s.send(DatagramPacket(buffer, incoming.length, peer.address, port))
+                    // Sealed again for each listener, with their key
+                    val key = settings.keyOf(peer.playerId) ?: continue
+                    val sealed = VoiceProtocol.seal(passed, key)
+                    s.send(DatagramPacket(sealed, sealed.size, peer.address, port))
                 }
             } catch (e: Exception) {
                 if (!s.isClosed) Log.d(TAG, "Voice packet dropped: " + e.message)

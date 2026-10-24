@@ -156,7 +156,7 @@ class GameViewModelTest {
         assertEquals(GameStateRepository.GAME_STATE_NONE, gameState.gameState)
         verify(screen).showGameEnded(false, false)
         assertTrue(SessionSound.GAME_END in sounds)
-        verify(client, never()).sendTCPMessage("SimpleCoil:07MESGPLAYERDATAREQUEST") // no scoreboard after a local game
+        verify(client, never()).sendTCPMessage("SimpleCoil:08MESGPLAYERDATAREQUEST") // no scoreboard after a local game
     }
 
     @Test
@@ -629,7 +629,7 @@ class GameViewModelTest {
         emitNetwork(ClientEvent.EndGame)
         assertEquals(GameStateRepository.GAME_STATE_NONE, gameState.gameState)
         assertTrue(SessionSound.GAME_END in sounds)
-        verify(client).sendTCPMessage("SimpleCoil:07MESGPLAYERDATAREQUEST")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGPLAYERDATAREQUEST")
     }
 
     @Test
@@ -640,7 +640,7 @@ class GameViewModelTest {
         assertEquals(1, net.score)
         assertEquals(1, net.teamScore)
         verify(screen).showScore(1)
-        verify(client).sendTCPMessage("SimpleCoil:07MESGTEAMELIMINATED")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGTEAMELIMINATED")
         assertEquals(listOf(SessionSound.SCORE), sounds)
     }
 
@@ -667,7 +667,7 @@ class GameViewModelTest {
         assertFalse(vm.onTeamSizesEntered(intArrayOf(10, 10)))
         assertFalse(vm.onTeamSizesEntered(intArrayOf(0, 64)))
         assertTrue(vm.onTeamSizesEntered(intArrayOf(40, 24)))
-        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_TEAMSIZES40,24")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGADMIN_TEAMSIZES40,24")
     }
 
     private fun joinServer() {
@@ -704,9 +704,9 @@ class GameViewModelTest {
         emitNetwork(ClientEvent.PlayerData(arrayOf(null, here, away)))
         vm.onAdminAction(AdminAction.RESET_GAME)
         verify(screen).confirmReset(1)
-        verify(client, never()).sendTCPMessage("SimpleCoil:07MESGADMIN_RESET")
+        verify(client, never()).sendTCPMessage("SimpleCoil:08MESGADMIN_RESET")
         vm.onResetConfirmed()
-        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_RESET")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGADMIN_RESET")
     }
 
     @Test
@@ -715,8 +715,8 @@ class GameViewModelTest {
         serverPhase(SessionPhase.POST_GAME)
         vm.onAdminAction(AdminAction.FREE_FOR_ALL)
         vm.onAdminAction(AdminAction.SHUFFLE_TEAMS)
-        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_GAMEMODE" + TeamMode.FREE_FOR_ALL.wireValue)
-        verify(client).sendTCPMessage("SimpleCoil:07MESGADMIN_SORTTEAMS")
+        verify(client).sendTCPMessage("SimpleCoil:08MESGADMIN_GAMEMODE" + TeamMode.FREE_FOR_ALL.wireValue)
+        verify(client).sendTCPMessage("SimpleCoil:08MESGADMIN_SORTTEAMS")
         verify(screen, never()).confirmReset(org.mockito.ArgumentMatchers.anyInt())
     }
 
@@ -756,7 +756,7 @@ class GameViewModelTest {
     // Score matrix
     // --------------------------------------------------------------------------------------
 
-    private val matrixRequest = "SimpleCoil:07MESGSCOREMATRIXREQUEST"
+    private val matrixRequest = "SimpleCoil:08MESGSCOREMATRIXREQUEST"
 
     private fun matrixReply(gameId: Long? = null, vararg cells: WireMatrixCell) = ClientEvent.ScoreMatrix(ServerMessage.ScoreMatrix(
         listOf(WireMatrixPlayer(1, "Tester", 1, true), WireMatrixPlayer(17, "Bravo", 2, true)), cells.toList(), gameId))

@@ -29,8 +29,12 @@ import java.util.concurrent.CopyOnWriteArrayList
  * A raw TCP client for TcpServer over 127.0.0.1: writes the wire strings by hand, answers the
  * server's pings and records everything else it receives.
  */
-class LoopbackClient(port: Int = WireProtocol.TCP_SERVER_PORT) {
-    private val socket = Socket("127.0.0.1", port)
+class LoopbackClient(
+    port: Int = WireProtocol.TCP_SERVER_PORT,
+    /** Opens the connection: plain by default; TLS for the v08 tests. */
+    open: (Int) -> Socket = { Socket("127.0.0.1", it) },
+) {
+    private val socket = open(port)
     private val out = DataOutputStream(socket.getOutputStream())
 
     /** Every message received except pings, in order. */

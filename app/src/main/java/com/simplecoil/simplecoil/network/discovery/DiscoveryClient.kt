@@ -53,6 +53,8 @@ class DiscoveryClient(
             pingMs: Long,
             inGame: Boolean = false,
             allowJoinInProgress: Boolean = true,
+            /** Its certificate's fingerprint (v08); null from an older server. */
+            fingerprint: String? = null,
         )
         fun onDiscoveryFailed(errorReason: String?)
     }
@@ -98,8 +100,9 @@ class DiscoveryClient(
                         val serverName = parts[0]
                         val inGame = parts.any { it == "inGame=1" }
                         val allowJoin = !parts.any { it == "allowJoin=0" }
+                        val fingerprint = parts.firstOrNull { it.startsWith(WireProtocol.BEACON_TLS) }?.removePrefix(WireProtocol.BEACON_TLS)
                         Log.i(TAG, "Discovered server: $serverName at $serverIp (ping $pingMs ms, inGame $inGame, allowJoin $allowJoin)")
-                        listener?.onServerDiscovered(serverIp, serverName, pingMs, inGame, allowJoin)
+                        listener?.onServerDiscovered(serverIp, serverName, pingMs, inGame, allowJoin, fingerprint)
                     }
                 } catch (ignored: SocketTimeoutException) {
                     // Send query again periodically
@@ -131,6 +134,17 @@ class DiscoveryClient(
                 Log.e(TAG, "Error sending discovery query to " + address.hostAddress, e)
             }
         }
+    }
+
+    /** Asks the server at [address] for its beacon (a typed address, beyond the broadcast). Off the main thread. */
+    fun ask(address: InetAddress) {
+        Thread {
+            try {
+                network.send(WireProtocol.DISCOVER_MSG, address)
+            } catch (e: IOException) {
+                Log.w(TAG, "Could not ask " + address.hostAddress + " for its beacon", e)
+            }
+        }.start()
     }
 
     /** Stops looking. */

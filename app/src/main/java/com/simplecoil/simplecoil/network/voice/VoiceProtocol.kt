@@ -17,13 +17,21 @@
 package com.simplecoil.simplecoil.network.voice
 
 import java.net.InetAddress
+import java.security.GeneralSecurityException
+import java.security.SecureRandom
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 /**
- * Push-to-talk voice (its own UDP port, as the game protocol is frozen). A phone sends 20 ms of
- * 16 kHz mono 16-bit audio per packet to the server, which passes it to whoever may hear it.
+ * Push-to-talk voice (its own UDP port). A phone sends 20 ms of 16 kHz mono 16-bit audio per
+ * packet to the server, which passes it to whoever may hear it.
  *
- * A packet: "SV" + version, the speaker's player id, flags ([FLAG_EVERYONE]: an admin talking to
- * all), a sequence number (0-255, wrapping), then the samples (little endian).
+ * A packet (version 2, v08): "SV" + version, the speaker's player id, flags ([FLAG_EVERYONE]: an
+ * admin talking to all), a sequence number (0-255, wrapping), a 12-byte random nonce, then the
+ * samples (little endian) sealed with AES-GCM under one player's own key, the header as
+ * associated data. A phone seals what it says with its key; the server opens it with the
+ * speaker's, and seals it again for each listener with theirs (VoiceSettings hands out the keys).
  */
 object VoiceProtocol {
     const val PORT = 17512
@@ -32,15 +40,19 @@ object VoiceProtocol {
     const val SAMPLES_PER_FRAME = SAMPLE_RATE * FRAME_MILLIS / 1000
     const val FRAME_BYTES = SAMPLES_PER_FRAME * 2
 
-    private const val VERSION: Byte = 1
+    private const val VERSION: Byte = 2
     private const val HEADER = 6
+    private const val NONCE = 12
+    private const val TAG_BYTES = 16
     const val FLAG_EVERYONE = 0x01
 
-    /** Where the flags byte is: the server rewrites it as it passes a packet on. */
-    const val FLAGS_OFFSET = 4
+    /** A player's key: 256-bit AES. */
+    const val KEY_BYTES = 32
 
-    /** The longest a packet can be, header and audio. */
-    const val MAX_PACKET = HEADER + FRAME_BYTES
+    /** The longest a packet can be: header, nonce, audio and tag. */
+    const val MAX_PACKET = HEADER + NONCE + FRAME_BYTES + TAG_BYTES
+
+    private val random = SecureRandom()
 
     data class Packet(val playerId: Int, val everyone: Boolean, val seq: Int, val audio: ByteArray) {
         override fun equals(other: Any?): Boolean = other is Packet && playerId == other.playerId &&
@@ -48,23 +60,56 @@ object VoiceProtocol {
         override fun hashCode(): Int = (playerId * 31 + seq) * 31 + audio.contentHashCode()
     }
 
-    fun encode(packet: Packet): ByteArray = ByteArray(HEADER + packet.audio.size).also { b ->
-        b[0] = 'S'.code.toByte()
-        b[1] = 'V'.code.toByte()
-        b[2] = VERSION
-        b[3] = packet.playerId.toByte()
-        b[4] = (if (packet.everyone) FLAG_EVERYONE else 0).toByte()
-        b[5] = packet.seq.toByte()
-        packet.audio.copyInto(b, HEADER)
+    /** A new random player key. */
+    fun newKey(): ByteArray = ByteArray(KEY_BYTES).also { random.nextBytes(it) }
+
+    /** [packet], sealed with [key]. */
+    fun seal(packet: Packet, key: ByteArray): ByteArray {
+        val header = byteArrayOf('S'.code.toByte(), 'V'.code.toByte(), VERSION, packet.playerId.toByte(),
+            (if (packet.everyone) FLAG_EVERYONE else 0).toByte(), packet.seq.toByte())
+        val nonce = ByteArray(NONCE).also { random.nextBytes(it) }
+        val sealed = cipher(Cipher.ENCRYPT_MODE, key, nonce, header).doFinal(packet.audio)
+        return header + nonce + sealed
     }
 
-    /** The packet in the first [length] bytes of [data], or null if it isn't one. */
-    fun decode(data: ByteArray, length: Int = data.size): Packet? {
-        if (length < HEADER || length > MAX_PACKET) return null
+    /** Whose packet the first [length] bytes of [data] claim to be, before opening it; null if it isn't one. */
+    fun speakerOf(data: ByteArray, length: Int = data.size): Int? {
+        if (length < HEADER + NONCE + TAG_BYTES || length > MAX_PACKET) return null
         if (data[0] != 'S'.code.toByte() || data[1] != 'V'.code.toByte() || data[2] != VERSION) return null
-        val audio = data.copyOfRange(HEADER, length)
+        return data[3].toInt() and 0xFF
+    }
+
+    /** The packet in the first [length] bytes of [data], opened with [key]; null if it isn't one, or wasn't sealed with it. */
+    fun open(data: ByteArray, length: Int, key: ByteArray): Packet? {
+        speakerOf(data, length) ?: return null
+        val header = data.copyOfRange(0, HEADER)
+        val nonce = data.copyOfRange(HEADER, HEADER + NONCE)
+        val audio = try {
+            cipher(Cipher.DECRYPT_MODE, key, nonce, header).doFinal(data, HEADER + NONCE, length - HEADER - NONCE)
+        } catch (e: GeneralSecurityException) {
+            return null // tampered with, or someone else's key
+        }
         if (audio.size % 2 != 0) return null
-        return Packet(data[3].toInt() and 0xFF, data[4].toInt() and FLAG_EVERYONE != 0, data[5].toInt() and 0xFF, audio)
+        return Packet(header[3].toInt() and 0xFF, header[4].toInt() and FLAG_EVERYONE != 0, header[5].toInt() and 0xFF, audio)
+    }
+
+    private fun cipher(mode: Int, key: ByteArray, nonce: ByteArray, header: ByteArray): Cipher =
+        Cipher.getInstance("AES/GCM/NoPadding").apply {
+            init(mode, SecretKeySpec(key, "AES"), GCMParameterSpec(TAG_BYTES * 8, nonce))
+            updateAAD(header)
+        }
+
+    /** [key] as the VOICE reply carries it: hex (Base64 needs a newer Android than ours). */
+    fun keyToText(key: ByteArray): String = key.joinToString("") { "%02x".format(it) }
+
+    /** A key from [text], or null if it isn't one. */
+    fun keyFromText(text: String): ByteArray? {
+        if (text.length != KEY_BYTES * 2) return null
+        return try {
+            ByteArray(KEY_BYTES) { i -> text.substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+        } catch (e: NumberFormatException) {
+            null
+        }
     }
 }
 
@@ -129,6 +174,25 @@ enum class VoiceAccess {
             "A" -> BROADCAST
             "E" -> HEAR_BROADCASTS
             else -> OFF
+        }
+    }
+}
+
+/**
+ * What the VOICE reply grants this phone (v08): what it may do, and its own voice key, which it
+ * seals what it says with and opens what it hears with. The key comes only to the player's own
+ * phone; without one, voice chat is off.
+ */
+class VoiceGrant(val access: VoiceAccess, val key: ByteArray?) {
+    companion object {
+        @JvmField
+        val OFF = VoiceGrant(VoiceAccess.OFF, null)
+
+        /** The VOICE reply's body: the access letter, then a space and the key in hex. */
+        fun fromBody(body: String?): VoiceGrant {
+            val parts = body?.split(' ') ?: return OFF
+            val key = parts.getOrNull(1)?.let { VoiceProtocol.keyFromText(it) } ?: return OFF
+            return VoiceGrant(VoiceAccess.fromBody(parts[0]), key)
         }
     }
 }

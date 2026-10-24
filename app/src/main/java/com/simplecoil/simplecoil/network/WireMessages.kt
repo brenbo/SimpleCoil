@@ -18,7 +18,7 @@ package com.simplecoil.simplecoil.network
 
 import com.simplecoil.simplecoil.data.model.PlayerSettings
 
-// The typed v07 wire model (network design §7.3). WireCodec is the only code that turns these
+// The typed v07/v08 wire model (network design §7.3). WireCodec is the only code that turns these
 // into frames and back; nothing else knows the header strings or the JSON keys.
 
 /**

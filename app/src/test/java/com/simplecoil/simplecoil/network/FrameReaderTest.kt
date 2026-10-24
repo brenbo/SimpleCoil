@@ -79,12 +79,12 @@ class FrameReaderTest {
 
     @Test
     fun aFrameSplitAcrossTimeouts_isKeptAndCompleted() {
-        val bytes = utf("SimpleCoil:07JSON{\"players\":[]}")
+        val bytes = utf("SimpleCoil:08JSON{\"players\":[]}")
         val chunks = listOf(bytes.copyOfRange(0, 1), bytes.copyOfRange(1, 5), bytes.copyOfRange(5, bytes.size))
         val reader = FrameReader(ChunkedStream(chunks))
         assertNull(reader.poll())
         assertNull(reader.poll())
-        assertEquals("SimpleCoil:07JSON{\"players\":[]}", reader.poll())
+        assertEquals("SimpleCoil:08JSON{\"players\":[]}", reader.poll())
     }
 
     @Test

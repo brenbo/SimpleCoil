@@ -84,12 +84,42 @@ class VoiceTest {
     }
 
     @Test
-    fun aPacketGoesAndComesBack_andJunkIsntOne() {
+    fun aPacketIsSealed_andOpensOnlyWithItsKey_unchanged() {
         val audio = ByteArray(VoiceProtocol.FRAME_BYTES) { it.toByte() }
         val packet = VoiceProtocol.Packet(17, everyone = true, seq = 200, audio = audio)
-        assertEquals(packet, VoiceProtocol.decode(VoiceProtocol.encode(packet)))
-        assertNull(VoiceProtocol.decode("hello".toByteArray()))
-        assertNull(VoiceProtocol.decode(ByteArray(VoiceProtocol.MAX_PACKET + 10)))
+        val key = VoiceProtocol.newKey()
+        val sealed = VoiceProtocol.seal(packet, key)
+        assertEquals(sealed.size, VoiceProtocol.MAX_PACKET)
+        assertEquals(17, VoiceProtocol.speakerOf(sealed))
+        assertEquals(packet, VoiceProtocol.open(sealed, sealed.size, key))
+        // The audio isn't in the clear
+        assertFalse(sealed.toList().windowed(audio.size).any { it == audio.toList() })
+        // Someone else's key, or a changed byte (the header too, so "to everyone" can't be faked): nothing
+        assertNull(VoiceProtocol.open(sealed, sealed.size, VoiceProtocol.newKey()))
+        assertNull(VoiceProtocol.open(sealed.copyOf().also { it[4] = 0 }, sealed.size, key))
+        assertNull(VoiceProtocol.open(sealed.copyOf().also { it[100] = (it[100] + 1).toByte() }, sealed.size, key))
+        // Junk isn't a packet
+        assertNull(VoiceProtocol.speakerOf("hello".toByteArray()))
+        assertNull(VoiceProtocol.speakerOf(ByteArray(VoiceProtocol.MAX_PACKET + 10)))
+    }
+
+    @Test
+    fun aVoiceKey_goesOnlyToThePlayersOwnPhone() {
+        val settings = VoiceSettings().apply { enabled = true }
+        val phone = java.net.InetAddress.getByName("192.168.1.20")
+        val other = java.net.InetAddress.getByName("192.168.1.66")
+        settings.addressOf = { if (it == 2) phone else null }
+        // Asked from somewhere else: the access, but no key
+        assertEquals("1", String(settings.body(2, other)))
+        assertNull(settings.keyOf(2))
+        assertEquals(VoiceAccess.OFF, VoiceGrant.fromBody("1").access)
+        // From the player's phone: the key, the same one each time
+        val grant = VoiceGrant.fromBody(String(settings.body(2, phone)))
+        assertEquals(VoiceAccess.TALK, grant.access)
+        assertTrue(grant.key!!.contentEquals(settings.keyOf(2)!!))
+        assertTrue(VoiceGrant.fromBody(String(settings.body(2, phone))).key!!.contentEquals(grant.key!!))
+        settings.forgetKeys()
+        assertNull(settings.keyOf(2))
     }
 
     @Test
@@ -112,14 +142,14 @@ class VoiceTest {
         assertFalse(settings.allowed(1))
         assertFalse(settings.allowedFor(1))
         // Turned off for one player: they still listen
-        assertEquals("L", String(settings.body(1)))
-        assertEquals("1", String(settings.body(2)))
+        assertEquals("L", String(settings.body(1, null)))
+        assertEquals("1", String(settings.body(2, null)))
         settings.enabled = false
         // Voice chat off: everyone listens for an admin talking to everyone, and an admin may
-        assertEquals("E", String(settings.body(2)))
+        assertEquals("E", String(settings.body(2, null)))
         settings.isAdmin = { it == 2 }
-        assertEquals("A", String(settings.body(2)))
-        assertEquals("E", String(settings.body(1)))
+        assertEquals("A", String(settings.body(2, null)))
+        assertEquals("E", String(settings.body(1, null)))
         assertEquals(VoiceAccess.BROADCAST, VoiceAccess.fromBody("A"))
         assertEquals(VoiceAccess.HEAR_BROADCASTS, VoiceAccess.fromBody("E"))
         assertEquals(VoiceAccess.LISTEN, VoiceAccess.fromBody("L"))

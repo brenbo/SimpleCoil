@@ -26,10 +26,10 @@ class Frame private constructor(
     val body: String,
 ) {
     enum class Kind {
-        /** `SimpleCoil:07MESG<command>`; the body is the command. */
+        /** `SimpleCoil:08MESG<command>`; the body is the command. */
         MESG,
 
-        /** `SimpleCoil:07JSON<json>`; the body is the JSON text. */
+        /** `SimpleCoil:08JSON<json>`; the body is the JSON text. */
         JSON,
         PING,
         PONG,

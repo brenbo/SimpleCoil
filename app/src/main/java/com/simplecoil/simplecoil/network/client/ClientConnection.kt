@@ -23,6 +23,7 @@ import com.simplecoil.simplecoil.network.EventBus
 import com.simplecoil.simplecoil.network.FrameReader
 import com.simplecoil.simplecoil.network.NetTrace
 import com.simplecoil.simplecoil.network.WireProtocol
+import com.simplecoil.simplecoil.network.tls.SecureConnector
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +60,8 @@ class ClientConnection(
     /** The Wi-Fi network while it is up; sockets are bound to it (§3.6). */
     private val network: () -> Network? = { null },
     io: CoroutineDispatcher = Dispatchers.IO,
+    /** Wraps each connection in TLS, checking the server's certificate (v08). */
+    private val connector: SecureConnector = SecureConnector.PLAIN,
 ) {
     interface Listener {
         /** A session is starting, on the caller's thread: show the network notification. */
@@ -234,7 +237,11 @@ class ClientConnection(
                 s = Socket()
                 socket = s
                 bindToWifi(s)
-                s.connect(InetSocketAddress(serverAddress(), WireProtocol.TCP_SERVER_PORT), CONNECTION_TIMEOUT_MS)
+                val server = serverAddress() ?: throw UnknownHostException("no server")
+                s.connect(InetSocketAddress(server, WireProtocol.TCP_SERVER_PORT), CONNECTION_TIMEOUT_MS)
+                // TLS (v08): the server must show the certificate its beacon named
+                s = connector.secure(s, server, WireProtocol.TCP_SERVER_PORT)
+                socket = s
                 s.soTimeout = READ_WAIT_MS
                 val reader = FrameReader(s.getInputStream())
                 synchronized(outLock) {

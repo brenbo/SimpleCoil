@@ -4,6 +4,25 @@ How phones running SimpleCoil find a dedicated server and talk to it during a ga
 is the `DedicatedServerActivity` running `TcpServer`; each player's phone is a client
 (`TcpClient`). Clients never talk to each other directly. Everything goes through the server.
 
+
+## Encryption (v08)
+
+Since v08 (SimpleCoil 3.0) everything that carries game data, positions or voice is encrypted, so
+nobody else on the Wi-Fi can read where the players are or listen to voice chat.
+
+- Each dedicated server makes its own EC P-256 key and self-signed certificate the first time it
+  runs, and keeps them. Its beacon ends `|tls=<SHA-256 of the certificate, hex>`.
+- The game connection (17510) and the field service (17511) are TLS, under that certificate. A
+  phone accepts a server's certificate only if its SHA-256 is the one in that server's beacon;
+  for a typed address it first asks that address for its beacon (`SimpleCoil:DISCOVER`, sent
+  straight to it). A beacon with no `tls=` is an older server, which a v08 phone can't join.
+- Voice packets (17512) are sealed with AES-GCM under a key for each player, which that player's
+  phone gets in its VOICE reply over the encrypted field service, and only when asking from the
+  player's own address. The server opens each packet with the speaker's key and seals it again
+  for each listener with theirs.
+
+UDP discovery itself (server names and fingerprints) isn't secret and isn't encrypted.
+
 ## 1. Finding the server (UDP, port 17500)
 
 UDP is used for discovery only.
@@ -14,11 +33,12 @@ UDP is used for discovery only.
   server answers each query with a beacon sent straight back to the client.
 - The client uses the first beacon it hears. It takes the server's address from the packet and
   stops listening.
-- A player can also type the server's IP address in, which skips discovery.
+- A player can also type the server's IP address in. The phone then asks that address for its
+  beacon directly, for the server's certificate fingerprint (see Encryption).
 
 ## 2. The connection (TCP, port 17510)
 
-Each client keeps one TCP connection to the server. The client binds the socket to Wi-Fi, so
+Each client keeps one TCP connection to the server. Since v08 it is TLS: see Encryption. The client binds the socket to Wi-Fi, so
 it still works when the field's Wi-Fi has no internet and Android would rather use mobile data.
 
 ### Framing
@@ -353,9 +373,9 @@ The server operator can set a player's sound in that player's settings. Because 
 
 ## 9. Voice chat (UDP port 17512)
 
-Push-to-talk, off unless the server operator turns it on (and the operator can turn it off for single players in their player settings). A phone asks the field service `SCFIELD1 VOICE <player id>` whenever the server sends it player settings; the reply is `PACK` of `1` (talk and listen), `L` (listen only: the operator turned talking off for this player), and with voice chat off, `A` (an admin, who may still talk to everyone) or `E` (everyone else, who hear only that; `0` from an older server means off). With it on, holding the blaster's thumb (weapon switch) button for 0.3 s talks until it's let go; a tap still switches the fire mode.
+Push-to-talk, off unless the server operator turns it on (and the operator can turn it off for single players in their player settings). A phone asks the field service `SCFIELD1 VOICE <player id>` whenever the server sends it player settings; the reply is `PACK` of `1` (talk and listen), `L` (listen only: the operator turned talking off for this player), and with voice chat off, `A` (an admin, who may still talk to everyone) or `E` (everyone else, who hear only that), then a space and the player's voice key in hex, sent only to the player's own phone (see Encryption). With it on, holding the blaster's thumb (weapon switch) button for 0.3 s talks until it's let go; a tap still switches the fire mode.
 
-Each packet is 20 ms of 16 kHz mono 16-bit audio: `S` `V` 0x01, the speaker's player id, flags (0x01: an admin talking to everyone), a sequence number (0-255, wrapping), then the samples (little endian). Phones send to the server's port 17512 and listen on their own. The server passes a packet on only when the speaker may talk and it came from that player's address: to their teammates (nobody in free for all), or to every player if the speaker is an admin who asked (an admin turns that on in their server controls). With voice chat off it passes on only an admin talking to everyone. It rewrites the flags byte so the everyone flag is set only on an admin's talk to everyone: phones let players mute anyone on their own phone (from the scoreboard), except an admin talking to everyone.
+Each packet is 20 ms of 16 kHz mono 16-bit audio: `S` `V` 0x02, the speaker's player id, flags (0x01: an admin talking to everyone), a sequence number (0-255, wrapping), a 12-byte nonce, then the samples (little endian) sealed with AES-GCM, the first six bytes as associated data (see Encryption). Phones send to the server's port 17512 and listen on their own. The server passes a packet on only when the speaker may talk and it came from that player's address: to their teammates (nobody in free for all), or to every player if the speaker is an admin who asked (an admin turns that on in their server controls). With voice chat off it passes on only an admin talking to everyone. It seals each packet again for each listener, with the everyone flag set only on an admin's talk to everyone: phones let players mute anyone on their own phone (from the scoreboard), except an admin talking to everyone.
 
 ## 10. The briefing (field service BRIEF)
 

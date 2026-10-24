@@ -66,7 +66,8 @@ class TcpClient : Service() {
                 override fun start(statusText: String) = startAsForeground(statusText)
                 override fun stop() = stopAsForeground()
             },
-            network = { wifiNetwork })
+            network = { wifiNetwork },
+            connector = container.tlsClient)
         createNotificationChannel()
         registerWifiCallback()
     }

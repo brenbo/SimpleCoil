@@ -44,7 +44,7 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * The v07 wire format (network design §7): typed messages to frames and back. The only code
+ * The v07 wire format, carried over TLS as v08 (network design §7): typed messages to frames and back. The only code
  * that knows the header strings and the JSON keys. JSON goes through org.json (Q2).
  *
  * Decoding never throws: a frame it can't make sense of decodes as null, which the receiver

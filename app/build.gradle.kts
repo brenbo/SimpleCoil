@@ -18,8 +18,8 @@ android {
         targetSdk {
             version = release(37)
         }
-        versionCode = 14
-        versionName = "2.0"
+        versionCode = 15
+        versionName = "3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // MapTiler's key for satellite imagery outside the US: from local.properties (maptiler.key=...,

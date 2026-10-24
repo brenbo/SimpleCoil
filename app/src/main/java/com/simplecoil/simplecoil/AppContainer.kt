@@ -56,6 +56,10 @@ import com.simplecoil.simplecoil.network.imagery.FieldPackStore
 import com.simplecoil.simplecoil.network.imagery.FieldPresetStore
 import com.simplecoil.simplecoil.network.imagery.GamePresetStore
 import com.simplecoil.simplecoil.network.server.PlayerGps
+import com.simplecoil.simplecoil.network.tls.SecureConnector
+import com.simplecoil.simplecoil.network.tls.ServerIdentity
+import com.simplecoil.simplecoil.network.tls.ServerPins
+import com.simplecoil.simplecoil.network.tls.TlsClient
 import com.simplecoil.simplecoil.network.voice.VoiceAccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -177,11 +181,11 @@ class AppContainer(private val app: Application) {
     val gamePresets: GamePresetStore by lazy { GamePresetStore(File(app.filesDir, "game/presets")) }
 
     /** Serves the server's field while the dedicated server runs. */
-    val fieldImageryServer: FieldImageryServer by lazy { FieldImageryServer(serverFieldStore, serverFieldConfig) }
+    val fieldImageryServer: FieldImageryServer by lazy { FieldImageryServer(serverFieldStore, serverFieldConfig, serverSockets = { serverIdentity.serverSocketFactory }) }
 
     /** Fetches the server's field into [playerFieldStore] and [playerFieldConfig]. */
     val fieldImageryClient: FieldImageryClient by lazy {
-        FieldImageryClient(playerFieldStore, appScope, dispatchers.io, clock, configs = playerFieldConfig)
+        FieldImageryClient(playerFieldStore, appScope, dispatchers.io, clock, configs = playerFieldConfig, connector = tlsClient)
     }
 
     /**
@@ -346,6 +350,18 @@ class AppContainer(private val app: Application) {
     /** Starts, stops and commands the dedicated server (dedicated server design §5.1). */
     val serverController: ServerController by lazy { TcpServerController(app, appScope) { userPreferences } }
 
+    /**
+     * This phone's identity as a dedicated server (v08): its key and certificate, made once. The
+     * game and field services listen with TLS under it; its fingerprint goes in the beacon.
+     */
+    val serverIdentity: ServerIdentity by lazy { ServerIdentity.loadOrCreate(File(app.filesDir, "tls")) }
+
+    /** Each server's certificate fingerprint, from its beacon: the only certificate this phone accepts from it. */
+    val serverPins = ServerPins()
+
+    /** TLS to the server this phone joins, checked against [serverPins]. */
+    val tlsClient: SecureConnector by lazy { TlsClient(serverPins) }
+
     /** Network services, client events and the network session state (R13/R14). */
     val networkGateway: NetworkSessionGateway by lazy {
         NetworkSessionGateway(app, appScope, settings, players, bus = clientEvents)
@@ -368,9 +384,11 @@ class AppContainer(private val app: Application) {
                 val server = gameState.serverIP ?: return@collect
                 val playerId = players.playerID.toInt().takeIf { it != 0 } ?: return@collect
                 // Voice chat: what the server lets this player do (hear, or talk too)
-                val voice = withContext(dispatchers.io) { fieldImageryClient.voice(server, playerId) }
-                voiceChat.setAccess(voice)
-                voiceAccess = voice
+                val grant = withContext(dispatchers.io) { fieldImageryClient.voice(server, playerId) }
+                // v08: this phone's own key seals what it says and opens what it hears
+                voiceChat.key = grant.key
+                voiceChat.setAccess(grant.access)
+                voiceAccess = grant.access
                 updatePushToTalk()
                 val assigned = withContext(dispatchers.io) { fieldImageryClient.sound(server, playerId) } ?: return@collect
                 if (assigned.revision > remoteSoundRevision) {

@@ -16,10 +16,10 @@
 
 package com.simplecoil.simplecoil.network
 
-/** The v07 wire strings: frame header pieces, the bare frames and MESG commands. Frozen (network design §1). */
+/** The v08 wire strings: frame header pieces, the bare frames and MESG commands. v08 is v07 over TLS (TlsSetup); otherwise frozen (network design §1). */
 object WireProtocol {
     const val MESSAGE_PREFIX = "SimpleCoil:"
-    const val NETWORK_VERSION = "07"
+    const val NETWORK_VERSION = "08"
 
     /** Every TCP frame but the bare ones starts with this, then [TCPPREFIX_MESG] or [TCPPREFIX_JSON]. */
     const val TCPMESSAGE_PREFIX = MESSAGE_PREFIX + NETWORK_VERSION
@@ -68,11 +68,14 @@ object WireProtocol {
     /** A server's beacon: this, then the server's name. */
     const val BEACON_PREFIX = MESSAGE_PREFIX + "BEACON:"
 
+    /** In a v08 beacon: "|tls=" and the SHA-256 of the server's certificate, the only one phones accept from it. */
+    const val BEACON_TLS = "tls="
+
     /** A client's query; servers answer it with a beacon. */
     const val DISCOVER_MSG = MESSAGE_PREFIX + "DISCOVER"
 }
 
-/** The JSON keys of the v07 frames. Frozen (network design §1): a key's name, type and presence never change. */
+/** The JSON keys of the v07 and v08 frames. Frozen (network design §1): a key's name, type and presence never change. */
 object WireKeys {
     const val PLAYERS = "players"
     const val PLAYERNAME = "playername"
