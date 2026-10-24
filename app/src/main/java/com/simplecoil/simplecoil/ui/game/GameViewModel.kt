@@ -604,7 +604,7 @@ class GameViewModel(
             engine.networkTeam = networkTeam
             val startID = layout.teamStartId(networkTeam)
             val player = playerRepo.playerID - startID + 1
-            screen?.showTeam(TeamDisplay.Team(networkTeam, player, TeamColors.colorOf(networkTeam), net.useNetwork, dedicatedName, dedicated))
+            screen?.showTeam(TeamDisplay.Team(networkTeam, player, TeamColors.colorOf(networkTeam), onlineScreen, dedicatedName, dedicated))
         } else {
             screen?.showTeam(TeamDisplay.FreeForAll(playerRepo.playerID, dedicatedName))
         }
@@ -623,12 +623,7 @@ class GameViewModel(
         prefs.savePlayerName(trimmed)
         displayCurrentTeam()
         val client = net.tcpClient
-        if (ready && client != null) {
-            client.sendPlayerNameChange()
-        } else {
-            screen?.showNetworkOptions(true, freeForAll())
-            setNetworkMenu(NETWORK_TYPE_ENABLED)
-        }
+        if (ready && client != null) client.sendPlayerNameChange()
     }
 
     fun onPlayerSettingsPressed() {
@@ -775,20 +770,30 @@ class GameViewModel(
         if (ready && net.useNetwork) {
             setNetworkMenu(NETWORK_TYPE_JOINED)
             screen?.setScoreboardAvailable(true)
+        } else if (net.useNetwork) {
+            // A network game that ended off the server: offline, not half online
+            stopServerSearch(true)
         } else {
             setNetworkMenu(NETWORK_TYPE_ENABLED)
         }
         if (wasInNetworkGame) openScoreboard()
     }
 
+    /**
+     * Joined to a server: only then does the screen look online. Searching for one, or connecting
+     * to an address, keeps the offline screen (networking is on underneath).
+     */
+    private val onlineScreen: Boolean get() = net.useNetwork && networkMenuType == NETWORK_TYPE_JOINED
+
     private fun updatePreGameButtonVisibilities() {
         if (gameStateRepo.gameState != GameStateRepository.GAME_STATE_NONE) return
-        val connectedClient = net.useNetwork && networkMenuType == NETWORK_TYPE_JOINED
+        val connectedClient = onlineScreen
+        val connecting = net.useNetwork && networkMenuType == NETWORK_TYPE_JOINING
         screen?.showPreGameButtons(PreGameButtons(
             ready = ready,
-            offline = !net.useNetwork,
+            offline = !connectedClient,
             joined = connectedClient,
-            startVisible = !(settingsRepo.isOnlyServerSettings || connectedClient || serverPhase == SessionPhase.POST_GAME),
+            startVisible = !(settingsRepo.isOnlyServerSettings || connectedClient || connecting || serverPhase == SessionPhase.POST_GAME),
             serverSettingsOnly = settingsRepo.isOnlyServerSettings,
         ))
         updateAdminButtonVisibility()
@@ -813,25 +818,25 @@ class GameViewModel(
             engine.forgetGrenade() // leaving the server on our own ends the grenade's pairing too
             return
         }
+        // Offline it offers a lobby search or an address; nothing goes online until one is picked
         screen?.prepareNetworkMenu()
-        if (!net.useNetwork) {
-            net.useNetwork = true
-            screen?.showNetworkOptions(true, freeForAll())
-            playerRepo.playerID = selectedPlayerId
-            setNetworkMenu(NETWORK_TYPE_JOINING)
-            net.udp?.joinServer()
-        } else {
-            setNetworkMenu(networkMenuType)
-        }
+        setNetworkMenu(networkMenuType)
         screen?.showNetworkMenu()
-        setTeam()
     }
 
     /** What the network popup lists for the current menu state. */
-    fun networkMenuEntries(): List<NetworkMenuEntry> = when (networkMenuType) {
-        NETWORK_TYPE_ENABLED -> listOf(NetworkMenuEntry.Join, NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork)
-        NETWORK_TYPE_JOINING -> listOf(NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork)
+    fun networkMenuEntries(): List<NetworkMenuEntry> = when {
+        !net.useNetwork -> listOf(NetworkMenuEntry.Join, NetworkMenuEntry.JoinIp)
+        networkMenuType == NETWORK_TYPE_ENABLED -> listOf(NetworkMenuEntry.Join, NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork)
+        networkMenuType == NETWORK_TYPE_JOINING -> listOf(NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork)
         else -> emptyList()
+    }
+
+    /** Networking on, to search for a server or connect to one; the screen stays offline until one answers. */
+    private fun startNetworking() {
+        net.useNetwork = true
+        playerRepo.playerID = selectedPlayerId
+        setTeam()
     }
 
     /** The teams the team label's popup offers: the others, while a dedicated server's lobby allows choosing. */
@@ -869,6 +874,7 @@ class GameViewModel(
             NetworkMenuEntry.DisableNetwork -> stopServerSearch(true)
             NetworkMenuEntry.Join -> {
                 if (networkMenuType == NETWORK_TYPE_JOINED) return
+                if (!net.useNetwork) startNetworking()
                 ready = true
                 setReady()
                 setNetworkMenu(NETWORK_TYPE_JOINING)
@@ -888,6 +894,7 @@ class GameViewModel(
     }
 
     fun onServerIpEntered(ip: String) {
+        if (!net.useNetwork) startNetworking()
         ready = true
         setReady()
         net.udp!!.joinServer(ip)
@@ -926,7 +933,7 @@ class GameViewModel(
         networkMenuType = type
         when (type) {
             NETWORK_TYPE_ENABLED -> {
-                screen?.showNetworkButton(NetworkButton.MENU)
+                screen?.showNetworkButton(if (net.useNetwork) NetworkButton.MENU else NetworkButton.USE_NETWORK)
                 screen?.dismissServerPicker()
             }
             NETWORK_TYPE_JOINING -> {
@@ -936,6 +943,8 @@ class GameViewModel(
             NETWORK_TYPE_JOINED -> {
                 screen?.showNetworkButton(NetworkButton.DISABLE)
                 screen?.dismissServerPicker()
+                // On a server at last: the online screen
+                screen?.showNetworkOptions(true, freeForAll())
             }
         }
         screen?.rebuildNetworkMenu()
@@ -980,10 +989,8 @@ class GameViewModel(
         searchTimeout = null
     }
 
-    fun onServerSearchCancelled() {
-        stopServerSearch(false)
-        setNetworkMenu(NETWORK_TYPE_ENABLED)
-    }
+    /** The server picker closed without a server: back offline, not half online. */
+    fun onServerSearchCancelled() = stopServerSearch(true)
 
     private fun stopServerSearch(disableNetwork: Boolean) {
         cancelServerSearchTimeout()
@@ -1009,7 +1016,6 @@ class GameViewModel(
             updatePlayerSettings()
         } else {
             setNetworkMenu(NETWORK_TYPE_ENABLED)
-            screen?.showNetworkOptions(true, freeForAll())
         }
     }
 
@@ -1028,7 +1034,6 @@ class GameViewModel(
             Log.d(TAG, "autoStartServerScan: starting automatic server discovery on launch")
             net.useNetwork = true
             playerRepo.playerID = selectedPlayerId
-            screen?.showNetworkOptions(true, freeForAll())
             setNetworkMenu(NETWORK_TYPE_JOINING)
             setTeam()
             startServerSearchTimeout()
@@ -1313,8 +1318,7 @@ class GameViewModel(
             }
             ClientEvent.VersionError -> {
                 screen?.showMessage(GameMessage.UDP_VERSION_ERROR)
-                ready = false
-                setReady()
+                stopServerSearch(true)
             }
             ClientEvent.FailedToJoin -> {
                 Log.d(TAG, "FailedToJoin received. mUseNetwork=" + net.useNetwork + ", mNetworkMenuType=" + networkMenuType)
@@ -1337,11 +1341,8 @@ class GameViewModel(
                     ready = false
                     setReady(false)
                 }
-                net.useNetwork = true
-                setNetworkMenu(NETWORK_TYPE_ENABLED)
-                screen?.showNetworkOptions(true, freeForAll())
-                playerRepo.playerID = selectedPlayerId
-                setTeam()
+                // Kicked: offline, with the player's own number back
+                stopServerSearch(true)
                 screen?.showMessage(GameMessage.KICKED_BY_SERVER)
             }
             is ClientEvent.ServerReply -> {

@@ -375,7 +375,8 @@ class GameViewModelTest {
 
     @Test
     fun serverSearch_stopsWhilePaused_andRestartsOnResume() {
-        vm.onNetworkButtonPressed() // searching
+        vm.onNetworkButtonPressed()
+        vm.onNetworkMenuEntry(NetworkMenuEntry.Join) // searching
         verify(udp).joinServer()
         vm.onPause()
         verify(udp).endScanning()
@@ -423,30 +424,46 @@ class GameViewModelTest {
     }
 
     @Test
-    fun networkButton_withoutWifi_stillEnablesNetwork() {
+    fun networkButton_offersALobbyOrAnAddress_andGoesOnlineOnlyWhenOneIsPicked() {
         wifi = false
         vm.onNetworkButtonPressed()
+        verify(screen).showNetworkMenu()
+        assertFalse(net.useNetwork)
+        verify(udp, never()).joinServer()
+        vm.onNetworkMenuEntry(NetworkMenuEntry.Join)
         assertTrue(net.useNetwork)
         assertEquals(GameViewModel.NETWORK_TYPE_JOINING, vm.networkMenuType)
         verify(udp).joinServer()
-        verify(screen).showNetworkMenu()
     }
 
     @Test
     fun join_thenServerReply_connectsTcpAndShowsJoined() {
-        vm.onNetworkButtonPressed() // enable network (searching)
+        vm.onNetworkButtonPressed() // the lobby-or-address menu
         vm.onNetworkMenuEntry(NetworkMenuEntry.Join)
         assertTrue(vm.ready)
-        val order = inOrder(udp)
-        order.verify(udp, times(2)).joinServer()
+        verify(udp, times(1)).joinServer()
+        // Searching keeps the offline screen
+        verify(screen, never()).showNetworkOptions(true, false)
 
         emitNetwork(ClientEvent.ServerReply(7))
         assertEquals(7.toByte(), players.playerID)
         assertEquals(GameViewModel.NETWORK_TYPE_JOINED, vm.networkMenuType)
         verify(screen).showNetworkButton(NetworkButton.DISABLE)
+        verify(screen).showNetworkOptions(true, false) // joined: the online screen
         // Joined: no more automatic re-scans.
         advance(30_000)
-        verify(udp, times(2)).joinServer()
+        verify(udp, times(1)).joinServer()
+    }
+
+    @Test
+    fun closingTheServerPicker_goesBackOffline_notHalfOnline() {
+        vm.onNetworkButtonPressed()
+        vm.onNetworkMenuEntry(NetworkMenuEntry.Join)
+        assertTrue(net.useNetwork)
+        vm.onServerSearchCancelled()
+        assertFalse(net.useNetwork)
+        assertEquals(listOf(NetworkMenuEntry.Join, NetworkMenuEntry.JoinIp), vm.networkMenuEntries())
+        verify(screen, never()).showNetworkOptions(true, false)
     }
 
     @Test
@@ -567,14 +584,15 @@ class GameViewModelTest {
 
     @Test
     fun networkMenuEntries_followTheMenuState() {
-        assertEquals(listOf(NetworkMenuEntry.Join, NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork), vm.networkMenuEntries())
+        assertEquals(listOf(NetworkMenuEntry.Join, NetworkMenuEntry.JoinIp), vm.networkMenuEntries()) // offline
         vm.onNetworkButtonPressed()
-        assertEquals(listOf(NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork), vm.networkMenuEntries())
+        vm.onNetworkMenuEntry(NetworkMenuEntry.Join)
+        assertEquals(listOf(NetworkMenuEntry.JoinIp, NetworkMenuEntry.DisableNetwork), vm.networkMenuEntries()) // searching
     }
 
     @Test
     fun serverStartsAndEndsGame_networkGameShowsScoreboardAtTheEnd() {
-        net.useNetwork = true
+        joinServer()
         emitNetwork(ClientEvent.StartGame)
         verify(screen).showGameStarted(true, false, false)
         emitNetwork(ClientEvent.EndGame)
