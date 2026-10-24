@@ -8,6 +8,8 @@
     <string name="home_play_summary">Doe mee aan een spel met je blaster</string>
     <string name="home_host_title">Spel hosten</string>
     <string name="player_sheet_title">Spelers: tik op een speler voor instellingen</string>
+    <string name="pane_fullscreen">Venster vullen</string>
+    <string name="pane_fullscreen_exit">Alle panelen tonen</string>
 
     <string name="reconnect_weapon_button">Opnieuw verbinden</string>
     <string name="connect_weapon_button">Blaster verbinden</string>

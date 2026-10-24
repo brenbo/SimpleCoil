@@ -6,4 +6,6 @@
     <item name="disable_network_item" type="id" />
     <item name="shuffle_teams_item" type="id" />
     <item name="stop_searching_item" type="id" />
+    <!-- Where the live referee map goes: its own screen on a phone, a pane of the server screen on a wide one -->
+    <item name="referee_map_container" type="id" />
 </resources>

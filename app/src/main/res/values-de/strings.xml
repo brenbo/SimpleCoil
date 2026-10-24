@@ -8,6 +8,8 @@
     <string name="home_play_summary">Tritt einem Spiel mit deinem Blaster bei</string>
     <string name="home_host_title">Spiel hosten</string>
     <string name="player_sheet_title">Spieler: Tippe auf einen für seine Einstellungen</string>
+    <string name="pane_fullscreen">Fenster ausfüllen</string>
+    <string name="pane_fullscreen_exit">Alle Bereiche zeigen</string>
 
     <string name="reconnect_weapon_button">Erneut verbinden</string>
     <string name="connect_weapon_button">Blaster verbinden</string>

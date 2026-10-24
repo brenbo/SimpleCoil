@@ -20,8 +20,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.addCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +33,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.simplecoil.simplecoil.ui.ScreenOrientation
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.ActivityDedicatedServerBinding
 import com.simplecoil.simplecoil.databinding.DialogFieldNameBinding
@@ -45,6 +49,7 @@ import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsDialog
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardAdapter
 import com.simplecoil.simplecoil.ui.server.DedicatedServerRenderer
 import com.simplecoil.simplecoil.ui.server.RefereeMapActivity
+import com.simplecoil.simplecoil.ui.server.RefereeMapFragment
 import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
 import com.simplecoil.simplecoil.ui.server.ServerUiEffect
 import com.simplecoil.simplecoil.ui.map.FieldMapActivity
@@ -89,6 +94,8 @@ class DedicatedServerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Upright on a phone; a tablet or Chromebook window may be wide
+        ScreenOrientation.portraitOnPhones(this)
         binding = ActivityDedicatedServerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         // The device stays awake while this screen is in the foreground (Q3); the service holds Wi-Fi
@@ -109,6 +116,8 @@ class DedicatedServerActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this) { vm.onBackPressed() }
         // After the Back above, so an expanded sheet collapses before Back asks to stop the server
         attachPlayerSheet()
+        // Wide windows: the panes (and Back from a full-window one, ahead of the rest)
+        setUpPanes(savedInstanceState)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -117,7 +126,8 @@ class DedicatedServerActivity : AppCompatActivity() {
                         renderer.render(state)
                         // A game starting: the home screen becomes the live referee map
                         val running = state.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
-                        if (running && lastPhase != null && lastPhase != state.phase && !liveMapOff()) {
+                        // (A wide window shows it as a pane already)
+                        if (running && lastPhase != null && lastPhase != state.phase && !liveMapOff() && binding.mapPane == null) {
                             startActivity(Intent(this@DedicatedServerActivity, RefereeMapActivity::class.java))
                         }
                         lastPhase = state.phase
@@ -494,7 +504,11 @@ class DedicatedServerActivity : AppCompatActivity() {
         }
         fieldMapButton.setOnClickListener {
             val running = vm.state.value?.phase == com.simplecoil.simplecoil.network.server.SessionPhase.RUNNING
-            startActivity(Intent(this@DedicatedServerActivity, if (running) RefereeMapActivity::class.java else FieldMapActivity::class.java))
+            when {
+                // A wide window already shows the live map: fill the window with it
+                running && mapPane != null -> showFull(Pane.MAP)
+                else -> startActivity(Intent(this@DedicatedServerActivity, if (running) RefereeMapActivity::class.java else FieldMapActivity::class.java))
+            }
         }
         fieldRulesButton.setOnClickListener { showRules() }
         modeChangeButton.setOnClickListener { showMode() }
@@ -526,6 +540,67 @@ class DedicatedServerActivity : AppCompatActivity() {
     }
 
     /** The players in a bottom sheet under the controls, never over Start/End/Reset; the large-screen layout shows them beside the controls instead. */
+    /** A pane of a wide window that can fill it. */
+    private enum class Pane { MAP, PLAYERS }
+
+    /** The pane filling the window, or null for every pane side by side. */
+    private var fullPane: Pane? = null
+
+    private val leaveFullPane = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() = showFull(null)
+    }
+
+    /**
+     * A wide window (a Chromebook, a big tablet) has the settings, the live map and the players
+     * side by side (or the settings and the players, if it's less wide); the map and the players
+     * can each fill the window. A phone's layout has none of these panes.
+     */
+    private fun setUpPanes(savedInstanceState: Bundle?) {
+        val b = binding
+        if (b.mapPane != null && supportFragmentManager.findFragmentById(R.id.referee_map_container) == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.referee_map_container, RefereeMapFragment.newInstance(embedded = true))
+                .commit()
+        }
+        b.mapExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.MAP) null else Pane.MAP) }
+        b.playersExpandButton?.setOnClickListener { showFull(if (fullPane == Pane.PLAYERS) null else Pane.PLAYERS) }
+        onBackPressedDispatcher.addCallback(this, leaveFullPane)
+        savedInstanceState?.getString(STATE_FULL_PANE)?.let { name -> showFull(Pane.entries.firstOrNull { it.name == name }) }
+    }
+
+    /** Fills the window with [pane], or shows every pane again (null). */
+    private fun showFull(pane: Pane?) {
+        val b = binding
+        val playersPane = b.playersPane ?: return
+        fullPane = pane
+        b.settingsPane?.isVisible = pane == null
+        b.mapPane?.isVisible = pane == null || pane == Pane.MAP
+        playersPane.isVisible = pane == null || pane == Pane.PLAYERS
+        // The players' pane has a set width beside the map; alone it takes the window
+        (playersPane.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+            if (playersWidth == null) playersWidth = lp.width to lp.weight
+            val (width, weight) = if (pane == Pane.PLAYERS) 0 to 1f else playersWidth!!
+            lp.width = width
+            lp.weight = weight
+            playersPane.layoutParams = lp
+        }
+        fun look(button: ImageButton?, full: Boolean) {
+            button?.setImageResource(if (full) R.drawable.ic_sc_fullscreen_exit else R.drawable.ic_sc_fullscreen)
+            button?.contentDescription = getString(if (full) R.string.pane_fullscreen_exit else R.string.pane_fullscreen)
+        }
+        look(b.mapExpandButton, pane == Pane.MAP)
+        look(b.playersExpandButton, pane == Pane.PLAYERS)
+        leaveFullPane.isEnabled = pane != null
+    }
+
+    /** The players' pane's width and weight beside the others, kept while it fills the window. */
+    private var playersWidth: Pair<Int, Float>? = null
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        fullPane?.let { outState.putString(STATE_FULL_PANE, it.name) }
+    }
+
     private fun attachPlayerSheet() {
         val b = binding
         val sheet = b.playerSheet ?: return
@@ -601,6 +676,7 @@ class DedicatedServerActivity : AppCompatActivity() {
     private fun quantity(id: Int, count: Int): String = resources.getQuantityString(id, count, count)
 
     private companion object {
+        const val STATE_FULL_PANE = "fullPane"
         const val REQUEST_RESET = "serverReset"
         const val REQUEST_STOP = "serverStop"
         const val REQUEST_END = "serverEnd"

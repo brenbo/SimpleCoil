@@ -25,6 +25,7 @@
             android:orientation="horizontal">
 
             <ScrollView
+                android:id="@+id/settings_pane"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -556,16 +557,49 @@
                 </LinearLayout>
             </ScrollView>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/player_list"
+            <!-- Who's playing; the button fills the window with them -->
+            <LinearLayout
+                android:id="@+id/players_pane"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:layout_margin="12dp"
                 android:background="@drawable/bg_server_card"
-                android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp" />
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="4dp"
+                    android:paddingTop="4dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/player_sheet_title"
+                        android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
+
+                    <ImageButton
+                        android:id="@+id/players_expand_button"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/pane_fullscreen"
+                        app:srcCompat="@drawable/ic_sc_fullscreen" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/player_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:clipToPadding="false"
+                    android:paddingBottom="8dp" />
+            </LinearLayout>
         </LinearLayout>
     </RelativeLayout>
 </FrameLayout>

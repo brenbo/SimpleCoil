@@ -8,6 +8,8 @@
     <string name="home_play_summary">Entre em um jogo com seu blaster</string>
     <string name="home_host_title">Criar um jogo</string>
     <string name="player_sheet_title">Jogadores: toque em um para ver as configurações</string>
+    <string name="pane_fullscreen">Preencher a janela</string>
+    <string name="pane_fullscreen_exit">Mostrar todos os painéis</string>
 
     <string name="reconnect_weapon_button">Reconectar</string>
     <string name="connect_weapon_button">Conectar blaster</string>

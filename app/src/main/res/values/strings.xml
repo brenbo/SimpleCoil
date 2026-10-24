@@ -8,6 +8,9 @@
     <string name="home_play_summary">Join a game with your blaster</string>
     <string name="home_host_title">Host a game</string>
     <string name="player_sheet_title">Players: tap one for their settings</string>
+    <!-- Wide windows: a pane's button that makes it fill the window, and back -->
+    <string name="pane_fullscreen">Fill the window</string>
+    <string name="pane_fullscreen_exit">Show every panel</string>
 
     <string name="reconnect_weapon_button">Reconnect</string>
     <string name="connect_weapon_button">Connect blaster</string>

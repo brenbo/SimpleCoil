@@ -36,6 +36,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.simplecoil.simplecoil.ui.ScreenOrientation
 import com.simplecoil.simplecoil.AppContainer
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.SimpleCoilApp
@@ -137,6 +138,8 @@ class FieldMapActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Upright on a phone; a tablet or Chromebook window may be wide
+        ScreenOrientation.portraitOnPhones(this)
         container = (application as SimpleCoilApp).container
         MapLibre.getInstance(applicationContext)
         binding = ActivityFieldMapBinding.inflate(layoutInflater)

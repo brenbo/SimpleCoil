@@ -3,8 +3,7 @@
      game"): every player, the field, and what the mode has on it, with the referee's controls. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:layout_height="match_parent">
 
     <org.maplibre.android.maps.MapView
         android:id="@+id/ref_map_view"
@@ -47,6 +46,7 @@
         android:textSize="14sp" />
 
     <LinearLayout
+        android:id="@+id/ref_controls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"

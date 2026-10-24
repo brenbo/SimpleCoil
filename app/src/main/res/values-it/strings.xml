@@ -8,6 +8,8 @@
     <string name="home_play_summary">Unisciti a una partita con il tuo blaster</string>
     <string name="home_host_title">Ospita una partita</string>
     <string name="player_sheet_title">Giocatori: tocca uno per le sue impostazioni</string>
+    <string name="pane_fullscreen">Riempi la finestra</string>
+    <string name="pane_fullscreen_exit">Mostra tutti i pannelli</string>
 
     <string name="reconnect_weapon_button">Riconnetti</string>
     <string name="connect_weapon_button">Connetti blaster</string>

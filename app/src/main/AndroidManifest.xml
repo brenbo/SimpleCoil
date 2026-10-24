@@ -60,7 +60,6 @@
             android:name=".FullscreenActivity"
             android:exported="true"
             android:configChanges="orientation|keyboardHidden|screenSize|smallestScreenSize|screenLayout"
-            android:screenOrientation="portrait"
             android:theme="@style/FullscreenTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -93,9 +92,8 @@
         <activity
             android:name=".DedicatedServerActivity"
             android:exported="false"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|density|keyboard|keyboardHidden|navigation|locale|layoutDirection"
+            android:configChanges="uiMode|density|keyboard|keyboardHidden|navigation|locale|layoutDirection"
             android:label="@string/title_activity_dedicated_server"
-            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <!-- The dedicated server's field map: pick and download the field's aerial photo -->
@@ -103,7 +101,6 @@
             android:name=".ui.map.FieldMapActivity"
             android:exported="false"
             android:label="@string/field_map_title"
-            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <!-- The dedicated server's live referee map, during a game -->

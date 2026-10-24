@@ -38,6 +38,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.journeyapps.barcodescanner.CaptureActivity
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.simplecoil.simplecoil.ui.ScreenOrientation
 import com.simplecoil.simplecoil.databinding.ActivityFullscreenBinding
 import com.simplecoil.simplecoil.hardware.blaster.BlasterSupport
 import com.simplecoil.simplecoil.ui.briefing.BriefingActivity
@@ -126,6 +127,8 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Upright on a phone; a tablet or Chromebook window may be wide
+        ScreenOrientation.portraitOnPhones(this)
         binding = ActivityFullscreenBinding.inflate(layoutInflater)
         setContentView(binding.root)
         // Back keeps the session running: send the task to the background instead of finishing.
