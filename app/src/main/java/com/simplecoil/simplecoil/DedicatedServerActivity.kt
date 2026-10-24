@@ -18,7 +18,12 @@ package com.simplecoil.simplecoil
 
 import android.content.Intent
 import android.os.Bundle
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.view.View
+import android.view.ViewGroup
+import android.view.animation.PathInterpolator
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -531,12 +536,60 @@ class DedicatedServerActivity : AppCompatActivity() {
         voiceChatSwitch.setOnClickListener { vm.onVoiceChatChanged(voiceChatSwitch.isChecked) }
     }
 
-    /** A settings card that opens and closes in place when its header is tapped. */
+    /** A settings card that slides open and shut in place when its header is tapped. */
     private fun dropDown(header: View, body: View, chevron: TextView) {
         header.setOnClickListener {
-            body.isVisible = !body.isVisible
-            chevron.animate().rotation(if (body.isVisible) 90f else 0f).setDuration(150).start()
+            // Opening unless it's open, or on its way open
+            val open = (body.getTag(R.id.drop_down_open) as? Boolean ?: body.isVisible).not()
+            body.setTag(R.id.drop_down_open, open)
+            slide(body, open)
+            chevron.animate().rotation(if (open) 90f else 0f).setDuration(DROP_DOWN_MILLIS).start()
         }
+    }
+
+    /**
+     * Grows [body] from nothing to its full height, or shrinks it away, fading as it goes, so
+     * the cards under it slide down and back up rather than jump. A tap partway turns it around.
+     */
+    private fun slide(body: View, open: Boolean) {
+        (body.getTag(R.id.drop_down_animator) as? Animator)?.cancel()
+        val from = if (body.isVisible) body.height else 0
+        val to = if (open) {
+            val parent = body.parent as View
+            val lp = body.layoutParams as ViewGroup.MarginLayoutParams
+            val width = parent.width - parent.paddingLeft - parent.paddingRight - lp.leftMargin - lp.rightMargin
+            body.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+            body.measuredHeight
+        } else 0
+        body.layoutParams.height = from
+        body.isVisible = true
+        body.requestLayout()
+        val animator = ValueAnimator.ofInt(from, to).apply {
+            duration = DROP_DOWN_MILLIS
+            interpolator = PathInterpolator(0.4f, 0f, 0.2f, 1f) // fast out, slow in
+            addUpdateListener {
+                body.layoutParams.height = it.animatedValue as Int
+                body.alpha = (it.animatedValue as Int).toFloat() / maxOf(from, to, 1)
+                body.requestLayout()
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                private var cancelled = false
+                override fun onAnimationCancel(animation: Animator) {
+                    cancelled = true
+                }
+                override fun onAnimationEnd(animation: Animator) {
+                    if (cancelled) return
+                    // Done: as tall as it needs to be from now on (its contents change), or gone
+                    body.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    body.alpha = 1f
+                    body.isVisible = open
+                    body.setTag(R.id.drop_down_animator, null)
+                }
+            })
+        }
+        body.setTag(R.id.drop_down_animator, animator)
+        animator.start()
     }
 
     /** The wide window's panes side by side; null on a phone, whose layout has none. */
@@ -648,6 +701,7 @@ class DedicatedServerActivity : AppCompatActivity() {
     private fun quantity(id: Int, count: Int): String = resources.getQuantityString(id, count, count)
 
     private companion object {
+        const val DROP_DOWN_MILLIS = 250L
         const val PANES_PREFS = "serverPanes"
         const val REQUEST_RESET = "serverReset"
         const val REQUEST_STOP = "serverStop"

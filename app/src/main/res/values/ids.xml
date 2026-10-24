@@ -8,4 +8,7 @@
     <item name="stop_searching_item" type="id" />
     <!-- Where the live referee map goes: its own screen on a phone, a pane of the server screen on a wide one -->
     <item name="referee_map_container" type="id" />
+    <!-- A settings card's body as it slides: which way it's going, and the animation doing it -->
+    <item name="drop_down_open" type="id" />
+    <item name="drop_down_animator" type="id" />
 </resources>
