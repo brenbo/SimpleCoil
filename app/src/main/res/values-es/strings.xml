@@ -759,10 +759,12 @@
     <string name="field_map_my_location">Mi ubicación</string>
     <string name="field_map_download">Descargar</string>
     <string name="field_map_delete">Eliminar</string>
-    <string name="field_map_downloading">Descargando el campo del USGS…</string>
+    <string name="field_map_downloading">Descargando la foto aérea del campo…</string>
     <string name="field_map_saved">Mapa del campo guardado. Los teléfonos lo obtienen al unirse.</string>
-    <string name="field_map_network_error">No se pudo conectar con el USGS. Revisa tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="field_map_network_error">No se pudo conectar con el servicio de mapas. Revisa tu conexión a internet e inténtalo de nuevo.</string>
     <string name="field_map_no_imagery">El USGS no tiene fotos aéreas aquí. Solo cubre Estados Unidos.</string>
+    <string name="field_map_no_imagery_here">No hay fotos aéreas aquí.</string>
+    <string name="field_map_refused">El servicio de mapas rechazó la descarga. Puede que se hayan agotado las solicitudes gratuitas de este mes: inténtalo de nuevo el mes que viene.</string>
     <string name="field_map_deleted">Mapa del campo eliminado.</string>
     <string name="field_map_save_error">No se pudo guardar el mapa del campo.</string>
     <string name="field_map_no_location">Aún no se encuentra tu ubicación.</string>

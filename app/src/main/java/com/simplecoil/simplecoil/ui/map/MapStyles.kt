@@ -44,20 +44,21 @@ object MapStyles {
     /** The play screen's style: just the background, until the field photo arrives. */
     fun playStyle(): Style.Builder = Style.Builder().fromJson(styleJson(null))
 
-    /** The server's field picker: aerial tiles with roads and names, for finding the field. */
-    fun browseStyle(): Style.Builder = Style.Builder().fromJson(styleJson(UsgsImagery.BROWSE_TILES))
+    /**
+     * The server's field picker: aerial tiles for finding the field. MapTiler's satellite when the
+     * build has its key (256-pixel tiles, one request each), USGS's imagery with roads and names otherwise.
+     */
+    fun browseStyle(): Style.Builder = Style.Builder().fromJson(styleJson(
+        MapImagery.browseTileJson?.let { tileJson -> JSONObject().put("url", tileJson) }
+            ?: JSONObject().put("tiles", JSONArray().put(UsgsImagery.BROWSE_TILES)).put("maxzoom", UsgsImagery.TILES_MAX_ZOOM)))
 
-    private fun styleJson(tiles: String?): String {
+    private fun styleJson(browse: JSONObject?): String {
         val sources = JSONObject()
         val layers = JSONArray()
             .put(JSONObject().put("id", BACKGROUND_LAYER).put("type", "background")
                 .put("paint", JSONObject().put("background-color", BACKGROUND_COLOR)))
-        if (tiles != null) {
-            sources.put(BROWSE_SOURCE, JSONObject()
-                .put("type", "raster")
-                .put("tiles", JSONArray().put(tiles))
-                .put("tileSize", 256)
-                .put("maxzoom", UsgsImagery.TILES_MAX_ZOOM))
+        if (browse != null) {
+            sources.put(BROWSE_SOURCE, browse.put("type", "raster").put("tileSize", 256))
             layers.put(JSONObject().put("id", BROWSE_SOURCE).put("type", "raster").put("source", BROWSE_SOURCE))
         }
         return JSONObject()

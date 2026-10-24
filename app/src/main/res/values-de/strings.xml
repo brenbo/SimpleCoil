@@ -759,10 +759,12 @@
     <string name="field_map_my_location">Mein Standort</string>
     <string name="field_map_download">Herunterladen</string>
     <string name="field_map_delete">Löschen</string>
-    <string name="field_map_downloading">Lade Feld vom USGS herunter…</string>
+    <string name="field_map_downloading">Luftbild des Felds wird heruntergeladen…</string>
     <string name="field_map_saved">Spielfeldkarte gespeichert. Telefone erhalten sie beim Beitreten.</string>
-    <string name="field_map_network_error">USGS konnte nicht erreicht werden. Prüfe die Internetverbindung und versuche es erneut.</string>
+    <string name="field_map_network_error">Der Kartendienst ist nicht erreichbar. Prüfe die Internetverbindung und versuche es erneut.</string>
     <string name="field_map_no_imagery">USGS hat hier keine Luftbilder. Es deckt nur die USA ab.</string>
+    <string name="field_map_no_imagery_here">Hier gibt es keine Luftbilder.</string>
+    <string name="field_map_refused">Der Kartendienst hat den Download abgelehnt. Die kostenlosen Anfragen für diesen Monat sind vielleicht aufgebraucht: Versuche es nächsten Monat erneut.</string>
     <string name="field_map_deleted">Spielfeldkarte gelöscht.</string>
     <string name="field_map_save_error">Spielfeldkarte konnte nicht gespeichert werden.</string>
     <string name="field_map_no_location">Standort konnte noch nicht ermittelt werden.</string>

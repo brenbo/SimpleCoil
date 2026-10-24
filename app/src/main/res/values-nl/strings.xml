@@ -759,10 +759,12 @@
     <string name="field_map_my_location">Mijn locatie</string>
     <string name="field_map_download">Downloaden</string>
     <string name="field_map_delete">Verwijderen</string>
-    <string name="field_map_downloading">Veld downloaden van USGS…</string>
+    <string name="field_map_downloading">Luchtfoto van het veld downloaden…</string>
     <string name="field_map_saved">Veldkaart opgeslagen. Telefoons ontvangen deze bij verbinding.</string>
-    <string name="field_map_network_error">Kon geen verbinding maken met USGS. Controleer de internetverbinding en probeer het opnieuw.</string>
+    <string name="field_map_network_error">Kon geen verbinding maken met de kaartdienst. Controleer de internetverbinding en probeer het opnieuw.</string>
     <string name="field_map_no_imagery">USGS heeft hier geen luchtfoto\'s. Het dekt alleen de Verenigde Staten.</string>
+    <string name="field_map_no_imagery_here">Er zijn hier geen luchtfoto\'s.</string>
+    <string name="field_map_refused">De kaartdienst heeft de download geweigerd. De gratis verzoeken voor deze maand zijn misschien op: probeer het volgende maand opnieuw.</string>
     <string name="field_map_deleted">Veldkaart verwijderd.</string>
     <string name="field_map_save_error">Kon de veldkaart niet opslaan.</string>
     <string name="field_map_no_location">Kan je locatie nog niet vinden.</string>

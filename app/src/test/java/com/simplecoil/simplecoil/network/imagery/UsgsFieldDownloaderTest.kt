@@ -28,14 +28,14 @@ class UsgsFieldDownloaderTest {
 
     private val center = LatLon(39.0, -77.0)
 
-    private fun downloader(response: (String) -> UsgsFieldDownloader.Response) =
+    private fun downloader(response: (String) -> FieldDownloader.Response) =
         UsgsFieldDownloader(clock = { 1234L }, fetch = response)
 
-    private fun expectFailure(reason: UsgsFieldDownloader.Reason, response: (String) -> UsgsFieldDownloader.Response) {
+    private fun expectFailure(reason: FieldDownloader.Reason, response: (String) -> FieldDownloader.Response) {
         try {
             downloader(response).download(center, 500.0)
             fail("expected $reason")
-        } catch (e: UsgsFieldDownloader.DownloadException) {
+        } catch (e: FieldDownloader.DownloadException) {
             assertEquals(reason, e.reason)
         }
     }
@@ -45,7 +45,7 @@ class UsgsFieldDownloaderTest {
         var asked: String? = null
         // 0.3 bytes a pixel, like a real 1000-pixel photo
         val photo = FieldPacks.jpeg(size = 300_000)
-        val pack = downloader { url -> asked = url; UsgsFieldDownloader.Response(200, "image/jpeg", photo) }.download(center, 500.0)
+        val pack = downloader { url -> asked = url; FieldDownloader.Response(200, "image/jpeg", photo) }.download(center, 500.0)
 
         val request = UsgsImagery.exportRequest(center, 500.0)
         assertEquals(request.url, asked)
@@ -58,28 +58,28 @@ class UsgsFieldDownloaderTest {
 
     @Test
     fun noInternet() {
-        expectFailure(UsgsFieldDownloader.Reason.NETWORK) { throw IOException("Unable to resolve host") }
+        expectFailure(FieldDownloader.Reason.NETWORK) { throw IOException("Unable to resolve host") }
     }
 
     @Test
     fun aServerError() {
-        expectFailure(UsgsFieldDownloader.Reason.NETWORK) { UsgsFieldDownloader.Response(503, "text/html", ByteArray(10)) }
+        expectFailure(FieldDownloader.Reason.NETWORK) { FieldDownloader.Response(503, "text/html", ByteArray(10)) }
     }
 
     @Test
     fun anErrorPageInsteadOfAPhoto() {
-        expectFailure(UsgsFieldDownloader.Reason.NETWORK) {
-            UsgsFieldDownloader.Response(200, "application/json", "{\"error\":{}}".toByteArray())
+        expectFailure(FieldDownloader.Reason.NETWORK) {
+            FieldDownloader.Response(200, "application/json", "{\"error\":{}}".toByteArray())
         }
         // Claims to be an image but isn't a JPEG
-        expectFailure(UsgsFieldDownloader.Reason.NETWORK) { UsgsFieldDownloader.Response(200, "image/jpeg", ByteArray(300_000)) }
+        expectFailure(FieldDownloader.Reason.NETWORK) { FieldDownloader.Response(200, "image/jpeg", ByteArray(300_000)) }
     }
 
     @Test
     fun somewhereWithoutImagery() {
         // What USGS sent for open water: a flat photo of about 0.017 bytes a pixel
-        expectFailure(UsgsFieldDownloader.Reason.NO_IMAGERY) {
-            UsgsFieldDownloader.Response(200, "image/jpeg", FieldPacks.jpeg(size = 16_651))
+        expectFailure(FieldDownloader.Reason.NO_IMAGERY) {
+            FieldDownloader.Response(200, "image/jpeg", FieldPacks.jpeg(size = 16_651))
         }
     }
 }

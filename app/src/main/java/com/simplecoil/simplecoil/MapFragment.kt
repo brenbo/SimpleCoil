@@ -263,7 +263,7 @@ class MapFragment : Fragment() {
         objectiveOverlay = ObjectiveOverlay(requireContext(), b.mapObjectivesLayer) { objectiveColor(it) }
         glyphOverlay = GlyphOverlay(requireContext(), b.mapGlyphsLayer)
         b.mapZoomButton.setOnClickListener { showZoomMenu(it) }
-        MapCredit.attach(b.mapCreditTv)
+        MapCredit.attach(b.mapCreditTv, mapTiler = false)
         compass = CompassSensor(requireContext()).also { if (!it.isAvailable) headingUp = false }
         b.mapCompassButton.isVisible = compass?.isAvailable == true
         updateCompassButton()
@@ -545,7 +545,11 @@ class MapFragment : Fragment() {
     private fun showPhoto(info: FieldPackInfo?) {
         photo = info
         limitCamera()
-        binding?.mapCreditTv?.isVisible = info != null
+        binding?.mapCreditTv?.let {
+            it.isVisible = info != null
+            // The photo's own credit: the server may have downloaded it from MapTiler or USGS
+            MapCredit.attach(it, info != null && MapCredit.isMapTiler(info.credit))
+        }
         val style = style ?: return
         if (info == null) {
             MapStyles.showFieldPhoto(style, null, null)

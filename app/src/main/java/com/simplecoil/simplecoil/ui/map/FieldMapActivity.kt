@@ -67,7 +67,7 @@ import com.simplecoil.simplecoil.domain.map.SpawnPlanner
 import com.simplecoil.simplecoil.domain.map.SpawnRules
 import com.simplecoil.simplecoil.domain.map.UsgsImagery
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
-import com.simplecoil.simplecoil.network.imagery.UsgsFieldDownloader
+import com.simplecoil.simplecoil.network.imagery.FieldDownloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,7 +111,7 @@ class FieldMapActivity : AppCompatActivity() {
     private var photo: FieldPackInfo? = null
     private var config = FieldConfig(rules = BorderRules(units = DistanceUnits.defaultFor(Locale.getDefault())))
     private var downloading = false
-    private val downloader = UsgsFieldDownloader()
+    private val downloader = MapImagery.downloader()
 
     private var tool = Tool.NONE
     private var circleCenter: LatLon? = null
@@ -169,7 +169,7 @@ class FieldMapActivity : AppCompatActivity() {
         binding.fieldMyLocationButton.setOnClickListener { goToMyLocation() }
         binding.fieldDownloadButton.setOnClickListener { download() }
         binding.fieldDeleteButton.setOnClickListener { deletePhoto() }
-        MapCredit.attach(binding.fieldCreditTv)
+        MapCredit.attach(binding.fieldCreditTv, MapImagery.usesMapTiler)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -754,8 +754,12 @@ class FieldMapActivity : AppCompatActivity() {
                 try {
                     container.serverFieldStore.save(downloader.download(center, UsgsImagery.FIELD_SIDE_METERS))
                     R.string.field_map_saved
-                } catch (e: UsgsFieldDownloader.DownloadException) {
-                    if (e.reason == UsgsFieldDownloader.Reason.NO_IMAGERY) R.string.field_map_no_imagery else R.string.field_map_network_error
+                } catch (e: FieldDownloader.DownloadException) {
+                    when (e.reason) {
+                        FieldDownloader.Reason.NO_IMAGERY -> if (MapImagery.usesMapTiler) R.string.field_map_no_imagery_here else R.string.field_map_no_imagery
+                        FieldDownloader.Reason.REFUSED -> R.string.field_map_refused
+                        FieldDownloader.Reason.NETWORK -> R.string.field_map_network_error
+                    }
                 } catch (e: IOException) {
                     R.string.field_map_save_error
                 }

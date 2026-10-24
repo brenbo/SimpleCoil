@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -19,6 +21,14 @@ android {
         versionCode = 14
         versionName = "2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // MapTiler's key for satellite imagery outside the US: from local.properties (maptiler.key=...,
+        // never committed) or the MAPTILER_KEY environment variable. Without one the app uses USGS (the US only).
+        val localProperties = Properties().apply {
+            rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+        }
+        val mapTilerKey = (localProperties.getProperty("maptiler.key") ?: System.getenv("MAPTILER_KEY") ?: "").trim()
+        buildConfigField("String", "MAPTILER_KEY", "\"$mapTilerKey\"")
     }
 
     buildTypes {

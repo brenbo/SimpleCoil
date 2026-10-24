@@ -687,6 +687,8 @@
     <string name="rules_section_gps">GPS</string>
     <string name="rules_section_map">Map</string>
     <string name="map_credit_short">Data provided by USGS</string>
+    <!-- MapTiler's satellite credit, as MapTiler lists it: names, not translated -->
+    <string name="map_imagery_credit_maptiler" translatable="false">Satellite imagery © MapTiler and its imagery partners, including © Maxar and © NASA\'s Goddard Space Flight Center.\nMap data © OpenStreetMap contributors.</string>
     <string name="respawn_return_to_field">Get back on the field to respawn</string>
     <string name="respawn_go_to_spawn">Walk to your spawn to respawn</string>
     <string name="toast_out_of_ammo">Out of ammo. Refill at your spawn or grab an ammo drop.</string>
@@ -798,10 +800,12 @@
     <string name="field_map_my_location">My location</string>
     <string name="field_map_download">Download</string>
     <string name="field_map_delete">Delete</string>
-    <string name="field_map_downloading">Downloading the field from USGS…</string>
+    <string name="field_map_downloading">Downloading the field\'s aerial photo…</string>
     <string name="field_map_saved">Field map saved. Phones get it when they join.</string>
-    <string name="field_map_network_error">Couldn\'t reach USGS. Check the internet connection and try again.</string>
+    <string name="field_map_network_error">Couldn\'t reach the map service. Check the internet connection and try again.</string>
     <string name="field_map_no_imagery">USGS has no aerial photos here. It only covers the United States.</string>
+    <string name="field_map_no_imagery_here">There are no aerial photos here.</string>
+    <string name="field_map_refused">The map service turned the download away. This month\'s free requests may be used up: try again next month.</string>
     <string name="field_map_deleted">Field map deleted.</string>
     <string name="field_map_save_error">Couldn\'t save the field map.</string>
     <string name="field_map_no_location">Can\'t find your location yet.</string>

@@ -20,21 +20,27 @@ import android.content.Context
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.simplecoil.simplecoil.R
+import com.simplecoil.simplecoil.domain.map.MapTilerImagery
 
 /**
- * The imagery's credit on a map: "Data provided by USGS", and the full acknowledgment USGS asks
- * for when it is tapped (map design: Map engine).
+ * The imagery's credit on a map (map design: Map engine): "© MapTiler © OpenStreetMap
+ * contributors" for MapTiler's imagery, "Data provided by USGS" for USGS's, and the full credit
+ * when it is tapped.
  */
 object MapCredit {
-    fun attach(label: TextView) {
-        label.setText(R.string.map_credit_short)
-        label.setOnClickListener { show(label.context) }
+    /** Shows the credit for MapTiler's imagery if [mapTiler], otherwise USGS's. */
+    fun attach(label: TextView, mapTiler: Boolean) {
+        if (mapTiler) label.text = MapTilerImagery.CREDIT else label.setText(R.string.map_credit_short)
+        label.setOnClickListener { show(label.context, mapTiler) }
     }
 
-    fun show(context: Context) {
+    /** Whether a field photo's credit line, [credit], is MapTiler's. */
+    fun isMapTiler(credit: String): Boolean = credit.contains("MapTiler")
+
+    fun show(context: Context, mapTiler: Boolean) {
         AlertDialog.Builder(context, R.style.AppDialogTheme)
             .setTitle(R.string.map_credit_title)
-            .setMessage(R.string.map_imagery_credit)
+            .setMessage(if (mapTiler) R.string.map_imagery_credit_maptiler else R.string.map_imagery_credit)
             .setPositiveButton(R.string.ok, null)
             .show()
     }

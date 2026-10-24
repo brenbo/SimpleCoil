@@ -759,10 +759,12 @@
     <string name="field_map_my_location">Ma position</string>
     <string name="field_map_download">Télécharger</string>
     <string name="field_map_delete">Supprimer</string>
-    <string name="field_map_downloading">Téléchargement du terrain depuis l\'USGS…</string>
+    <string name="field_map_downloading">Téléchargement de la photo aérienne du terrain…</string>
     <string name="field_map_saved">Carte du terrain enregistrée. Les téléphones la reçoivent lors de la connexion.</string>
-    <string name="field_map_network_error">Impossible de contacter l\'USGS. Vérifiez votre connexion Internet et réessayez.</string>
+    <string name="field_map_network_error">Impossible de contacter le service de cartes. Vérifiez votre connexion Internet et réessayez.</string>
     <string name="field_map_no_imagery">L\'USGS n\'a pas de photos aériennes ici. Il ne couvre que les États-Unis.</string>
+    <string name="field_map_no_imagery_here">Il n\'y a pas de photos aériennes ici.</string>
+    <string name="field_map_refused">Le service de cartes a refusé le téléchargement. Les requêtes gratuites de ce mois sont peut-être épuisées : réessayez le mois prochain.</string>
     <string name="field_map_deleted">Carte du terrain supprimée.</string>
     <string name="field_map_save_error">Impossible d\'enregistrer la carte du terrain.</string>
     <string name="field_map_no_location">Position introuvable pour le moment.</string>
