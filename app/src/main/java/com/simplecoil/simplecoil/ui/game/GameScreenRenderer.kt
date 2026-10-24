@@ -231,7 +231,7 @@ class GameScreenRenderer(
         val text = when (mode) {
             TeamMode.TWO_TEAMS -> R.string.team_mode_2teams
             TeamMode.FOUR_TEAMS -> R.string.team_mode_4teams
-            TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa
+            TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa_short // "Free for all" doesn't fit the tile
         }
         b.teamModeTv.setText(text)
     }
