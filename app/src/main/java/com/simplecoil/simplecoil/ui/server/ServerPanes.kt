@@ -86,7 +86,7 @@ class ServerPanes(
         mapButton?.setOnClickListener { toggleFull(setOf(settings, players)) }
         playersButton?.setOnClickListener { toggleFull(setOfNotNull(settings, map)) }
         // A window made narrower (a Chromebook's): the set widths still leave the map its room
-        row.addOnLayoutChangeListener { _, l, _, r, _, oldL, _, oldR, _ -> if (r - l != oldR - oldL) row.post { fitWidths() } }
+        row.addOnLayoutChangeListener { _, l, _, r, _, oldL, _, oldR, _ -> if (r - l != oldR - oldL) row.post { apply(animate = false) } }
         apply(animate = false)
     }
 
@@ -212,24 +212,31 @@ class ServerPanes(
         if (pane === settings) settingsWidth = px.roundToInt() else playersWidth = px.roundToInt()
     }
 
-    /** The set widths kept within the window, leaving the map (or the players) its minimum. */
+    /**
+     * The set widths kept within the window, leaving the pane that takes the rest its minimum:
+     * as a pane comes back (the map, beside settings dragged wide while it was closed), or the
+     * window gets narrower (a Chromebook's).
+     */
     private fun fitWidths() {
         if (row.width == 0) return
         var room = row.width - row.paddingLeft - row.paddingRight
         for (i in 0 until row.childCount) {
             val child = row.getChildAt(i)
-            if (!child.isVisible) continue
+            if (child in closed) continue
             val lp = child.layoutParams as LinearLayout.LayoutParams
             room -= lp.leftMargin + lp.rightMargin
-            if (child is PaneDivider) room -= child.width
+            if (child is PaneDivider) room -= lp.width
         }
         val stretch = stretchPane() ?: return
-        val sized = listOf(settings, players).filter { it !== stretch && it.isVisible && widthOf(it) > 0 }
-        val over = sized.sumOf { widthOf(it) } + min - room
-        if (over <= 0) return
-        // Each gives up its share, down to the minimum
-        for (pane in sized) setWidth(pane, (widthOf(pane) - over / sized.size).coerceAtLeast(min).toFloat())
-        apply(animate = false)
+        val sized = listOf(settings, players).filter { it !== stretch && it !in closed && widthOf(it) > 0 }
+        var over = sized.sumOf { widthOf(it) } + min - room
+        // The widest gives up what it can first, down to the minimum, then the other
+        for (pane in sized.sortedByDescending { widthOf(it) }) {
+            if (over <= 0) break
+            val give = minOf(over, widthOf(pane) - min).coerceAtLeast(0)
+            setWidth(pane, (widthOf(pane) - give).toFloat())
+            over -= give
+        }
     }
 
     private fun widthOf(pane: View) = if (pane === settings) settingsWidth else playersWidth
@@ -245,6 +252,7 @@ class ServerPanes(
             .setOrdering(TransitionSet.ORDERING_TOGETHER)
             .setDuration(ANIMATION_MILLIS)
             .setInterpolator(PathInterpolator(0.4f, 0f, 0.2f, 1f))) // fast out, slow in
+        fitWidths()
         val stretch = stretchPane()
         for (pane in listOfNotNull(settings, map, players)) {
             pane.isVisible = pane !in closed
