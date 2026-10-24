@@ -119,7 +119,7 @@ class ClientWireFixturesTest {
     fun hello_withAPairedGrenade_isFollowedByThePairing() {
         players.pairedGrenadeID = 3
         val frames = written { client.sendPlayerInfo(false) }
-        WireFixtures.assertFrame("client/hello_fresh_id5.frame", frames[0])
+        WireFixtures.assertFrame("client/hello_fresh.frame", frames[0]) // joining asks for auto sort, whatever the stored number
         WireFixtures.assertFrame("client/grenade_pairing.frame", frames[1])
     }
 

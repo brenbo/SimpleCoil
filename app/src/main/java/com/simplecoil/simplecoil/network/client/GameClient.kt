@@ -98,10 +98,15 @@ class GameClient(
         send(ClientMessage.NameChange(players.playerID.toInt(), players.playerName))
     }
 
-    /** The hello, then our blaster's type and our grenade's pairing if we know them. */
+    /**
+     * The hello, then our blaster's type and our grenade's pairing if we know them. Joining, we
+     * ask for auto sort (0): the player number picked offline can't be changed online, and the
+     * server balances the teams. Rejoining, we ask for the number the server gave us.
+     */
     fun sendPlayerInfo(rejoin: Boolean) {
         if (rejoin) Log.d(TAG, "Attempting to rejoin server")
-        send(hello(players.playerID, players.playerName, players.deviceAddress, rejoin, outbox))
+        val requested: Byte = if (rejoin) players.playerID else 0
+        send(hello(requested, players.playerName, players.deviceAddress, rejoin, outbox))
         sendBlasterType()
         if (players.pairedGrenadeID.toInt() != 0) sendPlayerGrenade()
     }

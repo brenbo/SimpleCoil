@@ -83,6 +83,16 @@ class GameRosterTest {
     }
 
     @Test
+    fun hello_aNumberOutside1To64_isAutoSorted_and64IsHonored() {
+        val (_, last) = join("Alpha", "AA", requestedId = 64)
+        assertEquals(64.toByte(), last.playerId)
+        for ((i, bad) in listOf(65, 100, -3).withIndex()) {
+            val (_, p) = join("P$i", "M$i", requestedId = bad)
+            assertTrue("$bad gave ${p.playerId}", p.playerId in 1..63)
+        }
+    }
+
+    @Test
     fun names_areSanitizedByTheServer() {
         val (connection, a) = join("\u202EZo\u00EB\n🔥", "AA")
         assertEquals("Zoë 🔥", a.name)

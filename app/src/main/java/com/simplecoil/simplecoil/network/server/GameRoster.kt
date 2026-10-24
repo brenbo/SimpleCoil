@@ -315,6 +315,8 @@ class GameRoster @JvmOverloads constructor(
             if (record !== current) occupied += record.playerId
         }
         var id = requestedId
+        // A number outside 1..64 (an older app's, or nonsense) is auto sort too
+        if (id.toInt() !in 1..GameSettingsRepository.MAX_PLAYER_ID) id = 0
         if (id.toInt() != 0 && id in occupied) id = 0
         if (id.toInt() == 0) {
             id = repo.findAutoSortPlayerID(occupied)
