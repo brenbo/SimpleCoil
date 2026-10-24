@@ -54,6 +54,7 @@ import com.simplecoil.simplecoil.ui.dialogs.TeamRatioDialog
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsDialog
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardAdapter
 import com.simplecoil.simplecoil.ui.server.DedicatedServerRenderer
+import com.simplecoil.simplecoil.ui.server.PaneDivider
 import com.simplecoil.simplecoil.ui.server.RefereeMapActivity
 import com.simplecoil.simplecoil.ui.server.RefereeMapFragment
 import com.simplecoil.simplecoil.ui.server.DedicatedServerViewModel
@@ -594,9 +595,9 @@ class DedicatedServerActivity : AppCompatActivity() {
         }
         val was = fullPane
         fullPane = pane
-        b.settingsPane?.isVisible = pane == null
+        b.settingsPane?.let { it.isVisible = pane == null && it !in closedPanes }
         b.mapPane?.isVisible = pane == null || pane == Pane.MAP
-        playersPane.isVisible = pane == null || pane == Pane.PLAYERS
+        playersPane.isVisible = pane == Pane.PLAYERS || pane == null && playersPane !in closedPanes
         b.dividerLeft?.isVisible = pane == null
         b.dividerRight?.isVisible = pane == null
         // The players' pane may have a set width beside the others; alone it takes the window
@@ -625,56 +626,168 @@ class DedicatedServerActivity : AppCompatActivity() {
     /** The players' pane's width and weight beside the others, kept while it fills the window. */
     private var playersWidth: Pair<Int, Float>? = null
 
+    /** The panes closed by dragging their divider all the way over. */
+    private val closedPanes = mutableSetOf<View>()
+
     /**
-     * The dividers between the panes: dragging one sizes the pane at its side (the settings for
-     * the left one, the players for the right), as with split screen. The map, or in the
-     * two-pane layout the players, takes what's left. The widths are kept for next time.
+     * A divider and the panes either side of it, as with split screen: dragging it sets the
+     * width of [sized] (the settings or the players, at the window's edge), and [rest] takes
+     * what's left. Dragged most of the way over, a pane closes; the divider then waits at the
+     * edge as a tab that a tap or a drag pulls it back out of. Only the settings and the players
+     * close ([rest] when [restCloses]): the map stays, as it has its own full-screen button.
+     */
+    private inner class Split(
+        val divider: PaneDivider,
+        val sized: View,
+        val rest: View,
+        val sizedAtStart: Boolean,
+        val restCloses: Boolean,
+        val widthKey: String,
+    ) {
+        private val row = sized.parent as ViewGroup
+        private val min = toPx(MIN_PANE_DP)
+        /** Where the drag has the sized pane, as several moves can come before the next layout. */
+        private var width = 0f
+        /** What the two panes share: the row less everything else in it. */
+        private var room = 0
+
+        init {
+            divider.onDragStart = ::startDrag
+            divider.onDrag = { dx -> drag(if (sizedAtStart) dx else -dx) }
+            divider.onDragEnd = ::endDrag
+            divider.setOnClickListener { reopen() }
+        }
+
+        private fun startDrag() {
+            when {
+                sized in closedPanes -> { show(sized); setWidth(0f) }
+                rest in closedPanes -> { show(rest); setWidth(sized.width.toFloat()) }
+                else -> width = sized.width.toFloat()
+            }
+            divider.closed = PaneDivider.Closed.NONE
+            room = measureRoom()
+        }
+
+        private fun drag(by: Float) {
+            // Free to go past the minimum, as far as the edge, so a pane can be closed
+            setWidth((width + by).coerceIn(0f, (room - if (restCloses) 0 else min).toFloat()))
+        }
+
+        private fun endDrag() {
+            animatePanes()
+            when {
+                width < min / 2 -> close(sized)
+                width < min -> setWidth(min.toFloat())
+                restCloses && room - width < min / 2 -> close(rest)
+                room - width < min -> setWidth((room - min).toFloat())
+            }
+            save()
+        }
+
+        /** A tap on the tab brings the closed pane back at the width it had. */
+        private fun reopen() {
+            val closed = when {
+                sized in closedPanes -> sized
+                rest in closedPanes -> rest
+                else -> return
+            }
+            animatePanes()
+            show(closed)
+            divider.closed = PaneDivider.Closed.NONE
+            room = measureRoom()
+            val open = if (closed === sized) panePrefs.getInt(widthKey, 0).let(::toPx) else room / 2
+            setWidth(open.coerceIn(min, (room - min).coerceAtLeast(min)).toFloat())
+            save()
+        }
+
+        /** Closes [pane], the divider becoming a tab at that side. */
+        fun close(pane: View) {
+            pane.isVisible = false
+            closedPanes += pane
+            if (pane === rest) stretch(sized)
+            divider.closed = if ((pane === sized) == sizedAtStart) PaneDivider.Closed.START else PaneDivider.Closed.END
+        }
+
+        private fun show(pane: View) {
+            closedPanes -= pane
+            pane.isVisible = true
+            if (pane === rest) stretch(rest)
+        }
+
+        private fun stretch(pane: View) = (pane.layoutParams as LinearLayout.LayoutParams).let { lp ->
+            lp.width = 0
+            lp.weight = 1f
+            pane.layoutParams = lp
+        }
+
+        /** Restores the width last kept, kept in range now that the window is laid out. */
+        fun restore() {
+            room = measureRoom()
+            panePrefs.getInt(widthKey, 0).takeIf { it > 0 }?.let { dp ->
+                setWidth(toPx(dp).coerceIn(min, (room - min).coerceAtLeast(min)).toFloat())
+            }
+        }
+
+        private fun setWidth(px: Float) {
+            width = px
+            val lp = sized.layoutParams as LinearLayout.LayoutParams
+            lp.width = px.roundToInt()
+            lp.weight = 0f
+            sized.layoutParams = lp
+        }
+
+        private fun measureRoom(): Int {
+            var room = row.width - row.paddingLeft - row.paddingRight
+            for (i in 0 until row.childCount) {
+                val child = row.getChildAt(i)
+                if (!child.isVisible) continue
+                val lp = child.layoutParams as LinearLayout.LayoutParams
+                room -= lp.leftMargin + lp.rightMargin
+                if (child !== sized && child !== rest) room -= child.width
+            }
+            return room
+        }
+
+        private fun save() {
+            panePrefs.edit().apply {
+                if (sized !in closedPanes && rest !in closedPanes) putInt(widthKey, toDp(width.roundToInt()))
+                putBoolean(closedKey(sized), sized in closedPanes)
+                if (restCloses) putBoolean(closedKey(rest), rest in closedPanes)
+            }.apply()
+        }
+
+        private fun animatePanes() = TransitionManager.beginDelayedTransition(row, ChangeBounds()
+            .setDuration(PANE_ANIMATION_MILLIS)
+            .setInterpolator(PathInterpolator(0.4f, 0f, 0.2f, 1f)))
+    }
+
+    private val panePrefs by lazy { getSharedPreferences(PANES_PREFS, MODE_PRIVATE) }
+
+    private fun closedKey(pane: View) = if (pane === binding.settingsPane) PANE_SETTINGS_CLOSED else PANE_PLAYERS_CLOSED
+
+    /**
+     * The dividers between the panes: the left one sizes the settings, the right one the
+     * players; the map, or in the two-pane layout the players, takes what's left. The widths,
+     * and which panes are closed, are kept for next time.
      */
     private fun setUpDividers() {
         val b = binding
         val settings = b.settingsPane ?: return
-        val panes = getSharedPreferences(PANES_PREFS, MODE_PRIVATE)
-        b.dividerLeft?.let { divider ->
-            divider.onDrag = { dx -> resize(settings, dx) }
-            divider.onDragEnd = { panes.edit().putInt(PANE_SETTINGS_DP, toDp(settings.layoutParams.width)).apply() }
-        }
-        b.playersPane?.let { players ->
-            b.dividerRight?.let { divider ->
-                divider.onDrag = { dx -> resize(players, -dx) }
-                divider.onDragEnd = { panes.edit().putInt(PANE_PLAYERS_DP, toDp(players.layoutParams.width)).apply() }
-            }
-        }
-        // As they were left (kept in range once the window is laid out)
+        val players = b.playersPane ?: return
+        val splits = listOfNotNull(
+            b.dividerLeft?.let { Split(it, settings, b.mapPane ?: players, sizedAtStart = true, restCloses = b.mapPane == null, PANE_SETTINGS_DP) },
+            b.dividerRight?.let { divider -> b.mapPane?.let { Split(divider, players, it, sizedAtStart = false, restCloses = false, PANE_PLAYERS_DP) } },
+        )
+        // As they were left
         settings.post {
-            panes.getInt(PANE_SETTINGS_DP, 0).takeIf { it > 0 }?.let { resize(settings, toPx(it) - settings.width.toFloat()) }
-            b.playersPane?.takeIf { b.dividerRight != null }?.let { players ->
-                panes.getInt(PANE_PLAYERS_DP, 0).takeIf { it > 0 }?.let { resize(players, toPx(it) - players.width.toFloat()) }
+            for (split in splits) {
+                split.restore()
+                when {
+                    panePrefs.getBoolean(closedKey(split.sized), false) -> split.close(split.sized)
+                    split.restCloses && panePrefs.getBoolean(closedKey(split.rest), false) -> split.close(split.rest)
+                }
             }
         }
-    }
-
-    /**
-     * Makes [pane] [by] pixels wider (narrower if negative), as a set width, no narrower than
-     * [MIN_PANE_DP] and leaving at least that much to the pane that takes the rest.
-     */
-    private fun resize(pane: View, by: Float) {
-        val row = pane.parent as? ViewGroup ?: return
-        val lp = pane.layoutParams as? LinearLayout.LayoutParams ?: return
-        val min = toPx(MIN_PANE_DP)
-        // What the other panes need: their set widths, and the minimum for the one that stretches
-        var others = row.paddingLeft + row.paddingRight + lp.leftMargin + lp.rightMargin
-        for (i in 0 until row.childCount) {
-            val child = row.getChildAt(i)
-            if (child === pane || !child.isVisible) continue
-            val clp = child.layoutParams as LinearLayout.LayoutParams
-            others += clp.leftMargin + clp.rightMargin + if (clp.weight > 0f) min else child.width
-        }
-        val max = (row.width - others).coerceAtLeast(min)
-        // From the width last set: several moves can come before the next layout
-        val from = if (lp.weight == 0f && lp.width > 0) lp.width else pane.width
-        lp.width = (from + by).roundToInt().coerceIn(min, max)
-        lp.weight = 0f
-        pane.layoutParams = lp
     }
 
     private fun toPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
@@ -765,6 +878,8 @@ class DedicatedServerActivity : AppCompatActivity() {
         const val PANES_PREFS = "serverPanes"
         const val PANE_SETTINGS_DP = "settingsDp"
         const val PANE_PLAYERS_DP = "playersDp"
+        const val PANE_SETTINGS_CLOSED = "settingsClosed"
+        const val PANE_PLAYERS_CLOSED = "playersClosed"
         /** No pane narrower than this when dragging a divider. */
         const val MIN_PANE_DP = 280
         const val REQUEST_RESET = "serverReset"

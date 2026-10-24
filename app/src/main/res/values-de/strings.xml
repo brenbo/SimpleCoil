@@ -11,6 +11,7 @@
     <string name="pane_fullscreen">Fenster ausfüllen</string>
     <string name="pane_fullscreen_exit">Alle Bereiche zeigen</string>
     <string name="pane_divider">Ziehen, um die Bereiche anzupassen</string>
+    <string name="pane_divider_closed">Tippen oder ziehen, um den Bereich wieder einzublenden</string>
 
     <string name="reconnect_weapon_button">Erneut verbinden</string>
     <string name="connect_weapon_button">Blaster verbinden</string>

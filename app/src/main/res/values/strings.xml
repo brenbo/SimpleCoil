@@ -12,6 +12,7 @@
     <string name="pane_fullscreen">Fill the window</string>
     <string name="pane_fullscreen_exit">Show every panel</string>
     <string name="pane_divider">Drag to resize the panels</string>
+    <string name="pane_divider_closed">Tap or drag to bring the panel back</string>
 
     <string name="reconnect_weapon_button">Reconnect</string>
     <string name="connect_weapon_button">Connect blaster</string>

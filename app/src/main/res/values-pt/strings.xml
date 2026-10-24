@@ -11,6 +11,7 @@
     <string name="pane_fullscreen">Preencher a janela</string>
     <string name="pane_fullscreen_exit">Mostrar todos os painéis</string>
     <string name="pane_divider">Arraste para redimensionar os painéis</string>
+    <string name="pane_divider_closed">Toque ou arraste para mostrar o painel de novo</string>
 
     <string name="reconnect_weapon_button">Reconectar</string>
     <string name="connect_weapon_button">Conectar blaster</string>
