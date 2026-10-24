@@ -497,7 +497,7 @@
             android:digits="0123456789"
             android:importantForAutofill="no"
             android:inputType="number"
-            android:maxLength="3" />
+            android:maxLength="5" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
             style="@style/DialogSwitch"

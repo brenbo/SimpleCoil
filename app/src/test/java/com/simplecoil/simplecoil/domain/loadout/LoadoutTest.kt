@@ -66,6 +66,20 @@ class LoadoutTest {
     }
 
     @Test
+    fun longShots_count_byDefault2000ft_andUpTo5km() {
+        // 2,000 ft by default: a night shot past 1,000 ft counts
+        assertEquals(2_000.0, LoadoutRules().maxShotMeters * com.simplecoil.simplecoil.domain.map.DistanceUnits.FEET_PER_METER, 0.01)
+        assertEquals(5_000.0, LoadoutRules(maxShotMeters = 99_999.0).clamped().maxShotMeters, 0.0)
+        assertEquals(3_000.0, LoadoutRules(maxShotMeters = 3_000.0).clamped().maxShotMeters, 0.0)
+        // A field saved with the old 500 ft default gets the new one; a host's own choice stays
+        assertEquals(LoadoutRules().maxShotMeters, LoadoutRules.fromJson(org.json.JSONObject().put("maxShot", 152.0)).maxShotMeters, 0.0)
+        assertEquals(200.0, LoadoutRules.fromJson(org.json.JSONObject().put("maxShot", 200.0)).maxShotMeters, 0.0)
+        // A 1,000 ft shot is measured
+        val stats = ShotStats()
+        assertTrue(stats.record(1, 2, Fix(center, 0), Fix(at(305.0, 0.0), 0), 0, LoadoutRules().maxShotMeters) != null)
+    }
+
+    @Test
     fun dropsRoundTripAndSkipUnknownKinds() {
         val drops = listOf(Drop("d1", DropKind.SUPPLY, center, 1_000, 2_000), Drop("d2", DropKind.SCAVENGE, at(10.0, 0.0), 5, 6))
         val json = Drop.listToJson(drops)

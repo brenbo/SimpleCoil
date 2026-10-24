@@ -16,6 +16,7 @@
 
 package com.simplecoil.simplecoil.domain.loadout
 
+import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.LatLon
 import org.json.JSONArray
 import org.json.JSONObject
@@ -132,8 +133,11 @@ data class LoadoutRules(
 
     /** Work out how far each elimination was, from both players' GPS. */
     val trackShots: Boolean = true,
-    /** Longer than this can't be a real shot (bad GPS): left out. The blaster reaches about 400 ft. */
-    val maxShotMeters: Double = 152.0,
+    /**
+     * Longer than this can't be a real shot (bad GPS): left out. At night, with no sunlight to
+     * drown the infrared, a blaster has hit at 1,000 ft and more; by day it reaches less.
+     */
+    val maxShotMeters: Double = DEFAULT_MAX_SHOT_METERS,
     val longestShotAward: Boolean = true,
     /** What the post-game map shows: nothing, the kills, or the kills, a heatmap and a replay. */
     val postGameMap: PostGameMap = PostGameMap.FULL,
@@ -176,10 +180,18 @@ data class LoadoutRules(
         uavSeconds = uavSeconds.coerceIn(5, 60),
         uavKills = uavKills.coerceIn(0, 20),
         fullAutoKills = fullAutoKills.coerceIn(0, 20),
-        maxShotMeters = maxShotMeters.coerceIn(15.0, 250.0),
+        maxShotMeters = maxShotMeters.coerceIn(15.0, MAX_MAX_SHOT_METERS),
     )
 
     companion object {
+        /** 2,000 ft: a long night shot still counts. */
+        const val DEFAULT_MAX_SHOT_METERS = 2_000 / DistanceUnits.FEET_PER_METER
+
+        /** The most the host can set: 5 km (about 16,400 ft), far past any blaster. */
+        const val MAX_MAX_SHOT_METERS = 5_000.0
+
+        private const val OLD_DEFAULT_MAX_SHOT_METERS = 152.0
+
         fun fromJson(json: JSONObject?): LoadoutRules {
             val d = LoadoutRules()
             if (json == null) return d
@@ -204,7 +216,9 @@ data class LoadoutRules(
                 uavKills = json.optInt("uavKills", d.uavKills),
                 fullAutoKills = json.optInt("fullAutoKills", d.fullAutoKills),
                 trackShots = json.optBoolean("trackShots", d.trackShots),
-                maxShotMeters = json.optDouble("maxShot", d.maxShotMeters),
+                // 152 m (500 ft) was the old default, from before night shots past 1,000 ft: a field
+                // saved with it gets the new one
+                maxShotMeters = json.optDouble("maxShot", d.maxShotMeters).let { if (it == OLD_DEFAULT_MAX_SHOT_METERS) d.maxShotMeters else it },
                 longestShotAward = json.optBoolean("longestShot", d.longestShotAward),
                 postGameMap = PostGameMap.fromWire(json.optString("postGameMap", d.postGameMap.wireValue)),
             ).clamped()

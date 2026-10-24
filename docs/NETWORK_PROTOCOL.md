@@ -295,7 +295,7 @@ The server is the one place a drop is claimed, so two players can't both get it:
 | `SCFIELD1 UAV <playerId>` | `SCFIELD1 PACK <length>` of `{"players":[[id, team, lat, lon], ...]}` (the phone shows only the other teams), or `NONE` |
 | `SCFIELD1 STATS -` | `SCFIELD1 PACK <length>` of `{"longest":{"shooter","shooterName","victim","victimName","meters","from":[lat, lon],"to":[lat, lon]},"players":[[id, name, meters, victimName], ...]}` (each player's longest, for the scoreboard), or `NONE` with no measured shot |
 
-Limited ammo, refills, power-ups and killstreaks are kept on each phone. For shot distance, the server pairs each `ELIMINATED` with the shooter's and victim's last positions, if both arrived within the last 10 seconds and are no farther apart than `maxShot`.
+Limited ammo, refills, power-ups and killstreaks are kept on each phone. For shot distance, the server pairs each `ELIMINATED` with the shooter's and victim's last positions, if both arrived within the last 10 seconds and are no farther apart than `maxShot` (2,000 ft by default, up to 5,000 m; a saved 152, the old default, reads as the new one).
 
 ### 8.2 Domination and Hardpoint
 
