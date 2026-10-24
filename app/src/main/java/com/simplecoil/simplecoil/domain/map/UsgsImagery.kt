@@ -52,8 +52,8 @@ object UsgsImagery {
     const val MIN_PIXELS = 256
 
     /**
-     * How much the server downloads, in metres across: always this, about a mile, whatever the
-     * field's size. It is only a few MB, and it leaves room for the border to grow.
+     * How much the server downloads, in metres across, before there's a border: about a mile.
+     * With a border, just what its views need (FieldPhotoExtent).
      */
     const val FIELD_SIDE_METERS = 1600.0
 

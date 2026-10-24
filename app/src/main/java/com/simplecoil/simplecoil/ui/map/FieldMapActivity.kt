@@ -56,6 +56,7 @@ import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.BorderRules
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
+import com.simplecoil.simplecoil.domain.map.FieldPhotoExtent
 import com.simplecoil.simplecoil.domain.map.GeoBounds
 import com.simplecoil.simplecoil.domain.map.GeoCircle
 import com.simplecoil.simplecoil.domain.map.GeoMath
@@ -744,15 +745,20 @@ class FieldMapActivity : AppCompatActivity() {
         }
     }
 
-    /** Downloads a mile-wide photo around the border (or, before there is one, the middle of the map). */
+    /**
+     * Downloads the photo the border needs, so no view of the field shows its edge (or, before
+     * there's a border, a mile around the middle of the map).
+     */
     private fun download() {
-        val center = config.border?.bounds?.center ?: map?.cameraPosition?.target?.let { LatLon(it.latitude, it.longitude) } ?: return
+        val border = config.border
+        val center = border?.let { FieldPhotoExtent.center(it) } ?: map?.cameraPosition?.target?.let { LatLon(it.latitude, it.longitude) } ?: return
+        val side = border?.let { FieldPhotoExtent.sideMeters(it) } ?: UsgsImagery.FIELD_SIDE_METERS
         if (downloading) return
         setDownloading(true)
         lifecycleScope.launch {
             val message = withContext(Dispatchers.IO) {
                 try {
-                    container.serverFieldStore.save(downloader.download(center, UsgsImagery.FIELD_SIDE_METERS))
+                    container.serverFieldStore.save(downloader.download(center, side))
                     R.string.field_map_saved
                 } catch (e: FieldDownloader.DownloadException) {
                     when (e.reason) {
