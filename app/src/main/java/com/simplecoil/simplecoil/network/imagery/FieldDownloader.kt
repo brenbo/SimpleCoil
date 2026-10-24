@@ -16,6 +16,7 @@
 
 package com.simplecoil.simplecoil.network.imagery
 
+import com.simplecoil.simplecoil.BuildConfig
 import com.simplecoil.simplecoil.domain.map.LatLon
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -55,6 +56,12 @@ interface FieldDownloader {
         private const val CONNECT_TIMEOUT_MS = 15_000
         private const val READ_TIMEOUT_MS = 60_000
 
+        /**
+         * Starts with the app's id, as MapLibre's does ("com.simplecoil.simplecoil/2.0 (14) MapLibre
+         * Android/..."), so a MapTiler key allowed only for "com.simplecoil.simplecoil" works for both.
+         */
+        val USER_AGENT = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME} SimpleCoil"
+
         fun isJpeg(bytes: ByteArray): Boolean =
             bytes.size > 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
 
@@ -64,7 +71,7 @@ interface FieldDownloader {
             try {
                 conn.connectTimeout = CONNECT_TIMEOUT_MS
                 conn.readTimeout = READ_TIMEOUT_MS
-                conn.setRequestProperty("User-Agent", "SimpleCoil")
+                conn.setRequestProperty("User-Agent", USER_AGENT)
                 val code = conn.responseCode
                 val body = (if (code in 200..299) conn.inputStream else conn.errorStream)?.use { readAll(it) } ?: ByteArray(0)
                 return Response(code, conn.contentType, body)
