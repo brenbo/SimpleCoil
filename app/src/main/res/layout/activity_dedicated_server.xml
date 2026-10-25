@@ -576,6 +576,29 @@
                         android:text="@string/player_sheet_title"
                         android:textColor="@color/sc_text_secondary"
                         android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
+
+                    <!-- Nobody yet, with the sheet closed: a small Coil dozing beside the words -->
+                    <LinearLayout
+                        android:id="@+id/players_empty_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <com.simplecoil.simplecoil.ui.feel.MascotView
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            app:mood="sleep" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/players_empty"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <FrameLayout

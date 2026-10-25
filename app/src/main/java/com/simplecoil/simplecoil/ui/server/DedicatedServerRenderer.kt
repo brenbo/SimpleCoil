@@ -102,19 +102,27 @@ class DedicatedServerRenderer(
         scoreboard.submitList(state.scoreboard)
     }
 
-    /** Whether the players can be seen: a wide screen's pane always, a phone's sheet only when open. */
-    private var playersOpen = true
+    /** A phone's player sheet is open (a wide screen's pane always is). */
+    private var sheetOpen = true
 
-    /** A phone's player sheet opened or closed: Coil comes and goes with it. */
-    fun setPlayersOpen(open: Boolean) {
-        playersOpen = open
+    /** A phone's player sheet opened or closed: Coil moves between its header and the open sheet. */
+    fun setSheetOpen(open: Boolean) {
+        sheetOpen = open
         showPlayersEmpty()
     }
 
-    /** With nobody joined yet and room to see it, Coil dozing, fading in and out. */
+    /**
+     * With nobody joined yet, Coil dozing, fading in and out: in the players pane, or in the open
+     * player sheet; with the sheet closed, a small Coil in its header, where there's room.
+     */
     private fun showPlayersEmpty() {
-        val empty = binding.playersEmpty
-        val show = lastPlayerCount == 0 && playersOpen
+        val nobody = lastPlayerCount == 0
+        val small = binding.playersEmptySmall
+        fade(binding.playersEmpty, nobody && (sheetOpen || small == null))
+        small?.let { fade(it, nobody && !sheetOpen) }
+    }
+
+    private fun fade(empty: View, show: Boolean) {
         if (show == empty.isVisible) return
         empty.animate().cancel()
         if (show) {
