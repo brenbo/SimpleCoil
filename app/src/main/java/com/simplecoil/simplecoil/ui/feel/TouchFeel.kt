@@ -20,7 +20,6 @@ import android.app.Activity
 import android.app.Application
 import android.app.Dialog
 import android.os.Bundle
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -59,6 +58,7 @@ object TouchFeel {
     /** Every activity's window from now on, and the pop-ups of their dialog fragments. */
     fun install(app: Application, vibrationOn: () -> Boolean) {
         this.vibrationOn = vibrationOn
+        Haptics.init(app)
         app.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 attach(activity.window)
@@ -92,9 +92,9 @@ object TouchFeel {
     /** Whether the player has vibration on in the sound settings. */
     fun vibrationEnabled(): Boolean = vibrationOn()
 
-    /** The light tick of a click, on [view]. */
-    fun tick(view: View) {
-        if (vibrationOn()) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+    /** The light tick of a click. */
+    fun tick() {
+        if (vibrationOn()) Haptics.click()
     }
 
     private class Feel(private val window: Window, private val base: Window.Callback) : Window.Callback by base {
@@ -120,7 +120,7 @@ object TouchFeel {
                 MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> target?.let { release(it); target = null }
                 MotionEvent.ACTION_UP -> target?.let { view ->
                     release(view)
-                    if (view.isEnabled) tick(view)
+                    if (view.isEnabled) tick()
                     target = null
                 }
             }

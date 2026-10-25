@@ -68,11 +68,10 @@ class DedicatedServerRenderer(
         // Someone joined: the count pops, with a tick
         if (lastPlayerCount.let { it != null && state.playerCount > it }) {
             Motion.pop(playerCountTv)
-            TouchFeel.tick(playerCountTv)
+            TouchFeel.tick()
         }
         lastPlayerCount = state.playerCount
-        // A wide screen's players pane, with nobody in it yet: Coil, dozing
-        playersEmpty?.isVisible = state.playerCount == 0
+        showPlayersEmpty()
         playerCountTv.text = quantity(R.plurals.network_player_count, state.playerCount)
         checkSegment(teamModeGroup, when (state.teamMode) {
             TeamMode.TWO_TEAMS -> R.id.team_mode_2teams_button
@@ -101,6 +100,30 @@ class DedicatedServerRenderer(
         renderClock(state)
         // A diffed update keeps the scroll position (S10)
         scoreboard.submitList(state.scoreboard)
+    }
+
+    /** Whether the players can be seen: a wide screen's pane always, a phone's sheet only when open. */
+    private var playersOpen = true
+
+    /** A phone's player sheet opened or closed: Coil comes and goes with it. */
+    fun setPlayersOpen(open: Boolean) {
+        playersOpen = open
+        showPlayersEmpty()
+    }
+
+    /** With nobody joined yet and room to see it, Coil dozing, fading in and out. */
+    private fun showPlayersEmpty() {
+        val empty = binding.playersEmpty
+        val show = lastPlayerCount == 0 && playersOpen
+        if (show == empty.isVisible) return
+        empty.animate().cancel()
+        if (show) {
+            empty.alpha = 0f
+            empty.isVisible = true
+            empty.animate().alpha(1f).setDuration(EMPTY_FADE_MILLIS).start()
+        } else {
+            empty.animate().alpha(0f).setDuration(EMPTY_FADE_MILLIS).withEndAction { empty.isVisible = false }.start()
+        }
     }
 
     /** Stops the clock's ticks while the screen is stopped; the next [render] draws it again. */
@@ -135,7 +158,7 @@ class DedicatedServerRenderer(
     private fun renderPhase(phase: SessionPhase, teamMode: TeamMode) = with(binding) {
         // A game starting or ending: a strong buzz, the status pops, and the big button changes over smoothly
         if (lastPhase != null && lastPhase != phase) {
-            Motion.heavy(root)
+            Motion.heavy()
             Motion.pop(gameStatusTv, 1.12f)
             (startGameButton.parent as? ViewGroup)?.let { TransitionManager.beginDelayedTransition(it) }
         }
@@ -218,4 +241,8 @@ class DedicatedServerRenderer(
     }
 
     private fun quantity(id: Int, count: Int): String = resources.getQuantityString(id, count, count)
+
+    private companion object {
+        const val EMPTY_FADE_MILLIS = 220L
+    }
 }

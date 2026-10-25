@@ -630,7 +630,11 @@ class DedicatedServerActivity : AppCompatActivity() {
         val b = binding
         val sheet = b.playerSheet ?: return
         FillingBottomSheet(this, sheet, b.playerSheetHeader!!, b.serverCoordinator!!, b.serverContent!!, b.serverScroll!!,
-            resources.getDimensionPixelSize(R.dimen.player_sheet_min_peek), keepAbove = b.phaseControls) { b.playerList.scrollToPosition(0) }
+            resources.getDimensionPixelSize(R.dimen.player_sheet_min_peek), keepAbove = b.phaseControls,
+            onCollapsed = { b.playerList.scrollToPosition(0) },
+            // The sheet has room for Coil only when it's open
+            onOpenChanged = { open -> renderer.setPlayersOpen(open) })
+        renderer.setPlayersOpen(false)
     }
 
     /** Tapping the chosen segment again changes nothing, so it doesn't reset the game. */

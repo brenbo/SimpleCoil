@@ -106,7 +106,7 @@ class GameScreenRenderer(
         // Back from the game screen (the blaster gone): it sinks away and home rises in, with a buzz
         val fromGame = b.playLayout.isVisible
         Motion.swap(b.playLayout, b.connectLayout, animate = fromGame)
-        if (fromGame) Motion.failure(b.root)
+        if (fromGame) Motion.failure()
         // The app bar on the home screen; the game screen gives its room to the map
         (context as? AppCompatActivity)?.supportActionBar?.show()
         if (serverOnly) {
@@ -125,7 +125,7 @@ class GameScreenRenderer(
         // The blaster connected: home sinks away and the game screen rises in, with a confirming buzz
         val fromHome = b.connectLayout.isVisible
         Motion.swap(b.connectLayout, b.playLayout, animate = fromHome)
-        if (fromHome) Motion.success(b.root)
+        if (fromHome) Motion.success()
         (context as? AppCompatActivity)?.supportActionBar?.hide()
     }
 
@@ -147,7 +147,7 @@ class GameScreenRenderer(
     override fun showGameStarted(useNetwork: Boolean, isAdmin: Boolean, freeForAll: Boolean) {
         window.enterGame()
         // The game is on: a strong buzz and the scores pop
-        Motion.heavy(b.root)
+        Motion.heavy()
         Motion.pop(b.scoresChip, 1.08f)
         b.scoreTv.text = "0"
         b.teamScoreTv.text = "0"
@@ -176,7 +176,7 @@ class GameScreenRenderer(
 
     override fun showGameEnded(useNetwork: Boolean, freeForAll: Boolean) {
         window.exitGame()
-        Motion.heavy(b.root)
+        Motion.heavy()
         b.endGameButton.visibility = View.GONE
         inGame = false
         displayAllNetworkingOptions(useNetwork, freeForAll)
@@ -503,7 +503,7 @@ class GameScreenRenderer(
     override fun showConnectedToServer(ip: String) {
         if (!onServer) {
             Motion.pop(b.useNetworkButton, 1.1f)
-            Motion.success(b.useNetworkButton)
+            Motion.success()
         }
         serverIp = ip
         onServer = true
@@ -520,7 +520,7 @@ class GameScreenRenderer(
         // Online or offline: the pill pops, with a buzz that says which
         if (this.connected != connected) {
             Motion.pop(b.useNetworkButton, 1.1f)
-            if (connected) Motion.success(b.useNetworkButton) else Motion.failure(b.useNetworkButton)
+            if (connected) Motion.success() else Motion.failure()
         }
         this.connected = connected
         renderNetworkPill()

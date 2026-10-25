@@ -16,8 +16,6 @@
 
 package com.simplecoil.simplecoil.ui.feel
 
-import android.os.Build
-import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.animation.OvershootInterpolator
 import android.view.animation.PathInterpolator
@@ -72,16 +70,16 @@ object Motion {
         view.animate().scaleX(1f).scaleY(1f).setDuration(POP_MILLIS).setInterpolator(OvershootInterpolator(3f)).start()
     }
 
-    /** Something worked: connected, joined, a game started. */
-    fun success(view: View) = feel(view, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.LONG_PRESS)
+    /** Something worked: connected, joined. */
+    fun success() = feel(Haptics::success)
 
     /** Something was lost or refused: disconnected, offline. */
-    fun failure(view: View) = feel(view, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.REJECT else HapticFeedbackConstants.LONG_PRESS)
+    fun failure() = feel(Haptics::failure)
 
     /** A big moment: the game starting or ending. */
-    fun heavy(view: View) = feel(view, HapticFeedbackConstants.LONG_PRESS)
+    fun heavy() = feel(Haptics::heavy)
 
-    private fun feel(view: View, constant: Int) {
-        if (TouchFeel.vibrationEnabled()) view.performHapticFeedback(constant)
+    private fun feel(play: () -> Unit) {
+        if (TouchFeel.vibrationEnabled()) play()
     }
 }

@@ -578,10 +578,40 @@
                         android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
                 </LinearLayout>
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/player_list"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="match_parent">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/player_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <!-- Nobody yet, with the sheet open: Coil dozing, waiting for players -->
+                    <LinearLayout
+                        android:id="@+id/players_empty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:padding="24dp"
+                        android:visibility="gone">
+
+                        <com.simplecoil.simplecoil.ui.feel.MascotView
+                            android:layout_width="140dp"
+                            android:layout_height="140dp"
+                            app:mood="sleep" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"
+                            android:text="@string/players_empty"
+                            android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
+                    </LinearLayout>
+                </FrameLayout>
             </LinearLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </FrameLayout>

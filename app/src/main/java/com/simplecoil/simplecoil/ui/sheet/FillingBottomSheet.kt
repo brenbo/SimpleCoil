@@ -42,6 +42,8 @@ class FillingBottomSheet(
     private val minPeek: Int,
     private val keepAbove: View? = null,
     onCollapsed: () -> Unit = {},
+    /** The sheet opened (true) or settled collapsed again (false). */
+    onOpenChanged: (Boolean) -> Unit = {},
 ) {
     private val behavior = BottomSheetBehavior.from(sheet)
 
@@ -64,6 +66,8 @@ class FillingBottomSheet(
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 collapseOnBack.isEnabled = newState == BottomSheetBehavior.STATE_EXPANDED
                 if (newState == BottomSheetBehavior.STATE_COLLAPSED) onCollapsed()
+                if (newState == BottomSheetBehavior.STATE_EXPANDED) onOpenChanged(true)
+                if (newState == BottomSheetBehavior.STATE_COLLAPSED) onOpenChanged(false)
             }
 
             override fun onSlide(bottomSheet: View, slideOffset: Float) {
