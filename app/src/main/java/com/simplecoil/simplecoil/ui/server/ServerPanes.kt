@@ -58,6 +58,10 @@ class ServerPanes(
 ) {
     private val density = row.resources.displayMetrics.density
     private val min = (MIN_PANE_DP * density).roundToInt()
+    private val settingsMin = (MIN_SETTINGS_DP * density).roundToInt()
+
+    /** The narrowest [pane] may be: the settings a little wider than the rest, so none of their text is cut short. */
+    private fun floor(pane: View) = if (pane === settings) settingsMin else min
 
     private val closed = mutableSetOf<View>()
 
@@ -74,7 +78,7 @@ class ServerPanes(
     init {
         settingsWidth = (settings.layoutParams as LinearLayout.LayoutParams).let { if (it.weight > 0f) 0 else it.width }
         playersWidth = (players.layoutParams as LinearLayout.LayoutParams).width
-        prefs.getInt(SETTINGS_DP, 0).takeIf { it > 0 }?.let { settingsWidth = px(it).coerceAtLeast(min) }
+        prefs.getInt(SETTINGS_DP, 0).takeIf { it > 0 }?.let { settingsWidth = px(it).coerceAtLeast(settingsMin) }
         prefs.getInt(PLAYERS_DP, 0).takeIf { it > 0 && map != null }?.let { playersWidth = px(it).coerceAtLeast(min) }
         if (prefs.getBoolean(SETTINGS_CLOSED, false)) closed += settings
         if (prefs.getBoolean(PLAYERS_CLOSED, false)) closed += players
@@ -156,15 +160,15 @@ class ServerPanes(
             // side, short of leaving nothing, or the settings alone beside a closed map
             val was = closed.toSet()
             val next = was.toMutableSet()
-            if (target >= min / 2) next -= sized else next += sized
-            if (room - target >= min / 2) next -= rest else next += rest
+            if (target >= floor(sized) / 2) next -= sized else next += sized
+            if (room - target >= floor(rest) / 2) next -= rest else next += rest
             if (valid(next)) {
                 closed.clear()
                 closed += next
             }
             // Open, a pane is never narrower than the minimum
             if (sized !in closed && rest !in closed) {
-                setWidth(sized, target.coerceIn(min.toFloat(), (room - min).coerceAtLeast(min).toFloat()))
+                setWidth(sized, target.coerceIn(floor(sized).toFloat(), (room - floor(rest)).coerceAtLeast(floor(sized)).toFloat()))
             } else {
                 // Shut (or filling the window), it keeps the width it had for when it's back beside the rest
                 setWidth(sized, startWidth)
@@ -229,11 +233,11 @@ class ServerPanes(
         }
         val stretch = stretchPane() ?: return
         val sized = listOf(settings, players).filter { it !== stretch && it !in closed && widthOf(it) > 0 }
-        var over = sized.sumOf { widthOf(it) } + min - room
+        var over = sized.sumOf { widthOf(it) } + floor(stretch) - room
         // The widest gives up what it can first, down to the minimum, then the other
         for (pane in sized.sortedByDescending { widthOf(it) }) {
             if (over <= 0) break
-            val give = minOf(over, widthOf(pane) - min).coerceAtLeast(0)
+            val give = minOf(over, widthOf(pane) - floor(pane)).coerceAtLeast(0)
             setWidth(pane, (widthOf(pane) - give).toFloat())
             over -= give
         }
@@ -295,6 +299,8 @@ class ServerPanes(
 
     private companion object {
         const val MIN_PANE_DP = 320
+        /** The settings' narrowest: where their longest lines just fit whole, on a tablet and a Chromebook. */
+        const val MIN_SETTINGS_DP = 362
         const val ANIMATION_MILLIS = 300L
         const val SETTINGS_DP = "settingsDp"
         const val PLAYERS_DP = "playersDp"
