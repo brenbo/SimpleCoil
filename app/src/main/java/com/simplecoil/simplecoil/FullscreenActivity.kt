@@ -16,7 +16,6 @@
 
 package com.simplecoil.simplecoil
 
-import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -28,7 +27,6 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.lifecycle.Lifecycle
@@ -52,6 +50,8 @@ import com.simplecoil.simplecoil.ui.game.AboutDialog
 import com.simplecoil.simplecoil.ui.game.SavedGameScreen
 import com.simplecoil.simplecoil.ui.game.WindowController
 import com.simplecoil.simplecoil.ui.permissions.BlePermissionController
+import com.simplecoil.simplecoil.ui.permissions.BlePermissions
+import com.simplecoil.simplecoil.ui.permissions.PermissionAsk
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
@@ -71,7 +71,8 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         }
     }
 
-    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+    // The microphone, once the server turns voice chat on: what it's for, then Android's prompt (asked once)
+    private val micAsk = PermissionAsk.of(this, "microphone") {
         (application as SimpleCoilApp).container.voiceChat.onMicPermission()
     }
 
@@ -96,7 +97,7 @@ class FullscreenActivity : AppCompatActivity(), GameNavigator {
         val voice = container.voiceChat
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { voice.needsMic.collect { if (it) micPermission.launch(Manifest.permission.RECORD_AUDIO) } }
+                launch { voice.needsMic.collect { if (it) micAsk.ask(BlePermissions.Flow.MICROPHONE) } }
                 launch {
                     combine(voice.enabled, voice.talking, voice.speakers, voice.needsMic) { on, talking, speakers, needsMic ->
                         when {

@@ -16,9 +16,7 @@
 
 package com.simplecoil.simplecoil.ui.map
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -26,7 +24,6 @@ import android.os.Bundle
 import android.os.Looper
 import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -37,6 +34,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.simplecoil.simplecoil.ui.ScreenOrientation
+import com.simplecoil.simplecoil.ui.permissions.BlePermissions
+import com.simplecoil.simplecoil.ui.permissions.PermissionAsk
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind
 import com.simplecoil.simplecoil.AppContainer
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.SimpleCoilApp
@@ -128,7 +128,9 @@ class FieldMapActivity : AppCompatActivity() {
     /** The capture points drawn over the map. */
     private var objectiveOverlay: ObjectiveOverlay? = null
 
-    private val requestLocationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    // "My location" and Walk ask each time they're tapped without it, saying what it's for first
+    private val locationAsk: PermissionAsk = PermissionAsk.of(this, "fieldLocation") { _ ->
+        val granted = hasLocationPermission()
         if (granted) {
             if (tool == Tool.WALK) startWalk() else goToMyLocation()
         } else if (tool == Tool.WALK) {
@@ -640,7 +642,7 @@ class FieldMapActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission") // checked first
     private fun startWalk() {
         if (!hasLocationPermission()) {
-            requestLocationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationAsk.ask(BlePermissions.Flow.MAP_LOCATION, again = true)
             return
         }
         val manager = getSystemService(LocationManager::class.java) ?: return
@@ -949,7 +951,7 @@ class FieldMapActivity : AppCompatActivity() {
     // Location
 
     private fun hasLocationPermission(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        locationAsk.isGranted(PermissionKind.LOCATION)
 
     @SuppressLint("MissingPermission") // checked first
     private fun lastKnownLocation(): Location? {
@@ -963,7 +965,7 @@ class FieldMapActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission") // checked first
     private fun goToMyLocation() {
         if (!hasLocationPermission()) {
-            requestLocationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationAsk.ask(BlePermissions.Flow.MAP_LOCATION, again = true)
             return
         }
         lastKnownLocation()?.let { moveTo(GeoMath.squareAround(LatLon(it.latitude, it.longitude), START_VIEW_METERS)) }

@@ -20,7 +20,6 @@ import android.animation.ValueAnimator
 import android.graphics.Rect
 import android.view.animation.DecelerateInterpolator
 import androidx.core.animation.doOnEnd
-import android.Manifest
 import android.graphics.Bitmap
 import android.location.Location
 import android.os.Bundle
@@ -40,7 +39,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -73,6 +71,9 @@ import com.simplecoil.simplecoil.hardware.location.MapLocationManager
 import com.simplecoil.simplecoil.network.ClientEvent
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
 import com.simplecoil.simplecoil.ui.map.DropOverlay
+import com.simplecoil.simplecoil.ui.permissions.BlePermissions
+import com.simplecoil.simplecoil.ui.permissions.PermissionAsk
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind
 import com.simplecoil.simplecoil.ui.map.MapCredit
 import com.simplecoil.simplecoil.ui.map.MapIcons
 import com.simplecoil.simplecoil.ui.map.MapStyles
@@ -207,8 +208,9 @@ class MapFragment : Fragment() {
         }
     }
 
-    private val requestLocationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) enableGps(wantsGps())
+    // Asked once, with what it's for first; a player who said no isn't asked at every map
+    private val locationAsk: PermissionAsk = PermissionAsk.of(this, "mapLocation") { _ ->
+        if (locationAsk.isGranted(PermissionKind.LOCATION)) enableGps(wantsGps())
     }
 
     private val locationListener = object : LocationUpdateListener {
@@ -231,7 +233,7 @@ class MapFragment : Fragment() {
 
         override fun onPermissionRequired() {
             tracking = false
-            requestLocationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationAsk.ask(BlePermissions.Flow.MAP_LOCATION)
         }
     }
 

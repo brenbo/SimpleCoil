@@ -16,96 +16,84 @@
 
 package com.simplecoil.simplecoil.ui.permissions
 
-import com.simplecoil.simplecoil.ui.permissions.BlePermissions.Outcome
+import com.simplecoil.simplecoil.ui.permissions.BlePermissions.Flow
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind.BLUETOOTH
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind.CAMERA
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind.LOCAL_NETWORK
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind.LOCATION
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind.MICROPHONE
+import com.simplecoil.simplecoil.ui.permissions.PermissionKind.NOTIFICATIONS
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** The permission sets per API level (unchanged from the activity) and how a result is read. */
+/** What each part of the app asks for per API level, what's required, and who gets asked again. */
 class BlePermissionsTest {
 
     private val scan = "android.permission.BLUETOOTH_SCAN"
     private val connect = "android.permission.BLUETOOTH_CONNECT"
     private val fineLocation = "android.permission.ACCESS_FINE_LOCATION"
-    private val notifications = "android.permission.POST_NOTIFICATIONS"
-    private val camera = "android.permission.CAMERA"
-    private val localNetwork = "android.permission.ACCESS_LOCAL_NETWORK"
+    private val coarseLocation = "android.permission.ACCESS_COARSE_LOCATION"
 
     @Test
     fun connect_perApiLevel() {
-        assertEquals(emptyList<String>(), BlePermissions.forConnect(21))
-        assertEquals(emptyList<String>(), BlePermissions.forConnect(22))
-        assertEquals(listOf(fineLocation), BlePermissions.forConnect(23))
-        assertEquals(listOf(fineLocation), BlePermissions.forConnect(30))
-        assertEquals(listOf(scan, connect, fineLocation), BlePermissions.forConnect(31))
-        assertEquals(listOf(scan, connect, fineLocation), BlePermissions.forConnect(32))
-        assertEquals(listOf(scan, connect, fineLocation, notifications), BlePermissions.forConnect(33))
-        assertEquals(listOf(scan, connect, fineLocation, notifications), BlePermissions.forConnect(34))
+        assertEquals(emptyList<PermissionKind>(), BlePermissions.kinds(Flow.CONNECT, 22))
+        assertEquals(listOf(LOCATION), BlePermissions.kinds(Flow.CONNECT, 30))
+        assertEquals(listOf(BLUETOOTH, LOCATION), BlePermissions.kinds(Flow.CONNECT, 31))
+        assertEquals(listOf(BLUETOOTH, LOCATION, NOTIFICATIONS), BlePermissions.kinds(Flow.CONNECT, 33))
     }
 
     @Test
-    fun qrScan_cameraFromApi23() {
-        assertEquals(emptyList<String>(), BlePermissions.forQrScan(22))
-        assertEquals(listOf(camera), BlePermissions.forQrScan(23))
-        assertEquals(listOf(camera), BlePermissions.forQrScan(34))
-    }
-
-    @Test
-    fun network_perApiLevel() {
-        assertEquals(emptyList<String>(), BlePermissions.forNetwork(32))
-        assertEquals(listOf(notifications), BlePermissions.forNetwork(33))
-        assertEquals(listOf(notifications), BlePermissions.forNetwork(36))
-        assertEquals(listOf(localNetwork, notifications), BlePermissions.forNetwork(37))
+    fun connect_needsLocationOnlyUpToAndroid11() {
+        assertEquals(setOf(LOCATION), BlePermissions.required(Flow.CONNECT, 30))
+        assertEquals(setOf(BLUETOOTH), BlePermissions.required(Flow.CONNECT, 31))
+        assertEquals(setOf(BLUETOOTH), BlePermissions.required(Flow.CONNECT, 34))
+        assertTrue(BlePermissions.bluetoothNeedsLocation(30))
+        assertFalse(BlePermissions.bluetoothNeedsLocation(31))
     }
 
     @Test
     fun network_onlyLocalNetworkIsRequired() {
-        assertEquals(emptyList<String>(), BlePermissions.requiredForNetwork(36))
-        assertEquals(listOf(localNetwork), BlePermissions.requiredForNetwork(37))
+        assertEquals(listOf(NOTIFICATIONS), BlePermissions.kinds(Flow.HOST_SERVER, 36))
+        assertEquals(emptySet<PermissionKind>(), BlePermissions.required(Flow.HOST_SERVER, 36))
+        assertEquals(listOf(LOCAL_NETWORK, NOTIFICATIONS), BlePermissions.kinds(Flow.JOIN_NETWORK, 37))
+        assertEquals(setOf(LOCAL_NETWORK), BlePermissions.required(Flow.JOIN_NETWORK, 37))
     }
 
     @Test
-    fun outcomeWithRequired_deniedOptionalStillGrants() {
-        val required = listOf(localNetwork)
-        assertEquals(Outcome.GRANTED, BlePermissions.outcome(mapOf(localNetwork to true, notifications to false), required) { false })
-        // Local network already held: only notifications were asked for.
-        assertEquals(Outcome.GRANTED, BlePermissions.outcome(mapOf(notifications to false), required) { false })
-        // Before Android 17 nothing is required.
-        assertEquals(Outcome.GRANTED, BlePermissions.outcome(mapOf(notifications to false), emptyList()) { false })
+    fun cameraAndMicrophone_fromApi23() {
+        assertEquals(emptyList<PermissionKind>(), BlePermissions.kinds(Flow.QR_SCAN, 22))
+        assertEquals(listOf(CAMERA), BlePermissions.kinds(Flow.QR_SCAN, 23))
+        assertEquals(listOf(MICROPHONE), BlePermissions.kinds(Flow.MICROPHONE, 34))
     }
 
     @Test
-    fun outcomeWithRequired_deniedRequired() {
-        val required = listOf(localNetwork)
-        assertEquals(Outcome.DENIED, BlePermissions.outcome(mapOf(localNetwork to false, notifications to true), required) { true })
-        assertEquals(Outcome.PERMANENTLY_DENIED, BlePermissions.outcome(mapOf(localNetwork to false), required) { false })
-        assertEquals(Outcome.DENIED, BlePermissions.outcome(emptyMap(), required) { false })
+    fun location_asksForPreciseAndApproximateTogether() {
+        assertEquals(listOf(fineLocation, coarseLocation), LOCATION.permissions(34))
+        assertEquals(listOf(scan, connect), BLUETOOTH.permissions(31))
+        assertEquals(emptyList<String>(), BLUETOOTH.permissions(30))
     }
 
     @Test
-    fun missing_keepsRequestOrder() {
-        val held = setOf(connect, notifications)
-        assertEquals(listOf(scan, fineLocation), BlePermissions.missing(BlePermissions.forConnect(34)) { it in held })
+    fun location_approximateOnlyIsNotGranted() {
+        assertFalse(LOCATION.isGranted(34) { it == coarseLocation })
+        assertTrue(LOCATION.isGranted(34) { it == fineLocation })
+        // Before Android 6 it's granted at install
+        assertTrue(LOCATION.isGranted(22) { false })
     }
 
     @Test
-    fun outcome_allGranted() {
-        assertEquals(Outcome.GRANTED, BlePermissions.outcome(mapOf(scan to true, connect to true)) { false })
-    }
-
-    @Test
-    fun outcome_emptyResultIsDenied() {
-        assertEquals(Outcome.DENIED, BlePermissions.outcome(emptyMap()) { false })
-    }
-
-    @Test
-    fun outcome_deniedButAskableAgain() {
-        assertEquals(Outcome.DENIED, BlePermissions.outcome(mapOf(scan to false, connect to true)) { it == scan })
-    }
-
-    @Test
-    fun outcome_deniedWithoutRationaleIsPermanent() {
-        assertEquals(Outcome.PERMANENTLY_DENIED, BlePermissions.outcome(mapOf(scan to false, connect to false)) { it == scan })
-        // A granted permission's rationale flag doesn't matter.
-        assertEquals(Outcome.DENIED, BlePermissions.outcome(mapOf(scan to false, connect to true)) { it == scan })
+    fun toAsk_optionalOnlyTheFirstTime() {
+        val kinds = listOf(BLUETOOTH, LOCATION, NOTIFICATIONS)
+        val required = setOf(BLUETOOTH)
+        val none: (PermissionKind) -> Boolean = { false }
+        assertEquals(kinds, BlePermissions.toAsk(kinds, required, none, none, again = false))
+        // Asked before and said no: the required one is asked again, the optional ones aren't
+        assertEquals(listOf(BLUETOOTH), BlePermissions.toAsk(kinds, required, none, { true }, again = false))
+        // Unless the player tapped something that needs them
+        assertEquals(kinds, BlePermissions.toAsk(kinds, required, none, { true }, again = true))
+        // What's held is never asked for
+        assertEquals(listOf(NOTIFICATIONS), BlePermissions.toAsk(kinds, required, { it != NOTIFICATIONS }, none, again = false))
     }
 }
