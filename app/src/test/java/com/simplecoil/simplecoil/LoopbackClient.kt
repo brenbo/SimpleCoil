@@ -69,7 +69,7 @@ class LoopbackClient(
         val json = JSONObject()
         json.put(WireKeys.PLAYERID, playerId)
         json.put(WireKeys.PLAYERNAME, name)
-        if (mac != null) json.put(WireKeys.BLASTER_MAC, mac)
+        if (mac != null) json.put(WireKeys.DEVICE_ID, mac)
         if (rejoin) json.put(WireKeys.REJOIN, true)
         json(json)
     }

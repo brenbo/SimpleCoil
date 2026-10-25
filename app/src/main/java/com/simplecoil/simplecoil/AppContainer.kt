@@ -18,6 +18,7 @@ package com.simplecoil.simplecoil
 
 import android.app.Application
 import android.os.SystemClock
+import com.simplecoil.simplecoil.data.preferences.InstallId
 import com.simplecoil.simplecoil.data.preferences.UserPreferencesRepository
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
@@ -93,7 +94,8 @@ class AppContainer(private val app: Application) {
 
     val settings = GameSettingsRepository()
     val gameState = GameStateRepository()
-    val players = PlayerRepository(settings, gameState)
+    // With this install's id, which the hello sends so the server knows us when we rejoin
+    val players = PlayerRepository(settings, gameState).also { it.installId = InstallId.of(app) }
     val gameConfig: GameConfig = RepositoryGameConfig(settings, players, gameState)
 
     /** The player's saved settings ("SimpleCoil" preferences). */

@@ -109,7 +109,8 @@ object WireKeys {
     const val SWAP_WITH = "swapwith"
     const val PAIRED_GRENADE_ID = "pairedgrenadeID"
     const val GRENADE_PAIRINGS = "grenadepairings"
-    const val BLASTER_MAC = "blaster_mac"
+    /** The hello's install id: who the phone is, to recognise it when it rejoins. */
+    const val DEVICE_ID = "device_id"
     const val BLASTER_TYPE = "blastertype"
     const val HAS_GRENADE = "hasgrenade"
 

@@ -21,7 +21,7 @@ package com.simplecoil.simplecoil.network.server
  * connection. Only [GameRoster] changes it, under the roster's lock; the fields are volatile
  * so the server can read them without the lock.
  */
-class PlayerRecord internal constructor(playerId: Byte, team: Int, name: String?, blasterMac: String?) {
+class PlayerRecord internal constructor(playerId: Byte, team: Int, name: String?, deviceId: String?) {
     @Volatile
     var playerId: Byte = playerId
         internal set
@@ -34,8 +34,8 @@ class PlayerRecord internal constructor(playerId: Byte, team: Int, name: String?
     var name: String? = name
         internal set
 
-    /** "" if the client sent none. */
-    val blasterMac: String = blasterMac ?: ""
+    /** The phone's install id, which knows it again when it rejoins; "" if the client sent none. */
+    val deviceId: String = deviceId ?: ""
 
     @Volatile
     var points: Int = 0

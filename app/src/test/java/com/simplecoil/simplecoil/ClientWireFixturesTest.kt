@@ -56,7 +56,7 @@ class ClientWireFixturesTest {
     fun setUp() {
         players.playerID = 5
         players.playerName = "Rook"
-        players.deviceAddress = "AA:BB:CC:DD:EE:FF"
+        players.installId = "3f2b9c1e-7d4a-4e8b-9a61-2c5d8f0e1b73"
         players.pairedGrenadeID = 0
         settings.setFullHealth(20)
         settings.setFullReload(30)
@@ -99,9 +99,9 @@ class ClientWireFixturesTest {
     }
 
     @Test
-    fun hello_withoutMac() {
-        players.deviceAddress = ""
-        WireFixtures.assertFrame("client/hello_without_mac.frame", single { client.sendPlayerInfo(false) })
+    fun hello_withoutDeviceId() {
+        players.installId = ""
+        WireFixtures.assertFrame("client/hello_without_device_id.frame", single { client.sendPlayerInfo(false) })
     }
 
     @Test

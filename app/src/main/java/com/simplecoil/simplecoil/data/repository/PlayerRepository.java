@@ -42,6 +42,7 @@ public class PlayerRepository {
     private volatile String playerName = "";
     private volatile boolean isAdmin = false;
     private volatile String deviceAddress = "";
+    private volatile String installId = "";
     private volatile byte blasterType = 0;
 
     private final Map<InetAddress, Byte> ipTeamMap = new ConcurrentHashMap<>();
@@ -49,8 +50,8 @@ public class PlayerRepository {
     private final Map<Byte, String> teamPlayerNameMap = new ConcurrentHashMap<>();
     private final Map<Byte, GpsData> gpsData = new ConcurrentHashMap<>();
     private final Map<Byte, PlayerSettings> playerSettings = new ConcurrentHashMap<>();
-    private final Map<String, Byte> macPlayerMap = new ConcurrentHashMap<>();
-    private final Map<Byte, String> playerMacMap = new ConcurrentHashMap<>();
+    private final Map<String, Byte> devicePlayerMap = new ConcurrentHashMap<>();
+    private final Map<Byte, String> playerDeviceMap = new ConcurrentHashMap<>();
 
     private volatile byte pairedGrenadeID = 0;
     private final int[] grenadePairings = new int[MAX_GRENADE_IDS];
@@ -72,10 +73,16 @@ public class PlayerRepository {
         this.playerName = playerName != null ? playerName : "";
     }
 
-    /** The paired blaster's Bluetooth address, sent to the server so it can recognise a rejoin. */
+    /** The paired blaster's Bluetooth address. */
     public String getDeviceAddress() { return deviceAddress; }
     public void setDeviceAddress(String deviceAddress) {
         this.deviceAddress = deviceAddress != null ? deviceAddress : "";
+    }
+
+    /** This install's id (InstallId), sent to the server so it can recognise a rejoin. */
+    public String getInstallId() { return installId; }
+    public void setInstallId(String installId) {
+        this.installId = installId != null ? installId : "";
     }
 
     /** The connected blaster's GattProtocolHandler.BLASTER_TYPE_*, sent to the server for the scoreboard; 0 until known. */
@@ -93,8 +100,8 @@ public class PlayerRepository {
     public Map<Byte, String> getTeamPlayerNameMap() { return teamPlayerNameMap; }
     public Map<Byte, GpsData> getGpsData() { return gpsData; }
     public Map<Byte, PlayerSettings> getPlayerSettings() { return playerSettings; }
-    public Map<String, Byte> getMacPlayerMap() { return macPlayerMap; }
-    public Map<Byte, String> getPlayerMacMap() { return playerMacMap; }
+    public Map<String, Byte> getDevicePlayerMap() { return devicePlayerMap; }
+    public Map<Byte, String> getPlayerDeviceMap() { return playerDeviceMap; }
 
     public synchronized int[] getGrenadePairings() {
         return grenadePairings.clone();
@@ -143,7 +150,7 @@ public class PlayerRepository {
         addOrUpdatePlayer(playerId, ip, name, null);
     }
 
-    public synchronized void addOrUpdatePlayer(byte playerId, InetAddress ip, String name, String mac) {
+    public synchronized void addOrUpdatePlayer(byte playerId, InetAddress ip, String name, String deviceId) {
         if (ip != null) {
             teamIPMap.put(playerId, ip);
             ipTeamMap.put(ip, playerId);
@@ -151,19 +158,19 @@ public class PlayerRepository {
         if (name != null) {
             teamPlayerNameMap.put(playerId, name);
         }
-        if (mac != null && !mac.isEmpty()) {
-            String oldMac = playerMacMap.remove(playerId);
-            if (oldMac != null) {
-                macPlayerMap.remove(oldMac);
+        if (deviceId != null && !deviceId.isEmpty()) {
+            String oldDevice = playerDeviceMap.remove(playerId);
+            if (oldDevice != null) {
+                devicePlayerMap.remove(oldDevice);
             }
-            macPlayerMap.put(mac, playerId);
-            playerMacMap.put(playerId, mac);
+            devicePlayerMap.put(deviceId, playerId);
+            playerDeviceMap.put(playerId, deviceId);
         }
     }
 
-    public synchronized Byte getPlayerIdByMac(String mac) {
-        if (mac == null || mac.isEmpty()) return null;
-        return macPlayerMap.get(mac);
+    public synchronized Byte getPlayerIdByDevice(String deviceId) {
+        if (deviceId == null || deviceId.isEmpty()) return null;
+        return devicePlayerMap.get(deviceId);
     }
 
     public synchronized boolean isNameUnique(String name, byte excludePlayerId) {
@@ -195,14 +202,14 @@ public class PlayerRepository {
         playerSettings.remove(playerId);
         if (!isGameRunning) {
             teamPlayerNameMap.remove(playerId);
-            String mac = playerMacMap.remove(playerId);
-            if (mac != null) {
-                macPlayerMap.remove(mac);
+            String deviceId = playerDeviceMap.remove(playerId);
+            if (deviceId != null) {
+                devicePlayerMap.remove(deviceId);
             }
-            // Ensure any stale entries in macPlayerMap referencing this playerId are removed
-            for (Map.Entry<String, Byte> entry : new HashSet<>(macPlayerMap.entrySet())) {
+            // Ensure any stale entries in devicePlayerMap referencing this playerId are removed
+            for (Map.Entry<String, Byte> entry : new HashSet<>(devicePlayerMap.entrySet())) {
                 if (entry.getValue() != null && entry.getValue() == playerId) {
-                    macPlayerMap.remove(entry.getKey());
+                    devicePlayerMap.remove(entry.getKey());
                 }
             }
         }
@@ -214,7 +221,7 @@ public class PlayerRepository {
         Set<Byte> knownIds = new HashSet<>();
         knownIds.addAll(teamIPMap.keySet());
         knownIds.addAll(teamPlayerNameMap.keySet());
-        knownIds.addAll(playerMacMap.keySet());
+        knownIds.addAll(playerDeviceMap.keySet());
 
         for (byte id : knownIds) {
             if (id != 0 && !activeIds.contains(id)) {
@@ -228,7 +235,7 @@ public class PlayerRepository {
         String name = teamPlayerNameMap.remove(oldPlayerId);
         PlayerSettings settings = playerSettings.remove(oldPlayerId);
         GpsData gps = gpsData.remove(oldPlayerId);
-        String mac = playerMacMap.remove(oldPlayerId);
+        String deviceId = playerDeviceMap.remove(oldPlayerId);
 
         if (ip != null) {
             teamIPMap.put(newPlayerId, ip);
@@ -243,9 +250,9 @@ public class PlayerRepository {
         if (gps != null) {
             gpsData.put(newPlayerId, gps);
         }
-        if (mac != null && !mac.isEmpty()) {
-            macPlayerMap.put(mac, newPlayerId);
-            playerMacMap.put(newPlayerId, mac);
+        if (deviceId != null && !deviceId.isEmpty()) {
+            devicePlayerMap.put(deviceId, newPlayerId);
+            playerDeviceMap.put(newPlayerId, deviceId);
         }
     }
 
@@ -255,12 +262,12 @@ public class PlayerRepository {
         swapEntries(teamPlayerNameMap, firstId, secondId);
         swapEntries(playerSettings, firstId, secondId);
         swapEntries(gpsData, firstId, secondId);
-        swapEntries(playerMacMap, firstId, secondId);
+        swapEntries(playerDeviceMap, firstId, secondId);
         for (byte id : new byte[] { firstId, secondId }) {
             InetAddress ip = teamIPMap.get(id);
             if (ip != null) ipTeamMap.put(ip, id);
-            String mac = playerMacMap.get(id);
-            if (mac != null && !mac.isEmpty()) macPlayerMap.put(mac, id);
+            String deviceId = playerDeviceMap.get(id);
+            if (deviceId != null && !deviceId.isEmpty()) devicePlayerMap.put(deviceId, id);
         }
     }
 
@@ -281,8 +288,8 @@ public class PlayerRepository {
         Map<Byte, String> newNameMap = new HashMap<>();
         Map<Byte, PlayerSettings> newSettingsMap = new HashMap<>();
         Map<Byte, GpsData> newGPSMap = new HashMap<>();
-        Map<Byte, String> newPlayerMacMap = new HashMap<>();
-        Map<String, Byte> newMacPlayerMap = new HashMap<>();
+        Map<Byte, String> newPlayerDeviceMap = new HashMap<>();
+        Map<String, Byte> newDevicePlayerMap = new HashMap<>();
         for (Map.Entry<Byte, Byte> entry : oldToNew.entrySet()) {
             byte oldId = entry.getKey();
             byte newId = entry.getValue();
@@ -297,13 +304,13 @@ public class PlayerRepository {
             if (settings != null) newSettingsMap.put(newId, settings);
             GpsData gps = gpsData.get(oldId);
             if (gps != null) newGPSMap.put(newId, gps);
-            String mac = playerMacMap.get(oldId);
-            if (mac != null && !mac.isEmpty()) {
-                newPlayerMacMap.put(newId, mac);
-                newMacPlayerMap.put(mac, newId);
+            String deviceId = playerDeviceMap.get(oldId);
+            if (deviceId != null && !deviceId.isEmpty()) {
+                newPlayerDeviceMap.put(newId, deviceId);
+                newDevicePlayerMap.put(deviceId, newId);
             }
         }
-        updateAllPlayerMappings(newTeamIPMap, newIPTeamMap, newNameMap, newSettingsMap, newGPSMap, newPlayerMacMap, newMacPlayerMap);
+        updateAllPlayerMappings(newTeamIPMap, newIPTeamMap, newNameMap, newSettingsMap, newGPSMap, newPlayerDeviceMap, newDevicePlayerMap);
     }
 
     public synchronized void updateAllPlayerMappings(
@@ -312,8 +319,8 @@ public class PlayerRepository {
             Map<Byte, String> newNameMap,
             Map<Byte, PlayerSettings> newSettingsMap,
             Map<Byte, GpsData> newGPSMap,
-            Map<Byte, String> newPlayerMacMap,
-            Map<String, Byte> newMacPlayerMap) {
+            Map<Byte, String> newPlayerDeviceMap,
+            Map<String, Byte> newDevicePlayerMap) {
         teamIPMap.clear();
         if (newTeamIPMap != null) {
             teamIPMap.putAll(newTeamIPMap);
@@ -339,14 +346,14 @@ public class PlayerRepository {
             gpsData.putAll(newGPSMap);
         }
 
-        playerMacMap.clear();
-        if (newPlayerMacMap != null) {
-            playerMacMap.putAll(newPlayerMacMap);
+        playerDeviceMap.clear();
+        if (newPlayerDeviceMap != null) {
+            playerDeviceMap.putAll(newPlayerDeviceMap);
         }
 
-        macPlayerMap.clear();
-        if (newMacPlayerMap != null) {
-            macPlayerMap.putAll(newMacPlayerMap);
+        devicePlayerMap.clear();
+        if (newDevicePlayerMap != null) {
+            devicePlayerMap.putAll(newDevicePlayerMap);
         }
     }
 
@@ -356,8 +363,8 @@ public class PlayerRepository {
         teamPlayerNameMap.clear();
         gpsData.clear();
         playerSettings.clear();
-        macPlayerMap.clear();
-        playerMacMap.clear();
+        devicePlayerMap.clear();
+        playerDeviceMap.clear();
     }
 
     /** The team [id] is on under the current team layout (see TeamLayout.teamOf). */

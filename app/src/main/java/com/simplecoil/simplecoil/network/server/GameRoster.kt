@@ -33,7 +33,7 @@ import java.util.TreeMap
  *
  * One lock, the roster itself, guards all of it. No method does socket I/O: each returns what
  * changed, and the server sends the messages after the lock is released. PlayerRepository's maps
- * (ip, name, MAC, settings, GPS) are kept in step for the screens that read them. Lock order:
+ * (ip, name, install id, settings, GPS) are kept in step for the screens that read them. Lock order:
  * the roster, then [repo], then [settings].
  */
 class GameRoster @JvmOverloads constructor(
@@ -107,7 +107,7 @@ class GameRoster @JvmOverloads constructor(
     /** The current game, from its start until the reset; 0 in the lobby. */
     private var gameId = 0L
     private val byId = TreeMap<Byte, PlayerRecord>()
-    private val cacheByMac = HashMap<String, PlayerRecord>()
+    private val cacheByDevice = HashMap<String, PlayerRecord>()
     private val connections = LinkedHashMap<Int, Connection>()
     /** Eliminations in the current game: [pairKey] (shooter id, victim id) → count. Cleared with the scores. */
     private val eliminationCounts = HashMap<Int, Int>()
@@ -125,7 +125,7 @@ class GameRoster @JvmOverloads constructor(
         phase = SessionPhase.LOBBY
         gameId = 0
         byId.clear()
-        cacheByMac.clear()
+        cacheByDevice.clear()
         connections.clear()
         eliminationCounts.clear()
     }
@@ -202,14 +202,14 @@ class GameRoster @JvmOverloads constructor(
     fun isRunning(): Boolean = phase == SessionPhase.RUNNING
 
     @Synchronized
-    fun isCached(mac: String?): Boolean = mac != null && cacheByMac.containsKey(mac)
+    fun isCached(deviceId: String?): Boolean = deviceId != null && cacheByDevice.containsKey(deviceId)
 
     // ---------------------------------------------------------------------------------------
     // Game transitions
     // ---------------------------------------------------------------------------------------
 
     /**
-     * Starts a game from the lobby: scores to 0 and every player with a MAC into the roster
+     * Starts a game from the lobby: scores to 0 and every player with an install id into the roster
      * cache. False (and nothing changes) outside the lobby (after a game, reset first) or if
      * nobody is there.
      */
@@ -220,11 +220,11 @@ class GameRoster @JvmOverloads constructor(
         phase = SessionPhase.RUNNING
         gameId = 1L + random.nextInt(Int.MAX_VALUE - 1)
         resetScoresLocked()
-        cacheByMac.clear()
+        cacheByDevice.clear()
         starters.clear()
         starters.addAll(byId.keys)
         for (record in byId.values) {
-            if (record.blasterMac.isNotEmpty()) cacheByMac[record.blasterMac] = record
+            if (record.deviceId.isNotEmpty()) cacheByDevice[record.deviceId] = record
         }
         return true
     }
@@ -261,7 +261,7 @@ class GameRoster @JvmOverloads constructor(
         }
         repo.purgeDisconnectedPlayers(remainingIds)
         resetScoresLocked()
-        cacheByMac.clear()
+        cacheByDevice.clear()
         starters.clear()
         gameId = 0
         phase = SessionPhase.LOBBY
@@ -290,17 +290,17 @@ class GameRoster @JvmOverloads constructor(
     // ---------------------------------------------------------------------------------------
 
     /**
-     * A client's hello: [requestedId] (0 = auto-sort), [requestedName], [mac] ("" or null if none)
+     * A client's hello: [requestedId] (0 = auto-sort), [requestedName], [deviceId] (the phone's install id; "" or null if none)
      * and the address it connected from.
      */
     @Synchronized
-    fun onHello(connection: Connection, requestedId: Byte, requestedName: String?, mac: String?, address: InetAddress?): HelloResult {
-        val blasterMac = mac ?: ""
-        if (phase != SessionPhase.LOBBY && blasterMac.isNotEmpty()) {
-            val cached = cacheByMac[blasterMac]
+    fun onHello(connection: Connection, requestedId: Byte, requestedName: String?, deviceId: String?, address: InetAddress?): HelloResult {
+        val device = deviceId ?: ""
+        if (phase != SessionPhase.LOBBY && device.isNotEmpty()) {
+            val cached = cacheByDevice[device]
             if (cached != null) {
                 val displaced = bindLocked(cached, connection)
-                repo.addOrUpdatePlayer(cached.playerId, address, cached.name, blasterMac)
+                repo.addOrUpdatePlayer(cached.playerId, address, cached.name, device)
                 return HelloResult(HelloResult.Kind.REJOINED, cached, displaced)
             }
         }
@@ -330,7 +330,7 @@ class GameRoster @JvmOverloads constructor(
 
         var record = current
         if (record == null) {
-            record = PlayerRecord(id, team, null, blasterMac)
+            record = PlayerRecord(id, team, null, device)
         } else if (record.playerId != id) {
             byId.remove(record.playerId)
             purgeMatrixLocked(record.playerId)
@@ -341,8 +341,8 @@ class GameRoster @JvmOverloads constructor(
         record.name = uniqueName(id, requestedName)
         byId[id] = record
         bindLocked(record, connection)
-        repo.addOrUpdatePlayer(id, address, record.name, blasterMac)
-        if (phase == SessionPhase.RUNNING && blasterMac.isNotEmpty()) cacheByMac[blasterMac] = record
+        repo.addOrUpdatePlayer(id, address, record.name, device)
+        if (phase == SessionPhase.RUNNING && device.isNotEmpty()) cacheByDevice[device] = record
         return HelloResult(HelloResult.Kind.JOINED, record, null)
     }
 
@@ -413,7 +413,7 @@ class GameRoster @JvmOverloads constructor(
         if (record == null) return Disconnect.NO_PLAYER
         if (record.connection !== connection) return Disconnect.NO_PLAYER // already replaced by a newer connection
         record.connection = null
-        val cached = record.blasterMac.isNotEmpty() && cacheByMac[record.blasterMac] === record
+        val cached = record.deviceId.isNotEmpty() && cacheByDevice[record.deviceId] === record
         if (phase == SessionPhase.LOBBY || !cached) {
             removeRecordLocked(record)
             repo.removePlayer(record.playerId, phase == SessionPhase.RUNNING)
@@ -497,8 +497,8 @@ class GameRoster @JvmOverloads constructor(
             byId.remove(record.playerId)
             purgeMatrixLocked(record.playerId)
         }
-        if (record.blasterMac.isNotEmpty() && cacheByMac[record.blasterMac] === record)
-            cacheByMac.remove(record.blasterMac)
+        if (record.deviceId.isNotEmpty() && cacheByDevice[record.deviceId] === record)
+            cacheByDevice.remove(record.deviceId)
         record.connection = null
     }
 

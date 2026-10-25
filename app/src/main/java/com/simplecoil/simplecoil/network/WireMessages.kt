@@ -182,8 +182,8 @@ sealed interface ClientMessage {
     data class Hello(
         val playerId: Int,
         val name: String,
-        /** Null or "" when the client has no blaster. */
-        val mac: String?,
+        /** The phone's install id ([com.simplecoil.simplecoil.data.preferences.InstallId]), so the server knows it when it rejoins; null from a client that sent none. */
+        val deviceId: String?,
         val rejoin: Boolean,
         val gameId: Long?,
         val pending: List<WirePending>,

@@ -93,7 +93,7 @@ Restated from the request, numbered for reference.
 3. **Client on drop.** It broadcasts `NETWORKDISCONNECTED` and loops: new socket, `connect()` with a 1 s timeout. While
    the client thinks a game is running, retries are unlimited. Otherwise it stops after 3 tries and broadcasts
    `SERVERCANCEL`, which throws the player back to the network menu (`TcpClient.java:251–260, 383`).
-4. **Client on reconnect.** Sends the join JSON (`playerID`, `playername`, `blaster_mac`, `rejoin: true`), then
+4. **Client on reconnect.** Sends the join JSON (`playerID`, `playername`, `device_id`, `rejoin: true`), then
    immediately flushes its `messageQueue` (`sendPlayerInfo` :414–434).
 5. **Server on reconnect.** `parsePlayerInfo` (:1988–2048): if the game is running and the MAC is in
    `activeGameMacMap`, it finds the old `ClientData` by player ID, moves the new socket into it (`rejoin()` :1587, which
@@ -307,7 +307,7 @@ Server → client ack, cumulative: `MESG` + `ACK12`. The client drops every outb
 identifies the player and applies the backlog in one atomic step, *before* it builds the snapshot:
 
 ```json
-{"playerID": 7, "playername": "Rook", "blaster_mac": "AA:BB:...", "rejoin": true,
+{"playerID": 7, "playername": "Rook", "device_id": "3f2b9c1e-...", "rejoin": true,
  "gameid": 418873301,
  "pending": [{"rmsg": "ELIMINATED3", "seq": 11}, {"rmsg": "ELIMINATED9", "seq": 12}]}
 ```

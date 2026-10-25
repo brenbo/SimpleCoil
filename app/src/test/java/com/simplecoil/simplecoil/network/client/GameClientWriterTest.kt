@@ -97,7 +97,7 @@ class GameClientWriterTest {
         // D3: queued eliminations used to race the hello; now they are part of it.
         players.playerID = 7
         players.playerName = "Rook"
-        players.deviceAddress = "AA:BB"
+        players.installId = "3f2b9c1e"
         players.pairedGrenadeID = 0
         val client = newClient()
         client.sendReliable(WireProtocol.NETMSG_ELIMINATED + 3) // no connection: only in the outbox
@@ -111,7 +111,7 @@ class GameClientWriterTest {
         assertEquals(1, messages.size)
         val hello = json(messages[0])
         assertEquals(7, hello.getInt(WireKeys.PLAYERID))
-        assertEquals("AA:BB", hello.getString(WireKeys.BLASTER_MAC))
+        assertEquals("3f2b9c1e", hello.getString(WireKeys.DEVICE_ID))
         assertTrue(hello.getBoolean(WireKeys.REJOIN))
         val pending = hello.getJSONArray(WireKeys.PENDING)
         assertEquals(1, pending.length())

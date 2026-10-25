@@ -211,7 +211,7 @@ class TcpServerLoopbackTest {
         assertTrue(info.has(WireKeys.PLAYERGAMEUPDATE)) // the joiner gets its own update
         awaitTrue { score(idA)?.connected == true && score(idB)?.connected == true }
         assertEquals("Alpha", players.getPlayerName(idA.toByte()))
-        assertEquals(idB.toByte(), players.getPlayerIdByMac("BB:00"))
+        assertEquals(idB.toByte(), players.getPlayerIdByDevice("BB:00"))
         a.close()
     }
 
@@ -821,7 +821,7 @@ class TcpServerLoopbackTest {
     private fun joinAndStallMidFrame(name: String, mac: String): java.net.Socket {
         val socket = java.net.Socket("127.0.0.1", WireProtocol.TCP_SERVER_PORT)
         val out = java.io.DataOutputStream(socket.getOutputStream())
-        val hello = org.json.JSONObject().put(WireKeys.PLAYERID, 0).put(WireKeys.PLAYERNAME, name).put(WireKeys.BLASTER_MAC, mac)
+        val hello = org.json.JSONObject().put(WireKeys.PLAYERID, 0).put(WireKeys.PLAYERNAME, name).put(WireKeys.DEVICE_ID, mac)
         out.writeUTF(WireProtocol.TCPMESSAGE_PREFIX + WireProtocol.TCPPREFIX_JSON + hello)
         out.write(byteArrayOf(0, 100))
         out.write("SimpleCoil".toByteArray())
@@ -892,7 +892,7 @@ class TcpServerLoopbackTest {
         assertEquals(layout.teamOf(idA), layout.teamOf(idC))
         assertTrue(server.applyPlayerSettings(idA.toByte(), { it.health = 77 }, applyAll = false, applyTeam = true,
             targetTeam = layout.teamOf(idB)))
-        val newIdA = players.getPlayerIdByMac("AA:00")
+        val newIdA = players.getPlayerIdByDevice("AA:00")
         assertEquals(layout.teamOf(idB), layout.teamOf(newIdA))
         assertEquals(77, players.playerSettings[newIdA]!!.health)
         assertEquals(77, players.playerSettings[idB.toByte()]!!.health)
@@ -945,8 +945,8 @@ class TcpServerLoopbackTest {
         server.applyPlayerSettings(idA.toByte(), { it.health = 33 }, applyAll = false, applyTeam = true, targetTeam = 0)
         server.applyPlayerSettings(idB.toByte(), { it.health = 88 }, applyAll = false, applyTeam = false, targetTeam = 0)
         b.send(NetworkSessionGateway.teamChangeRequest(idB.toByte(), teamA))
-        awaitTrue { layout.teamOf(players.getPlayerIdByMac("BB:00")) == teamA }
-        awaitTrue { players.playerSettings[players.getPlayerIdByMac("BB:00")]?.health == 33 }
+        awaitTrue { layout.teamOf(players.getPlayerIdByDevice("BB:00")) == teamA }
+        awaitTrue { players.playerSettings[players.getPlayerIdByDevice("BB:00")]?.health == 33 }
     }
 
     @Test

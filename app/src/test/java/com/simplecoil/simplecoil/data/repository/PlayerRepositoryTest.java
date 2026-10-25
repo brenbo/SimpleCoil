@@ -227,14 +227,14 @@ public class PlayerRepositoryTest {
 
         playerRepo.addOrUpdatePlayer(playerId, ip, "MacPlayer", testMac);
 
-        assertEquals((Byte) playerId, playerRepo.getPlayerIdByMac(testMac));
-        assertEquals(testMac, playerRepo.getPlayerMacMap().get(playerId));
+        assertEquals((Byte) playerId, playerRepo.getPlayerIdByDevice(testMac));
+        assertEquals(testMac, playerRepo.getPlayerDeviceMap().get(playerId));
 
         // Reconnect with new IP and new name but same MAC
         InetAddress newIp = InetAddress.getByName("192.168.1.120");
         playerRepo.addOrUpdatePlayer(playerId, newIp, "MacPlayerUpdated", testMac);
 
-        assertEquals((Byte) playerId, playerRepo.getPlayerIdByMac(testMac));
+        assertEquals((Byte) playerId, playerRepo.getPlayerIdByDevice(testMac));
         assertEquals("MacPlayerUpdated", playerRepo.getPlayerName(playerId));
         assertEquals(newIp, playerRepo.getTeamIPMap().get(playerId));
     }
@@ -248,13 +248,13 @@ public class PlayerRepositoryTest {
         InetAddress ip = InetAddress.getByName("192.168.1.107");
 
         playerRepo.addOrUpdatePlayer(playerId, ip, "LobbyPlayer", testMac);
-        assertEquals((Byte) playerId, playerRepo.getPlayerIdByMac(testMac));
+        assertEquals((Byte) playerId, playerRepo.getPlayerIdByDevice(testMac));
 
         // Simulate player disconnecting in lobby mode (isGameRunning = false)
         playerRepo.removePlayer(playerId, false);
 
         // In lobby mode, MAC mapping and player name should be purged
-        Assert.assertNull(playerRepo.getPlayerIdByMac(testMac));
+        Assert.assertNull(playerRepo.getPlayerIdByDevice(testMac));
         assertEquals("", playerRepo.getPlayerName(playerId));
     }
 
@@ -275,7 +275,7 @@ public class PlayerRepositoryTest {
 
         assertEquals("", playerRepo.getPlayerName(oldId));
         assertEquals(testName, playerRepo.getPlayerName(newId));
-        assertEquals((Byte) newId, playerRepo.getPlayerIdByMac(testMac));
+        assertEquals((Byte) newId, playerRepo.getPlayerIdByDevice(testMac));
     }
 
     @Test
@@ -315,11 +315,11 @@ public class PlayerRepositoryTest {
         assertEquals(ip1, playerRepo.getTeamIPMap().get((byte) 17));
         assertEquals(Byte.valueOf((byte) 17), playerRepo.getIpTeamMap().get(ip1));
         assertEquals("One", playerRepo.getPlayerName((byte) 17));
-        assertEquals(Byte.valueOf((byte) 17), playerRepo.getPlayerIdByMac("AA:01"));
+        assertEquals(Byte.valueOf((byte) 17), playerRepo.getPlayerIdByDevice("AA:01"));
         Assert.assertSame(settings, playerRepo.getPlayerSettings().get((byte) 17));
         Assert.assertNull(playerRepo.getTeamIPMap().get((byte) 1));
         Assert.assertNull(playerRepo.getTeamIPMap().get((byte) 2));
-        Assert.assertNull(playerRepo.getPlayerIdByMac("AA:02"));
+        Assert.assertNull(playerRepo.getPlayerIdByDevice("AA:02"));
     }
 
     @Test
@@ -380,8 +380,8 @@ public class PlayerRepositoryTest {
         assertEquals("Bob", playerRepo.getPlayerName((byte) 1));
         assertEquals("Alice", playerRepo.getPlayerName((byte) 17));
 
-        assertEquals((Byte) (byte) 17, playerRepo.getPlayerIdByMac(p1Mac));
-        assertEquals((Byte) (byte) 1, playerRepo.getPlayerIdByMac(p2Mac));
+        assertEquals((Byte) (byte) 17, playerRepo.getPlayerIdByDevice(p1Mac));
+        assertEquals((Byte) (byte) 1, playerRepo.getPlayerIdByDevice(p2Mac));
     }
 
     @Test
@@ -395,13 +395,13 @@ public class PlayerRepositoryTest {
 
         playerRepo.addOrUpdatePlayer(p1, ip, name, mac);
         assertEquals(name, playerRepo.getPlayerName(p1));
-        assertEquals((Byte) p1, playerRepo.getPlayerIdByMac(mac));
+        assertEquals((Byte) p1, playerRepo.getPlayerIdByDevice(mac));
 
         // Remove player when game state is NOT running
         playerRepo.removePlayer(p1, false);
 
         assertEquals("", playerRepo.getPlayerName(p1));
-        Assert.assertNull(playerRepo.getPlayerIdByMac(mac));
+        Assert.assertNull(playerRepo.getPlayerIdByDevice(mac));
         Assert.assertNull(playerRepo.getTeamIPMap().get(p1));
 
         // ID 2 should now be available for auto-sort
@@ -425,7 +425,7 @@ public class PlayerRepositoryTest {
 
         // Name and MAC map remain preserved so player can rejoin
         assertEquals(name, playerRepo.getPlayerName(p1));
-        assertEquals((Byte) p1, playerRepo.getPlayerIdByMac(mac));
+        assertEquals((Byte) p1, playerRepo.getPlayerIdByDevice(mac));
         Assert.assertNull(playerRepo.getTeamIPMap().get(p1));
     }
 
@@ -445,10 +445,10 @@ public class PlayerRepositoryTest {
         playerRepo.purgeDisconnectedPlayers(activeConnectedIds);
 
         assertEquals("Active1", playerRepo.getPlayerName(activeP1));
-        assertEquals((Byte) activeP1, playerRepo.getPlayerIdByMac("MAC1"));
+        assertEquals((Byte) activeP1, playerRepo.getPlayerIdByDevice("MAC1"));
 
         assertEquals("", playerRepo.getPlayerName(disconnectedP2));
-        Assert.assertNull(playerRepo.getPlayerIdByMac("MAC2"));
+        Assert.assertNull(playerRepo.getPlayerIdByDevice("MAC2"));
     }
 
     @Test

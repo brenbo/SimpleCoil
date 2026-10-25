@@ -221,12 +221,12 @@ class ServerMessageHandler(
 
     private fun handleHello(client: Connection, hello: ClientMessage.Hello) {
         server.requestFullGpsUpdate() // Send all GPS info because of the new client
-        val blasterMac = hello.mac ?: ""
+        val deviceId = hello.deviceId ?: ""
         val oldTeam = client.player?.team // null for a new player
-        val result = roster.onHello(client, hello.playerId.toByte(), hello.name, blasterMac, client.inetAddress)
+        val result = roster.onHello(client, hello.playerId.toByte(), hello.name, deviceId, client.inetAddress)
         when (result.kind) {
             GameRoster.HelloResult.Kind.REFUSED_IN_PROGRESS -> {
-                Log.d(TAG, "Rejecting client ${client.connectionId} (MAC: $blasterMac) - Game in progress and allowJoin is false.")
+                Log.d(TAG, "Rejecting client ${client.connectionId} (device: $deviceId) - Game in progress and allowJoin is false.")
                 client.send(command(ServerCommand.Error("Cannot join game in progress due to server settings.")))
                 client.closeAfterPending()
                 roster.removeConnection(client)
@@ -237,7 +237,7 @@ class ServerMessageHandler(
             }
             GameRoster.HelloResult.Kind.REJOINED -> {
                 val existingPlayerId = result.record!!.playerId
-                Log.d(TAG, "rejoining client ${client.connectionId} to player ID $existingPlayerId (MAC: $blasterMac)")
+                Log.d(TAG, "rejoining client ${client.connectionId} to player ID $existingPlayerId (device: $deviceId)")
                 result.displaced?.close()
                 applyPending(client, hello)
                 client.send(command(ServerCommand.ServerReply(existingPlayerId)))

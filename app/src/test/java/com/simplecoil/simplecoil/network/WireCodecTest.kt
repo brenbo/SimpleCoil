@@ -123,7 +123,7 @@ class WireCodecTest {
     // Client JSON
     // ------------------------------------------------------------------------------------------
 
-    private val mac = "AA:BB:CC:DD:EE:FF"
+    private val deviceId = "3f2b9c1e-7d4a-4e8b-9a61-2c5d8f0e1b73"
 
     private fun settings(livesLimit: Int?) = WirePlayerSettings(
         playerId = 5, health = 20, reloadShots = 30, reloadTime = 1500, reloadOnEmpty = true, manualRespawn = false,
@@ -132,11 +132,11 @@ class WireCodecTest {
     )
 
     private val clientFixtures = mapOf(
-        "client/hello_fresh.frame" to ClientMessage.Hello(0, "Rook", mac, false, null, emptyList()),
-        "client/hello_fresh_id5.frame" to ClientMessage.Hello(5, "Rook", mac, false, null, emptyList()),
-        "client/hello_rejoin_pending.frame" to ClientMessage.Hello(5, "Rook", mac, true, 418873301,
+        "client/hello_fresh.frame" to ClientMessage.Hello(0, "Rook", deviceId, false, null, emptyList()),
+        "client/hello_fresh_id5.frame" to ClientMessage.Hello(5, "Rook", deviceId, false, null, emptyList()),
+        "client/hello_rejoin_pending.frame" to ClientMessage.Hello(5, "Rook", deviceId, true, 418873301,
             listOf(WirePending("ELIMINATED17", 1), WirePending("ELIMINATED18", 2))),
-        "client/hello_without_mac.frame" to ClientMessage.Hello(0, "Rook", null, false, null, emptyList()),
+        "client/hello_without_device_id.frame" to ClientMessage.Hello(0, "Rook", null, false, null, emptyList()),
         "client/reliable.frame" to ClientMessage.Reliable("ELIMINATED17", 1, 418873301),
         "client/name_change.frame" to ClientMessage.NameChange(5, "Rook"),
         "client/player_settings.frame" to ClientMessage.Settings(5, settings(null)),
@@ -154,7 +154,7 @@ class WireCodecTest {
             assertEquals(name, message, decodeClient(WireFixtures.frame(name)))
         }
         // An empty MAC is left out, like none
-        WireFixtures.assertFrame("client/hello_without_mac.frame", WireCodec.encode(ClientMessage.Hello(0, "Rook", "", false, null, emptyList())))
+        WireFixtures.assertFrame("client/hello_without_device_id.frame", WireCodec.encode(ClientMessage.Hello(0, "Rook", "", false, null, emptyList())))
     }
 
     @Test

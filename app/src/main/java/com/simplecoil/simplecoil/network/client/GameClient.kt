@@ -109,7 +109,7 @@ class GameClient(
     fun sendPlayerInfo(rejoin: Boolean) {
         if (rejoin) Log.d(TAG, "Attempting to rejoin server")
         val requested: Byte = if (rejoin) players.playerID else 0
-        send(hello(requested, players.playerName, players.deviceAddress, rejoin, outbox))
+        send(hello(requested, players.playerName, players.installId, rejoin, outbox))
         sendBlasterType()
         if (players.pairedGrenadeID.toInt() != 0) sendPlayerGrenade()
     }
@@ -194,10 +194,10 @@ class GameClient(
          * snapshot (D2, D3).
          */
         @JvmStatic
-        fun hello(playerId: Byte, name: String, mac: String?, rejoin: Boolean, outbox: ClientOutbox): ClientMessage.Hello {
+        fun hello(playerId: Byte, name: String, deviceId: String?, rejoin: Boolean, outbox: ClientOutbox): ClientMessage.Hello {
             val pending = outbox.pending().map { WirePending(it.rmsg, it.seq) }
             if (pending.isNotEmpty()) Log.d(TAG, "Replaying ${pending.size} unacknowledged messages")
-            return ClientMessage.Hello(playerId.toInt(), name, mac, rejoin, outbox.gameId.takeIf { it != 0L }, pending)
+            return ClientMessage.Hello(playerId.toInt(), name, deviceId, rejoin, outbox.gameId.takeIf { it != 0L }, pending)
         }
     }
 }

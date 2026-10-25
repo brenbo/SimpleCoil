@@ -66,7 +66,7 @@ object WireCodec {
         is ClientMessage.Hello -> json {
             put(WireKeys.PLAYERID, message.playerId)
             put(WireKeys.PLAYERNAME, message.name)
-            if (!message.mac.isNullOrEmpty()) put(WireKeys.BLASTER_MAC, message.mac)
+            if (!message.deviceId.isNullOrEmpty()) put(WireKeys.DEVICE_ID, message.deviceId)
             if (message.rejoin) put(WireKeys.REJOIN, true)
             if (message.gameId != null) put(WireKeys.GAMEID, message.gameId)
             if (message.pending.isNotEmpty()) {
@@ -202,7 +202,7 @@ object WireCodec {
             ClientMessage.Hello(
                 playerId = json.getInt(WireKeys.PLAYERID),
                 name = json.getString(WireKeys.PLAYERNAME),
-                mac = if (json.has(WireKeys.BLASTER_MAC)) json.getString(WireKeys.BLASTER_MAC) else null,
+                deviceId = if (json.has(WireKeys.DEVICE_ID)) json.getString(WireKeys.DEVICE_ID) else null,
                 rejoin = json.optBoolean(WireKeys.REJOIN, false),
                 gameId = if (json.has(WireKeys.GAMEID)) json.optLong(WireKeys.GAMEID, 0) else null,
                 pending = pending,

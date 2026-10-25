@@ -71,7 +71,7 @@ class GameRosterTest {
         assertEquals(40.toByte(), c.playerId)
         assertEquals(2, c.team)
         assertEquals("Alpha", repo.getPlayerName(1))
-        assertEquals(33.toByte(), repo.getPlayerIdByMac("BB"))
+        assertEquals(33.toByte(), repo.getPlayerIdByDevice("BB"))
     }
 
     @Test
@@ -253,7 +253,7 @@ class GameRosterTest {
         assertEquals(listOf(a), roster.reset())
         assertEquals(SessionPhase.LOBBY, roster.phase())
         assertNull(roster.record(a.playerId))
-        assertNull(repo.getPlayerIdByMac("AA"))
+        assertNull(repo.getPlayerIdByDevice("AA"))
         assertEquals(PlayerRepository.INVALID_PLAYER_ID, repo.getGrenadePairing(3))
         assertEquals(0, b.points)
         assertFalse(roster.isCached("BB"))
@@ -559,7 +559,7 @@ class GameRosterTest {
         assertEquals(listOf<Byte>(1, 33, 2), result.assigned.map { it.playerId })
         assertEquals(listOf(1, 2, 1), result.assigned.map { it.team })
         assertEquals("Bravo", repo.getPlayerName(33))
-        assertEquals(33.toByte(), repo.getPlayerIdByMac("BB"))
+        assertEquals(33.toByte(), repo.getPlayerIdByDevice("BB"))
         assertNull(repo.teamIPMap[3])
     }
 
@@ -611,7 +611,7 @@ class GameRosterTest {
         assertSame(b, roster.record(1))
         assertEquals("Alpha", repo.getPlayerName(33))
         assertEquals("Bravo", repo.getPlayerName(1))
-        assertEquals(33.toByte(), repo.getPlayerIdByMac("AA"))
+        assertEquals(33.toByte(), repo.getPlayerIdByDevice("AA"))
         assertNull(roster.swapPlayers(1, 5))
     }
 }

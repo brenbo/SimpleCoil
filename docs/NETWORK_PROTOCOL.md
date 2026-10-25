@@ -76,11 +76,13 @@ nothing from the server for 3.5 s, then tries to reconnect (see §5).
 
 1. The client connects and sends a **hello** (JSON):
    ```json
-   {"playerID": 0, "playername": "Alice", "blaster_mac": "AA:BB:...",
+   {"playerID": 0, "playername": "Alice", "device_id": "3f2b9c1e-...",
     "rejoin": true, "gameid": 418873301, "pending": [{"rmsg": "ELIMINATED7", "seq": 3}]}
    ```
    - `playerID` is the ID the player wants. `0` means "pick one for me".
-   - `blaster_mac` identifies the player across reconnects.
+   - `device_id` identifies the player across reconnects: a random UUID the app makes once per
+     install (kept until it is uninstalled, and not restored from a backup onto another phone).
+     It says nothing about the blaster, which may change or be missing.
    - `rejoin`, `gameid` and `pending` appear only when they apply (see §5).
    - Once the blaster has reported its type, a `blastertype` message follows (see §4.2).
    - If the player has a paired grenade, a `pairedgrenadeID` message follows (see §4.2).
@@ -165,7 +167,7 @@ Each JSON message is identified by the key it contains.
 
 | Key | Contents |
 |---|---|
-| hello | `playerID`, `playername`, plus optional `blaster_mac`, `rejoin`, `gameid`, `pending` (§3). |
+| hello | `playerID`, `playername`, plus optional `device_id`, `rejoin`, `gameid`, `pending` (§3). |
 | `playernamechange` | The player's new name. |
 | `playersettings` | The player's own settings: `health`, `reloadshots`, `reloadtime`, `reloadonempty`, `manualrespawn` (optional, default off), `spawntime`, `respawnshieldtime`, `damage`, `liveslimit` (optional), `shotmodesingle`/`shotmodeburst3`/`shotmodeauto`, `firingmode`. Rejected unless the server allows player settings. |
 | `requestteamchange` | The team the player wants. Only works in the lobby, in a team mode, when the server lets players choose teams, and when that team has an open slot. If the team is full, the optional `swapwith` names a player on it to trade places with; both players then get a new `SERVERREPLY` id. Older servers ignore `swapwith`. |
@@ -206,7 +208,7 @@ blaster MAC. That list is the game's **roster**.
 
 **When a player comes back:**
 - The client sends a hello with `rejoin: true`.
-- If the hello's `blaster_mac` is on the roster, the server gives the player back the same ID,
+- If the hello's `device_id` is on the roster, the server gives the player back the same ID,
   team and score, and replies with `SERVERREPLY` and a snapshot.
 - If an old connection for that player is still open, the server closes it.
 
