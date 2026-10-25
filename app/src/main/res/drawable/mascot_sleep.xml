@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coil's Zzz, drifting up on the right: waiting for someone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Eyes closed: the visor over the open ones, two sleepy curves on it -->
+    <path android:fillColor="#1B1F27"
+        android:pathData="M44,51h32v18h-32z" />
+    <path android:strokeColor="#FF6A1A" android:strokeWidth="3" android:strokeLineCap="round"
+        android:pathData="M46,60q4,4 8,0M66,60q4,4 8,0" />
+    <path android:strokeColor="#FF6A1A" android:strokeWidth="3" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M90,36h8l-8,9h8" />
+    <path android:strokeColor="#FF6A1A" android:strokeWidth="3.5" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M100,18h11l-11,12h11" />
+</vector>

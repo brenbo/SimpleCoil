@@ -156,8 +156,11 @@ class RefereeMapFragment : Fragment() {
                 container.userPreferences.saveServerMapAutoZoom(zoom.name)
             }
         }
-        // Under the info line, however many lines it has
-        b.refInfoTv.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> b.refZoomButton.translationY = v.height.toFloat() }
+        // Under the info line, however many lines it has, and in a pane under the full-window button too
+        b.refInfoTv.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+            val expandBottom = if (embedded) EXPAND_BUTTON_BOTTOM_DP * resources.displayMetrics.density else 0f
+            b.refZoomButton.translationY = maxOf(v.height.toFloat(), expandBottom)
+        }
         val context = requireContext()
         points = ObjectiveOverlay(context, b.refObjectivesLayer) { colorOf(it) }
         drops = DropOverlay(context, b.refDropsLayer)
@@ -494,6 +497,9 @@ class RefereeMapFragment : Fragment() {
 
         private const val REFRESH_MILLIS = 1_000L
         private const val EXPAND_BUTTON_ROOM_DP = 52
+
+        /** Where the server screen's full-window button ends: 8dp margin and 40dp tall. */
+        private const val EXPAND_BUTTON_BOTTOM_DP = 48
         private const val MIN_ZOOM = 13.0
         private const val MAX_ZOOM = 20.0
 

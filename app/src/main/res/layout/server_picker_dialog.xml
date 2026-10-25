@@ -22,19 +22,21 @@
         android:id="@+id/server_picker_searching"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_marginTop="12dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-        <ProgressBar
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:indeterminateTint="@color/sc_orange" />
+        <!-- Coil, looking around with its magnifying glass -->
+        <com.simplecoil.simplecoil.ui.feel.MascotView
+            android:layout_width="104dp"
+            android:layout_height="104dp"
+            app:mood="search" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="8dp"
             android:text="@string/server_picker_searching"
             android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary" />
     </LinearLayout>

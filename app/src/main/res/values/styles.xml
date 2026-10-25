@@ -41,6 +41,7 @@
         <item name="actionBarStyle">@style/Widget.SimpleCoil.ActionBar</item>
         <item name="alertDialogTheme">@style/AppDialogTheme</item>
         <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Material3.BottomSheetDialog</item>
+        <item name="android:windowAnimationStyle">@style/ScreenAnimation</item>
     </style>
 
     <!-- The bar along the top: the background's own color, a plain title, no shadow line. -->
@@ -478,6 +479,19 @@
     <!-- Yes/no confirmations (save over, delete, stop the server): like AppDialogTheme, but
          narrower on a tablet or Chromebook (values-sw600dp), where a short question looks lost
          in a wide box -->
+    <!-- Screens slide in from the right and back out to it; pop-ups rise into place and sink away -->
+    <style name="ScreenAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/screen_open_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/screen_open_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/screen_close_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/screen_close_exit</item>
+    </style>
+
+    <style name="PopUpAnimation" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/dialog_exit</item>
+    </style>
+
     <style name="AppDialogTheme.Confirm" />
 
     <style name="AppDialogTheme" parent="ThemeOverlay.Material3.Dialog.Alert">
@@ -499,6 +513,7 @@
         <item name="buttonBarPositiveButtonStyle">@style/Widget.SimpleCoil.Button.Text</item>
         <item name="buttonBarNegativeButtonStyle">@style/Widget.SimpleCoil.Button.Text</item>
         <item name="buttonBarNeutralButtonStyle">@style/Widget.SimpleCoil.Button.Text</item>
+        <item name="android:windowAnimationStyle">@style/PopUpAnimation</item>
     </style>
 
 </resources>

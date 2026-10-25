@@ -16,6 +16,9 @@
 
 package com.simplecoil.simplecoil.ui.game
 
+import android.transition.ChangeBounds
+import android.transition.TransitionManager
+import android.view.ViewGroup
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.AnimationDrawable
@@ -32,6 +35,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.core.view.isVisible
+import com.simplecoil.simplecoil.ui.feel.Motion
 import androidx.core.widget.doAfterTextChanged
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
@@ -99,10 +103,12 @@ class GameScreenRenderer(
     // ---------------------------------------------------------------------------------------
 
     override fun showConnectScreen(reconnectVisible: Boolean) {
-        b.playLayout.visibility = View.GONE
+        // Back from the game screen (the blaster gone): it sinks away and home rises in, with a buzz
+        val fromGame = b.playLayout.isVisible
+        Motion.swap(b.playLayout, b.connectLayout, animate = fromGame)
+        if (fromGame) Motion.failure(b.root)
         // The app bar on the home screen; the game screen gives its room to the map
         (context as? AppCompatActivity)?.supportActionBar?.show()
-        b.connectLayout.visibility = View.VISIBLE
         if (serverOnly) {
             b.connectWeaponButton.visibility = View.GONE
             b.connectQrWeaponButton.visibility = View.GONE
@@ -116,8 +122,10 @@ class GameScreenRenderer(
     }
 
     override fun showPlayScreen() {
-        b.connectLayout.visibility = View.GONE
-        b.playLayout.visibility = View.VISIBLE
+        // The blaster connected: home sinks away and the game screen rises in, with a confirming buzz
+        val fromHome = b.connectLayout.isVisible
+        Motion.swap(b.connectLayout, b.playLayout, animate = fromHome)
+        if (fromHome) Motion.success(b.root)
         (context as? AppCompatActivity)?.supportActionBar?.hide()
     }
 
@@ -138,6 +146,9 @@ class GameScreenRenderer(
 
     override fun showGameStarted(useNetwork: Boolean, isAdmin: Boolean, freeForAll: Boolean) {
         window.enterGame()
+        // The game is on: a strong buzz and the scores pop
+        Motion.heavy(b.root)
+        Motion.pop(b.scoresChip, 1.08f)
         b.scoreTv.text = "0"
         b.teamScoreTv.text = "0"
         b.startGameButton.visibility = View.GONE
@@ -165,6 +176,7 @@ class GameScreenRenderer(
 
     override fun showGameEnded(useNetwork: Boolean, freeForAll: Boolean) {
         window.exitGame()
+        Motion.heavy(b.root)
         b.endGameButton.visibility = View.GONE
         inGame = false
         displayAllNetworkingOptions(useNetwork, freeForAll)
@@ -176,12 +188,16 @@ class GameScreenRenderer(
     }
 
     override fun showScore(score: Int) {
-        b.scoreTv.text = number(score)
+        val text = number(score)
+        if (score != 0 && b.scoreTv.text.toString() != text) Motion.pop(b.scoreTv)
+        b.scoreTv.text = text
         updateScoresDescription()
     }
 
     override fun showTeamScore(teamScore: Int) {
-        b.teamScoreTv.text = number(teamScore)
+        val text = number(teamScore)
+        if (teamScore != 0 && b.teamScoreTv.text.toString() != text) Motion.pop(b.teamScoreTv)
+        b.teamScoreTv.text = text
         updateScoresDescription()
     }
 
@@ -410,12 +426,15 @@ class GameScreenRenderer(
 
     private fun renderNetworkPill() {
         val pill = b.useNetworkButton
-        pill.text = when (networkButton) {
+        // Going online, searching, the players: the pill grows or shrinks to its new words rather than jumping
+        val text = when (networkButton) {
             NetworkButton.USE_NETWORK -> context.getString(R.string.use_network_button)
             NetworkButton.SEARCHING -> context.getString(R.string.network_searching_status)
             NetworkButton.MENU -> playerCountText ?: context.getString(R.string.network_menu_button)
             NetworkButton.DISABLE -> playerCountText ?: context.getString(R.string.disable_networking_button)
         }
+        if (pill.text.toString() != text && pill.isLaidOut) (pill.parent as? ViewGroup)?.let { TransitionManager.beginDelayedTransition(it, ChangeBounds().setDuration(PILL_MILLIS)) }
+        pill.text = text
         pill.iconTint = ColorStateList.valueOf(ContextCompat.getColor(context, when (connected) {
             true -> R.color.sc_success
             false -> R.color.sc_danger
@@ -482,6 +501,10 @@ class GameScreenRenderer(
     }
 
     override fun showConnectedToServer(ip: String) {
+        if (!onServer) {
+            Motion.pop(b.useNetworkButton, 1.1f)
+            Motion.success(b.useNetworkButton)
+        }
         serverIp = ip
         onServer = true
         connected = true
@@ -494,6 +517,11 @@ class GameScreenRenderer(
     }
 
     override fun showNetworkConnected(connected: Boolean) {
+        // Online or offline: the pill pops, with a buzz that says which
+        if (this.connected != connected) {
+            Motion.pop(b.useNetworkButton, 1.1f)
+            if (connected) Motion.success(b.useNetworkButton) else Motion.failure(b.useNetworkButton)
+        }
         this.connected = connected
         renderNetworkPill()
     }
@@ -758,6 +786,9 @@ class GameScreenRenderer(
     }
 
     companion object {
+        /** How long the network pill takes to grow or shrink to new words. */
+        private const val PILL_MILLIS = 220L
+
         // If you change these durations you will also need to change the duration in the res/anim/fadeout XML files to match
         const val HIT_ANIMATION_DURATION_MILLISECONDS = 400L
         const val HIT_PLAYER_DISPLAY_DURATION_MILLISECONDS = 2000L // res/anim/hitplayerfadeout

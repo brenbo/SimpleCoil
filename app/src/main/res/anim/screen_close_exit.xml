@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Back: the screen going off to the right as it fades -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/accelerate_quad"
+    android:shareInterpolator="true">
+    <alpha android:fromAlpha="1" android:toAlpha="0" android:duration="200" />
+    <translate android:fromXDelta="0" android:toXDelta="12%" android:duration="240" />
+</set>

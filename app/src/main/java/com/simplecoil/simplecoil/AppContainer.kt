@@ -144,6 +144,9 @@ class AppContainer(private val app: Application) {
         return audioSettings
     }
 
+    /** Vibration on in the sound settings: buttons and events vibrate only then. */
+    val vibrationOn: Boolean get() = audioSettingsNow().vibration
+
     fun saveAudioSettings(settings: AudioSettings) {
         audioSettings = settings
         audioSettingsLoaded = true

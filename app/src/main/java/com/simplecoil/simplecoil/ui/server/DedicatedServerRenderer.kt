@@ -17,11 +17,15 @@
 package com.simplecoil.simplecoil.ui.server
 
 import android.os.SystemClock
+import android.transition.TransitionManager
 import android.view.View
+import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.simplecoil.simplecoil.ui.feel.Motion
+import com.simplecoil.simplecoil.ui.feel.TouchFeel
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.ActivityDedicatedServerBinding
@@ -49,6 +53,10 @@ class DedicatedServerRenderer(
     /** A classic game with GPS off: no positions, so no live map during the game. */
     var liveMapOff = false
 
+    /** What was last drawn, to tell what changed. */
+    private var lastPlayerCount: Int? = null
+    private var lastPhase: SessionPhase? = null
+
     /** The clock as last drawn. */
     private var clock: ClockState? = null
 
@@ -57,6 +65,14 @@ class DedicatedServerRenderer(
 
     fun render(state: ServerUiState) = with(binding) {
         serverIpTv.text = state.serverIp?.let { resources.getString(R.string.server_status_serving_on, it) } ?: ""
+        // Someone joined: the count pops, with a tick
+        if (lastPlayerCount.let { it != null && state.playerCount > it }) {
+            Motion.pop(playerCountTv)
+            TouchFeel.tick(playerCountTv)
+        }
+        lastPlayerCount = state.playerCount
+        // A wide screen's players pane, with nobody in it yet: Coil, dozing
+        playersEmpty?.isVisible = state.playerCount == 0
         playerCountTv.text = quantity(R.plurals.network_player_count, state.playerCount)
         checkSegment(teamModeGroup, when (state.teamMode) {
             TeamMode.TWO_TEAMS -> R.id.team_mode_2teams_button
@@ -117,6 +133,13 @@ class DedicatedServerRenderer(
 
     /** Buttons and status for the server's session phase (reconnect design §3.1). */
     private fun renderPhase(phase: SessionPhase, teamMode: TeamMode) = with(binding) {
+        // A game starting or ending: a strong buzz, the status pops, and the big button changes over smoothly
+        if (lastPhase != null && lastPhase != phase) {
+            Motion.heavy(root)
+            Motion.pop(gameStatusTv, 1.12f)
+            (startGameButton.parent as? ViewGroup)?.let { TransitionManager.beginDelayedTransition(it) }
+        }
+        lastPhase = phase
         val running = phase == SessionPhase.RUNNING
         val postGame = phase == SessionPhase.POST_GAME
         // One big button: the step to the next phase (Start, then End, then Reset)

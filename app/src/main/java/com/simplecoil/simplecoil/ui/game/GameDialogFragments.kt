@@ -28,8 +28,15 @@ import androidx.core.os.bundleOf
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import android.animation.ObjectAnimator
+import android.transition.ChangeBounds
+import android.transition.Fade
+import android.transition.TransitionManager
+import android.transition.TransitionSet
+import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.BounceInterpolator
 import android.view.animation.OvershootInterpolator
+import androidx.core.view.isVisible
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.domain.mode.GameResult
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
@@ -371,6 +378,19 @@ class ScoreboardDialog : GameDialogFragment() {
         val b = binding ?: return
         val matrix = vm.scoreMatrixVisible
         val shots = vm.longestShotsVisible
+        val face = when {
+            matrix -> b.scoreMatrixFace
+            shots -> b.longestShotsFace
+            else -> b.playerList
+        }
+        // Switching faces: the old one fades as the new one slides in from the side, and the box
+        // grows or shrinks to it, rather than everything jumping
+        if (!face.isVisible && b.root.isLaidOut) {
+            (face.parent as? ViewGroup)?.let { TransitionManager.beginDelayedTransition(it, TransitionSet()
+                .addTransition(Fade()).addTransition(ChangeBounds()).setDuration(FACE_MILLIS)) }
+            face.translationX = FACE_SLIDE_DP * resources.displayMetrics.density
+            face.animate().translationX(0f).setDuration(FACE_MILLIS).setInterpolator(DecelerateInterpolator()).start()
+        }
         b.playerList.visibility = if (matrix || shots) View.GONE else View.VISIBLE
         b.scoreMatrixFace.visibility = if (matrix) View.VISIBLE else View.GONE
         b.longestShotsFace.visibility = if (shots) View.VISIBLE else View.GONE
@@ -485,3 +505,7 @@ private const val DRAW_COLOR = 0xFFB0BEC5.toInt()
 
 /** The score matrix grows to at most this much of the window's height, then scrolls. */
 private const val MATRIX_MAX_HEIGHT_FRACTION = 0.8f
+
+/** How the scoreboard switches faces: how long, and how far the new one slides in from. */
+private const val FACE_MILLIS = 260L
+private const val FACE_SLIDE_DP = 32f

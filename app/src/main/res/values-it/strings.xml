@@ -12,6 +12,7 @@
     <string name="pane_fullscreen_exit">Mostra tutti i pannelli</string>
     <string name="pane_divider">Trascina per ridimensionare i pannelli</string>
     <string name="pane_divider_closed">Tocca o trascina per mostrare di nuovo il pannello</string>
+    <string name="players_empty">In attesa di giocatori…</string>
 
     <string name="reconnect_weapon_button">Riconnetti</string>
     <string name="connect_weapon_button">Connetti blaster</string>

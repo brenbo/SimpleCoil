@@ -17,6 +17,7 @@
 package com.simplecoil.simplecoil
 
 import android.app.Application
+import com.simplecoil.simplecoil.ui.feel.TouchFeel
 
 /** The application: builds the [AppContainer] before any activity or service starts. */
 class SimpleCoilApp : Application() {
@@ -27,5 +28,7 @@ class SimpleCoilApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // Every button sinks when pressed and ticks when clicked, on every screen
+        TouchFeel.install(this) { container.vibrationOn }
     }
 }

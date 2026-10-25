@@ -9,4 +9,12 @@
         <attr name="metaButtonBarButtonStyle" format="reference" />
     </declare-styleable>
 
+    <!-- Coil, the mascot on empty screens: looking for something, or waiting for someone -->
+    <declare-styleable name="MascotView">
+        <attr name="mood" format="enum">
+            <enum name="search" value="0" />
+            <enum name="sleep" value="1" />
+        </attr>
+    </declare-styleable>
+
 </resources>

@@ -12,6 +12,7 @@
     <string name="pane_fullscreen_exit">Alle panelen tonen</string>
     <string name="pane_divider">Sleep om de panelen groter of kleiner te maken</string>
     <string name="pane_divider_closed">Tik of sleep om het paneel terug te halen</string>
+    <string name="players_empty">Wachten op spelers…</string>
 
     <string name="reconnect_weapon_button">Opnieuw verbinden</string>
     <string name="connect_weapon_button">Blaster verbinden</string>

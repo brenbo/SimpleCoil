@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coil, SimpleCoil's mascot: a round little robot with a dark visor, orange eyes and an orange
+     antenna light, like a blaster's. The look-around accessories are their own drawables. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Shadow -->
+    <path android:fillColor="#40000000"
+        android:pathData="M34,108a26,5 0,1 0,52 0a26,5 0,1 0,-52 0z" />
+    <!-- Antenna and its light -->
+    <path android:strokeColor="#1B1F27" android:strokeWidth="3.5" android:strokeLineCap="round"
+        android:pathData="M60,34L60,19" />
+    <path android:fillColor="#33FF6A1A"
+        android:pathData="M51,15a9,9 0,1 0,18 0a9,9 0,1 0,-18 0z" />
+    <path android:fillColor="#FF6A1A" android:strokeColor="#1B1F27" android:strokeWidth="2.5"
+        android:pathData="M54.5,15a5.5,5.5 0,1 0,11 0a5.5,5.5 0,1 0,-11 0z" />
+    <!-- Arms -->
+    <path android:fillColor="#E4E8EF" android:strokeColor="#1B1F27" android:strokeWidth="3"
+        android:pathData="M27,70c-7,2 -9,12 -3,15c4,2 7,-1 8,-4z" />
+    <path android:fillColor="#E4E8EF" android:strokeColor="#1B1F27" android:strokeWidth="3"
+        android:pathData="M93,70c7,2 9,12 3,15c-4,2 -7,-1 -8,-4z" />
+    <!-- Body -->
+    <path android:fillColor="#F4F6FA" android:strokeColor="#1B1F27" android:strokeWidth="3.5"
+        android:pathData="M60,32C78,32 92,44 92,62L92,88C92,96 86,102 78,102L42,102C34,102 28,96 28,88L28,62C28,44 42,32 60,32z" />
+    <!-- Belly panel -->
+    <path android:fillColor="#E4E8EF"
+        android:pathData="M48,84h24a4,4 0,0 1,4 4v4a4,4 0,0 1,-4 4h-24a4,4 0,0 1,-4 -4v-4a4,4 0,0 1,4 -4z" />
+    <path android:fillColor="#FF6A1A"
+        android:pathData="M52,90a2,2 0,1 0,4 0a2,2 0,1 0,-4 0zM58,90a2,2 0,1 0,4 0a2,2 0,1 0,-4 0zM64,90a2,2 0,1 0,4 0a2,2 0,1 0,-4 0z" />
+    <!-- Visor -->
+    <path android:fillColor="#1B1F27"
+        android:pathData="M45,48h30a11,11 0,0 1,11 11v2a11,11 0,0 1,-11 11h-30a11,11 0,0 1,-11 -11v-2a11,11 0,0 1,11 -11z" />
+    <!-- Eyes -->
+    <path android:fillColor="#FF6A1A"
+        android:pathData="M48,53h4a2.5,2.5 0,0 1,2.5 2.5v9a2.5,2.5 0,0 1,-2.5 2.5h-4a2.5,2.5 0,0 1,-2.5 -2.5v-9a2.5,2.5 0,0 1,2.5 -2.5zM68,53h4a2.5,2.5 0,0 1,2.5 2.5v9a2.5,2.5 0,0 1,-2.5 2.5h-4a2.5,2.5 0,0 1,-2.5 -2.5v-9a2.5,2.5 0,0 1,2.5 -2.5z" />
+    <!-- Visor shine -->
+    <path android:fillColor="#40FFFFFF"
+        android:pathData="M42,53c2,-2 4,-3 7,-3h3c-4,1 -6,3 -7,6z" />
+    <!-- Cheeks -->
+    <path android:fillColor="#55FF8A50"
+        android:pathData="M33,77a4,2.5 0,1 0,8 0a4,2.5 0,1 0,-8 0zM79,77a4,2.5 0,1 0,8 0a4,2.5 0,1 0,-8 0z" />
+</vector>
