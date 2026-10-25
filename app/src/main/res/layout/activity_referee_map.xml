@@ -64,6 +64,22 @@
         android:textColor="@color/sc_text"
         android:textSize="14sp" />
 
+    <!-- Auto zoom (map design: Auto zoom): off, everyone on the map, or the whole field. Moved
+         down under the info line in code, however tall that is. -->
+    <ImageButton
+        android:id="@+id/ref_zoom_button"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_map_button"
+        android:elevation="4dp"
+        android:contentDescription="@string/map_zoom_field"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_map_zoom_field" />
+
     <LinearLayout
         android:id="@+id/ref_controls"
         android:layout_width="match_parent"

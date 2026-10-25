@@ -18,6 +18,7 @@ package com.simplecoil.simplecoil.ui.server
 
 import android.os.Bundle
 import android.view.Choreographer
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,6 +36,11 @@ import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.databinding.ActivityRefereeMapBinding
 import com.simplecoil.simplecoil.domain.loadout.DropKind
+import com.simplecoil.simplecoil.domain.map.AutoZoom
+import com.simplecoil.simplecoil.domain.map.Border
+import com.simplecoil.simplecoil.domain.map.GeoBounds
+import com.simplecoil.simplecoil.domain.map.GeoCircle
+import com.simplecoil.simplecoil.domain.map.GeoMath
 import com.simplecoil.simplecoil.domain.map.LatLon
 import com.simplecoil.simplecoil.domain.mode.FlagEngine
 import com.simplecoil.simplecoil.domain.mode.GameMode
@@ -53,14 +59,15 @@ import com.simplecoil.simplecoil.ui.map.ObjectiveOverlay
 import com.simplecoil.simplecoil.ui.map.OutsideShade
 import com.simplecoil.simplecoil.ui.map.SpawnLayers
 import com.simplecoil.simplecoil.ui.map.ZoneLayers
+import com.simplecoil.simplecoil.ui.map.ZoomMenu
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.maplibre.android.MapLibre
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.LineLayer
@@ -70,6 +77,8 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.min
 
 /**
  * The dedicated server's live referee map (map design: Dedicated server settings: "during a game
@@ -92,10 +101,21 @@ class RefereeMapFragment : Fragment() {
     private var flags: GlyphOverlay? = null
     private var dots: GlyphOverlay? = null
     private var names: GlyphOverlay? = null
+    /** The camera has been put on the field (again after a new field). */
     private var placed = false
-    /** The border the camera frames, kept framed as the pane changes size; null once someone pans or zooms. */
-    private var framed: List<LatLon>? = null
     private var framesRunning = false
+
+    /** The auto zoom in use (map design: Auto zoom): off, everyone on the map, or the whole field; no "you" here. */
+    private var autoZoom = AutoZoom.FIELD
+
+    /** What auto zoom fits now; the camera glides toward it every frame. */
+    private var target: GeoCircle? = null
+
+    /** What [target] was worked out from, to work it out again when the mode changes. */
+    private var lastBorder: Border? = null
+    private var lastPlayers: List<LatLon> = emptyList()
+    private var lastZone: GeoCircle? = null
+    private var photoBounds: GeoBounds? = null
 
     /** A pane of the server screen, rather than a screen of its own. */
     private val embedded: Boolean get() = arguments?.getBoolean(ARG_EMBEDDED) == true
@@ -110,6 +130,7 @@ class RefereeMapFragment : Fragment() {
                 dots?.place(p)
                 names?.place(p)
             }
+            glide()
             Choreographer.getInstance().postFrameCallback(this)
         }
     }
@@ -121,10 +142,22 @@ class RefereeMapFragment : Fragment() {
         _binding = b
         b.refMapView.onCreate(savedInstanceState)
         b.refMapView.getMapAsync { onMapReady(it) }
-        // A pane dragged wider or narrower, or filling the window: the field still in view
+        // A pane dragged wider or narrower, or filling the window: auto zoom fits it again at once
         b.refMapView.addOnLayoutChangeListener { v, l, t, r, bottom, oldL, oldT, oldR, oldBottom ->
-            if (r - l != oldR - oldL || bottom - t != oldBottom - oldT) v.post { framed?.let(::fit) }
+            if (r - l != oldR - oldL || bottom - t != oldBottom - oldT) v.post { snapToTarget() }
         }
+        autoZoom = container.userPreferences.serverMapAutoZoom()
+            ?.let { runCatching { AutoZoom.valueOf(it) }.getOrNull() }
+            ?.takeIf { it in ZOOM_MODES } ?: AutoZoom.FIELD
+        ZoomMenu.style(b.refZoomButton, autoZoom)
+        b.refZoomButton.setOnClickListener { button ->
+            ZoomMenu.show(button, ZOOM_MODES, autoZoom) { zoom ->
+                setAutoZoom(zoom)
+                container.userPreferences.saveServerMapAutoZoom(zoom.name)
+            }
+        }
+        // Under the info line, however many lines it has
+        b.refInfoTv.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> b.refZoomButton.translationY = v.height.toFloat() }
         val context = requireContext()
         points = ObjectiveOverlay(context, b.refObjectivesLayer) { colorOf(it) }
         drops = DropOverlay(context, b.refDropsLayer)
@@ -227,7 +260,8 @@ class RefereeMapFragment : Fragment() {
         this.map = map
         map.addOnMapClickListener { onMapTapped(LatLon(it.latitude, it.longitude)) }
         map.addOnCameraMoveStartedListener { reason ->
-            if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) framed = null
+            // Moving the map by hand turns auto zoom off
+            if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) setAutoZoom(AutoZoom.OFF)
         }
         map.setMinZoomPreference(MIN_ZOOM)
         map.setMaxZoomPreference(MAX_ZOOM)
@@ -235,7 +269,9 @@ class RefereeMapFragment : Fragment() {
             isLogoEnabled = false
             isAttributionEnabled = false
             isTiltGesturesEnabled = false
-            setCompassMargins(0, (64 * resources.displayMetrics.density).toInt(), (8 * resources.displayMetrics.density).toInt(), 0)
+            // Top left, clear of the auto zoom button on the right
+            compassGravity = Gravity.TOP or Gravity.START
+            setCompassMargins((8 * resources.displayMetrics.density).toInt(), (64 * resources.displayMetrics.density).toInt(), 0, 0)
         }
         map.setStyle(MapStyles.playStyle()) { loaded ->
             style = loaded
@@ -261,6 +297,7 @@ class RefereeMapFragment : Fragment() {
                             photo?.let { MapCredit.attach(credit, MapCredit.isMapTiler(it.first.info.credit)) }
                         }
                         // A new field: fit it again
+                        photoBounds = photo?.first?.info?.bounds
                         placed = false
                     }
                 }
@@ -287,7 +324,7 @@ class RefereeMapFragment : Fragment() {
                 latitude = spawns.firstOrNull()?.point?.latitude ?: 0.0)
             ZoneLayers.update(style, view.mode?.zone)
         }
-        if (!placed && ring != null) fit(ring)
+
         val mode = view.mode
         // The mode's things: points, sites, bases; flags; crates
         points?.update(when (mode?.mode) {
@@ -314,6 +351,9 @@ class RefereeMapFragment : Fragment() {
         names?.update(located.map { GlyphOverlay.Glyph("n${it.id}", it.point!!, it.name.ifBlank { "#${it.id}" }, 0xFFFFFFFF.toInt()) })
         b.refZoneButton.isVisible = mode?.mode == GameMode.BATTLE_ROYALE
         b.refInfoTv.text = info(view, located.size)
+        // Battle Royale: fitting the field means fitting the safe zone, closer as it shrinks
+        val zone = mode?.takeIf { it.mode == GameMode.BATTLE_ROYALE }?.zone?.current
+        refreshTarget(field?.border, located.map { it.point!! }, zone)
     }
 
     private fun info(view: LiveGame.RefereeView, located: Int): String {
@@ -344,13 +384,62 @@ class RefereeMapFragment : Fragment() {
         else -> MapIcons.teamColor(team, PALETTE[Math.floorMod(team, PALETTE.size)])
     }
 
-    private fun fit(ring: List<LatLon>) {
+    private fun setAutoZoom(mode: AutoZoom) {
+        if (autoZoom == mode) return
+        autoZoom = mode
+        _binding?.let { ZoomMenu.style(it.refZoomButton, mode) }
+        refreshTarget(lastBorder, lastPlayers, lastZone)
+    }
+
+    /**
+     * Works out what auto zoom fits now, from the field's [border] (or its photo), the [players]
+     * shown and Battle Royale's [zone]; the first time on a field, also puts the camera there.
+     */
+    private fun refreshTarget(border: Border?, players: List<LatLon>, zone: GeoCircle?) {
+        lastBorder = border
+        lastPlayers = players
+        lastZone = zone
+        target = if (zone != null && autoZoom == AutoZoom.FIELD) zone else AutoZoom.target(autoZoom, border, photoBounds, null, players)
+        if (placed) return
         val map = map ?: return
+        val start = AutoZoom.target(AutoZoom.FIELD, border, photoBounds, null, players) ?: return
+        val zoom = zoomFor(start) ?: return
         placed = true
-        framed = ring
-        CameraLimits.keepNear(map, ring)
-        val bounds = LatLngBounds.Builder().apply { ring.forEach { include(LatLng(it.latitude, it.longitude)) } }.build()
-        map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, (48 * resources.displayMetrics.density).toInt()))
+        border?.ring()?.let { CameraLimits.keepNear(map, it) }
+        map.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder(map.cameraPosition)
+            .target(LatLng(start.center.latitude, start.center.longitude)).zoom(zoom).build()))
+    }
+
+    /** The zoom that fits [circle] across the map's short side. */
+    private fun zoomFor(circle: GeoCircle): Double? {
+        val view = _binding?.refMapView ?: return null
+        val sizeDp = min(view.width, view.height) / resources.displayMetrics.density
+        return if (sizeDp > 0) GeoMath.zoomToFit(circle, sizeDp.toDouble(), MIN_ZOOM, MAX_ZOOM) else null
+    }
+
+    /** One frame: the camera glides toward what auto zoom fits, moving only when it would show. */
+    private fun glide() {
+        val map = map ?: return
+        val goal = target?.takeIf { autoZoom != AutoZoom.OFF } ?: return
+        val goalZoom = zoomFor(goal) ?: return
+        val now = map.cameraPosition
+        val center = now.target ?: return
+        val latitude = center.latitude + (goal.center.latitude - center.latitude) * GLIDE
+        val longitude = center.longitude + (goal.center.longitude - center.longitude) * GLIDE
+        val zoom = now.zoom + (goalZoom - now.zoom) * GLIDE
+        val panned = GeoMath.distanceMeters(LatLon(center.latitude, center.longitude), LatLon(latitude, longitude)) >= MIN_PAN_METERS
+        if (!panned && abs(zoom - now.zoom) < MIN_ZOOM_STEP) return
+        map.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder(now)
+            .target(LatLng(latitude, longitude)).zoom(zoom).build()))
+    }
+
+    /** The map changed size: straight to what auto zoom fits, rather than gliding from a view that no longer fits. */
+    private fun snapToTarget() {
+        val map = map ?: return
+        val goal = target?.takeIf { autoZoom != AutoZoom.OFF } ?: return
+        val zoom = zoomFor(goal) ?: return
+        map.moveCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder(map.cameraPosition)
+            .target(LatLng(goal.center.latitude, goal.center.longitude)).zoom(zoom).build()))
     }
 
     override fun onStart() {
@@ -407,6 +496,14 @@ class RefereeMapFragment : Fragment() {
         private const val EXPAND_BUTTON_ROOM_DP = 52
         private const val MIN_ZOOM = 13.0
         private const val MAX_ZOOM = 20.0
+
+        /** The modes the server map offers: there's no "you" to follow. */
+        private val ZOOM_MODES = listOf(AutoZoom.OFF, AutoZoom.PLAYERS, AutoZoom.FIELD)
+
+        /** How far the camera closes on its goal each frame, as the player map does. */
+        private const val GLIDE = 0.12
+        private const val MIN_ZOOM_STEP = 0.002
+        private const val MIN_PAN_METERS = 0.05
         private const val BORDER_SOURCE = "ref-border"
         private const val BORDER_COLOR = "#FF5252"
         private const val DOT = "●"

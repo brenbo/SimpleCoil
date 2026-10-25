@@ -276,8 +276,6 @@ class ServerPanes(
             players in closed -> PaneDivider.Closed.END
             else -> PaneDivider.Closed.NONE
         }
-        // The settings' and the map's tabs both at the left edge (the players filling the window): one above the other
-        right?.tabOffset = if (left.closed == PaneDivider.Closed.START && right?.closed == PaneDivider.Closed.START) 72 * density else 0f
         fun look(button: ImageButton?, full: Boolean) {
             button?.setImageResource(if (full) R.drawable.ic_sc_fullscreen_exit else R.drawable.ic_sc_fullscreen)
             button?.contentDescription = row.context.getString(if (full) R.string.pane_fullscreen_exit else R.string.pane_fullscreen)

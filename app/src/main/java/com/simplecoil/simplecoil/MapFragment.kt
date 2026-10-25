@@ -16,10 +16,6 @@
 
 package com.simplecoil.simplecoil
 
-import android.animation.ValueAnimator
-import android.graphics.Rect
-import android.view.animation.DecelerateInterpolator
-import androidx.core.animation.doOnEnd
 import android.graphics.Bitmap
 import android.location.Location
 import android.os.Bundle
@@ -31,14 +27,10 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.util.Log
 import android.view.Choreographer
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.PopupWindow
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -71,6 +63,7 @@ import com.simplecoil.simplecoil.hardware.location.MapLocationManager
 import com.simplecoil.simplecoil.network.ClientEvent
 import com.simplecoil.simplecoil.network.imagery.FieldPackInfo
 import com.simplecoil.simplecoil.ui.map.DropOverlay
+import com.simplecoil.simplecoil.ui.map.ZoomMenu
 import com.simplecoil.simplecoil.ui.permissions.BlePermissions
 import com.simplecoil.simplecoil.ui.permissions.PermissionAsk
 import com.simplecoil.simplecoil.ui.permissions.PermissionKind
@@ -264,7 +257,12 @@ class MapFragment : Fragment() {
         dropOverlay = DropOverlay(requireContext(), b.mapDropsLayer)
         objectiveOverlay = ObjectiveOverlay(requireContext(), b.mapObjectivesLayer) { objectiveColor(it) }
         glyphOverlay = GlyphOverlay(requireContext(), b.mapGlyphsLayer)
-        b.mapZoomButton.setOnClickListener { showZoomMenu(it) }
+        b.mapZoomButton.setOnClickListener { button ->
+            ZoomMenu.show(button, AutoZoom.entries, autoZoom) { zoom ->
+                setAutoZoom(zoom)
+                preferences.saveMapAutoZoom(autoZoom.name)
+            }
+        }
         MapCredit.attach(b.mapCreditTv, mapTiler = false)
         compass = CompassSensor(requireContext()).also { if (!it.isAvailable) headingUp = false }
         b.mapCompassButton.isVisible = compass?.isAvailable == true
@@ -707,70 +705,8 @@ class MapFragment : Fragment() {
             getString(if (headingUp) R.string.map_compass_heading_up else R.string.map_compass_north_up)
     }
 
-    /** Each auto zoom's icon and name. */
-    private fun zoomLook(zoom: AutoZoom) = when (zoom) {
-        AutoZoom.OFF -> R.drawable.ic_map_zoom_off to R.string.map_zoom_off
-        AutoZoom.YOU -> R.drawable.ic_map_zoom_you to R.string.map_zoom_you
-        AutoZoom.PLAYERS -> R.drawable.ic_map_zoom_players to R.string.map_zoom_players
-        AutoZoom.FIELD -> R.drawable.ic_map_zoom_field to R.string.map_zoom_field
-    }
-
-    /**
-     * The map's views to pick from: the round button stretches down into a pill of icons, each
-     * as the button shows it (the automatic ones in orange), the one in use on a dark-orange dot.
-     */
-    private fun showZoomMenu(anchor: View) {
-        val context = requireContext()
-        val dp = resources.displayMetrics.density
-        val size = anchor.width
-        val full = size * AutoZoom.entries.size
-        val column = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_zoom_menu)
-        }
-        val popup = PopupWindow(column, size, full, true).apply {
-            elevation = anchor.elevation
-            animationStyle = 0
-        }
-        for (zoom in AutoZoom.entries) {
-            val (icon, name) = zoomLook(zoom)
-            column.addView(ImageButton(context).apply {
-                setImageResource(icon)
-                if (zoom != AutoZoom.OFF) setColorFilter(ACTIVE_COLOR.toColorInt())
-                if (zoom == autoZoom) setBackgroundResource(R.drawable.bg_zoom_selected)
-                else setBackgroundResource(android.R.color.transparent)
-                contentDescription = getString(name)
-                val pad = (8 * dp).toInt()
-                setPadding(pad, pad, pad, pad)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                setOnClickListener {
-                    setAutoZoom(zoom)
-                    preferences.saveMapAutoZoom(autoZoom.name)
-                    popup.dismiss()
-                }
-            }, LinearLayout.LayoutParams(size, size))
-        }
-        // Right over the button, then grown down out of it
-        val at = IntArray(2)
-        anchor.getLocationInWindow(at)
-        column.clipBounds = Rect(0, 0, size, size)
-        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, at[0], at[1])
-        ValueAnimator.ofInt(size, full).apply {
-            duration = ZOOM_MENU_MILLIS
-            interpolator = DecelerateInterpolator()
-            addUpdateListener { column.clipBounds = Rect(0, 0, size, it.animatedValue as Int) }
-            doOnEnd { column.clipBounds = null }
-            start()
-        }
-    }
-
     private fun updateZoomButton() {
-        val button = binding?.mapZoomButton ?: return
-        val (icon, description) = zoomLook(autoZoom)
-        button.setImageResource(icon)
-        button.contentDescription = getString(description)
-        // Orange while it is zooming by itself
-        if (autoZoom == AutoZoom.OFF) button.clearColorFilter() else button.setColorFilter(ACTIVE_COLOR.toColorInt())
+        binding?.mapZoomButton?.let { ZoomMenu.style(it, autoZoom) }
     }
 
     /** Works out what auto zoom fits now; the first time, also puts the camera somewhere useful. */
@@ -1268,10 +1204,6 @@ class MapFragment : Fragment() {
         const val MIN_ZOOM = 13.0
         const val MAX_ZOOM = 20.0
         const val BORDER_COLOR = "#FF5252"
-        const val ACTIVE_COLOR = "#FF6A1A"
-
-        /** How long the view button takes to grow into its picker. */
-        const val ZOOM_MENU_MILLIS = 180L
 
         const val TICK_MILLIS = 1_000L
 

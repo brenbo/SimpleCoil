@@ -130,6 +130,10 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
     fun mapAutoZoom(): String? = prefs.getString(MAP_AUTO_ZOOM, null)
     fun saveMapAutoZoom(mode: String) = prefs.edit { putString(MAP_AUTO_ZOOM, mode) }
 
+    /** The server map's auto zoom (AutoZoom's name: off, players or field); null until the host picks one. */
+    fun serverMapAutoZoom(): String? = prefs.getString(SERVER_MAP_AUTO_ZOOM, null)
+    fun saveServerMapAutoZoom(mode: String) = prefs.edit { putString(SERVER_MAP_AUTO_ZOOM, mode) }
+
     /** Where the dedicated server's field map was left: latitude, longitude and zoom; null if never. */
     fun fieldMapCamera(): DoubleArray? {
         val parts = prefs.getString(FIELD_MAP_CAMERA, null)?.split(',')?.mapNotNull { it.toDoubleOrNull() } ?: return null
@@ -160,6 +164,7 @@ class UserPreferencesRepository(private val prefs: SharedPreferences) : SessionP
         const val VOICE_CHAT = "VoiceChat"
         const val MAP_HEADING_UP = "MapHeadingUp"
         const val MAP_AUTO_ZOOM = "MapAutoZoom"
+        const val SERVER_MAP_AUTO_ZOOM = "ServerMapAutoZoom"
         const val FIELD_MAP_CAMERA = "FieldMapCamera"
         const val TEAM_MODE_FOR = "TeamModeFor_"
         const val EFFECTS_VOLUME = "EffectsVolume"
