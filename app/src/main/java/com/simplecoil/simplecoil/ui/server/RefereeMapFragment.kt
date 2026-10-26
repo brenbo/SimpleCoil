@@ -106,6 +106,9 @@ class RefereeMapFragment : Fragment() {
     private var placed = false
     private var framesRunning = false
 
+    /** A game is running on the server: the map shows its mode. */
+    @Volatile private var gameRunning = false
+
     /** The auto zoom in use (map design: Auto zoom): off, everyone on the map, or the whole field; no "you" here. */
     private var autoZoom = AutoZoom.FIELD
 
@@ -212,6 +215,7 @@ class RefereeMapFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 container.serverController.snapshot.collect {
                     val running = it?.phase == SessionPhase.RUNNING
+                    gameRunning = running
                     // A screen of its own goes back to the server's home when the game ends;
                     // a pane stays, its game controls only shown during a game
                     if (!running && !embedded) requireActivity().finish()
@@ -309,7 +313,10 @@ class RefereeMapFragment : Fragment() {
         }
     }
 
-    private fun show(view: LiveGame.RefereeView?) {
+    private fun show(game: LiveGame.RefereeView?) {
+        // The mode's things (zone, points, flags) only during a game, as the phones show them: the
+        // last game's stay in the server until the next starts
+        val view = game?.let { if (gameRunning) it else it.copy(mode = null) }
         val b = _binding ?: return
         val style = style
         if (view == null) {
