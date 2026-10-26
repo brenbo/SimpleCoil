@@ -154,6 +154,8 @@
     <string name="squad_full_hint">All 64 squads are made.</string>
     <string name="squad_editing_hint">Squad %1$d: tap + to add players, − to take them out.</string>
     <string name="squad_done">Done</string>
+    <string name="squad_solo_header">Alone · score %1$d</string>
+    <string name="shuffle_players_button">Shuffle players</string>
     <string name="squad_delete">Delete</string>
     <string name="squad_header">Squad %1$d · %2$s · score %3$d</string>
     <string name="squad_tap_to_edit">Tap to edit</string>

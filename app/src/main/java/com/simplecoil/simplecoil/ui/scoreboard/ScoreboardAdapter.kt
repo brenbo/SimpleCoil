@@ -181,6 +181,14 @@ class ScoreboardAdapter(
                 title.setText(R.string.scoreboard_players_header)
                 action.visibility = View.GONE
                 colorSquare?.visibility = View.GONE
+            } else if (row.solo) {
+                title.text = context.getString(R.string.squad_solo_header, row.score)
+                showColor(Color.TRANSPARENT)
+                action.visibility = View.GONE
+                mute?.visibility = View.GONE
+                itemView.setOnClickListener(null)
+                itemView.isClickable = false
+                return
             } else if (row.squad != null) {
                 title.text = context.getString(R.string.squad_header, row.squad,
                     context.resources.getQuantityString(R.plurals.network_player_count, row.playerCount, row.playerCount), row.score)

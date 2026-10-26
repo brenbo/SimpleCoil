@@ -149,6 +149,8 @@
     <string name="squad_full_hint">Alle 64 squads zijn gemaakt.</string>
     <string name="squad_editing_hint">Squad %1$d: tik op + om spelers toe te voegen, op − om ze eruit te halen.</string>
     <string name="squad_done">Klaar</string>
+    <string name="squad_solo_header">Alleen · score %1$d</string>
+    <string name="shuffle_players_button">Spelers husselen</string>
     <string name="squad_delete">Verwijderen</string>
     <string name="squad_header">Squad %1$d · %2$s · score %3$d</string>
     <string name="squad_tap_to_edit">Tik om te bewerken</string>

@@ -176,4 +176,19 @@ class ScoreboardRowsTest {
         assertEquals(listOf(3, 4, 9), rows.playerIds())
         assertTrue(ScoreboardRows.build(players(player(1, "A", 1)), context()).none { it is ScoreboardRow.RankBar })
     }
+
+    @Test
+    fun squads_aPlayerAlone_ranksAsASquadOfOne() {
+        val layout = com.simplecoil.simplecoil.domain.team.TeamLayout.defaultFor(TeamMode.SQUADS)
+            .withSquads(mapOf(1 to setOf(1, 2), 2 to setOf(4, 5)))
+        val rows = ScoreboardRows.build(
+            players(player(1, "A", 6), player(2, "B", 4), player(3, "CaptainAmerica", 7), player(4, "Wolverine", 2), player(5, "Deadpool", 1)),
+            context(mode = TeamMode.SQUADS).copy(layout = layout))
+        // Squad 1 (10), Captain America alone (7), squad 2 (3)
+        val headers = rows.filterIsInstance<ScoreboardRow.TeamHeader>()
+        assertEquals(listOf(1, null, 2), headers.map { it.squad })
+        assertTrue(headers[1].solo)
+        assertEquals(7, headers[1].score)
+        assertEquals(listOf(1, 2, 3, 4, 5), rows.playerIds())
+    }
 }

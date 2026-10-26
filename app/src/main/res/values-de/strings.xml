@@ -149,6 +149,8 @@
     <string name="squad_full_hint">Alle 64 Squads sind erstellt.</string>
     <string name="squad_editing_hint">Squad %1$d: Tippe auf +, um Spieler hinzuzufügen, auf −, um sie herauszunehmen.</string>
     <string name="squad_done">Fertig</string>
+    <string name="squad_solo_header">Allein · Punkte %1$d</string>
+    <string name="shuffle_players_button">Spieler mischen</string>
     <string name="squad_delete">Löschen</string>
     <string name="squad_header">Squad %1$d · %2$s · Punkte %3$d</string>
     <string name="squad_tap_to_edit">Zum Bearbeiten tippen</string>

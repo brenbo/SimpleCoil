@@ -41,6 +41,8 @@ sealed interface ScoreboardRow {
         val squad: Int? = null,
         /** This squad is the one being edited. */
         val editing: Boolean = false,
+        /** Squad mode, ranked: a player alone, as a squad of one ([team] is their id). */
+        val solo: Boolean = false,
     ) : ScoreboardRow
 
     data class Player(
@@ -198,19 +200,38 @@ object ScoreboardRows {
         val order = Comparator<Pair<Int, List<PlayerDisplayData>>> { (n1, m1), (n2, m2) ->
             if (total(m1) != total(m2)) return@Comparator total(m2).compareTo(total(m1))
             if (livesFlag && lives(m1) != lives(m2)) return@Comparator lives(m2).compareTo(lives(m1))
-            n1.compareTo(n2)
+            // Ties: squads (positive numbers) before players alone (their negated ids)
+            if ((n1 > 0) != (n2 > 0)) return@Comparator if (n1 > 0) -1 else 1
+            kotlin.math.abs(n1).compareTo(kotlin.math.abs(n2))
         }
-        // While one is edited, they stay in number order, so its header doesn't jump about
-        for ((n, members) in if (editing != null) squads else squads.sortedWith(order)) {
+        fun addSquad(n: Int, members: List<PlayerDisplayData>) {
             val team = TeamLayout.SQUAD_TEAM_BASE + n
             rows += ScoreboardRow.TeamHeader(team, members.size, 0, total(members), context.squadsEditable,
                 allMuted(members, context), color = layout.colorOf(team), squad = n, editing = n == editing)
             for (p in members.sortedWith(playerOrder(context))) rows += playerRow(p, context)
         }
         val alone = all.filter { layout.squadOf(it.playerID.toInt()) == null }
-        if (alone.isNotEmpty() || numbers.isEmpty()) {
-            rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, false, allMuted(alone, context))
-            for (p in alone.sortedWith(playerOrder(context))) rows += playerRow(p, context)
+        if (editing != null || numbers.isEmpty()) {
+            // Making squads (or none yet): squads in number order, so the edited one's header
+            // doesn't jump about, then everyone else together, where the + buttons are
+            for ((n, members) in squads) addSquad(n, members)
+            if (alone.isNotEmpty() || numbers.isEmpty()) {
+                rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, false, allMuted(alone, context))
+                for (p in alone.sortedWith(playerOrder(context))) rows += playerRow(p, context)
+            }
+            return
+        }
+        // Ranked: a player alone is a squad of one, in among the squads by score
+        val entries = squads.map { it.first to it.second } + alone.map { -it.playerID.toInt() to listOf(it) }
+        for ((n, members) in entries.sortedWith(order)) {
+            if (n > 0) {
+                addSquad(n, members)
+            } else {
+                // Their own bar, like a squad's, so they don't look like the squad above's
+                val p = members.single()
+                rows += ScoreboardRow.TeamHeader(p.playerID.toInt(), 1, 0, p.points, false, null, color = TeamColors.NONE, solo = true)
+                rows += playerRow(p, context)
+            }
         }
     }
 

@@ -441,12 +441,11 @@
                                     <Button
                                         android:id="@+id/sort_teams_button"
                                         style="@style/Widget.SimpleCoil.Button.Outlined"
-                                        android:layout_width="wrap_content"
+                                        android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
-                                        android:layout_gravity="end"
                                         android:layout_marginTop="6dp"
                                         android:maxLines="1"
-                                        android:text="@string/shuffle_teams_button"
+                                        android:text="@string/shuffle_players_button"
                                         app:icon="@drawable/ic_sc_shuffle"
                                         app:iconTint="@color/sc_text" />
                                 </LinearLayout>

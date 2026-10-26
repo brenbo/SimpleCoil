@@ -186,6 +186,7 @@ class DedicatedServerRenderer(
         teamModePicker.show(teamMode, enabled = !running)
         // Shuffling renumbers everyone, which would scatter the squads
         sortTeamsButton.isEnabled = !running && !teamMode.isSquads
+        sortTeamsButton.alpha = if (sortTeamsButton.isEnabled) 1f else 0.38f
         gameLimitButton.isEnabled = !running
         startingTimerButton.isEnabled = !running
         // The field can't change under a running game

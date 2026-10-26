@@ -92,7 +92,7 @@ class TeamModePicker @JvmOverloads constructor(context: Context, attrs: Attribut
         // The next one it can be played in, that way round; none: a little nudge, nothing else
         val target = (1 until count).map { modes[Math.floorMod(start + it * direction, count)] }.firstOrNull(isAllowed)
         if (target == null) {
-            shown.animate().translationX(direction * 12 * density).setDuration(90).withEndAction {
+            shown.animate().translationX(-direction * 12 * density).setDuration(90).withEndAction {
                 shown.animate().translationX(0f).setDuration(160).start()
             }.start()
             return
@@ -116,16 +116,16 @@ class TeamModePicker @JvmOverloads constructor(context: Context, attrs: Attribut
         nextStop()
     }
 
-    /** The shown name swipes out to the [direction] side, [mode]'s in from the other. */
+    /** Like a carousel: the right arrow moves the names left, the shown one out and [mode]'s in from that side. */
     private fun swipeTo(mode: TeamMode, direction: Int, then: () -> Unit = {}) {
         val out = shown
         val incoming = label().also { style(it, mode) }
         val distance = stage.width.coerceAtLeast((120 * density).toInt()).toFloat()
         stage.addView(incoming, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
         shown = incoming
-        incoming.translationX = -direction * distance
+        incoming.translationX = direction * distance
         incoming.alpha = 0f
-        out.animate().translationX(direction * distance).alpha(0f).setDuration(SWIPE_MILLIS).setInterpolator(DecelerateInterpolator())
+        out.animate().translationX(-direction * distance).alpha(0f).setDuration(SWIPE_MILLIS).setInterpolator(DecelerateInterpolator())
             .withEndAction { stage.removeView(out) }.start()
         incoming.animate().translationX(0f).alpha(1f).setDuration(SWIPE_MILLIS).setInterpolator(DecelerateInterpolator())
             .withEndAction(then).start()
