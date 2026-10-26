@@ -60,6 +60,7 @@ import com.simplecoil.simplecoil.databinding.ServerIpDialogBinding
 import com.simplecoil.simplecoil.ui.dialogs.AppDialogFragment
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreMatrixState
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardAdapter
+import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRank
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRows
 
 /*
@@ -240,6 +241,10 @@ class ScoreboardDialog : GameDialogFragment() {
             override fun onKickClicked(playerId: Byte) = vm.onKickPlayer(playerId)
             override fun onMuteClicked(playerId: Byte) = vm.onMuteClicked(playerId)
             override fun onMuteTeamClicked(team: Int) = vm.onMuteTeamClicked(team)
+            override fun onRankChanged(rank: ScoreboardRank) {
+                vm.scoreboardRank = rank
+                lastPlayers?.let(::setData)
+            }
         })
         this.adapter = adapter
         binding.playerList.layoutManager = LinearLayoutManager(activity)

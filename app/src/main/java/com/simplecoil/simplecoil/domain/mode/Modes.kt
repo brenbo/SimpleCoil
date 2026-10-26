@@ -57,15 +57,17 @@ enum class GameMode(val wireValue: String, val hasObjectives: Boolean, val needs
     val onServer: Boolean get() = this != CLASSIC
 
     /**
-     * The team modes it can be played with (the server greys out the rest): Infection and Battle
-     * Royale are everyone for themselves; Capture the Flag and Search & Destroy are one team
-     * against another; Domination and Hardpoint are teams holding points (two, three or four).
-     * Squads go wherever free for all does.
+     * The team modes it can be played with (the server greys out the rest): Infection is everyone for
+     * themselves; Battle Royale too, or squads; Search & Destroy is one team against another;
+     * Capture the Flag, Domination and Hardpoint are two, three or four teams.
      */
     val teamModes: Set<TeamMode>
         get() = when (this) {
-            INFECTION, BATTLE_ROYALE -> setOf(TeamMode.FREE_FOR_ALL, TeamMode.SQUADS)
-            CAPTURE_THE_FLAG, SEARCH_AND_DESTROY -> setOf(TeamMode.TWO_TEAMS)
+            // Infection is survivors against the infected, whoever they are: squads would keep squadmates from tagging each other
+            INFECTION -> setOf(TeamMode.FREE_FOR_ALL)
+            BATTLE_ROYALE -> setOf(TeamMode.FREE_FOR_ALL, TeamMode.SQUADS)
+            CAPTURE_THE_FLAG -> setOf(TeamMode.TWO_TEAMS, TeamMode.THREE_TEAMS, TeamMode.FOUR_TEAMS)
+            SEARCH_AND_DESTROY -> setOf(TeamMode.TWO_TEAMS)
             DOMINATION, HARDPOINT -> setOf(TeamMode.TWO_TEAMS, TeamMode.THREE_TEAMS, TeamMode.FOUR_TEAMS)
             else -> TeamMode.entries.toSet()
         }

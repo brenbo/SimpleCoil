@@ -21,6 +21,7 @@ import com.simplecoil.simplecoil.data.model.PlayerSettings
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.network.ClientMessage
 import com.simplecoil.simplecoil.network.EventBus
@@ -1019,5 +1020,38 @@ class TcpServerLoopbackTest {
         assertFalse(server.changeLimits(GameSettingsRepository.GAME_LIMIT_TIME, 12, 0, 0))
         assertEquals(12, server.snapshot.value.settings.timeLimit)
         awaitTrue { a.lastJson(WireKeys.PLAYERS)?.optJSONObject(WireKeys.LIMITS)?.optInt(WireKeys.TIMELIMIT) == 12 }
+    }
+
+    @Test
+    fun squads_gpsCarriesTheSquad_soOnlySquadmatesSeeEachOtherWithTeammatesGps() {
+        settings.teamMode = TeamMode.SQUADS
+        settings.gpsMode = GameSettingsRepository.GPS_TEAMMATE
+        settings.isUseGPS = true
+        val (a, idA) = join("Alpha", "AA:01")
+        val (b, idB) = join("Bravo", "AA:02")
+        val (c, idC) = join("Charlie", "AA:03")
+        server.setSquads(mapOf(1 to setOf(idA, idB)))
+        for ((client, at) in listOf(a to 1.0, b to 2.0, c to 3.0)) {
+            client.json(org.json.JSONObject().put(WireKeys.GPSLATITUDE, at).put(WireKeys.GPSLONGITUDE, at))
+        }
+        // Charlie's phone hears the squads and everyone's team
+        val squads = c.awaitJson(WireKeys.SQUADS).getJSONObject(WireKeys.SQUADS)
+        assertEquals(setOf(idA, idB), (0 until squads.getJSONArray("1").length()).map { squads.getJSONArray("1").getInt(it) }.toSet())
+        val teams = HashMap<Int, Int>()
+        awaitTrue(5000, "everyone's GPS team") {
+            c.lastJson(WireKeys.GPSUPDATE)?.getJSONArray(WireKeys.GPSUPDATE)?.let { update ->
+                for (i in 0 until update.length()) update.getJSONObject(i).let { teams[it.getInt(WireKeys.PLAYERID)] = it.getInt(WireKeys.TEAM) }
+            }
+            teams.keys.containsAll(listOf(idA, idB, idC))
+        }
+        assertEquals(TeamLayout.SQUAD_TEAM_BASE + 1, teams[idA])
+        assertEquals(TeamLayout.SQUAD_TEAM_BASE + 1, teams[idB])
+        assertEquals(idC, teams[idC])
+        // What the phones' maps show with teammates-only GPS: Alpha sees Bravo, Charlie (alone) sees nobody
+        val layout = TeamLayout.defaultFor(TeamMode.SQUADS).withSquads(mapOf(1 to setOf(idA, idB)))
+        fun gps(team: Int) = com.simplecoil.simplecoil.data.model.GpsData().also { it.team = team }
+        assertTrue(com.simplecoil.simplecoil.hardware.location.MapLocationManager.isVisible(layout, GameSettingsRepository.GPS_TEAMMATE, idA.toByte(), gps(teams[idB]!!)))
+        assertFalse(com.simplecoil.simplecoil.hardware.location.MapLocationManager.isVisible(layout, GameSettingsRepository.GPS_TEAMMATE, idA.toByte(), gps(teams[idC]!!)))
+        assertFalse(com.simplecoil.simplecoil.hardware.location.MapLocationManager.isVisible(layout, GameSettingsRepository.GPS_TEAMMATE, idC.toByte(), gps(teams[idA]!!)))
     }
 }

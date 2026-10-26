@@ -137,11 +137,19 @@
     <string name="team_mode_3teams">3 Squadre</string>
     <string name="team_mode_4teams">4 Squadre</string>
     <string name="team_mode_squads">Gruppi</string>
+    <string name="cd_team_mode_previous">Modalità squadre precedente</string>
+    <string name="cd_team_mode_next">Modalità squadre successiva</string>
+    <string name="cd_team_mode_unavailable">%1$s, non disponibile in questa modalità</string>
+    <string name="rank_by_label">Ordina per</string>
+    <string name="rank_by_team">Squadra vincente</string>
+    <string name="rank_by_squad">Gruppo vincente</string>
+    <string name="rank_by_player">Miglior giocatore</string>
     <string name="squad_create">Crea gruppo</string>
     <string name="squad_create_hint">I gruppi giocano come squadre; chi non è in un gruppo gioca da solo.</string>
     <string name="squad_full_hint">Tutti i 64 gruppi sono creati.</string>
     <string name="squad_editing_hint">Gruppo %1$d: tocca + per aggiungere giocatori, − per toglierli.</string>
     <string name="squad_done">Fatto</string>
+    <string name="squad_delete">Elimina</string>
     <string name="squad_header">Gruppo %1$d · %2$s · punti %3$d</string>
     <string name="squad_tap_to_edit">Tocca per modificare</string>
     <string name="squad_editing">In modifica</string>
@@ -216,6 +224,7 @@
     <string name="gps_mode_label">GPS: Mostra posizione giocatori a…</string>
     <string name="gps_mode_disabled">Off</string>
     <string name="gps_mode_teammate">Compagni</string>
+    <string name="gps_mode_squad">Gruppo</string>
     <string name="gps_mode_all">Tutti</string>
     <string name="gps_mode_you">Tu</string>
     <string name="scores_chip_action">apri segnapunti</string>

@@ -128,6 +128,7 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
             SlideArt.INFECTION -> infection(canvas, cx, cy, s)
             SlideArt.TEAMS, SlideArt.FREE_FOR_ALL -> players(canvas, cx, cy, s, art == SlideArt.TEAMS)
             SlideArt.FOUR_TEAMS -> fourTeams(canvas, cx, cy, s)
+            SlideArt.SQUADS -> squads(canvas, cx, cy, s)
             SlideArt.RESPAWN -> respawn(canvas, cx, cy, s)
             SlideArt.NO_RESPAWN -> noRespawn(canvas, cx, cy, s)
             SlideArt.BORDER -> border(canvas, cx, cy, s)
@@ -485,6 +486,26 @@ class BriefingArtView @JvmOverloads constructor(context: Context, attrs: Attribu
                 val wobble = sin((t * 2 * PI + team * 3 + i).toFloat()) * s * 0.01f
                 dot(canvas, cx + (gx + dx) * s, cy + (gy + dy) * s + wobble, s * 0.045f, TeamColors.colorOf(team + 1))
             }
+        }
+    }
+
+    /** Squads: three small groups in squad colours, and two grey players alone, bobbing. */
+    private fun squads(canvas: Canvas, cx: Float, cy: Float, s: Float) {
+        val groups = listOf(
+            Triple(-0.25f, -0.15f, 2), Triple(0.22f, -0.2f, 3), Triple(0.0f, 0.18f, 2),
+        )
+        groups.forEachIndexed { squad, (gx, gy, size) ->
+            val ring = s * 0.07f
+            for (i in 0 until size) {
+                val angle = i * 2 * PI / size + squad
+                val wobble = sin((t * 2 * PI + squad * 2 + i).toFloat()) * s * 0.01f
+                dot(canvas, cx + gx * s + (cos(angle) * ring).toFloat(), cy + gy * s + (sin(angle) * ring).toFloat() + wobble,
+                    s * 0.04f, TeamColors.squadColor(squad + 1))
+            }
+        }
+        for ((i, spot) in listOf(-0.32f to 0.22f, 0.32f to 0.15f).withIndex()) {
+            val wobble = sin((t * 2 * PI + 7 + i).toFloat()) * s * 0.01f
+            dot(canvas, cx + spot.first * s, cy + spot.second * s + wobble, s * 0.04f, DIM)
         }
     }
 

@@ -141,12 +141,20 @@
     <string name="team_mode_3teams">3 Teams</string>
     <string name="team_mode_4teams">4 Teams</string>
     <string name="team_mode_squads">Squads</string>
+    <string name="cd_team_mode_previous">Previous team mode</string>
+    <string name="cd_team_mode_next">Next team mode</string>
+    <string name="cd_team_mode_unavailable">%1$s, not available in this game mode</string>
     <!-- Squad mode on the server's player list -->
+    <string name="rank_by_label">Rank by</string>
+    <string name="rank_by_team">Winning team</string>
+    <string name="rank_by_squad">Winning squad</string>
+    <string name="rank_by_player">Best player</string>
     <string name="squad_create">Create squad</string>
     <string name="squad_create_hint">Squads play as teams; anyone not in one plays alone.</string>
     <string name="squad_full_hint">All 64 squads are made.</string>
     <string name="squad_editing_hint">Squad %1$d: tap + to add players, − to take them out.</string>
     <string name="squad_done">Done</string>
+    <string name="squad_delete">Delete</string>
     <string name="squad_header">Squad %1$d · %2$s · score %3$d</string>
     <string name="squad_tap_to_edit">Tap to edit</string>
     <string name="squad_editing">Editing</string>
@@ -226,6 +234,7 @@
     <string name="gps_mode_label">GPS: Show players location to…</string>
     <string name="gps_mode_disabled">Off</string>
     <string name="gps_mode_teammate">Teammates</string>
+    <string name="gps_mode_squad">Squad</string>
     <string name="gps_mode_all">All</string>
     <!-- Teammates only, in free for all: each player sees just themself -->
     <string name="gps_mode_you">You</string>

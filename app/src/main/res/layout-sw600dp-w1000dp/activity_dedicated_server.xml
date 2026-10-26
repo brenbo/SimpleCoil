@@ -444,53 +444,11 @@
                                     android:layout_height="wrap_content"
                                     android:orientation="vertical">
 
-                                    <com.google.android.material.button.MaterialButtonToggleGroup
-                                        android:id="@+id/team_mode_group"
+                                    <!-- The team mode, between arrows that swipe to the next one the game mode allows -->
+                                    <com.simplecoil.simplecoil.ui.server.TeamModePicker
+                                        android:id="@+id/team_mode_picker"
                                         android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        app:selectionRequired="true"
-                                        app:singleSelection="true">
-
-                                        <com.google.android.material.button.MaterialButton
-                                            android:id="@+id/team_mode_2teams_button"
-                                            style="@style/ServerSegment"
-                                            android:layout_width="0dp"
-                                            android:layout_height="wrap_content"
-                                            android:layout_weight="1"
-                                            android:text="@string/team_mode_2teams" />
-
-                                        <com.google.android.material.button.MaterialButton
-                                            android:id="@+id/team_mode_3teams_button"
-                                            style="@style/ServerSegment"
-                                            android:layout_width="0dp"
-                                            android:layout_height="wrap_content"
-                                            android:layout_weight="1"
-                                            android:text="@string/team_mode_3teams" />
-
-                                        <com.google.android.material.button.MaterialButton
-                                            android:id="@+id/team_mode_4teams_button"
-                                            style="@style/ServerSegment"
-                                            android:layout_width="0dp"
-                                            android:layout_height="wrap_content"
-                                            android:layout_weight="1"
-                                            android:text="@string/team_mode_4teams" />
-
-                                        <com.google.android.material.button.MaterialButton
-                                            android:id="@+id/team_mode_ffa_button"
-                                            style="@style/ServerSegment"
-                                            android:layout_width="0dp"
-                                            android:layout_height="wrap_content"
-                                            android:layout_weight="1"
-                                            android:text="@string/team_mode_ffa_short" />
-
-                                        <com.google.android.material.button.MaterialButton
-                                            android:id="@+id/team_mode_squads_button"
-                                            style="@style/ServerSegment"
-                                            android:layout_width="0dp"
-                                            android:layout_height="wrap_content"
-                                            android:layout_weight="1"
-                                            android:text="@string/team_mode_squads" />
-                                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                                        android:layout_height="wrap_content" />
 
                                     <Button
                                         android:id="@+id/sort_teams_button"

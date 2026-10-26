@@ -41,6 +41,7 @@ import com.simplecoil.simplecoil.network.server.SessionPhase
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsDialog
 import com.simplecoil.simplecoil.ui.playersettings.PlayerSettingsValues
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardContext
+import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRank
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRow
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRows
 import kotlinx.coroutines.CoroutineStart
@@ -137,7 +138,19 @@ class DedicatedServerViewModel(
     /** Squad mode: the squad being edited (it may have nobody in it yet), or null. */
     private val editingSquad = MutableStateFlow<Int?>(null)
 
-    val state: StateFlow<ServerUiState?> = combine(controller.snapshot, editingSquad) { snapshot, editing -> snapshot?.let { uiState(it, editing) } }
+    /** The player list's rank-by dropdown. */
+    private val rank = MutableStateFlow(ScoreboardRank.TEAMS)
+
+    /** A wide screen (a Chromebook, a tablet): its player list offers the rank-by dropdown during a game. */
+    private val wide = MutableStateFlow(false)
+
+    fun setWideScreen(isWide: Boolean) {
+        wide.value = isWide
+    }
+
+    val state: StateFlow<ServerUiState?> = combine(controller.snapshot, editingSquad, rank, wide) { snapshot, editing, by, isWide ->
+        snapshot?.let { uiState(it, editing, by, isWide) }
+    }
         .stateIn(viewModelScope, SharingStarted.Eagerly, controller.snapshot.value?.let(::uiState))
 
     private val snapshot: ServerSnapshot? get() = controller.snapshot.value
@@ -216,6 +229,17 @@ class DedicatedServerViewModel(
 
     fun onSquadHeaderClicked(squad: Int) {
         editingSquad.value = if (editingSquad.value == squad) null else squad
+    }
+
+    fun onRankChanged(by: ScoreboardRank) {
+        rank.value = by
+    }
+
+    /** Breaks up [squad]: its players play alone again. */
+    fun onDeleteSquad(squad: Int) {
+        editingSquad.value = null
+        val squads = state.value?.squads ?: return
+        if (squad in squads) toastIfReset(controller.setSquads(squads - squad))
     }
 
     fun onSquadDone() {
@@ -377,7 +401,7 @@ class DedicatedServerViewModel(
         const val MAX_START_TIME_SECONDS = 1000L
 
         /** The screen's state for [snapshot]. */
-        fun uiState(snapshot: ServerSnapshot, editingSquad: Int? = null): ServerUiState {
+        fun uiState(snapshot: ServerSnapshot, editingSquad: Int? = null, rank: ScoreboardRank = ScoreboardRank.TEAMS, wide: Boolean = false): ServerUiState {
             val settings = snapshot.settings
             val players = arrayOfNulls<PlayerDisplayData>(GameSettingsRepository.MAX_PLAYER_ID + 2)
             for (row in snapshot.players) {
@@ -398,7 +422,9 @@ class DedicatedServerViewModel(
             // Squads are made in the lobby
             val squadsEditable = settings.teamLayout.mode.isSquads && snapshot.phase == SessionPhase.LOBBY
             val context = ScoreboardContext(settings.teamLayout, settings.gameLimit, settings.livesLimit,
-                isClient = false, selfId = 0, isAdmin = false, squadsEditable = squadsEditable, editingSquad = editingSquad)
+                isClient = false, selfId = 0, isAdmin = false, squadsEditable = squadsEditable, editingSquad = editingSquad,
+                // Ranking is for a game: on a wide screen during and after one; the lobby is the teams again (the choice kept)
+                rankOffered = wide && snapshot.phase != SessionPhase.LOBBY, rank = if (wide && snapshot.phase != SessionPhase.LOBBY) rank else ScoreboardRank.TEAMS)
             return ServerUiState(
                 phase = snapshot.phase,
                 serverIp = snapshot.serverIp,

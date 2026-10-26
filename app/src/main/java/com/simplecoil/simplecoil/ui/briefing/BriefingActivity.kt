@@ -210,6 +210,7 @@ class BriefingActivity : AppCompatActivity() {
             return BriefingInputs(
                 field = field?.takeUnless { it.mode == GameMode.CLASSIC && !gpsOn },
                 freeForAll = settings?.teamLayout?.mode?.isFreeForAll ?: true,
+                squads = settings?.teamLayout?.takeIf { it.mode.isSquads }?.squads?.size,
                 teamCount = settings?.teamLayout?.mode?.teamCount ?: 0,
                 respawnSeconds = player.spawnTimeSeconds,
                 manualRespawn = player.manualRespawn,
@@ -229,6 +230,7 @@ class BriefingActivity : AppCompatActivity() {
             return BriefingInputs(
                 field = field?.takeUnless { it.mode == GameMode.CLASSIC && !settings.isUseGPS },
                 freeForAll = settings.teamLayout.mode.isFreeForAll,
+                squads = settings.teamLayout.takeIf { it.mode.isSquads }?.squads?.size,
                 teamCount = settings.teamLayout.mode.teamCount,
                 respawnSeconds = settings.respawnTime,
                 manualRespawn = settings.isManualRespawn,

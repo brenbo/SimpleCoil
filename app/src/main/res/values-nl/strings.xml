@@ -137,11 +137,19 @@
     <string name="team_mode_3teams">3 Teams</string>
     <string name="team_mode_4teams">4 Teams</string>
     <string name="team_mode_squads">Squads</string>
+    <string name="cd_team_mode_previous">Vorige teammodus</string>
+    <string name="cd_team_mode_next">Volgende teammodus</string>
+    <string name="cd_team_mode_unavailable">%1$s, niet beschikbaar in deze spelmodus</string>
+    <string name="rank_by_label">Rangschikken op</string>
+    <string name="rank_by_team">Winnend team</string>
+    <string name="rank_by_squad">Winnende squad</string>
+    <string name="rank_by_player">Beste speler</string>
     <string name="squad_create">Squad maken</string>
     <string name="squad_create_hint">Squads spelen als teams; wie in geen squad zit, speelt alleen.</string>
     <string name="squad_full_hint">Alle 64 squads zijn gemaakt.</string>
     <string name="squad_editing_hint">Squad %1$d: tik op + om spelers toe te voegen, op − om ze eruit te halen.</string>
     <string name="squad_done">Klaar</string>
+    <string name="squad_delete">Verwijderen</string>
     <string name="squad_header">Squad %1$d · %2$s · score %3$d</string>
     <string name="squad_tap_to_edit">Tik om te bewerken</string>
     <string name="squad_editing">Bewerken</string>
@@ -216,6 +224,7 @@
     <string name="gps_mode_label">GPS: Spelerslocatie tonen aan…</string>
     <string name="gps_mode_disabled">Uit</string>
     <string name="gps_mode_teammate">Teamgenoten</string>
+    <string name="gps_mode_squad">Squad</string>
     <string name="gps_mode_all">Allen</string>
     <string name="gps_mode_you">Jij</string>
     <string name="scores_chip_action">scorebord openen</string>

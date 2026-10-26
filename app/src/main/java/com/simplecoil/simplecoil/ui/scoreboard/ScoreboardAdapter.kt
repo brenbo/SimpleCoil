@@ -18,12 +18,15 @@ package com.simplecoil.simplecoil.ui.scoreboard
 
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.widget.TextViewCompat
+import android.view.ContextThemeWrapper
+import android.widget.PopupMenu
 import com.google.android.material.button.MaterialButton
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -56,8 +59,14 @@ class ScoreboardAdapter(
         /** Voice chat: mute or unmute your [team] on this phone. */
         fun onMuteTeamClicked(team: Int) {}
 
+        /** The rank-by dropdown picked [rank]. */
+        fun onRankChanged(rank: ScoreboardRank) {}
+
         /** Squad mode: Create squad. */
         fun onCreateSquad() {}
+
+        /** Squad mode: break up [squad], its players back to playing alone. */
+        fun onDeleteSquad(squad: Int) {}
 
         /** Squad mode: done editing the squad. */
         fun onSquadDone() {}
@@ -85,6 +94,7 @@ class ScoreboardAdapter(
     override fun getItemViewType(position: Int) = when (getItem(position)) {
         is ScoreboardRow.TeamHeader -> TYPE_TEAM_HEADER
         is ScoreboardRow.SquadBar -> TYPE_SQUAD_BAR
+        is ScoreboardRow.RankBar -> TYPE_RANK_BAR
         else -> TYPE_PLAYER
     }
 
@@ -94,6 +104,8 @@ class ScoreboardAdapter(
             TeamHeaderHolder(inflater.inflate(R.layout.player_display_team_header, parent, false))
         } else if (viewType == TYPE_SQUAD_BAR) {
             SquadBarHolder(inflater.inflate(R.layout.scoreboard_squad_bar, parent, false))
+        } else if (viewType == TYPE_RANK_BAR) {
+            RankBarHolder(inflater.inflate(R.layout.scoreboard_rank_bar, parent, false))
         } else {
             val layout = if (isClient) R.layout.player_display_data_client else R.layout.player_display_data
             PlayerHolder(inflater.inflate(layout, parent, false))
@@ -106,12 +118,35 @@ class ScoreboardAdapter(
             is ScoreboardRow.ColumnHeader -> (holder as PlayerHolder).bindColumnHeader(row)
             is ScoreboardRow.Player -> (holder as PlayerHolder).bind(row)
             is ScoreboardRow.SquadBar -> (holder as SquadBarHolder).bind(row)
+            is ScoreboardRow.RankBar -> (holder as RankBarHolder).bind(row)
+        }
+    }
+
+    private inner class RankBarHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val choice: TextView = view.findViewById(R.id.rank_by_choice_tv)
+
+        fun bind(row: ScoreboardRow.RankBar) {
+            val context = itemView.context
+            val teams = if (row.squads) R.string.rank_by_squad else R.string.rank_by_team
+            choice.setText(if (row.rank == ScoreboardRank.TEAMS) teams else R.string.rank_by_player)
+            choice.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_dropdown, 0)
+            choice.setOnClickListener { anchor ->
+                val menu = PopupMenu(ContextThemeWrapper(context, R.style.AppTheme_PopupOverlay), anchor)
+                menu.menu.add(0, 0, 0, teams)
+                menu.menu.add(0, 1, 1, R.string.rank_by_player)
+                menu.setOnMenuItemClickListener { item ->
+                    listener.onRankChanged(if (item.itemId == 0) ScoreboardRank.TEAMS else ScoreboardRank.PLAYERS)
+                    true
+                }
+                menu.show()
+            }
         }
     }
 
     private inner class SquadBarHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val hint: TextView = view.findViewById(R.id.squad_bar_hint_tv)
         private val button: MaterialButton = view.findViewById(R.id.squad_bar_button)
+        private val delete: MaterialButton = view.findViewById(R.id.squad_bar_delete_button)
 
         fun bind(row: ScoreboardRow.SquadBar) {
             val context = itemView.context
@@ -121,12 +156,15 @@ class ScoreboardAdapter(
                 button.icon = null
                 button.isEnabled = true
                 button.setOnClickListener { listener.onSquadDone() }
+                delete.visibility = View.VISIBLE
+                delete.setOnClickListener { listener.onDeleteSquad(row.editing) }
             } else {
                 hint.setText(if (row.full) R.string.squad_full_hint else R.string.squad_create_hint)
                 button.setText(R.string.squad_create)
                 button.setIconResource(R.drawable.ic_squad_add)
                 button.isEnabled = !row.full
                 button.setOnClickListener { listener.onCreateSquad() }
+                delete.visibility = View.GONE
             }
         }
     }
@@ -215,6 +253,14 @@ class ScoreboardAdapter(
             TextViewCompat.setTextAppearance(name, R.style.TextAppearance_SimpleCoil_Body)
             name.setTextColor(if (row.isSelf) ScoreboardColors.SELF_NAME else ScoreboardColors.NAME)
             name.text = row.name
+            // Ranked by player: their team's or squad's colour beside the name
+            name.setCompoundDrawablesRelative(if (row.color == Color.TRANSPARENT) null else GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(row.color)
+                val size = (10 * context.resources.displayMetrics.density).toInt()
+                setBounds(0, 0, size, size)
+            }, null, null, null)
+            name.compoundDrawablePadding = (8 * context.resources.displayMetrics.density).toInt()
             points.text = context.getString(R.string.number, row.points)
             stat.text = context.getString(R.string.number, row.livesOrEliminations)
             when (row.blasterType) {
@@ -270,6 +316,7 @@ class ScoreboardAdapter(
             is ScoreboardRow.ColumnHeader -> newItem is ScoreboardRow.ColumnHeader
             is ScoreboardRow.TeamHeader -> newItem is ScoreboardRow.TeamHeader && newItem.team == oldItem.team
             is ScoreboardRow.SquadBar -> newItem is ScoreboardRow.SquadBar
+            is ScoreboardRow.RankBar -> newItem is ScoreboardRow.RankBar
             is ScoreboardRow.Player -> newItem is ScoreboardRow.Player && newItem.playerId == oldItem.playerId
         }
 
@@ -280,5 +327,6 @@ class ScoreboardAdapter(
         const val TYPE_TEAM_HEADER = 0
         const val TYPE_PLAYER = 1
         const val TYPE_SQUAD_BAR = 2
+        const val TYPE_RANK_BAR = 3
     }
 }

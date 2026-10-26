@@ -60,6 +60,8 @@ sealed interface ScoreboardRow {
         val muted: Boolean? = null,
         /** Editing a squad: true to show its add button, false its remove button, null neither. */
         val squadAdd: Boolean? = null,
+        /** Ranked by player: the colour of their team or squad beside their name ([TeamColors.NONE]: none). */
+        val color: Int = TeamColors.NONE,
     ) : ScoreboardRow
 
     /**
@@ -67,7 +69,13 @@ sealed interface ScoreboardRow {
      * how to and Done. [full]: all 64 squads are made.
      */
     data class SquadBar(val editing: Int?, val full: Boolean) : ScoreboardRow
+
+    /** How the board is ranked (teams or squads only): by [rank], tapped to choose. [squads]: says squad, not team. */
+    data class RankBar(val rank: ScoreboardRank, val squads: Boolean) : ScoreboardRow
 }
+
+/** How the scoreboard ranks: the winning team (or squad) first, or the best player first. */
+enum class ScoreboardRank { TEAMS, PLAYERS }
 
 /** What the scoreboard needs besides the players. */
 data class ScoreboardContext(
@@ -88,6 +96,10 @@ data class ScoreboardContext(
     val squadsEditable: Boolean = false,
     /** The squad being edited (it may have nobody in it yet), or null. */
     val editingSquad: Int? = null,
+    /** Teams (or squads) best first, or every player best first. */
+    val rank: ScoreboardRank = ScoreboardRank.TEAMS,
+    /** The rank-by dropdown is offered (the server: a wide screen, in a game); without it, teams. */
+    val rankOffered: Boolean = true,
 )
 
 /**
@@ -105,6 +117,17 @@ object ScoreboardRows {
         val canEdit = !context.isClient || context.isAdmin
         val layout = context.layout
         fun at(id: Int): PlayerDisplayData? = if (players != null && id < players.size) players[id] else null
+
+        // With teams or squads: the rank-by dropdown, above the column titles
+        if (!layout.mode.isFreeForAll && context.rankOffered) rows.add(0, ScoreboardRow.RankBar(context.rank, layout.mode.isSquads))
+        if (!layout.mode.isFreeForAll && context.rankOffered && context.rank == ScoreboardRank.PLAYERS) {
+            // Every player best first: eliminations less deaths, then score, then as the teams sort them
+            val all = (1..GameSettingsRepository.MAX_PLAYER_ID).mapNotNull { at(it) }
+            val best = compareByDescending<PlayerDisplayData> { it.points - it.eliminated }.thenByDescending { it.points }
+                .then(playerOrder(context))
+            all.sortedWith(best).forEach { rows += playerRow(it, context, rank = true) }
+            return rows
+        }
 
         if (layout.mode.isSquads) {
             buildSquads(rows, (1..GameSettingsRepository.MAX_PLAYER_ID).mapNotNull { at(it) }, context, livesFlag)
@@ -191,7 +214,7 @@ object ScoreboardRows {
         }
     }
 
-    private fun playerRow(p: PlayerDisplayData, context: ScoreboardContext): ScoreboardRow.Player {
+    private fun playerRow(p: PlayerDisplayData, context: ScoreboardContext, rank: Boolean = false): ScoreboardRow.Player {
         val id = p.playerID
         val stat = when {
             p.overrideLives -> if (p.lives != 0) p.lives - p.eliminated else p.eliminated
@@ -211,7 +234,8 @@ object ScoreboardRows {
             blasterType = p.blasterType,
             hasGrenade = p.hasGrenade,
             muted = (idInt in context.muted).takeIf { context.voiceOn && id != context.selfId && teammate(idInt, context) },
-            squadAdd = context.editingSquad?.takeIf { context.squadsEditable }?.let { context.layout.squadOf(idInt) != it },
+            squadAdd = context.editingSquad?.takeIf { context.squadsEditable && context.rank == ScoreboardRank.TEAMS }?.let { context.layout.squadOf(idInt) != it },
+            color = if (rank) context.layout.colorOf(context.layout.teamOf(idInt)) else TeamColors.NONE,
         )
     }
 

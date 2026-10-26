@@ -19,6 +19,7 @@ package com.simplecoil.simplecoil.ui.scoreboard
 import com.simplecoil.simplecoil.PlayerDisplayData
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.domain.team.TeamLayout
+import com.simplecoil.simplecoil.domain.team.TeamColors
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -91,11 +92,12 @@ class ScoreboardRowsTest {
             players(player(1, "Team 1 Low", 5), player(2, "Team 1 High", 15), player(33, "Team 2 High", 50)),
             context(mode = TeamMode.TWO_TEAMS),
         )
-        // Column header, team 2 (50), 33, team 1 (20), 2 (15), 1 (5)
-        assertEquals(6, rows.size)
-        assertEquals(ScoreboardRow.TeamHeader(2, 1, 32, 50, true), rows[1])
-        assertEquals(33, (rows[2] as ScoreboardRow.Player).playerId.toInt())
-        assertEquals(ScoreboardRow.TeamHeader(1, 2, 32, 20, true), rows[3])
+        // Rank-by, column header, team 2 (50), 33, team 1 (20), 2 (15), 1 (5)
+        assertEquals(7, rows.size)
+        assertEquals(ScoreboardRow.RankBar(ScoreboardRank.TEAMS, squads = false), rows[0])
+        assertEquals(ScoreboardRow.TeamHeader(2, 1, 32, 50, true), rows[2])
+        assertEquals(33, (rows[3] as ScoreboardRow.Player).playerId.toInt())
+        assertEquals(ScoreboardRow.TeamHeader(1, 2, 32, 20, true), rows[4])
         assertEquals(listOf(33, 2, 1), rows.playerIds())
     }
 
@@ -147,5 +149,31 @@ class ScoreboardRowsTest {
         val ffa = ScoreboardRows.build(data, context(mode = TeamMode.FREE_FOR_ALL, isClient = true, selfId = 1).copy(voiceOn = true))
         assertTrue(ffa.filterIsInstance<ScoreboardRow.Player>().all { it.muted == null })
         assertTrue(ffa.filterIsInstance<ScoreboardRow.TeamHeader>().all { it.allMuted == null })
+    }
+
+    @Test
+    fun rankedByPlayer_bestFirst_eliminationsLessDeaths_withTheirTeamsColour() {
+        val rows = ScoreboardRows.build(
+            // 10 - 8 = 2, 6 - 0 = 6, 9 - 1 = 8: the best player is the one with most to show for their deaths
+            players(player(1, "Sprayer", 10, 8), player(2, "Careful", 6, 0), player(33, "Ace", 9, 1)),
+            context(mode = TeamMode.TWO_TEAMS).copy(rank = ScoreboardRank.PLAYERS),
+        )
+        assertEquals(ScoreboardRow.RankBar(ScoreboardRank.PLAYERS, squads = false), rows[0])
+        assertTrue(rows.none { it is ScoreboardRow.TeamHeader })
+        assertEquals(listOf(33, 2, 1), rows.playerIds())
+        assertEquals(TeamColors.TEAM_2, rows.filterIsInstance<ScoreboardRow.Player>().first().color)
+    }
+
+    @Test
+    fun squads_eachUnderItsHeader_thenEveryoneAlone_andFreeForAllHasNoRankBy() {
+        val layout = com.simplecoil.simplecoil.domain.team.TeamLayout.defaultFor(TeamMode.SQUADS).withSquads(mapOf(2 to setOf(3, 4)))
+        val rows = ScoreboardRows.build(players(player(3, "A", 4), player(4, "B", 1), player(9, "Solo", 2)),
+            context(mode = TeamMode.SQUADS).copy(layout = layout))
+        assertEquals(ScoreboardRow.RankBar(ScoreboardRank.TEAMS, squads = true), rows[0])
+        val squad = rows.filterIsInstance<ScoreboardRow.TeamHeader>().first()
+        assertEquals(2, squad.squad)
+        assertEquals(TeamColors.TEAM_2, squad.color)
+        assertEquals(listOf(3, 4, 9), rows.playerIds())
+        assertTrue(ScoreboardRows.build(players(player(1, "A", 1)), context()).none { it is ScoreboardRow.RankBar })
     }
 }

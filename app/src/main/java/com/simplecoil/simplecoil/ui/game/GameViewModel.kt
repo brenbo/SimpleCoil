@@ -55,6 +55,7 @@ import com.simplecoil.simplecoil.network.ServerMessage
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreMatrixModel
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreMatrixState
 import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardContext
+import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRank
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -169,6 +170,9 @@ class GameViewModel(
     val scoreboardPlayers: Array<PlayerDisplayData?>? get() = latestPlayerData
 
     /** How the scoreboard dialog groups and labels the players. */
+    /** The scoreboard's rank-by dropdown: winning team first, or best player first. */
+    var scoreboardRank = ScoreboardRank.TEAMS
+
     fun scoreboardContext() = ScoreboardContext(
         layout = settingsRepo.teamLayout,
         gameLimit = settingsRepo.gameLimit,
@@ -178,6 +182,7 @@ class GameViewModel(
         isAdmin = playerRepo.isAdmin,
         voiceOn = voice.listening,
         muted = voice.muted,
+        rank = scoreboardRank,
     )
 
     /** The scoreboard's mute button: [playerId] muted, or heard again, on this phone only. */
@@ -560,6 +565,8 @@ class GameViewModel(
                 screen?.showPlayScreen()
                 updatePreGameButtonVisibilities()
                 autoStartServerScan()
+                // Already searching (from before the blaster): its list now has a game screen to go over
+                if (serverPickerWanted()) screen?.showServerPicker()
             }
             SessionEffect.TeamSent -> saveTeamAndDisplay()
             SessionEffect.PlayerIdReported -> displayCurrentTeam()
@@ -644,6 +651,8 @@ class GameViewModel(
             val player = playerRepo.playerID - startID + 1
             screen?.showTeam(TeamDisplay.Team(networkTeam, player, TeamColors.colorOf(networkTeam), onlineScreen, dedicatedName, dedicated))
         } else {
+            // Alone (free for all, or in no squad): nobody's hits are a teammate's
+            engine.networkTeam = layout.teamOf(playerRepo.playerID)
             screen?.showTeam(TeamDisplay.FreeForAll(playerRepo.playerID, dedicatedName))
         }
     }
@@ -977,7 +986,8 @@ class GameViewModel(
             }
             NETWORK_TYPE_JOINING -> {
                 screen?.showNetworkButton(NetworkButton.SEARCHING)
-                screen?.showServerPicker()
+                // The server list is for the game screen: never over the home screen, before a blaster
+                if (engine.isCommunicating) screen?.showServerPicker()
             }
             NETWORK_TYPE_JOINED -> {
                 screen?.showNetworkButton(NetworkButton.DISABLE)
@@ -1030,6 +1040,9 @@ class GameViewModel(
 
     /** The server picker closed without a server: back offline, not half online. */
     fun onServerSearchCancelled() = stopServerSearch(true)
+
+    /** A server list Android brought back (the app was closed and reopened) still has a search behind it, with a blaster. */
+    fun serverPickerWanted(): Boolean = net.useNetwork && networkMenuType == NETWORK_TYPE_JOINING && engine.isCommunicating
 
     private fun stopServerSearch(disableNetwork: Boolean) {
         cancelServerSearchTimeout()

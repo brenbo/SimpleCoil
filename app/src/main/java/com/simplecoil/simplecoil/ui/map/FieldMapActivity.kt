@@ -587,7 +587,7 @@ class FieldMapActivity : AppCompatActivity() {
 
     /** The teams' bases as the game will pick them: their first spawns. */
     private fun flagBasesNow(): Map<Int, LatLon> =
-        config.spawns.groupBy { it.team }.filterKeys { it == 1 || it == 2 }.mapValues { it.value.first().point }
+        config.spawns.groupBy { it.team }.filterKeys { it in 1..4 }.mapValues { it.value.first().point }
 
     /** A tap on the flag takes it away (it's placed for each game again); anywhere else puts it there. */
     private fun onFlagTapped(point: LatLon) {

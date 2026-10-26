@@ -131,7 +131,9 @@ class ClientMessageHandler(
                     for (position in message.positions) {
                         val playerId = position.playerId.toByte()
                         if (playerId == players.playerID) continue
-                        val gps = players.gpsData.getOrPut(playerId) { GpsData().also { it.team = position.team ?: 0 } }
+                        val gps = players.gpsData.getOrPut(playerId) { GpsData() }
+                        // Every time: a squad or team change moves them, and the map follows
+                        position.team?.let { gps.team = it }
                         gps.longitude = position.longitude
                         gps.latitude = position.latitude
                         gps.hasUpdate = true // Anything that the server sends us is considered an update

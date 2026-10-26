@@ -209,7 +209,8 @@ class TcpServer : Service() {
             nameOf = { id -> server.snapshot.value.players.firstOrNull { it.playerId.toInt() == id }?.name },
             players = { server.snapshot.value.players.filter { it.connected }.associate { it.playerId.toInt() to liveTeamOf(it.playerId.toInt()) } },
             roster = { server.snapshot.value.players.map { it.playerId.toInt() }.toSet() },
-            freeForAll = { serverSettings.teamLayout.mode.isFreeForAll },
+            freeForAll = { serverSettings.teamLayout.mode.isTeamless },
+            teamCount = { serverSettings.teamLayout.mode.teamCount },
             startDelayMillis = { serverSettings.startTime * 1000L },
             gpsOn = { serverSettings.isUseGPS },
             // Domination or Hardpoint won: the game ends as when the host presses End

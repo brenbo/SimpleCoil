@@ -172,12 +172,18 @@ class ExtractionEngine(
     }
 }
 
-/** Two flag bases: the teams' first spawns, or, without them, opposite ends of the field. */
-fun flagBases(border: Border, spawns: List<Spawn>, edgeBufferMeters: Double, random: Random = Random.Default): Map<Int, LatLon> {
-    val red = spawns.firstOrNull { it.team == 1 }?.point
-    val blue = spawns.firstOrNull { it.team == 2 }?.point
-    if (red != null && blue != null) return mapOf(1 to red, 2 to blue)
-    val placed = com.simplecoil.simplecoil.domain.map.SpawnPlanner.place(border, listOf(1, 2),
-        com.simplecoil.simplecoil.domain.map.SpawnRules(perTeam = 1), edgeBufferMeters, random = random).spawns
-    return placed.associate { it.team to it.point }
+/**
+ * A flag base for each of [teams] teams (two to four): the teams' first spawns, or, without
+ * them, spots spread round the field, clear of each other.
+ */
+fun flagBases(border: Border, spawns: List<Spawn>, edgeBufferMeters: Double, random: Random = Random.Default, teams: Int = 2): Map<Int, LatLon> {
+    val numbers = (1..teams.coerceIn(2, 4)).toList()
+    val own = numbers.associateWith { t -> spawns.firstOrNull { it.team == t }?.point }
+    val have = own.filterValues { it != null }.mapValues { it.value!! }
+    if (have.size == numbers.size) return have
+    // The teams with no spawn of their own get a base placed away from the others
+    val placed = com.simplecoil.simplecoil.domain.map.SpawnPlanner.place(border, numbers - have.keys,
+        com.simplecoil.simplecoil.domain.map.SpawnRules(perTeam = 1), edgeBufferMeters,
+        enemies = have.mapValues { listOf(it.value) }, random = random).spawns
+    return have + placed.associate { it.team to it.point }
 }

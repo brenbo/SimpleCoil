@@ -19,6 +19,17 @@
         android:textAppearance="@style/TextAppearance.SimpleCoil.Secondary"
         android:textSize="13sp" />
 
+    <!-- Editing a squad: break it up, its players back to playing alone -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/squad_bar_delete_button"
+        style="@style/Widget.SimpleCoil.Button.Text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/squad_delete"
+        android:textColor="@color/sc_danger"
+        android:visibility="gone" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/squad_bar_button"
         style="@style/Widget.SimpleCoil.Button.Tonal"

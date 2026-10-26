@@ -52,6 +52,12 @@ class ServerPickerDialog : GameDialogFragment() {
 
     private val udp get() = (activity?.application as? SimpleCoilApp)?.container?.networkGateway?.udp
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Brought back by Android after the app was closed: only if there's still a search, with a blaster
+        if (savedInstanceState != null && !vm.serverPickerWanted()) dismissAllowingStateLoss()
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val b = ServerPickerDialogBinding.inflate(appInflater)
         binding = b

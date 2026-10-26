@@ -32,6 +32,9 @@ enum class SlideArt {
     TEAMS, FREE_FOR_ALL, RESPAWN, NO_RESPAWN, BORDER, WIN,
     /** Four teams: four groups of players (TEAMS is two). */
     FOUR_TEAMS,
+
+    /** Squads: small groups in their own colours, and a few players alone. */
+    SQUADS,
 }
 
 /** The three parts of a briefing: the blaster's buttons, the drops, and how this game plays. */
@@ -58,6 +61,8 @@ data class BriefingInputs(
     /** Score that ends the game; 0 for none. */
     val scoreLimit: Int,
     val voiceChat: Boolean,
+    /** Squad mode: how many squads the host has made; null otherwise. */
+    val squads: Int? = null,
 )
 
 /**
@@ -248,6 +253,11 @@ object Briefing {
     private fun teams(mode: GameMode, input: BriefingInputs): Slide = when {
         mode == GameMode.INFECTION -> Slide("mode.teams", Section.MODE, "Survivors and infected",
             "There are no teams to start with: it's survivors against the infected, and the infected keep growing.", SlideArt.FREE_FOR_ALL)
+        input.squads != null -> Slide("mode.teams", Section.MODE, "Squads",
+            "The host puts players in squads: each one plays as a team, in its own color on your screen and the map." +
+                (if (input.voiceChat) " Hold the weapon switch to talk to your squad." else "") +
+                " Friendly fire doesn't count. Anyone not in a squad plays alone, and every other player is an enemy.",
+            SlideArt.SQUADS)
         input.freeForAll -> Slide("mode.teams", Section.MODE, "Everyone for themselves",
             "No teams: every other player is an enemy. Trust nobody.", SlideArt.FREE_FOR_ALL)
         else -> Slide("mode.teams", Section.MODE, "${input.teamCount} teams",

@@ -74,13 +74,6 @@ class DedicatedServerRenderer(
         lastPlayerCount = state.playerCount
         showPlayersEmpty()
         playerCountTv.text = quantity(R.plurals.network_player_count, state.playerCount)
-        checkSegment(teamModeGroup, when (state.teamMode) {
-            TeamMode.TWO_TEAMS -> R.id.team_mode_2teams_button
-            TeamMode.THREE_TEAMS -> R.id.team_mode_3teams_button
-            TeamMode.FOUR_TEAMS -> R.id.team_mode_4teams_button
-            TeamMode.FREE_FOR_ALL -> R.id.team_mode_ffa_button
-            TeamMode.SQUADS -> R.id.team_mode_squads_button
-        })
         checkSegment(gpsModeGroup, when {
             !state.useGps -> R.id.gps_mode_disabled_button
             state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> R.id.gps_mode_teammate_button
@@ -89,7 +82,11 @@ class DedicatedServerRenderer(
         // The Teams and players card's summary: team mode and GPS sharing (teammates, in free for all, is just you)
         val gps = when {
             !state.useGps -> R.string.gps_mode_disabled
-            state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> if (state.teamMode.isFreeForAll) R.string.gps_mode_you else R.string.gps_mode_teammate
+            state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> when {
+                state.teamMode.isFreeForAll -> R.string.gps_mode_you
+                state.teamMode.isSquads -> R.string.gps_mode_squad
+                else -> R.string.gps_mode_teammate
+            }
             else -> R.string.gps_mode_all
         }
         teamsSummaryTv.text = resources.getString(R.string.server_summary_teams, resources.getString(state.teamMode.shortName), resources.getString(gps))
@@ -185,11 +182,8 @@ class DedicatedServerRenderer(
             else -> R.color.sc_success
         }))
         // Only the team modes the game mode can be played in
-        teamMode2teamsButton.isEnabled = !running && TeamMode.TWO_TEAMS in gameMode.teamModes
-        teamMode3teamsButton.isEnabled = !running && TeamMode.THREE_TEAMS in gameMode.teamModes
-        teamMode4teamsButton.isEnabled = !running && TeamMode.FOUR_TEAMS in gameMode.teamModes
-        teamModeFfaButton.isEnabled = !running && TeamMode.FREE_FOR_ALL in gameMode.teamModes
-        teamModeSquadsButton.isEnabled = !running && TeamMode.SQUADS in gameMode.teamModes
+        teamModePicker.isAllowed = { it in gameMode.teamModes }
+        teamModePicker.show(teamMode, enabled = !running)
         // Shuffling renumbers everyone, which would scatter the squads
         sortTeamsButton.isEnabled = !running && !teamMode.isSquads
         gameLimitButton.isEnabled = !running
@@ -204,9 +198,13 @@ class DedicatedServerRenderer(
         gpsModeGroup.children.forEach { it.isEnabled = !running }
         // A game played on positions can't have GPS off
         gpsModeDisabledButton.isEnabled = !running && !gpsRequired
-        // Free for all has no teammates: there it shows each player just themself
+        // Free for all has no teammates: there it shows each player just themself; squads, their squad
         gpsModeTeammateButton.isEnabled = !running
-        gpsModeTeammateButton.setText(if (teamMode.isFreeForAll) R.string.gps_mode_you else R.string.gps_mode_teammate)
+        gpsModeTeammateButton.setText(when {
+            teamMode.isFreeForAll -> R.string.gps_mode_you
+            teamMode.isSquads -> R.string.gps_mode_squad
+            else -> R.string.gps_mode_teammate
+        })
         gameStatusTv.setText(when {
             running -> R.string.dedicated_game_running
             postGame -> R.string.dedicated_game_over

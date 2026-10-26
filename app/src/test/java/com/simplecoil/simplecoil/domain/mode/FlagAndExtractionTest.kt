@@ -197,6 +197,19 @@ class FlagAndExtractionTest {
     }
 
     @Test
+    fun threeOrFourTeams_eachGetABase_theirSpawnsKept() {
+        val field = Border.Circle(center, 100.0)
+        val three = flagBases(field, listOf(Spawn(1, redBase), Spawn(2, blueBase)), 10.0, Random(2), teams = 3)
+        assertEquals(setOf(1, 2, 3), three.keys)
+        assertEquals(redBase, three[1])
+        assertEquals(blueBase, three[2])
+        val four = flagBases(field, emptyList(), 10.0, Random(3), teams = 4)
+        assertEquals(setOf(1, 2, 3, 4), four.keys)
+        // Spread round the field, not on top of each other
+        for (a in 1..4) for (b in a + 1..4) assertTrue(GeoMath.distanceMeters(four.getValue(a), four.getValue(b)) > 20.0)
+    }
+
+    @Test
     fun lootIsCollectedThenBanked() {
         val field = Border.Circle(center, 100.0)
         val rules = ExtractionRules(lootPoints = 3, collectSeconds = 5, opensAfterMinutes = 1, zones = 1, radiusMeters = 8.0)

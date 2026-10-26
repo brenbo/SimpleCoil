@@ -82,8 +82,10 @@ class LiveGame(
     private val players: () -> Map<Int, Int> = { emptyMap() },
     /** Every player the server knows, connected or not: who is in the game when it starts. */
     private val roster: () -> Set<Int> = { players().keys },
-    /** True when the server plays free for all (any spawn is anyone's). */
+    /** True when the server plays free for all or squads (any spawn is anyone's). */
     private val freeForAll: () -> Boolean = { false },
+    /** How many teams play by player number (0 in free for all or squads): Capture the Flag puts a base for each. */
+    private val teamCount: () -> Int = { 2 },
     /** Server wall clock, for drop times. */
     private val wallClock: () -> Long = System::currentTimeMillis,
     /** Monotonic clock, as GPS reports are stamped. */
@@ -302,7 +304,7 @@ class LiveGame(
             }
             GameMode.CAPTURE_THE_FLAG -> {
                 val border = base.border ?: return
-                val bases = flagBases(border, base.spawns, base.rules.edgeBufferMeters, random)
+                val bases = flagBases(border, base.spawns, base.rules.edgeBufferMeters, random, teamCount())
                 // One flag: where the host put it (if it's still inside the border), else the fair middle
                 val center = if (!base.flag.oneFlag) null else base.centerFlag?.takeIf { border.contains(it) }
                     ?: centerFlagSpot(border, bases, base.flag.baseRadiusMeters, base.rules.edgeBufferMeters)
