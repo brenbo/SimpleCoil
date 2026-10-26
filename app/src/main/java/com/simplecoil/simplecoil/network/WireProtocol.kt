@@ -94,6 +94,9 @@ object WireKeys {
     const val SCORELIMIT = "scorelimit"
     const val GAMEMODE = "gamemode"
     const val TEAMSIZES = "teamsizes"
+
+    /** Squad mode's squads: {"<squad number>": [player ids]} (3.0+). */
+    const val SQUADS = "squads"
     const val REJOIN = "rejoin"
     const val USEGPS = "usegps"
     const val TEAM = "team"

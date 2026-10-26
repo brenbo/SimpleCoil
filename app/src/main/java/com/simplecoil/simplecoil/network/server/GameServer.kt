@@ -512,7 +512,7 @@ class GameServer @JvmOverloads constructor(
 
     /** The settings the operator last applied to [team], or to everyone; null if neither. */
     private fun presetFor(team: Int): PlayerSettings? =
-        if (settings.teamLayout.mode.isFreeForAll) presetForAll else presetForTeam[team] ?: presetForAll
+        if (settings.teamLayout.mode.isTeamless) presetForAll else presetForTeam[team] ?: presetForAll
 
     /**
      * Gives [playerId], who just joined [team] or switched to it from [oldTeam] (null: a new
@@ -521,7 +521,7 @@ class GameServer @JvmOverloads constructor(
      * before the game info goes out.
      */
     fun applyPreset(playerId: Byte, team: Int, oldTeam: Int? = null) {
-        if (oldTeam != null && (oldTeam == team || settings.teamLayout.mode.isFreeForAll)) return
+        if (oldTeam != null && (oldTeam == team || settings.teamLayout.mode.isTeamless)) return
         val preset = presetFor(team) ?: return
         Log.d(TAG, "applyPreset: player $playerId gets the settings applied to team $team")
         synchronized(players) {
@@ -562,6 +562,21 @@ class GameServer @JvmOverloads constructor(
     fun sortTeams(): Boolean = callOnDispatcher(false) {
         val reset = resetSessionNow()
         rebalanceAllPlayers(true)
+        reset
+    }
+
+    /**
+     * The host's squads (squad mode): squad number → its players. Back to the lobby first, like
+     * any team change; everyone hears the new squads. True if it reset a finished game.
+     */
+    fun setSquads(squads: Map<Int, Set<Int>>): Boolean = callOnDispatcher(false) {
+        val reset = resetSessionNow()
+        if (roster.setSquads(squads)) {
+            requestFullGpsUpdate()
+            sendPlayerData(SEND_ALL)
+            sendAllGameInfo(SEND_ALL)
+            events.publish(ServerEvent.PlayerDataChanged(null))
+        }
         reset
     }
 

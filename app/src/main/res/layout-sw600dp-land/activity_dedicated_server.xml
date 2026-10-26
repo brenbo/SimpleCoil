@@ -443,14 +443,12 @@
                                 <LinearLayout
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:gravity="center_vertical"
-                                    android:orientation="horizontal">
+                                    android:orientation="vertical">
 
                                     <com.google.android.material.button.MaterialButtonToggleGroup
                                         android:id="@+id/team_mode_group"
-                                        android:layout_width="0dp"
+                                        android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
-                                        android:layout_weight="1"
                                         app:selectionRequired="true"
                                         app:singleSelection="true">
 
@@ -461,6 +459,14 @@
                                             android:layout_height="wrap_content"
                                             android:layout_weight="1"
                                             android:text="@string/team_mode_2teams" />
+
+                                        <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/team_mode_3teams_button"
+                                            style="@style/ServerSegment"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="@string/team_mode_3teams" />
 
                                         <com.google.android.material.button.MaterialButton
                                             android:id="@+id/team_mode_4teams_button"
@@ -477,6 +483,14 @@
                                             android:layout_height="wrap_content"
                                             android:layout_weight="1"
                                             android:text="@string/team_mode_ffa_short" />
+
+                                        <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/team_mode_squads_button"
+                                            style="@style/ServerSegment"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="1"
+                                            android:text="@string/team_mode_squads" />
                                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
                                     <Button
@@ -484,7 +498,9 @@
                                         style="@style/Widget.SimpleCoil.Button.Outlined"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginStart="8dp"
+                                        android:layout_gravity="end"
+                                        android:layout_marginTop="6dp"
+                                        android:maxLines="1"
                                         android:text="@string/shuffle_teams_button"
                                         app:icon="@drawable/ic_sc_shuffle"
                                         app:iconTint="@color/sc_text" />

@@ -394,7 +394,7 @@ public class PlayerRepository {
             }
         }
 
-        if (layout.getMode().isFreeForAll()) {
+        if (layout.getMode().isTeamless()) {
             for (byte i = 1; i <= maxPlayers; i++) {
                 if (!occupied[i]) {
                     return i;
@@ -453,7 +453,7 @@ public class PlayerRepository {
 
     public synchronized byte findOpenPlayerIDOnTeam(int targetTeam, Set<Byte> additionalOccupiedIDs) {
         TeamLayout layout = settings.getTeamLayout();
-        int numTeams = layout.getMode().isFreeForAll() ? 2 : layout.getMode().teamCount;
+        int numTeams = layout.getMode().isTeamless() ? 2 : layout.getMode().teamCount;
         if (targetTeam < 1 || targetTeam > numTeams) {
             return 0;
         }

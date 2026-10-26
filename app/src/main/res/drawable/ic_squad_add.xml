@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Add a player to the squad being edited: a plus in a green circle -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#2E7D32"
+        android:pathData="M12,2a10,10 0,1 0,0.01 0z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.4" android:strokeLineCap="round"
+        android:pathData="M12,7v10M7,12h10" />
+</vector>

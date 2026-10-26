@@ -65,6 +65,7 @@ class SnapshotBuilder(
             limits = limits,
             gameMode = layout.mode.wireValue,
             teamSizes = layout.teamSizes().toList(),
+            squads = layout.squads.takeIf { layout.mode.isSquads },
             gameState = state,
             timeRemaining = timeRemaining(),
             sessionPhase = phase.wireValue,

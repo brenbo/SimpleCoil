@@ -37,6 +37,7 @@ import com.simplecoil.simplecoil.SimpleCoilApp
 import com.simplecoil.simplecoil.databinding.ActivityRefereeMapBinding
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.map.AutoZoom
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.GeoBounds
 import com.simplecoil.simplecoil.domain.map.GeoCircle
@@ -384,7 +385,9 @@ class RefereeMapFragment : Fragment() {
         LOOT -> MapIcons.LOOT
         InfectionEngine.INFECTED -> 0xFF76FF03.toInt()
         InfectionEngine.SURVIVORS -> 0xFF40C4FF.toInt()
-        else -> MapIcons.teamColor(team, PALETTE[Math.floorMod(team, PALETTE.size)])
+        // Squad mode: a squad in its colour, anyone alone plain, so nobody looks like squad 1
+        else -> if (container.serverController.snapshot.value?.settings?.teamLayout?.mode?.isSquads == true && team <= TeamLayout.SQUAD_TEAM_BASE) ALONE
+            else MapIcons.teamColor(team, PALETTE[Math.floorMod(team, PALETTE.size)])
     }
 
     private fun setAutoZoom(mode: AutoZoom) {
@@ -505,6 +508,9 @@ class RefereeMapFragment : Fragment() {
 
         /** The modes the server map offers: there's no "you" to follow. */
         private val ZOOM_MODES = listOf(AutoZoom.OFF, AutoZoom.PLAYERS, AutoZoom.FIELD)
+
+        /** Squad mode: a player in no squad. */
+        private const val ALONE = 0xFFE0E0E0.toInt()
 
         /** How far the camera closes on its goal each frame, as the player map does. */
         private const val GLIDE = 0.12

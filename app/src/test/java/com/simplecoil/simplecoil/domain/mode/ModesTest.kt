@@ -145,14 +145,14 @@ class ModesTest {
         // Infection and Battle Royale are free for all; CTF and S&D two teams, whatever was set
         assertEquals(ffa, GameMode.INFECTION.teamModeFor(null, two))
         assertEquals(ffa, GameMode.BATTLE_ROYALE.teamModeFor(four, two))
-        assertEquals(setOf(ffa), GameMode.BATTLE_ROYALE.teamModes)
+        assertEquals(setOf(ffa, com.simplecoil.simplecoil.domain.team.TeamMode.SQUADS), GameMode.BATTLE_ROYALE.teamModes)
         assertEquals(two, GameMode.CAPTURE_THE_FLAG.teamModeFor(null, ffa))
         assertEquals(two, GameMode.SEARCH_AND_DESTROY.teamModeFor(four, four))
         // The team mode it was last played with comes back
         assertEquals(four, GameMode.DOMINATION.teamModeFor(four, ffa))
         // Domination and Hardpoint are team games: free for all becomes two teams; four teams stays
         assertEquals(two, GameMode.DOMINATION.teamModeFor(null, ffa))
-        assertEquals(setOf(two, four), GameMode.HARDPOINT.teamModes)
+        assertEquals(setOf(two, com.simplecoil.simplecoil.domain.team.TeamMode.THREE_TEAMS, four), GameMode.HARDPOINT.teamModes)
         // Never played: a mode that takes any keeps what is set
         assertEquals(ffa, GameMode.CLASSIC.teamModeFor(null, ffa))
     }

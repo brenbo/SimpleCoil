@@ -255,6 +255,7 @@ class DialogCoordinator(
                 AdminAction.START_GAME -> R.string.start_game_button
                 AdminAction.END_GAME -> R.string.end_game_button
                 AdminAction.TWO_TEAMS -> R.string.team_mode_2teams
+                AdminAction.THREE_TEAMS -> R.string.team_mode_3teams
                 AdminAction.FOUR_TEAMS -> R.string.team_mode_4teams
                 AdminAction.FREE_FOR_ALL -> R.string.team_mode_ffa
                 AdminAction.SHUFFLE_TEAMS -> R.string.shuffle_teams_button
@@ -293,6 +294,7 @@ class DialogCoordinator(
             R.id.join_item -> vm.onNetworkMenuEntry(NetworkMenuEntry.Join)
             R.id.join_ip_item -> vm.onNetworkMenuEntry(NetworkMenuEntry.JoinIp)
             R.id.team_mode_2teams_item -> vm.onTeamModeSelected(TeamMode.TWO_TEAMS)
+            R.id.team_mode_3teams_item -> vm.onTeamModeSelected(TeamMode.THREE_TEAMS)
             R.id.team_mode_4teams_item -> vm.onTeamModeSelected(TeamMode.FOUR_TEAMS)
             R.id.team_mode_ffa_item -> vm.onTeamModeSelected(TeamMode.FREE_FOR_ALL)
             R.id.sort_teams_item -> vm.onAdminAction(AdminAction.SHUFFLE_TEAMS)

@@ -496,6 +496,10 @@ class GameRoster @JvmOverloads constructor(
         if (byId[record.playerId] === record) {
             byId.remove(record.playerId)
             purgeMatrixLocked(record.playerId)
+            // Out of their squad too, so whoever takes their number next doesn't inherit it
+            val layout = settings.teamLayout
+            val id = record.playerId.toInt()
+            if (layout.squadOf(id) != null) settings.setSquads(layout.squads.mapValues { (_, members) -> members - id })
         }
         if (record.deviceId.isNotEmpty() && cacheByDevice[record.deviceId] === record)
             cacheByDevice.remove(record.deviceId)
@@ -604,6 +608,26 @@ class GameRoster @JvmOverloads constructor(
     }
 
     /**
+     * The host's squads (squad mode, in the lobby): squad number → its players. Everyone's team
+     * follows (a squad's, or their own alone). False, and nothing changes, outside the lobby or
+     * squad mode.
+     */
+    @Synchronized
+    fun setSquads(squads: Map<Int, Set<Int>>): Boolean {
+        if (phase != SessionPhase.LOBBY || !settings.teamLayout.mode.isSquads) return false
+        settings.setSquads(squads.mapValues { (_, members) -> members.filter { it.toByte() in byId }.toSet() })
+        val layout = settings.teamLayout
+        for (record in byId.values) {
+            val team = layout.teamOf(record.playerId)
+            if (record.team != team) {
+                record.team = team
+                updateGpsTeam(record.playerId, team)
+            }
+        }
+        return true
+    }
+
+    /**
      * Renumbers every player for the current team mode and team sizes, in id order or shuffled.
      * Players that do not fit are removed. Lobby only; elsewhere nothing changes.
      */
@@ -677,6 +701,13 @@ class GameRoster @JvmOverloads constructor(
         for (connection in droppedConnections) {
             connections.remove(connection.connectionId)
             connection.player = null
+        }
+        // Squads follow their players to their new numbers
+        if (layout.mode.isSquads) {
+            val renumbered = oldToNew.entries.associate { (old, new) -> old.toInt() to new.toInt() }
+            settings.setSquads(layout.squads.mapValues { (_, members) -> members.mapNotNull { renumbered[it] }.toSet() })
+            val squadLayout = settings.teamLayout
+            for (newId in oldToNew.values) newTeams[newId] = squadLayout.teamOf(newId)
         }
         byId.clear()
         for (record in assigned) {

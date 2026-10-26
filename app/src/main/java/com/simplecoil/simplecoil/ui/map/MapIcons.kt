@@ -46,9 +46,9 @@ object MapIcons {
     /** Extraction: a pile of loot. */
     const val LOOT = 0xFFFFC107.toInt()
 
-    /** A team's colour (1-4), or [fallback]. */
+    /** A team's colour (1-4, or a squad's), or [fallback]. */
     fun teamColor(team: Int, fallback: Int = NEUTRAL): Int =
-        if (team in 1..4) TeamColors.colorOf(team) else fallback
+        TeamColors.colorOf(team).takeIf { it != TeamColors.NONE } ?: fallback
 
     /** You: a navigation arrow, pointing up (the map turns it to your heading). */
     fun you(context: Context, color: Int): Bitmap = draw(context, 36f) { c, d ->

@@ -229,6 +229,7 @@ class ClientMessageHandler(
         val teamMode = TeamMode.fromWire(info.gameMode)
         if (teamMode != null) {
             settings.setTeamModeAndSizes(teamMode, info.teamSizes?.toIntArray())
+            if (teamMode.isSquads) settings.setSquads(info.squads.orEmpty())
         } else {
             Log.w(TAG, "Unknown team mode from the server: ${info.gameMode}")
         }

@@ -29,6 +29,7 @@ import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.domain.rules.GameLimitRules
 import com.simplecoil.simplecoil.domain.rules.LimitKind
 import com.simplecoil.simplecoil.domain.rules.Limits
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 import com.simplecoil.simplecoil.network.ServerEvent
@@ -45,6 +46,8 @@ import com.simplecoil.simplecoil.ui.scoreboard.ScoreboardRows
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -69,6 +72,8 @@ data class ServerUiState(
     val onlyServerSettings: Boolean,
     val allowChooseTeams: Boolean,
     val scoreboard: List<ScoreboardRow>,
+    /** Squad mode's squads, squad number → its players. */
+    val squads: Map<Int, Set<Int>> = emptyMap(),
 )
 
 /** One-shot things for the screen to do. */
@@ -129,8 +134,10 @@ class DedicatedServerViewModel(
     val effects: Flow<ServerUiEffect> = _effects.receiveAsFlow()
 
     /** Null until the server has started. */
-    val state: StateFlow<ServerUiState?> = controller.snapshot
-        .map { it?.let(::uiState) }
+    /** Squad mode: the squad being edited (it may have nobody in it yet), or null. */
+    private val editingSquad = MutableStateFlow<Int?>(null)
+
+    val state: StateFlow<ServerUiState?> = combine(controller.snapshot, editingSquad) { snapshot, editing -> snapshot?.let { uiState(it, editing) } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, controller.snapshot.value?.let(::uiState))
 
     private val snapshot: ServerSnapshot? get() = controller.snapshot.value
@@ -198,6 +205,31 @@ class DedicatedServerViewModel(
         prefs.saveTeamMode(mode)
     }
 
+    // Squad mode (the lobby): Create squad picks the lowest free number and edits it; a squad's
+    // bar edits that one (or stops); + and − put a player in it or take them out; Done stops.
+
+    fun onCreateSquad() {
+        val squads = state.value?.squads ?: return
+        val free = (1..TeamLayout.MAX_SQUADS).firstOrNull { it !in squads.keys }
+        if (free == null) toast(R.string.squad_full_hint) else editingSquad.value = free
+    }
+
+    fun onSquadHeaderClicked(squad: Int) {
+        editingSquad.value = if (editingSquad.value == squad) null else squad
+    }
+
+    fun onSquadDone() {
+        editingSquad.value = null
+    }
+
+    fun onSquadToggle(playerId: Byte, add: Boolean) {
+        val squad = editingSquad.value ?: return
+        val id = playerId.toInt()
+        val squads = state.value?.squads.orEmpty().mapValues { (_, members) -> members - id }.toMutableMap()
+        if (add) squads[squad] = squads[squad].orEmpty() + id
+        toastIfReset(controller.setSquads(squads))
+    }
+
     fun onSortTeams() {
         toastIfReset(controller.sortTeams())
         toast(R.string.dedicated_teams_sorted)
@@ -245,7 +277,7 @@ class DedicatedServerViewModel(
         val mode = current.settings.teamLayout.mode
         when {
             current.phase == SessionPhase.RUNNING -> toast(R.string.dedicated_team_ratio_running)
-            mode.isFreeForAll -> toast(R.string.dedicated_team_ratio_ffa)
+            mode.isTeamless -> toast(R.string.dedicated_team_ratio_ffa)
             else -> _effects.trySend(ServerUiEffect.ShowTeamRatio(mode.teamCount, current.settings.teamLayout.teamSizes()))
         }
     }
@@ -280,7 +312,7 @@ class DedicatedServerViewModel(
         if (playerId <= 0) return
         val current = snapshot ?: return
         val layout = current.settings.teamLayout
-        val teamCount = if (layout.mode.isFreeForAll) 0 else layout.mode.teamCount
+        val teamCount = layout.mode.teamCount
         val team = layout.teamOf(playerId)
         val indexInTeam = if (teamCount == 0) playerId.toInt() else playerId - layout.teamStartId(team) + 1
         val name = current.players.firstOrNull { it.playerId == playerId }?.name ?: ""
@@ -291,7 +323,7 @@ class DedicatedServerViewModel(
     /** The teams other than [team] with no open slot and who is on them; players only switch in the lobby. */
     private fun fullTeams(snapshot: ServerSnapshot, team: Int): Map<Int, List<Pair<Byte, String>>> {
         val layout = snapshot.settings.teamLayout
-        if (snapshot.phase != SessionPhase.LOBBY || layout.mode.isFreeForAll) return emptyMap()
+        if (snapshot.phase != SessionPhase.LOBBY || layout.mode.isTeamless) return emptyMap()
         return (1..layout.mode.teamCount).filter { it != team }.associateWith { t ->
             snapshot.players.filter { layout.teamOf(it.playerId) == t }.map { it.playerId to (it.name ?: "") }
         }.filter { (t, players) -> players.size >= layout.teamEndId(t) - layout.teamStartId(t) + 1 }
@@ -345,7 +377,7 @@ class DedicatedServerViewModel(
         const val MAX_START_TIME_SECONDS = 1000L
 
         /** The screen's state for [snapshot]. */
-        fun uiState(snapshot: ServerSnapshot): ServerUiState {
+        fun uiState(snapshot: ServerSnapshot, editingSquad: Int? = null): ServerUiState {
             val settings = snapshot.settings
             val players = arrayOfNulls<PlayerDisplayData>(GameSettingsRepository.MAX_PLAYER_ID + 2)
             for (row in snapshot.players) {
@@ -363,8 +395,10 @@ class DedicatedServerViewModel(
                     hasGrenade = row.hasGrenade
                 }
             }
+            // Squads are made in the lobby
+            val squadsEditable = settings.teamLayout.mode.isSquads && snapshot.phase == SessionPhase.LOBBY
             val context = ScoreboardContext(settings.teamLayout, settings.gameLimit, settings.livesLimit,
-                isClient = false, selfId = 0, isAdmin = false)
+                isClient = false, selfId = 0, isAdmin = false, squadsEditable = squadsEditable, editingSquad = editingSquad)
             return ServerUiState(
                 phase = snapshot.phase,
                 serverIp = snapshot.serverIp,
@@ -379,6 +413,7 @@ class DedicatedServerViewModel(
                 onlyServerSettings = settings.onlyServerSettings,
                 allowChooseTeams = settings.allowChooseTeams,
                 scoreboard = ScoreboardRows.build(players, context),
+                squads = settings.teamLayout.squads,
             )
         }
     }

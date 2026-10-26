@@ -502,7 +502,7 @@ class TcpServerLoopbackTest {
     fun adminTeamMode_unknownValue_isIgnored() {
         val (a, idA) = join("Alpha", "AA:00")
         makeAdmin(idA)
-        a.mesg(WireProtocol.NETMSG_ADMIN_GAMEMODE + 3)
+        a.mesg(WireProtocol.NETMSG_ADMIN_GAMEMODE + 9)
         a.mesg(WireProtocol.NETMSG_PLAYERDATAREQUEST) // processed after the mode change
         a.awaitJson(WireKeys.PLAYERDATA)
         assertEquals(TeamMode.TWO_TEAMS, settings.teamMode)

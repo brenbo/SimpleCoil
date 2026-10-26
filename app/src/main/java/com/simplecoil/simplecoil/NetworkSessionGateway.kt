@@ -175,9 +175,13 @@ class NetworkSessionGateway(
             val parsed = withContext(parseDispatcher) { parsePlayerData(message, players, settings.teamLayout) } ?: return@launch
             parsed.myPoints?.let { score = maxOf(score, it) }
             val layout = settings.teamLayout
-            if (!layout.mode.isFreeForAll) {
+            if (layout.mode.hasFixedTeams) {
                 val myTeamIdx = layout.teamOf(players.playerID) - 1
                 if (myTeamIdx in 0..3) teamScore = parsed.teamPoints[myTeamIdx]
+            } else if (layout.mode.isSquads && layout.squadOf(players.playerID.toInt()) != null) {
+                // A squad: everyone in it
+                val mine = layout.teamOf(players.playerID)
+                teamScore = parsed.players.filterNotNull().filter { layout.teamOf(it.playerID) == mine }.sumOf { it.points }
             }
             emit(ClientEvent.PlayerData(parsed.players))
         }

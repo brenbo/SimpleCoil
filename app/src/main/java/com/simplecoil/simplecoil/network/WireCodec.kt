@@ -262,6 +262,7 @@ object WireCodec {
         })
         put(WireKeys.GAMEMODE, info.gameMode)
         info.teamSizes?.let { put(WireKeys.TEAMSIZES, JSONArray(it)) }
+        info.squads?.let { squads -> put(WireKeys.SQUADS, JSONObject().apply { squads.forEach { (n, ids) -> put(n.toString(), JSONArray(ids.sorted())) } }) }
         info.gameState?.let { put(WireKeys.GAMESTATE, it) }
         info.timeRemaining?.let { put(WireKeys.TIMEREMAINING, it) }
         info.sessionPhase?.let { put(WireKeys.SESSIONPHASE, it) }
@@ -309,6 +310,12 @@ object WireCodec {
             gameMode = json.getInt(WireKeys.GAMEMODE),
             teamSizes = if (!json.has(WireKeys.TEAMSIZES)) null else
                 json.getJSONArray(WireKeys.TEAMSIZES).let { sizes -> (0 until sizes.length()).map { sizes.getInt(it) } },
+            squads = json.optJSONObject(WireKeys.SQUADS)?.let { squads ->
+                squads.keys().asSequence().mapNotNull { key ->
+                    val ids = squads.optJSONArray(key) ?: return@mapNotNull null
+                    key.toIntOrNull()?.let { it to (0 until ids.length()).map { i -> ids.optInt(i) }.toSet() }
+                }.toMap()
+            },
             gameState = json.getIntOrNull(WireKeys.GAMESTATE),
             timeRemaining = if (json.has(WireKeys.TIMEREMAINING)) json.optLong(WireKeys.TIMEREMAINING) else null,
             sessionPhase = json.getIntOrNull(WireKeys.SESSIONPHASE),

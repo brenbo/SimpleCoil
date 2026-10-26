@@ -35,7 +35,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.core.view.isVisible
+import com.simplecoil.simplecoil.ui.shortName
 import com.simplecoil.simplecoil.ui.feel.Motion
+import androidx.core.graphics.ColorUtils
 import androidx.core.widget.doAfterTextChanged
 import com.simplecoil.simplecoil.R
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
@@ -244,12 +246,7 @@ class GameScreenRenderer(
     }
 
     override fun showTeamMode(mode: TeamMode) {
-        val text = when (mode) {
-            TeamMode.TWO_TEAMS -> R.string.team_mode_2teams
-            TeamMode.FOUR_TEAMS -> R.string.team_mode_4teams
-            TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa_short // "Free for all" doesn't fit the tile
-        }
-        b.teamModeTv.setText(text)
+        b.teamModeTv.setText(mode.shortName)
     }
 
     /**
@@ -298,6 +295,26 @@ class GameScreenRenderer(
                 setPlayerNameTile(false)
             }
             setTeamScoreVisible(team.teamScoreVisible)
+            return
+        }
+        if (team is TeamDisplay.Squad) {
+            b.teamLabelTv.text = context.getString(R.string.squad_number_label, team.squad)
+            b.teamLabelTv.background = GradientDrawable().apply {
+                setColor(team.color)
+                cornerRadius = 999f
+            }
+            setTeamLabelPadding()
+            b.teamLabelTv.setTextColor(if (ColorUtils.calculateLuminance(team.color) > 0.5) Color.BLACK else Color.WHITE)
+            setTeamLabelTappable(false)
+            if (team.playerName != null) {
+                b.teamTv.text = team.playerName
+                setPlayerNameTile(true)
+                showPlayerId(context.getString(R.string.player_id_ffa_label, team.playerId.toInt()))
+            } else {
+                b.teamTv.text = number(team.playerId.toInt())
+                setPlayerNameTile(false)
+            }
+            setTeamScoreVisible(true)
             return
         }
         // Always shown: free for all says so

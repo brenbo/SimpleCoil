@@ -50,7 +50,7 @@ sealed interface NetworkMenuEntry {
 data class SwitchTeamEntry(val team: Int, val color: Int)
 
 /** Entries of the admin popup menu. */
-enum class AdminAction { START_GAME, END_GAME, TWO_TEAMS, FOUR_TEAMS, FREE_FOR_ALL, SHUFFLE_TEAMS, RESET_GAME, TALK_TO_EVERYONE }
+enum class AdminAction { START_GAME, END_GAME, TWO_TEAMS, THREE_TEAMS, FOUR_TEAMS, FREE_FOR_ALL, SHUFFLE_TEAMS, RESET_GAME, TALK_TO_EVERYONE }
 
 /** Voice chat, as the play screen controls it: whether this player may talk, and an admin's talk to everyone. */
 interface VoiceControls {
@@ -90,6 +90,9 @@ sealed interface TeamDisplay {
 
     /** [playerName] when joined to a dedicated server; "(playerId)" then goes under the player count. */
     data class FreeForAll(val playerId: Byte, val playerName: String? = null) : TeamDisplay
+
+    /** In a squad: its number and colour; [playerName] when joined to a dedicated server. */
+    data class Squad(val squad: Int, val color: Int, val playerId: Byte, val playerName: String?) : TeamDisplay
 }
 
 /** Lobby buttons shown while no game is running. */

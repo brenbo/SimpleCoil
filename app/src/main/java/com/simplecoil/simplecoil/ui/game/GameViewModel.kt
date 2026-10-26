@@ -633,7 +633,11 @@ class GameViewModel(
         val dedicatedName = if (dedicated) {
             playerRepo.playerName?.takeIf { it.isNotEmpty() }
         } else null
-        if (!layout.mode.isFreeForAll) {
+        val squad = layout.squadOf(playerRepo.playerID.toInt())
+        if (layout.mode.isSquads && squad != null) {
+            engine.networkTeam = layout.teamOf(playerRepo.playerID)
+            screen?.showTeam(TeamDisplay.Squad(squad, layout.colorOf(engine.networkTeam), playerRepo.playerID, dedicatedName))
+        } else if (layout.mode.hasFixedTeams) {
             val networkTeam = layout.teamOf(playerRepo.playerID)
             engine.networkTeam = networkTeam
             val startID = layout.teamStartId(networkTeam)
@@ -881,7 +885,7 @@ class GameViewModel(
         // After a game, teams stay as they were until the host resets
         if (serverPhase != SessionPhase.LOBBY) return emptyList()
         val layout = settingsRepo.teamLayout
-        if (layout.mode.isFreeForAll) return emptyList()
+        if (layout.mode.isTeamless) return emptyList()
         val currentTeam = layout.teamOf(playerRepo.playerID)
         return (1..layout.mode.teamCount).filter { it != currentTeam }.map { SwitchTeamEntry(it, TeamColors.colorOf(it)) }
     }
@@ -1082,9 +1086,9 @@ class GameViewModel(
     fun adminActions(): List<AdminAction> {
         Log.d(TAG, "showAdminControlsMenu: serverPhase=$serverPhase")
         val phase = when (serverPhase) {
-            SessionPhase.LOBBY -> listOf(AdminAction.START_GAME, AdminAction.TWO_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
+            SessionPhase.LOBBY -> listOf(AdminAction.START_GAME, AdminAction.TWO_TEAMS, AdminAction.THREE_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
             SessionPhase.RUNNING -> listOf(AdminAction.END_GAME)
-            SessionPhase.POST_GAME -> listOf(AdminAction.RESET_GAME, AdminAction.TWO_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
+            SessionPhase.POST_GAME -> listOf(AdminAction.RESET_GAME, AdminAction.TWO_TEAMS, AdminAction.THREE_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
         }
         // An admin who may talk can talk to every player, in any phase (here, not in the player
         // settings, so it works when the server allows only its own settings)
@@ -1105,6 +1109,7 @@ class GameViewModel(
                 screen?.confirmEndGame()
             }
             AdminAction.TWO_TEAMS -> changeAdminTeamMode(TeamMode.TWO_TEAMS)
+            AdminAction.THREE_TEAMS -> changeAdminTeamMode(TeamMode.THREE_TEAMS)
             AdminAction.FOUR_TEAMS -> changeAdminTeamMode(TeamMode.FOUR_TEAMS)
             AdminAction.FREE_FOR_ALL -> changeAdminTeamMode(TeamMode.FREE_FOR_ALL)
             AdminAction.SHUFFLE_TEAMS -> client?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminSortTeams))
@@ -1139,7 +1144,7 @@ class GameViewModel(
             return
         }
         val layout = settingsRepo.teamLayout
-        if (layout.mode.isFreeForAll) {
+        if (layout.mode.isTeamless) {
             screen?.showMessage(GameMessage.RATIOS_NOT_IN_FFA)
             return
         }
@@ -1332,6 +1337,8 @@ class GameViewModel(
             is ClientEvent.ListPlayers -> {
                 event.gameId?.let { onServerGameId(it) }
                 onListPlayers(event)
+                // The game info may have changed the squads: the team label follows
+                if (settingsRepo.teamMode.isSquads) displayCurrentTeam()
                 // The (re)join snapshot: catch up on what was missed while away
                 if (event.gameUpdate != null) refreshScoreMatrix()
             }
@@ -1423,13 +1430,13 @@ class GameViewModel(
         screen?.showScore(net.score)
         screen?.showScoreIncrease(playerName(playerId))
         sounds.play(SessionSound.SCORE)
-        if (!settingsRepo.teamMode.isFreeForAll) {
+        if (inTeam()) {
             net.teamScore = net.teamScore + 1
             screen?.showTeamScore(net.teamScore)
             net.tcpClient?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.TeamEliminated))
         }
         if (!net.useNetwork && (settingsRepo.gameLimit and GameSettingsRepository.GAME_LIMIT_SCORE) != 0) {
-            val currentScore = if (!settingsRepo.teamMode.isFreeForAll) net.teamScore else net.score
+            val currentScore = if (inTeam()) net.teamScore else net.score
             if (currentScore >= settingsRepo.scoreLimit) endGame()
         }
     }
@@ -1487,7 +1494,7 @@ class GameViewModel(
     private fun applyGameUpdate(update: GameUpdate) {
         net.score = update.score
         screen?.showScore(net.score)
-        if (!settingsRepo.teamMode.isFreeForAll) {
+        if (inTeam()) {
             net.teamScore = update.teamScore
             screen?.showTeamScore(net.teamScore)
         }
@@ -1497,7 +1504,14 @@ class GameViewModel(
 
     private fun playerName(playerId: Byte): String = if (playerId.toInt() == 0) "" else playerRepo.getPlayerName(playerId) ?: ""
 
-    private fun freeForAll() = settingsRepo.teamMode.isFreeForAll
+    /** Playing alone: free for all, or in squad mode without a squad (no team score, no teammates). */
+    private fun freeForAll() = !inTeam()
+
+    /** On a team this game: a team by player number, or a squad. */
+    private fun inTeam(): Boolean {
+        val layout = settingsRepo.teamLayout
+        return layout.mode.hasFixedTeams || layout.mode.isSquads && layout.squadOf(playerRepo.playerID.toInt()) != null
+    }
 
     companion object {
         private const val TAG = "scmain"

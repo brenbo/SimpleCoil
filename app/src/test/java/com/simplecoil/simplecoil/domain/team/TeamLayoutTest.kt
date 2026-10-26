@@ -21,6 +21,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TeamLayoutTest {
@@ -100,8 +101,54 @@ class TeamLayoutTest {
     @Test
     fun wireValues_roundTrip_andUnknownValuesAreRejected() {
         for (mode in TeamMode.entries) assertEquals(mode, TeamMode.fromWire(mode.wireValue))
-        assertEquals(listOf(1, 2, 4), TeamMode.entries.map { it.wireValue }) // fixed by the protocol
-        assertNull(TeamMode.fromWire(3))
+        assertEquals(listOf(1, 2, 3, 4, 5), TeamMode.entries.map { it.wireValue }) // fixed by the protocol
+        assertNull(TeamMode.fromWire(6))
         assertEquals(TeamMode.TWO_TEAMS, TeamMode.fromWireOrDefault(99))
+    }
+
+    @Test
+    fun threeTeams_dealsTheNumbersOutInThree() {
+        val three = TeamLayout.defaultFor(TeamMode.THREE_TEAMS)
+        assertArrayEquals(intArrayOf(22, 21, 21), three.teamSizes())
+        assertEquals(1, three.teamOf(22))
+        assertEquals(2, three.teamOf(23))
+        assertEquals(3, three.teamOf(64))
+        // Sizes for three teams that add up are kept; others fall back
+        assertArrayEquals(intArrayOf(30, 20, 14), three.withSizes(intArrayOf(30, 20, 14)).teamSizes())
+        assertArrayEquals(intArrayOf(22, 21, 21), three.withSizes(intArrayOf(32, 32)).teamSizes())
+    }
+
+    @Test
+    fun squads_playAsTeams_andEveryoneElseAlone() {
+        val squads = TeamLayout.defaultFor(TeamMode.SQUADS).withSquads(mapOf(1 to setOf(3, 7), 5 to setOf(10)))
+        assertEquals(TeamLayout.SQUAD_TEAM_BASE + 1, squads.teamOf(3))
+        assertEquals(squads.teamOf(3), squads.teamOf(7))
+        assertEquals(TeamLayout.SQUAD_TEAM_BASE + 5, squads.teamOf(10))
+        // Alone: their own number, as in free for all, never a squad's
+        assertEquals(4, squads.teamOf(4))
+        assertEquals(1, squads.squadOf(3))
+        assertNull(squads.squadOf(4))
+        // Each squad its own colour; nobody alone has one
+        assertEquals(TeamColors.TEAM_1, squads.colorOf(squads.teamOf(3)))
+        assertEquals(TeamColors.NONE, squads.colorOf(4))
+    }
+
+    @Test
+    fun squads_areCleanedUp_andOnlyInSquadMode() {
+        val squads = TeamLayout.defaultFor(TeamMode.SQUADS)
+            .withSquads(mapOf(1 to setOf(3, 99), 2 to setOf(3, 4), 3 to emptySet(), 70 to setOf(5)))
+        // A player in one squad at most, only real players and squads, none empty
+        assertEquals(mapOf(1 to setOf(3), 2 to setOf(4)), squads.squads)
+        assertEquals(emptyMap<Int, Set<Int>>(), TeamLayout.DEFAULT.withSquads(mapOf(1 to setOf(3))).squads)
+        // Another mode starts with none
+        assertEquals(emptyMap<Int, Set<Int>>(), squads.withMode(TeamMode.FREE_FOR_ALL).withMode(TeamMode.SQUADS).squads)
+    }
+
+    @Test
+    fun sixtyFourSquadColours_allDifferent() {
+        val colours = (1..64).map { TeamColors.squadColor(it) }
+        assertEquals(64, colours.toSet().size)
+        assertTrue(colours.none { it == TeamColors.NONE })
+        assertEquals(TeamColors.squadColor(9), TeamColors.colorOf(TeamLayout.SQUAD_TEAM_BASE + 9))
     }
 }

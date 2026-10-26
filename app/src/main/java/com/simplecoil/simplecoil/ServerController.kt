@@ -75,6 +75,9 @@ interface ServerController {
     fun changeTeamMode(mode: TeamMode): Boolean
     fun sortTeams(): Boolean
     fun changeTeamSizes(sizes: IntArray): Boolean
+
+    /** Squad mode: the host's squads, squad number → its players. */
+    fun setSquads(squads: Map<Int, Set<Int>>): Boolean
     fun changeLimits(limits: Limits): Boolean
     fun changeStartTime(seconds: Long): Boolean
     fun changeGpsMode(mode: Int): Boolean
@@ -181,6 +184,8 @@ class TcpServerController(
     override fun sortTeams(): Boolean = server?.sortTeams() ?: false
 
     override fun changeTeamSizes(sizes: IntArray): Boolean = server?.changeTeamSizes(sizes) ?: false
+
+    override fun setSquads(squads: Map<Int, Set<Int>>): Boolean = server?.setSquads(squads) ?: false
 
     override fun changeLimits(limits: Limits): Boolean =
         server?.changeLimits(limits.gameLimit, limits.timeLimit, limits.livesLimit, limits.scoreLimit) ?: false

@@ -50,6 +50,7 @@
 
     <string name="team_label">Team</string>
     <string name="team_number_label">Team %1$d</string>
+    <string name="squad_number_label">Squad %1$d</string>
     <string name="no_team">Auto sort</string>
     <string name="auto_sort_team">Auto sort</string>
     <string name="switch_team_button">Switch team</string>
@@ -137,7 +138,20 @@
     <string name="team_mode_label">Team mode</string>
     <string name="team_mode_ffa">Free for all</string>
     <string name="team_mode_2teams">2 Teams</string>
+    <string name="team_mode_3teams">3 Teams</string>
     <string name="team_mode_4teams">4 Teams</string>
+    <string name="team_mode_squads">Squads</string>
+    <!-- Squad mode on the server's player list -->
+    <string name="squad_create">Create squad</string>
+    <string name="squad_create_hint">Squads play as teams; anyone not in one plays alone.</string>
+    <string name="squad_full_hint">All 64 squads are made.</string>
+    <string name="squad_editing_hint">Squad %1$d: tap + to add players, − to take them out.</string>
+    <string name="squad_done">Done</string>
+    <string name="squad_header">Squad %1$d · %2$s · score %3$d</string>
+    <string name="squad_tap_to_edit">Tap to edit</string>
+    <string name="squad_editing">Editing</string>
+    <string name="cd_squad_add">Add to the squad</string>
+    <string name="cd_squad_remove">Take out of the squad</string>
     <!-- Free For All on the server's team mode control, where the full name doesn't fit. -->
     <string name="team_mode_ffa_short">FFA</string>
     <string name="network_player_1count">1 Player</string>

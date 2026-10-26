@@ -341,4 +341,13 @@ class WireCodecTest {
         assertEquals(ClientCommand.Magazines(null), WireCodec.decodeClientCommand("MAGSx"))
         assertEquals(ClientCommand.Magazines(null), WireCodec.decodeClientCommand("MAGS500"))
     }
+
+    @Test
+    fun gameInfo_carriesTheSquads() {
+        val info = ServerMessage.GameInfo(emptyList(), WireLimits(null, null, null), 5, listOf(32, 32), null, null, null, null, null,
+            null, null, false, null, null, null, squads = mapOf(1 to setOf(3, 7), 12 to setOf(9)))
+        val decoded = decodeServer(WireCodec.encode(info)) as ServerMessage.GameInfo
+        assertEquals(mapOf(1 to setOf(3, 7), 12 to setOf(9)), decoded.squads)
+        assertNull((decodeServer(WireCodec.encode(info.copy(squads = null))) as ServerMessage.GameInfo).squads)
+    }
 }

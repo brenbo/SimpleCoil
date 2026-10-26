@@ -24,14 +24,14 @@ import kotlin.random.Random
  * to the game and the phones; the field map keeps every spawn the host put down):
  * - Teams: only the spawns of the teams in play (and anyone's). A team in play with none of
  *   its own, and no spawn for anyone, gets them auto-placed, clear of the others.
- * - Free for all: everyone's spawns; spawns made for teams count for everyone.
+ * - Free for all and squads: everyone's spawns; spawns made for teams count for everyone.
  */
 object TeamSpawns {
 
     fun forMode(config: FieldConfig, mode: TeamMode, random: Random = Random.Default): FieldConfig {
         val spawns = config.spawns
         if (spawns.isEmpty()) return config
-        val result = if (mode.isFreeForAll) {
+        val result = if (mode.isTeamless) {
             spawns.filter { it.team == Spawn.ANYONE }.ifEmpty { spawns.map { it.copy(team = Spawn.ANYONE) } }
         } else {
             val teams = 1..mode.teamCount

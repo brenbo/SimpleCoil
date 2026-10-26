@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.simplecoil.simplecoil.ui.shortName
 import com.simplecoil.simplecoil.ui.feel.Motion
 import com.simplecoil.simplecoil.ui.feel.TouchFeel
 import com.simplecoil.simplecoil.R
@@ -75,8 +76,10 @@ class DedicatedServerRenderer(
         playerCountTv.text = quantity(R.plurals.network_player_count, state.playerCount)
         checkSegment(teamModeGroup, when (state.teamMode) {
             TeamMode.TWO_TEAMS -> R.id.team_mode_2teams_button
+            TeamMode.THREE_TEAMS -> R.id.team_mode_3teams_button
             TeamMode.FOUR_TEAMS -> R.id.team_mode_4teams_button
             TeamMode.FREE_FOR_ALL -> R.id.team_mode_ffa_button
+            TeamMode.SQUADS -> R.id.team_mode_squads_button
         })
         checkSegment(gpsModeGroup, when {
             !state.useGps -> R.id.gps_mode_disabled_button
@@ -89,11 +92,7 @@ class DedicatedServerRenderer(
             state.gpsMode == GameSettingsRepository.GPS_TEAMMATE -> if (state.teamMode.isFreeForAll) R.string.gps_mode_you else R.string.gps_mode_teammate
             else -> R.string.gps_mode_all
         }
-        teamsSummaryTv.text = resources.getString(R.string.server_summary_teams, resources.getString(when (state.teamMode) {
-            TeamMode.TWO_TEAMS -> R.string.team_mode_2teams
-            TeamMode.FOUR_TEAMS -> R.string.team_mode_4teams
-            TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa_short
-        }), resources.getString(gps))
+        teamsSummaryTv.text = resources.getString(R.string.server_summary_teams, resources.getString(state.teamMode.shortName), resources.getString(gps))
         renderLimits(state)
         renderSwitches(state)
         renderPhase(state.phase, state.teamMode)
@@ -159,7 +158,7 @@ class DedicatedServerRenderer(
         if (allowJoinSwitch.isChecked != state.allowJoin) allowJoinSwitch.isChecked = state.allowJoin
         if (onlyServerSettingsSwitch.isChecked != state.onlyServerSettings) onlyServerSettingsSwitch.isChecked = state.onlyServerSettings
         if (allowChooseTeamsSwitch.isChecked != state.allowChooseTeams) allowChooseTeamsSwitch.isChecked = state.allowChooseTeams
-        allowChooseTeamsSwitch.isEnabled = !state.teamMode.isFreeForAll
+        allowChooseTeamsSwitch.isEnabled = state.teamMode.hasFixedTeams
     }
 
     /** Buttons and status for the server's session phase (reconnect design §3.1). */
@@ -187,9 +186,12 @@ class DedicatedServerRenderer(
         }))
         // Only the team modes the game mode can be played in
         teamMode2teamsButton.isEnabled = !running && TeamMode.TWO_TEAMS in gameMode.teamModes
+        teamMode3teamsButton.isEnabled = !running && TeamMode.THREE_TEAMS in gameMode.teamModes
         teamMode4teamsButton.isEnabled = !running && TeamMode.FOUR_TEAMS in gameMode.teamModes
         teamModeFfaButton.isEnabled = !running && TeamMode.FREE_FOR_ALL in gameMode.teamModes
-        sortTeamsButton.isEnabled = !running
+        teamModeSquadsButton.isEnabled = !running && TeamMode.SQUADS in gameMode.teamModes
+        // Shuffling renumbers everyone, which would scatter the squads
+        sortTeamsButton.isEnabled = !running && !teamMode.isSquads
         gameLimitButton.isEnabled = !running
         startingTimerButton.isEnabled = !running
         // The field can't change under a running game

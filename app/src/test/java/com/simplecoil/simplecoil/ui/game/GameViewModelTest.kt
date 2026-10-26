@@ -682,7 +682,7 @@ class GameViewModelTest {
     @Test
     fun adminActions_followTheServerPhase_andResetTakesStartGamesPlace() {
         joinServer()
-        val settings = listOf(AdminAction.TWO_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
+        val settings = listOf(AdminAction.TWO_TEAMS, AdminAction.THREE_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
         assertEquals(listOf(AdminAction.START_GAME) + settings, vm.adminActions())
         serverPhase(SessionPhase.RUNNING)
         assertEquals(listOf(AdminAction.END_GAME), vm.adminActions())

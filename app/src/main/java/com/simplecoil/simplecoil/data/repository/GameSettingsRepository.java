@@ -129,6 +129,11 @@ public class GameSettingsRepository {
         updateTeamLayout(current -> current.withMode(mode).withSizes(sizes));
     }
 
+    /** The squads, in squad mode: squad number → its players (see TeamLayout.withSquads). */
+    public void setSquads(java.util.Map<Integer, ? extends java.util.Set<Integer>> squads) {
+        updateTeamLayout(current -> current.withSquads(new java.util.HashMap<>(squads)));
+    }
+
     /** Back to the default sizes for the current mode. */
     public void resetDefaultTeamSizes() {
         updateTeamLayout(current -> TeamLayout.defaultFor(current.getMode()));

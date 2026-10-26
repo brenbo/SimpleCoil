@@ -44,6 +44,7 @@ import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.map.AutoZoom
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.map.BorderTracker
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
 import com.simplecoil.simplecoil.domain.map.FieldConfig
@@ -443,8 +444,16 @@ class MapFragment : Fragment() {
     private fun playerBitmap(team: Int, enemy: Boolean): Bitmap =
         playerBitmaps.getOrPut(if (enemy) -team - 1 else team) { MapIcons.player(requireContext(), MapIcons.teamColor(team), enemy) }
 
-    /** A team's marker colour index: 1-4, or 0 in free for all (where "teams" are player ids). */
-    private fun markerTeam(team: Int): Int = if (settings.teamLayout.mode.isFreeForAll || team !in 1..4) 0 else team
+    /** A team's marker colour index: 1-4, a squad's team, or 0 in free for all or alone (where "teams" are player ids). */
+    private fun markerTeam(team: Int): Int {
+        val mode = settings.teamLayout.mode
+        return when {
+            mode.isFreeForAll -> 0
+            mode.isSquads -> if (team > TeamLayout.SQUAD_TEAM_BASE) team else 0
+            team in 1..4 -> team
+            else -> 0
+        }
+    }
 
     private fun onClientEvent(event: ClientEvent) {
         when (event) {
@@ -781,7 +790,8 @@ class MapFragment : Fragment() {
         team == EXTRACTION_CLOSED_TEAM -> MapIcons.EXTRACTION_CLOSED
         team == InfectionEngine.INFECTED -> INFECTED_COLOR
         team == InfectionEngine.SURVIVORS -> SURVIVOR_COLOR
-        settings.teamLayout.mode.isFreeForAll -> if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
+        settings.teamLayout.mode.isFreeForAll || settings.teamLayout.mode.isSquads && team <= TeamLayout.SQUAD_TEAM_BASE ->
+            if (team == container.players.playerID.toInt()) YOU_COLOR else ENEMY_COLOR
         else -> MapIcons.teamColor(team, ENEMY_COLOR)
     }
 

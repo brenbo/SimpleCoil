@@ -18,6 +18,7 @@ package com.simplecoil.simplecoil.ui.scoreboard
 
 import com.simplecoil.simplecoil.PlayerDisplayData
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
+import com.simplecoil.simplecoil.domain.team.TeamColors
 import com.simplecoil.simplecoil.domain.team.TeamLayout
 
 /** One line of the scoreboard. Everything a row shows is in it, so DiffUtil sees every change. */
@@ -34,6 +35,12 @@ sealed interface ScoreboardRow {
         val editable: Boolean,
         /** Voice chat's mute-all for the team: null when not shown, else whether all of them are muted here. */
         val allMuted: Boolean? = null,
+        /** The colour it's shown in; [TeamColors.NONE] for none. */
+        val color: Int = TeamColors.colorOf(team),
+        /** A squad's number (squad mode), else null. */
+        val squad: Int? = null,
+        /** This squad is the one being edited. */
+        val editing: Boolean = false,
     ) : ScoreboardRow
 
     data class Player(
@@ -51,7 +58,15 @@ sealed interface ScoreboardRow {
         val hasGrenade: Boolean = false,
         /** Voice chat's mute button: null when not shown (no voice chat, or this phone's player), else muted here. */
         val muted: Boolean? = null,
+        /** Editing a squad: true to show its add button, false its remove button, null neither. */
+        val squadAdd: Boolean? = null,
     ) : ScoreboardRow
+
+    /**
+     * Squad mode on the server, in the lobby: Create squad, or with squad [editing] being edited,
+     * how to and Done. [full]: all 64 squads are made.
+     */
+    data class SquadBar(val editing: Int?, val full: Boolean) : ScoreboardRow
 }
 
 /** What the scoreboard needs besides the players. */
@@ -69,6 +84,10 @@ data class ScoreboardContext(
     val voiceOn: Boolean = false,
     /** The players muted on this phone. */
     val muted: Set<Int> = emptySet(),
+    /** Squad mode on the server: the squads can be changed (in the lobby). */
+    val squadsEditable: Boolean = false,
+    /** The squad being edited (it may have nobody in it yet), or null. */
+    val editingSquad: Int? = null,
 )
 
 /**
@@ -86,6 +105,11 @@ object ScoreboardRows {
         val canEdit = !context.isClient || context.isAdmin
         val layout = context.layout
         fun at(id: Int): PlayerDisplayData? = if (players != null && id < players.size) players[id] else null
+
+        if (layout.mode.isSquads) {
+            buildSquads(rows, (1..GameSettingsRepository.MAX_PLAYER_ID).mapNotNull { at(it) }, context, livesFlag)
+            return rows
+        }
 
         if (layout.mode.isFreeForAll) {
             val all = (1..GameSettingsRepository.MAX_PLAYER_ID).mapNotNull { at(it) }
@@ -134,6 +158,39 @@ object ScoreboardRows {
         return rows
     }
 
+    /**
+     * Squad mode: on the server the squad bar (Create squad, or Done), then each squad under its
+     * coloured header (best first, as teams are; the one being edited even with nobody in it
+     * yet), then everyone in no squad under the players header.
+     */
+    private fun buildSquads(rows: MutableList<ScoreboardRow>, all: List<PlayerDisplayData>, context: ScoreboardContext, livesFlag: Boolean) {
+        val layout = context.layout
+        val editing = context.editingSquad.takeIf { context.squadsEditable }
+        // At the very top, above the column titles
+        if (context.squadsEditable) rows.add(0, ScoreboardRow.SquadBar(editing, full = layout.squads.size >= TeamLayout.MAX_SQUADS && editing == null))
+        val numbers = (layout.squads.keys + listOfNotNull(editing)).toSortedSet()
+        val squads = numbers.map { n -> n to all.filter { layout.squadOf(it.playerID.toInt()) == n } }
+        fun total(members: List<PlayerDisplayData>) = members.sumOf { it.points }
+        fun lives(members: List<PlayerDisplayData>) = members.sumOf { livesRemaining(it, context) }
+        val order = Comparator<Pair<Int, List<PlayerDisplayData>>> { (n1, m1), (n2, m2) ->
+            if (total(m1) != total(m2)) return@Comparator total(m2).compareTo(total(m1))
+            if (livesFlag && lives(m1) != lives(m2)) return@Comparator lives(m2).compareTo(lives(m1))
+            n1.compareTo(n2)
+        }
+        // While one is edited, they stay in number order, so its header doesn't jump about
+        for ((n, members) in if (editing != null) squads else squads.sortedWith(order)) {
+            val team = TeamLayout.SQUAD_TEAM_BASE + n
+            rows += ScoreboardRow.TeamHeader(team, members.size, 0, total(members), context.squadsEditable,
+                allMuted(members, context), color = layout.colorOf(team), squad = n, editing = n == editing)
+            for (p in members.sortedWith(playerOrder(context))) rows += playerRow(p, context)
+        }
+        val alone = all.filter { layout.squadOf(it.playerID.toInt()) == null }
+        if (alone.isNotEmpty() || numbers.isEmpty()) {
+            rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, false, allMuted(alone, context))
+            for (p in alone.sortedWith(playerOrder(context))) rows += playerRow(p, context)
+        }
+    }
+
     private fun playerRow(p: PlayerDisplayData, context: ScoreboardContext): ScoreboardRow.Player {
         val id = p.playerID
         val stat = when {
@@ -154,6 +211,7 @@ object ScoreboardRows {
             blasterType = p.blasterType,
             hasGrenade = p.hasGrenade,
             muted = (idInt in context.muted).takeIf { context.voiceOn && id != context.selfId && teammate(idInt, context) },
+            squadAdd = context.editingSquad?.takeIf { context.squadsEditable }?.let { context.layout.squadOf(idInt) != it },
         )
     }
 

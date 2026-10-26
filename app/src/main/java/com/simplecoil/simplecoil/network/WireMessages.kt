@@ -283,6 +283,8 @@ sealed interface ServerMessage {
         val allowChooseTeams: Boolean?,
         val startTime: Long?,
         val playerUpdate: WirePlayerGameUpdate?,
+        /** Squad mode's squads, squad number → player ids; null outside it. */
+        val squads: Map<Int, Set<Int>>? = null,
     ) : ServerMessage {
         fun withPlayerUpdate(update: WirePlayerGameUpdate?) = copy(playerUpdate = update)
     }

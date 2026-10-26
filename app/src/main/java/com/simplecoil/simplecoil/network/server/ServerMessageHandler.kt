@@ -375,7 +375,7 @@ class ServerMessageHandler(
             return
         }
         val teamMode = settings.teamMode
-        if (teamMode.isFreeForAll) {
+        if (teamMode.isTeamless) {
             Log.w(TAG, "Team change rejected: Free For All mode.")
             return
         }

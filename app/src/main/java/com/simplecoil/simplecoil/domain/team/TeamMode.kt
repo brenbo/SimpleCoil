@@ -23,9 +23,27 @@ package com.simplecoil.simplecoil.domain.team
 enum class TeamMode(@JvmField val wireValue: Int, @JvmField val teamCount: Int) {
     FREE_FOR_ALL(1, 0),
     TWO_TEAMS(2, 2),
-    FOUR_TEAMS(4, 4);
+
+    /** Played wherever four teams can be. */
+    THREE_TEAMS(3, 3),
+    FOUR_TEAMS(4, 4),
+
+    /**
+     * Free for all, with squads the host makes: up to 64 of them, any players in each
+     * ([TeamLayout.squads]). A squad plays as a team; anyone not in one plays alone. Played
+     * wherever free for all can be.
+     */
+    SQUADS(5, 0);
 
     val isFreeForAll: Boolean get() = this == FREE_FOR_ALL
+
+    val isSquads: Boolean get() = this == SQUADS
+
+    /** Teams of fixed sizes, by player number (two, three or four). */
+    val hasFixedTeams: Boolean get() = teamCount > 0
+
+    /** No teams by player number (free for all, squads): any player number will do, and spawns are anyone's. */
+    val isTeamless: Boolean get() = teamCount == 0
 
     companion object {
         @JvmField val DEFAULT = TWO_TEAMS

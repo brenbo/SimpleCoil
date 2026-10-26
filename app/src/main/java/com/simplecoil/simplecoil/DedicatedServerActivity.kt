@@ -37,6 +37,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.simplecoil.simplecoil.ui.shortName
 import com.simplecoil.simplecoil.ui.ScreenOrientation
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.databinding.ActivityDedicatedServerBinding
@@ -111,6 +112,10 @@ class DedicatedServerActivity : AppCompatActivity() {
             override fun onTeamHeaderClicked() = vm.onTeamHeaderClicked()
             override fun onPlayerClicked(playerId: Byte) = vm.onPlayerClicked(playerId)
             override fun onKickClicked(playerId: Byte) = vm.onKick(playerId)
+            override fun onCreateSquad() = vm.onCreateSquad()
+            override fun onSquadDone() = vm.onSquadDone()
+            override fun onSquadHeaderClicked(squad: Int) = vm.onSquadHeaderClicked(squad)
+            override fun onSquadToggle(playerId: Byte, add: Boolean) = vm.onSquadToggle(playerId, add)
         })
         binding.playerList.layoutManager = LinearLayoutManager(this)
         binding.playerList.adapter = scoreboard
@@ -244,11 +249,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             Toast.LENGTH_SHORT).show()
     }
 
-    private fun teamModeName(mode: TeamMode): String = getString(when (mode) {
-        TeamMode.TWO_TEAMS -> R.string.team_mode_2teams
-        TeamMode.FOUR_TEAMS -> R.string.team_mode_4teams
-        TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa_short
-    })
+    private fun teamModeName(mode: TeamMode): String = getString(mode.shortName)
 
     private fun modeName(mode: GameMode): String = getString(when (mode) {
         GameMode.CLASSIC -> R.string.mode_classic
@@ -493,8 +494,10 @@ class DedicatedServerActivity : AppCompatActivity() {
     private fun wireControls() = with(binding) {
         // Click, not checked-change: the renderer checks the segments from the server's state
         teamMode2teamsButton.setOnClickListener { onTeamModeClicked(TeamMode.TWO_TEAMS) }
+        teamMode3teamsButton.setOnClickListener { onTeamModeClicked(TeamMode.THREE_TEAMS) }
         teamMode4teamsButton.setOnClickListener { onTeamModeClicked(TeamMode.FOUR_TEAMS) }
         teamModeFfaButton.setOnClickListener { onTeamModeClicked(TeamMode.FREE_FOR_ALL) }
+        teamModeSquadsButton.setOnClickListener { onTeamModeClicked(TeamMode.SQUADS) }
         sortTeamsButton.setOnClickListener { vm.onSortTeams() }
         gpsModeDisabledButton.setOnClickListener { onGpsModeClicked(GameSettingsRepository.GPS_DISABLED) }
         gpsModeTeammateButton.setOnClickListener { onGpsModeClicked(GameSettingsRepository.GPS_TEAMMATE) }

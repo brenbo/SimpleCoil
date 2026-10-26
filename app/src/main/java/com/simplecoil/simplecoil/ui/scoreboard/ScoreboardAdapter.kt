@@ -24,6 +24,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.widget.TextViewCompat
+import com.google.android.material.button.MaterialButton
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -54,6 +55,18 @@ class ScoreboardAdapter(
 
         /** Voice chat: mute or unmute your [team] on this phone. */
         fun onMuteTeamClicked(team: Int) {}
+
+        /** Squad mode: Create squad. */
+        fun onCreateSquad() {}
+
+        /** Squad mode: done editing the squad. */
+        fun onSquadDone() {}
+
+        /** Squad mode: a squad's header, to edit that squad (or stop, if it's the one). */
+        fun onSquadHeaderClicked(squad: Int) {}
+
+        /** Squad mode, editing a squad: [playerId] in ([add]) or out. */
+        fun onSquadToggle(playerId: Byte, add: Boolean) {}
     }
 
     /** The mute buttons: heard, or muted here. */
@@ -71,6 +84,7 @@ class ScoreboardAdapter(
 
     override fun getItemViewType(position: Int) = when (getItem(position)) {
         is ScoreboardRow.TeamHeader -> TYPE_TEAM_HEADER
+        is ScoreboardRow.SquadBar -> TYPE_SQUAD_BAR
         else -> TYPE_PLAYER
     }
 
@@ -78,6 +92,8 @@ class ScoreboardAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == TYPE_TEAM_HEADER) {
             TeamHeaderHolder(inflater.inflate(R.layout.player_display_team_header, parent, false))
+        } else if (viewType == TYPE_SQUAD_BAR) {
+            SquadBarHolder(inflater.inflate(R.layout.scoreboard_squad_bar, parent, false))
         } else {
             val layout = if (isClient) R.layout.player_display_data_client else R.layout.player_display_data
             PlayerHolder(inflater.inflate(layout, parent, false))
@@ -89,6 +105,29 @@ class ScoreboardAdapter(
             is ScoreboardRow.TeamHeader -> (holder as TeamHeaderHolder).bind(row)
             is ScoreboardRow.ColumnHeader -> (holder as PlayerHolder).bindColumnHeader(row)
             is ScoreboardRow.Player -> (holder as PlayerHolder).bind(row)
+            is ScoreboardRow.SquadBar -> (holder as SquadBarHolder).bind(row)
+        }
+    }
+
+    private inner class SquadBarHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val hint: TextView = view.findViewById(R.id.squad_bar_hint_tv)
+        private val button: MaterialButton = view.findViewById(R.id.squad_bar_button)
+
+        fun bind(row: ScoreboardRow.SquadBar) {
+            val context = itemView.context
+            if (row.editing != null) {
+                hint.text = context.getString(R.string.squad_editing_hint, row.editing)
+                button.setText(R.string.squad_done)
+                button.icon = null
+                button.isEnabled = true
+                button.setOnClickListener { listener.onSquadDone() }
+            } else {
+                hint.setText(if (row.full) R.string.squad_full_hint else R.string.squad_create_hint)
+                button.setText(R.string.squad_create)
+                button.setIconResource(R.drawable.ic_squad_add)
+                button.isEnabled = !row.full
+                button.setOnClickListener { listener.onCreateSquad() }
+            }
         }
     }
 
@@ -104,10 +143,21 @@ class ScoreboardAdapter(
                 title.setText(R.string.scoreboard_players_header)
                 action.visibility = View.GONE
                 colorSquare?.visibility = View.GONE
+            } else if (row.squad != null) {
+                title.text = context.getString(R.string.squad_header, row.squad,
+                    context.resources.getQuantityString(R.plurals.network_player_count, row.playerCount, row.playerCount), row.score)
+                showColor(row.color)
+                // Tap a squad's bar to add or take out players; the one being edited says so
+                action.visibility = if (row.editable) View.VISIBLE else View.GONE
+                action.setText(if (row.editing) R.string.squad_editing else R.string.squad_tap_to_edit)
+                mute?.let { showMute(it, row.allMuted, R.string.cd_unmute_team, R.string.cd_mute_team) { listener.onMuteTeamClicked(row.team) } }
+                if (row.editable) itemView.setOnClickListener { listener.onSquadHeaderClicked(row.squad) } else itemView.setOnClickListener(null)
+                itemView.isClickable = row.editable
+                return
             } else {
                 title.text = context.getString(R.string.player_list_team_header, row.team, row.playerCount, row.capacity, row.score)
                 colorSquare?.let {
-                    val color = TeamColors.colorOf(row.team)
+                    val color = row.color
                     if (color != Color.TRANSPARENT) {
                         it.setBackgroundColor(color)
                         it.visibility = View.VISIBLE
@@ -122,6 +172,13 @@ class ScoreboardAdapter(
             if (row.editable) itemView.setOnClickListener { listener.onTeamHeaderClicked() } else itemView.setOnClickListener(null)
             itemView.isClickable = row.editable
         }
+
+        private fun showColor(color: Int) {
+            colorSquare?.let {
+                it.setBackgroundColor(color)
+                it.visibility = if (color != Color.TRANSPARENT) View.VISIBLE else View.GONE
+            }
+        }
     }
 
     private inner class PlayerHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -133,6 +190,7 @@ class ScoreboardAdapter(
         private val networkStatus: ImageView? = view.findViewById(R.id.network_status_iv)
         private val kick: ImageView? = view.findViewById(R.id.kick_player_iv)
         private val mute: ImageView? = view.findViewById(R.id.mute_player_iv)
+        private val squadToggle: ImageView? = view.findViewById(R.id.squad_toggle_iv)
 
         fun bindColumnHeader(row: ScoreboardRow.ColumnHeader) {
             name.setText(R.string.player_list_name_label)
@@ -148,6 +206,7 @@ class ScoreboardAdapter(
             mute?.visibility = View.GONE
             mute?.setOnClickListener(null)
             itemView.setOnClickListener(null)
+            squadToggle?.visibility = View.GONE
             itemView.isClickable = false
         }
 
@@ -179,6 +238,18 @@ class ScoreboardAdapter(
                 }
             }
             mute?.let { showMute(it, row.muted, R.string.cd_unmute_player, R.string.cd_mute_player) { listener.onMuteClicked(row.playerId) } }
+            squadToggle?.let { toggle ->
+                val add = row.squadAdd
+                if (add == null) {
+                    toggle.visibility = View.GONE
+                    toggle.setOnClickListener(null)
+                } else {
+                    toggle.setImageResource(if (add) R.drawable.ic_squad_add else R.drawable.ic_squad_remove)
+                    toggle.contentDescription = context.getString(if (add) R.string.cd_squad_add else R.string.cd_squad_remove)
+                    toggle.visibility = View.VISIBLE
+                    toggle.setOnClickListener { listener.onSquadToggle(row.playerId, add) }
+                }
+            }
             if (isClient) {
                 itemView.setOnClickListener(null)
                 itemView.isClickable = false
@@ -198,6 +269,7 @@ class ScoreboardAdapter(
         override fun areItemsTheSame(oldItem: ScoreboardRow, newItem: ScoreboardRow) = when (oldItem) {
             is ScoreboardRow.ColumnHeader -> newItem is ScoreboardRow.ColumnHeader
             is ScoreboardRow.TeamHeader -> newItem is ScoreboardRow.TeamHeader && newItem.team == oldItem.team
+            is ScoreboardRow.SquadBar -> newItem is ScoreboardRow.SquadBar
             is ScoreboardRow.Player -> newItem is ScoreboardRow.Player && newItem.playerId == oldItem.playerId
         }
 
@@ -207,5 +279,6 @@ class ScoreboardAdapter(
     private companion object {
         const val TYPE_TEAM_HEADER = 0
         const val TYPE_PLAYER = 1
+        const val TYPE_SQUAD_BAR = 2
     }
 }

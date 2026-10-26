@@ -49,6 +49,7 @@
 
     <string name="team_label">Equipe</string>
     <string name="team_number_label">Equipe %1$d</string>
+    <string name="squad_number_label">Esquadrão %1$d</string>
     <string name="no_team">Auto-organizar</string>
     <string name="auto_sort_team">Auto-organizar</string>
     <string name="switch_team_button">Mudar de equipe</string>
@@ -133,7 +134,19 @@
     <string name="team_mode_label">Modo de equipe</string>
     <string name="team_mode_ffa">Todos contra todos</string>
     <string name="team_mode_2teams">2 Equipes</string>
+    <string name="team_mode_3teams">3 Equipes</string>
     <string name="team_mode_4teams">4 Equipes</string>
+    <string name="team_mode_squads">Esquadrões</string>
+    <string name="squad_create">Criar esquadrão</string>
+    <string name="squad_create_hint">Os esquadrões jogam como equipes; quem não está em um joga sozinho.</string>
+    <string name="squad_full_hint">Os 64 esquadrões já foram criados.</string>
+    <string name="squad_editing_hint">Esquadrão %1$d: toque em + para adicionar jogadores e em − para tirá-los.</string>
+    <string name="squad_done">Pronto</string>
+    <string name="squad_header">Esquadrão %1$d · %2$s · pontos %3$d</string>
+    <string name="squad_tap_to_edit">Toque para editar</string>
+    <string name="squad_editing">Editando</string>
+    <string name="cd_squad_add">Adicionar ao esquadrão</string>
+    <string name="cd_squad_remove">Tirar do esquadrão</string>
     <string name="team_mode_ffa_short">TCT</string>
     <string name="network_player_1count">1 Jogador</string>
     <string name="not_enough_players_toast">Jogadores insuficientes!</string>
