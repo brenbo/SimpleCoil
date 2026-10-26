@@ -51,6 +51,9 @@ class ServerMessageHandler(
     /** When each grenade (by id) was last paired, on the server's monotonic clock. */
     private val grenadePairedAt = HashMap<Int, Long>()
 
+    /** The magazines each player last said they had on them, until their elimination arrives. */
+    private val magazinesOnElimination = HashMap<Int, Int?>()
+
     fun handleFrame(client: Connection, raw: String) {
         try {
             handleFrameUnguarded(client, raw)
@@ -281,8 +284,12 @@ class ServerMessageHandler(
             GameRoster.ReliableCheck.DUPLICATE -> Log.d(TAG, "dropping duplicate reliable message $seq: $rmsg")
             GameRoster.ReliableCheck.APPLY -> {
                 val command = WireCodec.decodeClientCommand(rmsg)
-                if (command is ClientCommand.Eliminated) handleEliminated(client, command)
-                else Log.w(TAG, "unknown reliable message: $rmsg")
+                when (command) {
+                    is ClientCommand.Eliminated -> handleEliminated(client, command)
+                    // What they had on them, just before their elimination: for the pickup where they fall
+                    is ClientCommand.Magazines -> client.player?.playerId?.let { id -> magazinesOnElimination[id.toInt()] = command.count }
+                    else -> Log.w(TAG, "unknown reliable message: $rmsg")
+                }
             }
         }
         return client.player?.lastAppliedSeq ?: seq
@@ -301,7 +308,8 @@ class ServerMessageHandler(
             return
         }
         // For the map: scavenger pickups and shot distance (map design: phase 4)
-        if (roster.isRunning()) events.publish(ServerEvent.Eliminated(elimination.victimId, elimination.shooterId))
+        val magazines = magazinesOnElimination.remove(elimination.victimId.toInt())
+        if (roster.isRunning()) events.publish(ServerEvent.Eliminated(elimination.victimId, elimination.shooterId, magazines))
         if (!roster.isRunning()) {
             server.sendPlayerData(GameServer.SEND_ALL)
             events.publish(ServerEvent.PlayerDataChanged(null))

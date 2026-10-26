@@ -49,6 +49,7 @@ import com.simplecoil.simplecoil.domain.mode.ZoneMembership
 import com.simplecoil.simplecoil.domain.mode.ModeEngine
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
+import com.simplecoil.simplecoil.network.ServerEvent
 import com.simplecoil.simplecoil.network.imagery.FieldImageryServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
@@ -125,8 +126,8 @@ class LiveGame(
     private val alive = java.util.concurrent.ConcurrentHashMap<Int, Pair<Boolean, Long>>()
 
     /** Runs until cancelled: one game's work each time [phases] says a game is running. */
-    suspend fun run(phases: Flow<SessionPhase>, eliminations: Flow<Pair<Int, Int>>) = coroutineScope {
-        launch { eliminations.collect { (victim, shooter) -> onEliminated(victim, shooter) } }
+    suspend fun run(phases: Flow<SessionPhase>, eliminations: Flow<ServerEvent.Eliminated>) = coroutineScope {
+        launch { eliminations.collect { onEliminated(it.victimId.toInt(), it.shooterId.toInt(), it.magazines) } }
         imagery.extras = extras
         phases.distinctUntilChanged().collectLatest { phase ->
             if (phase != SessionPhase.RUNNING) {
@@ -448,7 +449,7 @@ class LiveGame(
         }
     }
 
-    private fun onEliminated(victimId: Int, shooterId: Int) {
+    private fun onEliminated(victimId: Int, shooterId: Int, magazines: Int?) {
         val rules = rules ?: return
         val fixes = positions()
         val victim = fixes[victimId]
@@ -466,8 +467,11 @@ class LiveGame(
         // Scavenger ammo where they fell, if we know where that was
         if (field.isActive && rules.ammo == AmmoMode.SCAVENGER && victim != null &&
             monoClock() - victim.atMillis <= ShotStats.MAX_FIX_AGE_MILLIS) {
-            field.scavenge(victim.point, wallClock())
-            publish()
+            // The magazines they had on them; none on them, nothing to leave
+            if (magazines != 0) {
+                field.scavenge(victim.point, wallClock(), magazines)
+                publish()
+            }
         }
     }
 
@@ -552,7 +556,7 @@ class LiveGame(
         const val ALIVE_STALE_MILLIS = 5_000L
 
         /** Starts [game] in [scope] for as long as the server runs. */
-        fun launchIn(scope: CoroutineScope, game: LiveGame, phases: Flow<SessionPhase>, eliminations: Flow<Pair<Int, Int>>) =
+        fun launchIn(scope: CoroutineScope, game: LiveGame, phases: Flow<SessionPhase>, eliminations: Flow<ServerEvent.Eliminated>) =
             scope.launch { game.run(phases, eliminations) }
     }
 }

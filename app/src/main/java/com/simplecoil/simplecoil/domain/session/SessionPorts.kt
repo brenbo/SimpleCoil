@@ -36,7 +36,8 @@ interface SessionNetwork {
     /** Our respawn shield blocked a hit from [playerId]. */
     fun sendShieldHit(playerId: Byte)
     fun sendShotFired()
-    fun sendEliminated(playerId: Byte)
+    /** Eliminated by [playerId], with the [magazines] we had on us (null: unlimited ammo, or not known). */
+    fun sendEliminated(playerId: Byte, magazines: Int? = null)
 
     /** Grenade paired: tells the server (only when networking). */
     fun sendPlayerGrenade()

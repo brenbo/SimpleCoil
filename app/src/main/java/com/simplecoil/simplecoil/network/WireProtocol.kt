@@ -38,6 +38,9 @@ object WireProtocol {
     const val NETMSG_OUT = "OUT"
     const val NETMSG_SHIELDHIT = "SHIELDHIT"
     const val NETMSG_ELIMINATED = "ELIMINATED"
+
+    /** Sent reliably just before ELIMINATED: the magazines the player had on them, for a scavenger pickup (3.0+; an older server ignores it). */
+    const val NETMSG_MAGAZINES = "MAGS"
     const val NETMSG_LEAVE = "LEAVE"
     const val NETMSG_STARTGAME = "STARTGAME"
     const val NETMSG_ENDGAME = "ENDGAME"

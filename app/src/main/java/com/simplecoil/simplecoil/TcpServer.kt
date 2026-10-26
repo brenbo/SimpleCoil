@@ -217,9 +217,7 @@ class TcpServer : Service() {
         )
         liveGame = game
         container.liveGame = game
-        val eliminations = container.serverEvents.events
-            .filterIsInstance<ServerEvent.Eliminated>()
-            .map { it.victimId.toInt() to it.shooterId.toInt() }
+        val eliminations = container.serverEvents.events.filterIsInstance<ServerEvent.Eliminated>()
         spawnMoves = LiveGame.launchIn(scope, game, server.snapshot.map { it.phase }, eliminations)
         gpsReports = scope.launch {
             while (true) {

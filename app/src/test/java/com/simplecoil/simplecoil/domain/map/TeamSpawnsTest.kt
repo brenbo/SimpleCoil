@@ -69,4 +69,14 @@ class TeamSpawnsTest {
         assertSame(first, cache.forMode(two, TeamMode.FOUR_TEAMS))
         assertEquals(listOf(1, 2), teams(cache.forMode(two, TeamMode.TWO_TEAMS)))
     }
+
+    @Test
+    fun aRealBackyard_withTwoTeamsSpawns_getsTheOtherTwoInFourTeams() {
+        val json = javaClass.classLoader!!.getResource("fields/backyard_two_spawns.json").readText()
+        val yard = FieldConfig.fromJson(org.json.JSONObject(json))
+        assertEquals(listOf(1, 2), teams(yard))
+        for (seed in 0 until 20) {
+            assertEquals("seed $seed", listOf(1, 2, 3, 4), teams(TeamSpawns.forMode(yard, TeamMode.FOUR_TEAMS, Random(seed))))
+        }
+    }
 }

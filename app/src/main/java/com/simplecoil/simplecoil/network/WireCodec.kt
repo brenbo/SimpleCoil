@@ -26,6 +26,7 @@ import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_SORTTEAMS
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_STARTGAME
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_TEAMSIZES
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ELIMINATED
+import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_MAGAZINES
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ENDGAME
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ERROR
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_HIT
@@ -53,6 +54,9 @@ import org.json.JSONObject
 object WireCodec {
     private const val TAG = "WireCodec"
     private const val ADMIN_PREFIX = "ADMIN_"
+
+    /** The most magazines a MAGS report believes. */
+    private const val MAX_MAGAZINES = 99
     private const val MESG_HEADER = WireProtocol.TCPMESSAGE_PREFIX + WireProtocol.TCPPREFIX_MESG
     private const val JSON_HEADER = WireProtocol.TCPMESSAGE_PREFIX + WireProtocol.TCPPREFIX_JSON
 
@@ -452,6 +456,7 @@ object WireCodec {
         is ClientCommand.Out -> NETMSG_OUT + command.shooterId.argument()
         is ClientCommand.ShieldHit -> NETMSG_SHIELDHIT + command.shooterId.argument()
         is ClientCommand.Eliminated -> NETMSG_ELIMINATED + command.shooterId.argument()
+        is ClientCommand.Magazines -> NETMSG_MAGAZINES + (command.count ?: 0)
         ClientCommand.TeamEliminated -> NETMSG_TEAMELIMINATED
         ClientCommand.PlayerDataRequest -> NETMSG_PLAYERDATAREQUEST
         ClientCommand.ScoreMatrixRequest -> NETMSG_SCOREMATRIXREQUEST
@@ -490,6 +495,7 @@ object WireCodec {
     fun decodeClientCommand(text: String): ClientCommand = when {
         text == NETMSG_LEAVE -> ClientCommand.Leave
         text.startsWith(NETMSG_ELIMINATED) -> ClientCommand.Eliminated(strictId(text.after(NETMSG_ELIMINATED)))
+        text.startsWith(NETMSG_MAGAZINES) -> ClientCommand.Magazines(text.after(NETMSG_MAGAZINES).trim().toIntOrNull()?.takeIf { it in 0..MAX_MAGAZINES })
         text == NETMSG_SHOTFIRED -> ClientCommand.ShotFired
         text.startsWith(NETMSG_HIT) -> ClientCommand.Hit(strictId(text.after(NETMSG_HIT)))
         text.startsWith(NETMSG_OUT) -> ClientCommand.Out(strictId(text.after(NETMSG_OUT)))

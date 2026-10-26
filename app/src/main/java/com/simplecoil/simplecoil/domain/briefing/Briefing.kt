@@ -113,8 +113,8 @@ object Briefing {
             slides += Slide("drops.ammo", Section.DROPS, "Limited ammo",
                 "You start each life with ${loadout.startingReserve} spare magazines." +
                     (if (loadout.refillAtSpawn) " Standing in your own spawn fills them up again." else "") +
-                    (if (loadout.ammo == AmmoMode.SCAVENGER) " A player who's eliminated leaves ${loadout.scavengeMagazines} " +
-                        "magazines where they fell, for ${loadout.scavengeSeconds} s: grab them." else ""),
+                    (if (loadout.ammo == AmmoMode.SCAVENGER) " A player who's eliminated leaves the spare magazines " +
+                        "they had on them where they fell, for ${loadout.scavengeSeconds} s: grab them." else ""),
                 SlideArt.AMMO)
         }
         if (loadout.killstreaks && (loadout.uavKills > 0 || loadout.fullAutoKills > 0)) {

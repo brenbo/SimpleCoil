@@ -208,7 +208,9 @@ class NetworkSessionGateway(
         tcpClient?.sendTCPMessage(command(ClientCommand.ShotFired))
     }
 
-    override fun sendEliminated(playerId: Byte) {
+    override fun sendEliminated(playerId: Byte, magazines: Int?) {
+        // First what we had on us, so the server leaves that many where we fell
+        magazines?.let { tcpClient?.sendReliable(WireCodec.text(ClientCommand.Magazines(it))) }
         tcpClient?.sendReliable(WireCodec.text(ClientCommand.Eliminated(playerId)))
     }
 

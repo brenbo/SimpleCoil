@@ -1094,7 +1094,7 @@ class BlasterSessionEngine(
         val eliminatedBy = if (useNetwork) config.playerName(hitById) ?: "" else ""
         // Every elimination is reported, including by our own or a teammate's grenade: the server
         // counts the life lost and decides whether the shooter scores.
-        if (useNetwork) network?.sendEliminated(hitById)
+        if (useNetwork) network?.sendEliminated(hitById, reserve)
         loseDeathPowerUps()
         if (extraLives > 0 && !(hasLivesLimit && eliminationCount <= 0)) {
             // An extra life: back in at once, where you stand

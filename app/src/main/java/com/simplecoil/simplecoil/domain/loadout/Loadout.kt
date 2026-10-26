@@ -75,14 +75,23 @@ enum class DropKind(val wireValue: String, val lostOnDeath: Boolean) {
  * A drop on the field: announced, then landing at [landsAt] and gone at [expiresAt] (server
  * wall-clock milliseconds; phones correct for their own clock).
  */
-data class Drop(val id: String, val kind: DropKind, val point: LatLon, val landsAt: Long, val expiresAt: Long) {
+data class Drop(
+    val id: String,
+    val kind: DropKind,
+    val point: LatLon,
+    val landsAt: Long,
+    val expiresAt: Long,
+    /** A scavenger pickup's magazines: what the player had on them; null from an older server (the rules' count). */
+    val magazines: Int? = null,
+) {
     fun isLanded(serverNow: Long) = serverNow >= landsAt
     fun isExpired(serverNow: Long) = serverNow >= expiresAt
 
     companion object {
         fun listToJson(drops: List<Drop>): JSONArray = JSONArray().apply {
             drops.forEach {
-                put(JSONArray().put(it.id).put(it.kind.wireValue).put(it.point.latitude).put(it.point.longitude).put(it.landsAt).put(it.expiresAt))
+                put(JSONArray().put(it.id).put(it.kind.wireValue).put(it.point.latitude).put(it.point.longitude).put(it.landsAt).put(it.expiresAt)
+                    .apply { it.magazines?.let(::put) })
             }
         }
 
@@ -92,7 +101,8 @@ data class Drop(val id: String, val kind: DropKind, val point: LatLon, val lands
                 val d = json.getJSONArray(it)
                 // A kind from a newer server: skip it
                 val kind = DropKind.fromWire(d.getString(1)) ?: return@mapNotNull null
-                Drop(d.getString(0), kind, LatLon(d.getDouble(2), d.getDouble(3)), d.getLong(4), d.getLong(5))
+                Drop(d.getString(0), kind, LatLon(d.getDouble(2), d.getDouble(3)), d.getLong(4), d.getLong(5),
+                    if (d.length() > 6) d.getInt(6) else null)
             }
         }
     }

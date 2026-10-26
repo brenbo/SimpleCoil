@@ -176,8 +176,11 @@ object SpawnPlanner {
             if (placed != null) return Result(placed, step > 0)
             scale *= RELAX_STEP
         }
-        // Still nothing: spread them out with no distance rules at all
-        return Result(tryPlace(border, teams, rules, 0.0, width, center, candidates, emptyMap(), emptyList(), 0.0, random, keepClear) ?: emptyList(), true)
+        // Still nothing: spread them out with no distance rules at all, then (a small field whose
+        // capture points cover it) let them touch the points too, rather than a team going without
+        return Result(tryPlace(border, teams, rules, 0.0, width, center, candidates, emptyMap(), emptyList(), 0.0, random, keepClear)
+            ?: tryPlace(border, teams, rules, 0.0, width, center, candidates, emptyMap(), emptyList(), 0.0, random, emptyList())
+            ?: emptyList(), true)
     }
 
     /** The field's width: a circle's diameter, or the longer side of a polygon's box. */

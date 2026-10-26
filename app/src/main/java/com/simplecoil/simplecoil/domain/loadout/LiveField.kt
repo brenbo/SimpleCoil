@@ -79,15 +79,15 @@ class LiveField {
         return add(kind, point, landsAt, landsAt + rules.dropLastsMinutes * 60_000L)
     }
 
-    /** A scavenger pickup where a player fell: there at once, for a short while. */
+    /** A scavenger pickup where a player fell, with the [magazines] they had (null: the rules' count): there at once, for a short while. */
     @Synchronized
-    fun scavenge(point: LatLon, serverNow: Long): Drop? {
+    fun scavenge(point: LatLon, serverNow: Long, magazines: Int? = null): Drop? {
         val rules = base?.loadout ?: return null
-        return add(DropKind.SCAVENGE, point, serverNow, serverNow + rules.scavengeSeconds * 1000L)
+        return add(DropKind.SCAVENGE, point, serverNow, serverNow + rules.scavengeSeconds * 1000L, magazines)
     }
 
-    private fun add(kind: DropKind, point: LatLon, landsAt: Long, expiresAt: Long): Drop {
-        val drop = Drop("d${nextId++}", kind, point, landsAt, expiresAt)
+    private fun add(kind: DropKind, point: LatLon, landsAt: Long, expiresAt: Long, magazines: Int? = null): Drop {
+        val drop = Drop("d${nextId++}", kind, point, landsAt, expiresAt, magazines)
         drops[drop.id] = drop
         return drop
     }

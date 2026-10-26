@@ -39,6 +39,8 @@ sealed interface ClientCommand {
 
     /** The sender was eliminated by [shooterId]. Sent reliably since v07 (as a reliable message's rmsg). */
     data class Eliminated(val shooterId: Byte?) : ClientCommand
+    /** The magazines the player had on them as they were eliminated; null when unreadable. */
+    data class Magazines(val count: Int?) : ClientCommand
     data object TeamEliminated : ClientCommand
     data object PlayerDataRequest : ClientCommand
     data object ScoreMatrixRequest : ClientCommand

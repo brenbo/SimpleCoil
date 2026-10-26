@@ -232,7 +232,7 @@ class LoadoutController(
             standingOn = null
             if (kind != null) {
                 claimed += on.id
-                apply(kind, rules)
+                apply(kind, rules, magazines = on.magazines)
             }
             // Granted or not, the field has likely changed (it's gone, or someone else got it)
             server.refresh()
@@ -266,8 +266,8 @@ class LoadoutController(
         }
     }
 
-    /** Gives the player what [kind] brings, with its sound unless [sound] is false (a killstreak plays its own). */
-    fun apply(kind: DropKind, rules: LoadoutRules, quietly: Boolean = false, sound: Boolean = true) {
+    /** Gives the player what [kind] brings ([magazines]: a scavenger pickup's), with its sound unless [sound] is false (a killstreak plays its own). */
+    fun apply(kind: DropKind, rules: LoadoutRules, quietly: Boolean = false, sound: Boolean = true, magazines: Int? = null) {
         when (kind) {
             DropKind.SUPPLY -> blaster.grantShotMode(GameSettingsRepository.SHOT_MODE_FULL_AUTO)
             DropKind.BURST -> blaster.grantShotMode(GameSettingsRepository.SHOT_MODE_BURST)
@@ -278,7 +278,8 @@ class LoadoutController(
             DropKind.UAV -> startUav(rules, sound)
             DropKind.SCAVENGE -> {
                 val now = session.value.reserve
-                if (now != null) blaster.setAmmoReserve(now + rules.scavengeMagazines)
+                // What the fallen player had on them; from an older server, the rules' count
+                if (now != null) blaster.setAmmoReserve(now + (magazines ?: rules.scavengeMagazines))
             }
         }
         // The UAV plays its own as it comes online

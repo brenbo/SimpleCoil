@@ -332,4 +332,13 @@ class WireCodecTest {
         assertTrue("${bytes.size} bytes", bytes.size <= 65535 + 2) // a frame's length is 2 bytes
         assertEquals(matrix, decodeServer(FrameReader(ByteArrayInputStream(bytes)).poll()!!))
     }
+
+    @Test
+    fun magazines_roundTrip_andNonsenseIsNull() {
+        assertEquals("MAGS3", WireCodec.text(ClientCommand.Magazines(3)))
+        assertEquals(ClientCommand.Magazines(3), WireCodec.decodeClientCommand("MAGS3"))
+        assertEquals(ClientCommand.Magazines(0), WireCodec.decodeClientCommand("MAGS0"))
+        assertEquals(ClientCommand.Magazines(null), WireCodec.decodeClientCommand("MAGSx"))
+        assertEquals(ClientCommand.Magazines(null), WireCodec.decodeClientCommand("MAGS500"))
+    }
 }

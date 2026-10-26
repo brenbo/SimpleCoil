@@ -102,5 +102,6 @@ sealed interface ServerEvent {
     data object TimeExpired : ServerEvent
 
     /** During a game, [victimId] was eliminated by [shooterId] (0, or the victim, if nobody). */
-    data class Eliminated(val victimId: Byte, val shooterId: Byte) : ServerEvent
+    /** [magazines]: what the victim had on them, for a scavenger pickup; null if they didn't say. */
+    data class Eliminated(val victimId: Byte, val shooterId: Byte, val magazines: Int? = null) : ServerEvent
 }

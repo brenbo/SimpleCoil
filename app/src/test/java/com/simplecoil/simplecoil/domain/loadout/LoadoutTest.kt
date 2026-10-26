@@ -81,7 +81,8 @@ class LoadoutTest {
 
     @Test
     fun dropsRoundTripAndSkipUnknownKinds() {
-        val drops = listOf(Drop("d1", DropKind.SUPPLY, center, 1_000, 2_000), Drop("d2", DropKind.SCAVENGE, at(10.0, 0.0), 5, 6))
+        val drops = listOf(Drop("d1", DropKind.SUPPLY, center, 1_000, 2_000), Drop("d2", DropKind.SCAVENGE, at(10.0, 0.0), 5, 6),
+            Drop("d4", DropKind.SCAVENGE, at(20.0, 0.0), 5, 6, magazines = 3))
         val json = Drop.listToJson(drops)
         assertEquals(drops, Drop.listFromJson(JSONArray(json.toString())))
         json.put(JSONArray().put("d3").put("nuke").put(1.0).put(2.0).put(3).put(4))
