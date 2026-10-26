@@ -44,6 +44,7 @@ import com.simplecoil.simplecoil.domain.loadout.AmmoMode
 import com.simplecoil.simplecoil.domain.loadout.LoadoutController
 import com.simplecoil.simplecoil.domain.loadout.LongestShot
 import com.simplecoil.simplecoil.domain.map.AutoZoom
+import com.simplecoil.simplecoil.domain.mode.objectivePreview
 import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.map.BorderTracker
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
@@ -173,7 +174,8 @@ class MapFragment : Fragment() {
             renderDrops()
             showDropBanner()
             showModeBanner()
-            if (!inGame()) objectiveOverlay?.clear()
+            // Between games: the field's own points, as a preview (a game draws its own)
+            if (!inGame()) renderMode(container.modeController.state.value)
             refreshTarget()
             location.currentBestLocation?.takeIf { tracking && (SystemClock.elapsedRealtimeNanos() - it.elapsedRealtimeNanos) / 1_000_000 < FRESH_FIX_MILLIS }
                 ?.let { sendLocation(it) }
@@ -592,6 +594,7 @@ class MapFragment : Fragment() {
         limitCamera()
         if (isResumed) enableGps(wantsGps())
         renderSpawns()
+        if (!inGame()) renderMode(container.modeController.state.value)
         val style = style ?: return
         val ring = config?.border?.ring()
         OutsideShade.update(style, ring)
@@ -800,7 +803,9 @@ class MapFragment : Fragment() {
         val points = objectiveOverlay
         val glyphs = glyphOverlay
         if (state == null || !inGame()) {
-            points?.clear()
+            // Before a game: where the field's points are, plain, so players can look them over
+            val preview = field?.takeIf { !inGame() }?.objectivePreview().orEmpty()
+            if (preview.isEmpty()) points?.clear() else points?.update(preview, field!!.objectiveRules.radiusMeters, letters = true)
             glyphs?.clear()
             showModeBanner()
             return

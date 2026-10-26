@@ -38,6 +38,7 @@ import com.simplecoil.simplecoil.databinding.ActivityRefereeMapBinding
 import com.simplecoil.simplecoil.domain.loadout.DropKind
 import com.simplecoil.simplecoil.domain.map.AutoZoom
 import com.simplecoil.simplecoil.domain.team.TeamLayout
+import com.simplecoil.simplecoil.domain.mode.objectivePreview
 import com.simplecoil.simplecoil.domain.map.Border
 import com.simplecoil.simplecoil.domain.map.GeoBounds
 import com.simplecoil.simplecoil.domain.map.GeoCircle
@@ -324,7 +325,7 @@ class RefereeMapFragment : Fragment() {
             return
         }
         // Between games the live field is off: the saved one, so the pane still shows the field
-        val field = view.field ?: container.serverFieldConfig.config.value
+        val field = view.field ?: container.serverFieldConfig.config.value?.let(container.fieldImageryServer.prepareConfig)
         val ring = field?.border?.ring()
         if (style != null) {
             OutsideShade.update(style, ring)
@@ -338,7 +339,9 @@ class RefereeMapFragment : Fragment() {
 
         val mode = view.mode
         // The mode's things: points, sites, bases; flags; crates
-        points?.update(when (mode?.mode) {
+        // Between games: the field's own points, as the phones preview them
+        val preview = if (mode == null) field?.objectivePreview().orEmpty() else emptyList()
+        if (preview.isNotEmpty()) points?.update(preview, field!!.objectiveRules.radiusMeters, letters = true) else points?.update(when (mode?.mode) {
             GameMode.DOMINATION, GameMode.HARDPOINT, GameMode.SEARCH_AND_DESTROY -> mode.objectives
             GameMode.CAPTURE_THE_FLAG -> mode.flagBaseSpots().map { (team, base) -> ObjectiveState("", base, team, 0, 0.0, false, active = true, next = false) }
             GameMode.EXTRACTION -> mode.extraction?.let { e ->

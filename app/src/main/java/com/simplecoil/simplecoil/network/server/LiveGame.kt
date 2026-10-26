@@ -50,6 +50,7 @@ import com.simplecoil.simplecoil.domain.mode.ModeEngine
 import com.simplecoil.simplecoil.domain.mode.Objective
 import com.simplecoil.simplecoil.domain.mode.ObjectivePlanner
 import com.simplecoil.simplecoil.network.ServerEvent
+import com.simplecoil.simplecoil.domain.map.withPlacedObjectives
 import com.simplecoil.simplecoil.network.imagery.FieldImageryServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
@@ -256,17 +257,7 @@ class LiveGame(
     fun closeZoneNow(): Boolean = battleRoyale?.closeNow(wallClock()) ?: false
 
     /** [base] with its capture points: the host's, or placed now by field size when it left them to the server. */
-    private fun withObjectives(base: FieldConfig): FieldConfig {
-        val border = base.border
-        if (!base.mode.hasObjectives || border == null) return base
-        // The host's points, unless Hardpoint has too few to move between
-        val enough = if (base.mode == GameMode.HARDPOINT) base.objectives.size >= 2 else base.objectives.isNotEmpty()
-        if (enough) return base
-        val count = ObjectivePlanner.count(base.mode, border, base.objectiveRules)
-        val placed = ObjectivePlanner.place(border, count, base.objectiveRules, base.spawns, base.spawnRules.radiusMeters,
-            base.rules.edgeBufferMeters, random)
-        return base.copy(objectives = placed)
-    }
+    private fun withObjectives(base: FieldConfig): FieldConfig = withPlacedObjectives(base, random)
 
     /**
      * Domination or Hardpoint (map design: Game modes): once a second, who stands on each point,

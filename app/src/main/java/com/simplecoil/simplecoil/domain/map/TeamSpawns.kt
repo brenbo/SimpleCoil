@@ -54,8 +54,10 @@ object TeamSpawns {
 }
 
 /**
- * [TeamSpawns.forMode], worked out once per field and team mode: auto-placed spawns stay put
- * (the phones and the game see the same ones) until the field or the team mode changes.
+ * [TeamSpawns.forMode], worked out once per field and team mode, with the capture points the
+ * host left to the server placed too ([withPlacedObjectives]): auto-placed spawns and points
+ * stay put (the phones see them before the game, and the game uses the same ones) until the
+ * field or the team mode changes.
  */
 class TeamSpawnsCache(private val random: Random = Random.Default) {
     private var key: Pair<String, TeamMode>? = null
@@ -66,8 +68,23 @@ class TeamSpawnsCache(private val random: Random = Random.Default) {
         val k = config.id to mode
         if (k != key) {
             key = k
-            prepared = TeamSpawns.forMode(config, mode, random)
+            prepared = withPlacedObjectives(TeamSpawns.forMode(config, mode, random), random)
         }
         return prepared!!
     }
+}
+
+/**
+ * [config] with its capture points: the host's, unless there are none (or Hardpoint has too few
+ * to move between), then ones placed by the rules, clear of the spawns.
+ */
+fun withPlacedObjectives(config: FieldConfig, random: Random = Random.Default): FieldConfig {
+    val border = config.border
+    if (!config.mode.hasObjectives || border == null) return config
+    val enough = if (config.mode == com.simplecoil.simplecoil.domain.mode.GameMode.HARDPOINT) config.objectives.size >= 2 else config.objectives.isNotEmpty()
+    if (enough) return config
+    val count = com.simplecoil.simplecoil.domain.mode.ObjectivePlanner.count(config.mode, border, config.objectiveRules)
+    val placed = com.simplecoil.simplecoil.domain.mode.ObjectivePlanner.place(border, count, config.objectiveRules, config.spawns,
+        config.spawnRules.radiusMeters, config.rules.edgeBufferMeters, random)
+    return config.copy(objectives = placed)
 }

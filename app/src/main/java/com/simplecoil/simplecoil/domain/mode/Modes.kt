@@ -365,3 +365,14 @@ data class ModeState(
         }
     }
 }
+
+/**
+ * Before a game: the points the host put on the field (Domination's and Hardpoint's A, B, C;
+ * Search & Destroy's sites), as plain neutral markers, so everyone sees where they'll be. Empty
+ * for other modes, or when the server places the points itself at the start.
+ */
+fun com.simplecoil.simplecoil.domain.map.FieldConfig.objectivePreview(): List<ObjectiveState> = when (mode) {
+    GameMode.DOMINATION, GameMode.HARDPOINT, GameMode.SEARCH_AND_DESTROY ->
+        objectives.map { ObjectiveState(it.id, it.point, 0, 0, 0.0, contested = false, active = true, next = false) }
+    else -> emptyList()
+}
