@@ -39,6 +39,8 @@ import com.simplecoil.simplecoil.domain.session.SessionEffect
 import com.simplecoil.simplecoil.domain.session.SessionSound
 import com.simplecoil.simplecoil.domain.session.SessionState
 import com.simplecoil.simplecoil.domain.team.TeamColors
+import com.simplecoil.simplecoil.domain.mode.GameMode
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.hardware.audio.SoundEffectPlayer
 import com.simplecoil.simplecoil.hardware.blaster.BlasterEvent
@@ -97,6 +99,8 @@ class GameViewModel(
     private val onSessionReset: () -> Unit = {},
     /** Voice chat: may this player talk, and an admin's talk to everyone. */
     private val voice: VoiceControls = VoiceControls.NONE,
+    /** The server's game mode, from its field; null before one arrives. */
+    private val gameMode: () -> GameMode? = { null },
 ) : ViewModel() {
 
     /** An admin's talk to everyone, for the server controls menu's check mark. */
@@ -183,7 +187,59 @@ class GameViewModel(
         voiceOn = voice.listening,
         muted = voice.muted,
         rank = scoreboardRank,
+        squadsEditable = squadsEditable(),
+        editingSquad = editingSquad,
     )
+
+    // Squad mode, an admin between games: the scoreboard edits the server's squads, as on the
+    // server. Create squad picks a free number, edited here until a player is in it.
+
+    /** The squad this admin is editing, or null. */
+    private var editingSquad: Int? = null
+
+    private fun squadsEditable() = playerRepo.isAdmin && net.useNetwork && serverPhase != SessionPhase.RUNNING &&
+        settingsRepo.teamMode.isSquads
+
+    private fun refreshScoreboard() {
+        latestPlayerData?.let { screen?.showScoreboard(it) }
+    }
+
+    fun onCreateSquad() {
+        val squads = settingsRepo.teamLayout.squads
+        editingSquad = (1..TeamLayout.MAX_SQUADS).firstOrNull { it !in squads.keys } ?: return
+        refreshScoreboard()
+    }
+
+    fun onSquadHeaderClicked(squad: Int) {
+        editingSquad = if (editingSquad == squad) null else squad
+        refreshScoreboard()
+    }
+
+    fun onSquadDone() {
+        editingSquad = null
+        refreshScoreboard()
+    }
+
+    /** Breaks up [squad]: its players play alone again. */
+    fun onDeleteSquad(squad: Int) {
+        editingSquad = null
+        val squads = settingsRepo.teamLayout.squads
+        if (squad in squads) sendSquads(squads - squad) else refreshScoreboard()
+    }
+
+    fun onSquadToggle(playerId: Byte, add: Boolean) {
+        val squad = editingSquad ?: return
+        val id = playerId.toInt()
+        val squads = settingsRepo.teamLayout.squads.mapValues { (_, members) -> members - id }.toMutableMap()
+        if (add) squads[squad] = squads[squad].orEmpty() + id
+        sendSquads(squads)
+    }
+
+    /** The server applies them and sends everyone the new squads, this scoreboard included. */
+    private fun sendSquads(squads: Map<Int, Set<Int>>) {
+        net.tcpClient?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminSquads(squads.filterValues { it.isNotEmpty() })))
+        refreshScoreboard()
+    }
 
     /** The scoreboard's mute button: [playerId] muted, or heard again, on this phone only. */
     fun onMuteClicked(playerId: Byte) {
@@ -1099,9 +1155,9 @@ class GameViewModel(
     fun adminActions(): List<AdminAction> {
         Log.d(TAG, "showAdminControlsMenu: serverPhase=$serverPhase")
         val phase = when (serverPhase) {
-            SessionPhase.LOBBY -> listOf(AdminAction.START_GAME, AdminAction.TWO_TEAMS, AdminAction.THREE_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
+            SessionPhase.LOBBY -> listOf(AdminAction.START_GAME, AdminAction.TEAM_SETTINGS)
             SessionPhase.RUNNING -> listOf(AdminAction.END_GAME)
-            SessionPhase.POST_GAME -> listOf(AdminAction.RESET_GAME, AdminAction.TWO_TEAMS, AdminAction.THREE_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
+            SessionPhase.POST_GAME -> listOf(AdminAction.RESET_GAME, AdminAction.TEAM_SETTINGS)
         }
         // An admin who may talk can talk to every player, in any phase (here, not in the player
         // settings, so it works when the server allows only its own settings)
@@ -1121,10 +1177,7 @@ class GameViewModel(
                 // Asked first, as the End Game button always did
                 screen?.confirmEndGame()
             }
-            AdminAction.TWO_TEAMS -> changeAdminTeamMode(TeamMode.TWO_TEAMS)
-            AdminAction.THREE_TEAMS -> changeAdminTeamMode(TeamMode.THREE_TEAMS)
-            AdminAction.FOUR_TEAMS -> changeAdminTeamMode(TeamMode.FOUR_TEAMS)
-            AdminAction.FREE_FOR_ALL -> changeAdminTeamMode(TeamMode.FREE_FOR_ALL)
+            AdminAction.TEAM_SETTINGS -> screen?.showAdminTeamSettings()
             AdminAction.SHUFFLE_TEAMS -> client?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminSortTeams))
             AdminAction.RESET_GAME -> screen?.confirmReset(latestPlayerData?.count { it != null && !it.isConnected } ?: 0)
             AdminAction.TALK_TO_EVERYONE -> voice.toEveryone = !voice.toEveryone
@@ -1135,6 +1188,17 @@ class GameViewModel(
     fun onResetConfirmed() {
         net.tcpClient?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminReset))
     }
+
+    /** The team settings pop-up's choices: the team modes the server's game mode is played with. */
+    fun adminTeamModes(): List<TeamMode> {
+        val allowed = gameMode()?.teamModes ?: TeamMode.entries.toSet()
+        return ADMIN_TEAM_MODE_ORDER.filter { it in allowed }
+    }
+
+    /** The server's team mode, checked in the team settings pop-up. */
+    val teamMode: TeamMode get() = settingsRepo.teamMode
+
+    fun onAdminTeamModeChosen(mode: TeamMode) = changeAdminTeamMode(mode)
 
     private fun changeAdminTeamMode(mode: TeamMode) {
         Log.d(TAG, "changeAdminTeamMode: mode=" + mode + ", mTcpClient=" + (net.tcpClient != null))
@@ -1528,6 +1592,10 @@ class GameViewModel(
 
     companion object {
         private const val TAG = "scmain"
+
+        /** The team settings pop-up's order, as the team mode menu has always been. */
+        private val ADMIN_TEAM_MODE_ORDER = listOf(TeamMode.TWO_TEAMS, TeamMode.THREE_TEAMS, TeamMode.FOUR_TEAMS,
+            TeamMode.FREE_FOR_ALL, TeamMode.SQUADS)
 
         // For testing and debugging network only -- dumps you straight to the play game layout and allows you to switch teams without connecting a blaster
         const val TEST_NETWORK = false

@@ -69,6 +69,16 @@
             android:paddingEnd="4dp"
             android:textAppearance="@style/TextAppearance.SimpleCoil.Label" />
 
+        <!-- Squad mode, an admin editing a squad: add this player to it, or take them out -->
+        <ImageView
+            android:id="@+id/squad_toggle_iv"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="4dp"
+            android:padding="2dp"
+            android:visibility="gone" />
+
         <ImageView
             android:id="@+id/kick_player_iv"
             android:contentDescription="@string/cd_kick_player"

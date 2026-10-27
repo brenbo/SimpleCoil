@@ -41,6 +41,7 @@ import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.domain.mode.GameResult
 import com.simplecoil.simplecoil.domain.loadout.ShotRank
 import com.simplecoil.simplecoil.domain.map.DistanceUnits
+import com.simplecoil.simplecoil.domain.team.TeamMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -130,6 +131,36 @@ class EndGameConfirmDialog : GameDialogFragment() {
             .setPositiveButton(R.string.yes) { _, _ -> vm.onEndGameConfirmed() }
             .setNegativeButton(R.string.no) { dialog, _ -> dialog.dismiss() }
             .create()
+}
+
+/**
+ * An admin's team settings: the team modes the server's game mode allows (the current one
+ * checked; picking one sends it), and Shuffle players, greyed out in squads.
+ */
+class AdminTeamSettingsDialog : GameDialogFragment() {
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val modes = vm.adminTeamModes()
+        val names = modes.map { getString(teamModeName(it)) }.toTypedArray()
+        val dialog = alertBuilder()
+            .setTitle(R.string.team_mode_label)
+            .setSingleChoiceItems(names, modes.indexOf(vm.teamMode)) { dialog, which ->
+                vm.onAdminTeamModeChosen(modes[which])
+                dialog.dismiss()
+            }
+            .setNeutralButton(R.string.shuffle_players_button) { _, _ -> vm.onAdminAction(AdminAction.SHUFFLE_TEAMS) }
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+        dialog.setOnShowListener { dialog.getButton(AlertDialog.BUTTON_NEUTRAL).isEnabled = !vm.teamMode.isSquads }
+        return dialog
+    }
+
+    private fun teamModeName(mode: TeamMode) = when (mode) {
+        TeamMode.FREE_FOR_ALL -> R.string.team_mode_ffa
+        TeamMode.TWO_TEAMS -> R.string.team_mode_2teams
+        TeamMode.THREE_TEAMS -> R.string.team_mode_3teams
+        TeamMode.FOUR_TEAMS -> R.string.team_mode_4teams
+        TeamMode.SQUADS -> R.string.team_mode_squads
+    }
 }
 
 /** A grenade is pairing near the blaster: take it? On a server the first Yes gets it, and the prompt goes from the other phones. */
@@ -245,6 +276,11 @@ class ScoreboardDialog : GameDialogFragment() {
                 vm.scoreboardRank = rank
                 lastPlayers?.let(::setData)
             }
+            override fun onCreateSquad() = vm.onCreateSquad()
+            override fun onDeleteSquad(squad: Int) = vm.onDeleteSquad(squad)
+            override fun onSquadDone() = vm.onSquadDone()
+            override fun onSquadHeaderClicked(squad: Int) = vm.onSquadHeaderClicked(squad)
+            override fun onSquadToggle(playerId: Byte, add: Boolean) = vm.onSquadToggle(playerId, add)
         })
         this.adapter = adapter
         binding.playerList.layoutManager = LinearLayoutManager(activity)

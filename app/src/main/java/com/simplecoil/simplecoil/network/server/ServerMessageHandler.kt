@@ -153,6 +153,11 @@ class ServerMessageHandler(
                     server.rebalanceAllPlayers(false)
                 }
             }
+            command is ClientCommand.AdminSquads -> {
+                Log.d(TAG, "TcpServer received ADMIN_SQUADS command: ${command.squads}")
+                val squads = command.squads
+                if (!roster.isRunning() && squads != null && settings.teamMode.isSquads) server.setSquads(squads)
+            }
         }
     }
 

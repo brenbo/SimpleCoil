@@ -682,7 +682,7 @@ class GameViewModelTest {
     @Test
     fun adminActions_followTheServerPhase_andResetTakesStartGamesPlace() {
         joinServer()
-        val settings = listOf(AdminAction.TWO_TEAMS, AdminAction.THREE_TEAMS, AdminAction.FOUR_TEAMS, AdminAction.FREE_FOR_ALL, AdminAction.SHUFFLE_TEAMS)
+        val settings = listOf(AdminAction.TEAM_SETTINGS)
         assertEquals(listOf(AdminAction.START_GAME) + settings, vm.adminActions())
         serverPhase(SessionPhase.RUNNING)
         assertEquals(listOf(AdminAction.END_GAME), vm.adminActions())
@@ -713,7 +713,9 @@ class GameViewModelTest {
     fun teamModeAndSortAfterAGame_sendTheUsualAdminMessages() {
         joinServer()
         serverPhase(SessionPhase.POST_GAME)
-        vm.onAdminAction(AdminAction.FREE_FOR_ALL)
+        vm.onAdminAction(AdminAction.TEAM_SETTINGS)
+        verify(screen).showAdminTeamSettings()
+        vm.onAdminTeamModeChosen(TeamMode.FREE_FOR_ALL)
         vm.onAdminAction(AdminAction.SHUFFLE_TEAMS)
         verify(client).sendTCPMessage("SimpleCoil:08MESGADMIN_GAMEMODE" + TeamMode.FREE_FOR_ALL.wireValue)
         verify(client).sendTCPMessage("SimpleCoil:08MESGADMIN_SORTTEAMS")

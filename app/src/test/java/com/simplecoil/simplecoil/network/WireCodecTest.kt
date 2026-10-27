@@ -41,7 +41,8 @@ class WireCodecTest {
         ClientCommand.ShotFired, ClientCommand.Hit(17), ClientCommand.Out(17), ClientCommand.ShieldHit(17), ClientCommand.TeamEliminated,
         ClientCommand.PlayerDataRequest, ClientCommand.ScoreMatrixRequest, ClientCommand.StartGame, ClientCommand.AdminStartGame, ClientCommand.AdminEndGame,
         ClientCommand.AdminSortTeams, ClientCommand.AdminReset, ClientCommand.AdminGameMode(4), ClientCommand.AdminKick(17),
-        ClientCommand.AdminTeamSizes(listOf(10, 6, 8, 8)), ClientCommand.Leave,
+        ClientCommand.AdminTeamSizes(listOf(10, 6, 8, 8)), ClientCommand.AdminSquads(mapOf(1 to setOf(3, 7), 2 to setOf(9))),
+        ClientCommand.AdminSquads(emptyMap()), ClientCommand.Leave,
     )
 
     @Test
@@ -83,6 +84,8 @@ class WireCodecTest {
         assertEquals(ClientCommand.AdminGameMode(null), WireCodec.decodeClientCommand("ADMIN_GAMEMODEx"))
         assertEquals(ClientCommand.AdminTeamSizes(listOf(16, 16)), WireCodec.decodeClientCommand("ADMIN_TEAMSIZES 16, 16,"))
         assertEquals(ClientCommand.AdminTeamSizes(null), WireCodec.decodeClientCommand("ADMIN_TEAMSIZES16,x"))
+        assertEquals(ClientCommand.AdminSquads(mapOf(1 to setOf(3, 7))), WireCodec.decodeClientCommand("ADMIN_SQUADS 1: 3, 7,"))
+        assertEquals(ClientCommand.AdminSquads(null), WireCodec.decodeClientCommand("ADMIN_SQUADS1:x"))
         // Prefixes, as the server matched them
         assertEquals(ClientCommand.AdminStartGame, WireCodec.decodeClientCommand("ADMIN_STARTGAMEnow"))
         assertEquals(ClientCommand.EndGame, WireCodec.decodeClientCommand("ENDGAME"))

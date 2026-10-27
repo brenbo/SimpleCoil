@@ -58,6 +58,9 @@ object WireProtocol {
     const val NETMSG_ADMIN_SORTTEAMS = "ADMIN_SORTTEAMS"
     const val NETMSG_ADMIN_KICK = "ADMIN_KICK"
     const val NETMSG_ADMIN_TEAMSIZES = "ADMIN_TEAMSIZES"
+
+    /** An admin's squads, squad mode: "1:3,7;2:9" (squad number, its player ids), empty for none (3.0+). */
+    const val NETMSG_ADMIN_SQUADS = "ADMIN_SQUADS"
     const val NETMSG_ADMIN_RESET = "ADMIN_RESET"
     // Server -> client: ACK + seq acknowledges every reliable message up to seq
     const val NETMSG_ACK = "ACK"

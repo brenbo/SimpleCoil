@@ -175,6 +175,7 @@ class ClientWireFixturesTest {
             for (command in listOf(ClientCommand.TeamEliminated, ClientCommand.PlayerDataRequest,
                     ClientCommand.ScoreMatrixRequest, ClientCommand.StartGame, ClientCommand.AdminStartGame, ClientCommand.AdminEndGame, ClientCommand.AdminSortTeams, ClientCommand.AdminReset,
                     ClientCommand.AdminGameMode(4), ClientCommand.AdminKick(17), ClientCommand.AdminTeamSizes(listOf(10, 6, 8, 8)),
+                    ClientCommand.AdminSquads(mapOf(1 to setOf(3, 7), 2 to setOf(9))), ClientCommand.AdminSquads(emptyMap()),
                     ClientCommand.Leave)) { // leaveServer()'s LEAVE: it only writes while connected
                 client.sendTCPMessage(NetworkSessionGateway.command(command))
             }

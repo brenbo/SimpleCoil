@@ -50,7 +50,7 @@ sealed interface NetworkMenuEntry {
 data class SwitchTeamEntry(val team: Int, val color: Int)
 
 /** Entries of the admin popup menu. */
-enum class AdminAction { START_GAME, END_GAME, TWO_TEAMS, THREE_TEAMS, FOUR_TEAMS, FREE_FOR_ALL, SHUFFLE_TEAMS, RESET_GAME, TALK_TO_EVERYONE }
+enum class AdminAction { START_GAME, END_GAME, TEAM_SETTINGS, SHUFFLE_TEAMS, RESET_GAME, TALK_TO_EVERYONE }
 
 /** Voice chat, as the play screen controls it: whether this player may talk, and an admin's talk to everyone. */
 interface VoiceControls {
@@ -173,6 +173,8 @@ interface GameDialogs {
     /** The offer for [grenadeId] is over (someone has it): close the prompt. */
     fun dismissGrenadeOffer(grenadeId: Int)
     fun confirmEndGame()
+    /** An admin's team settings: the team modes the game mode allows, and Shuffle players. */
+    fun showAdminTeamSettings()
     /** Ask before an admin resets the server; [disconnectedPlayers] would be removed. */
     fun confirmReset(disconnectedPlayers: Int)
     /** Rebuild the admin popup from [GameViewModel.adminActions] if it is open. */

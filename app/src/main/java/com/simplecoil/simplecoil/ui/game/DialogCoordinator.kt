@@ -144,6 +144,8 @@ class DialogCoordinator(
 
     override fun confirmEndGame() = show(TAG_END_GAME) { EndGameConfirmDialog() }
 
+    override fun showAdminTeamSettings() = show(TAG_TEAM_SETTINGS) { AdminTeamSettingsDialog() }
+
     override fun confirmReset(disconnectedPlayers: Int) = show(TAG_RESET) { ResetConfirmDialog.newInstance(disconnectedPlayers) }
 
     override fun showSessionToast(toast: SessionToast) {
@@ -254,10 +256,7 @@ class DialogCoordinator(
             val title = when (action) {
                 AdminAction.START_GAME -> R.string.start_game_button
                 AdminAction.END_GAME -> R.string.end_game_button
-                AdminAction.TWO_TEAMS -> R.string.team_mode_2teams
-                AdminAction.THREE_TEAMS -> R.string.team_mode_3teams
-                AdminAction.FOUR_TEAMS -> R.string.team_mode_4teams
-                AdminAction.FREE_FOR_ALL -> R.string.team_mode_ffa
+                AdminAction.TEAM_SETTINGS -> R.string.team_mode_label
                 AdminAction.SHUFFLE_TEAMS -> R.string.shuffle_teams_button
                 AdminAction.RESET_GAME -> R.string.reset_game_admin
                 AdminAction.TALK_TO_EVERYONE -> R.string.voice_to_everyone
@@ -356,6 +355,7 @@ class DialogCoordinator(
         private const val TAG_CONNECT_STATUS = "connectStatus"
         private const val TAG_DISCONNECTED = "blasterDisconnected"
         private const val TAG_END_GAME = "endGame"
+        private const val TAG_TEAM_SETTINGS = "adminTeamSettings"
         private const val TAG_RESET = "resetGame"
         private const val TAG_GRENADE_OFFER = "grenadeOffer"
         private const val TAG_BLASTER_PICKER = "blasterPicker"

@@ -60,6 +60,8 @@ sealed interface ClientCommand {
 
     /** Null when a size is not a number. */
     data class AdminTeamSizes(val sizes: List<Int>?) : ClientCommand
+    /** Squad mode: an admin's squads, squad number → player ids; null when unreadable. */
+    data class AdminSquads(val squads: Map<Int, Set<Int>>?) : ClientCommand
 
     /** Anything else; one that starts with ADMIN_ still counts as an admin command. */
     data class Other(val text: String) : ClientCommand

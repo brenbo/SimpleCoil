@@ -24,6 +24,7 @@ import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_KICK
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_RESET
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_SORTTEAMS
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_STARTGAME
+import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_SQUADS
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_TEAMSIZES
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ELIMINATED
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_MAGAZINES
@@ -477,6 +478,7 @@ object WireCodec {
         is ClientCommand.AdminGameMode -> NETMSG_ADMIN_GAMEMODE + command.wireValue.argument()
         is ClientCommand.AdminKick -> NETMSG_ADMIN_KICK + command.playerId.argument()
         is ClientCommand.AdminTeamSizes -> NETMSG_ADMIN_TEAMSIZES + (command.sizes?.joinToString(",") ?: "")
+        is ClientCommand.AdminSquads -> NETMSG_ADMIN_SQUADS + (command.squads ?: emptyMap()).entries.joinToString(";") { (n, ids) -> "$n:" + ids.sorted().joinToString(",") }
         is ClientCommand.Other -> command.text
     }
 
@@ -518,6 +520,7 @@ object WireCodec {
         text.startsWith(NETMSG_ADMIN_SORTTEAMS) -> ClientCommand.AdminSortTeams
         text.startsWith(NETMSG_ADMIN_GAMEMODE) -> ClientCommand.AdminGameMode(strictInt(text.after(NETMSG_ADMIN_GAMEMODE).trim()))
         text.startsWith(NETMSG_ADMIN_KICK) -> ClientCommand.AdminKick(strictInt(text.after(NETMSG_ADMIN_KICK).trim())?.toByte())
+        text.startsWith(NETMSG_ADMIN_SQUADS) -> ClientCommand.AdminSquads(squads(text.after(NETMSG_ADMIN_SQUADS).trim()))
         text.startsWith(NETMSG_ADMIN_TEAMSIZES) -> ClientCommand.AdminTeamSizes(teamSizes(text.after(NETMSG_ADMIN_TEAMSIZES).trim()))
         else -> ClientCommand.Other(text)
     }
@@ -528,6 +531,7 @@ object WireCodec {
         ClientCommand.StartGame, ClientCommand.AdminStartGame, ClientCommand.AdminEndGame, ClientCommand.AdminReset,
         ClientCommand.AdminSortTeams, is ClientCommand.AdminGameMode, is ClientCommand.AdminKick,
         is ClientCommand.AdminTeamSizes -> true
+        is ClientCommand.AdminSquads -> true
         is ClientCommand.Other -> command.text.startsWith(ADMIN_PREFIX)
         else -> false
     }
@@ -551,6 +555,17 @@ object WireCodec {
     }
 
     private fun String.after(prefix: String) = substring(prefix.length)
+
+    /** "1:3,7;2:9" as squad number → player ids; empty is none; null if any part is unreadable. */
+    private fun squads(text: String): Map<Int, Set<Int>>? = try {
+        if (text.isEmpty()) emptyMap() else text.split(";").associate { part ->
+            val (n, ids) = part.split(":", limit = 2)
+            n.trim().toInt() to ids.split(",").filter { it.isNotBlank() }.map { it.trim().toInt() }.toSet()
+        }
+    } catch (e: RuntimeException) {
+        Log.w(TAG, "Bad squads '$text'")
+        null
+    }
 
     private fun Any?.argument(): String = this?.toString() ?: ""
 
