@@ -223,16 +223,24 @@ object ScoreboardRows {
         }
         // Ranked: a player alone is a squad of one, in among the squads by score
         val entries = squads.map { it.first to it.second } + alone.map { -it.playerID.toInt() to listOf(it) }
+        // Players alone next to each other share one bar, so they don't look like the squad above's
+        val run = ArrayList<PlayerDisplayData>()
+        fun flushAlone() {
+            if (run.isEmpty()) return
+            rows += ScoreboardRow.TeamHeader(run.first().playerID.toInt(), run.size, 0, run.sumOf { it.points }, false, null,
+                color = TeamColors.NONE, solo = true)
+            run.forEach { rows += playerRow(it, context) }
+            run.clear()
+        }
         for ((n, members) in entries.sortedWith(order)) {
             if (n > 0) {
+                flushAlone()
                 addSquad(n, members)
             } else {
-                // Their own bar, like a squad's, so they don't look like the squad above's
-                val p = members.single()
-                rows += ScoreboardRow.TeamHeader(p.playerID.toInt(), 1, 0, p.points, false, null, color = TeamColors.NONE, solo = true)
-                rows += playerRow(p, context)
+                run += members.single()
             }
         }
+        flushAlone()
     }
 
     private fun playerRow(p: PlayerDisplayData, context: ScoreboardContext, rank: Boolean = false): ScoreboardRow.Player {

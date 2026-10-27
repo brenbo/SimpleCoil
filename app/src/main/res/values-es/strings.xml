@@ -150,6 +150,7 @@
     <string name="squad_editing_hint">Escuadra %1$d: toca + para añadir jugadores y − para quitarlos.</string>
     <string name="squad_done">Listo</string>
     <string name="squad_solo_header">Solo · puntos %1$d</string>
+    <string name="squad_solo_group">Solos</string>
     <string name="shuffle_players_button">Mezclar jugadores</string>
     <string name="squad_delete">Eliminar</string>
     <string name="squad_header">Escuadra %1$d · %2$s · puntos %3$d</string>

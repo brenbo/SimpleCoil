@@ -191,4 +191,17 @@ class ScoreboardRowsTest {
         assertEquals(7, headers[1].score)
         assertEquals(listOf(1, 2, 3, 4, 5), rows.playerIds())
     }
+
+    @Test
+    fun squads_playersAloneNextToEachOther_shareOneBar() {
+        val layout = com.simplecoil.simplecoil.domain.team.TeamLayout.defaultFor(TeamMode.SQUADS).withSquads(mapOf(1 to setOf(1, 2)))
+        val rows = ScoreboardRows.build(
+            players(player(1, "A", 9), player(2, "B", 9), player(3, "Solo1", 5), player(4, "Solo2", 4)),
+            context(mode = TeamMode.SQUADS).copy(layout = layout))
+        val headers = rows.filterIsInstance<ScoreboardRow.TeamHeader>()
+        assertEquals(2, headers.size)
+        assertTrue(headers[1].solo)
+        assertEquals(2, headers[1].playerCount)
+        assertEquals(listOf(1, 2, 3, 4), rows.playerIds())
+    }
 }

@@ -150,6 +150,7 @@
     <string name="squad_editing_hint">Esquadrão %1$d: toque em + para adicionar jogadores e em − para tirá-los.</string>
     <string name="squad_done">Pronto</string>
     <string name="squad_solo_header">Sozinho · pontos %1$d</string>
+    <string name="squad_solo_group">Sozinhos</string>
     <string name="shuffle_players_button">Embaralhar jogadores</string>
     <string name="squad_delete">Excluir</string>
     <string name="squad_header">Esquadrão %1$d · %2$s · pontos %3$d</string>

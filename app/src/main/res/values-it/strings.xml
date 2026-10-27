@@ -150,6 +150,7 @@
     <string name="squad_editing_hint">Gruppo %1$d: tocca + per aggiungere giocatori, − per toglierli.</string>
     <string name="squad_done">Fatto</string>
     <string name="squad_solo_header">Da solo · punti %1$d</string>
+    <string name="squad_solo_group">Da soli</string>
     <string name="shuffle_players_button">Mescola giocatori</string>
     <string name="squad_delete">Elimina</string>
     <string name="squad_header">Gruppo %1$d · %2$s · punti %3$d</string>

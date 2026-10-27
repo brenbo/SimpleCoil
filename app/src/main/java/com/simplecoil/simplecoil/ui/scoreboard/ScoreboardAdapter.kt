@@ -182,7 +182,8 @@ class ScoreboardAdapter(
                 action.visibility = View.GONE
                 colorSquare?.visibility = View.GONE
             } else if (row.solo) {
-                title.text = context.getString(R.string.squad_solo_header, row.score)
+                // One player: their score on the bar; several: each on their own row
+                title.text = if (row.playerCount == 1) context.getString(R.string.squad_solo_header, row.score) else context.getString(R.string.squad_solo_group)
                 showColor(Color.TRANSPARENT)
                 action.visibility = View.GONE
                 mute?.visibility = View.GONE
