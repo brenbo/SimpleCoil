@@ -22,6 +22,7 @@ import com.simplecoil.simplecoil.data.model.PlayerSettings
 import com.simplecoil.simplecoil.data.repository.GameSettingsRepository
 import com.simplecoil.simplecoil.data.repository.GameStateRepository
 import com.simplecoil.simplecoil.data.repository.PlayerRepository
+import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.network.EventBus
 import com.simplecoil.simplecoil.network.ServerCommand
@@ -578,6 +579,44 @@ class GameServer @JvmOverloads constructor(
             events.publish(ServerEvent.PlayerDataChanged(null))
         }
         reset
+    }
+
+    /** What became of dragging a player onto a team or squad. */
+    enum class MoveResult { MOVED, FULL, REFUSED }
+
+    /**
+     * The host or an admin dragged [playerId] onto [team]: a team (1 to 4), a squad's team
+     * ([TeamLayout.SQUAD_TEAM_BASE] + its number), or 0 for playing alone in squad mode. Not
+     * during a game, nor in free for all. A full team is [MoveResult.FULL], and nobody moves.
+     */
+    fun moveToTeam(playerId: Byte, team: Int): MoveResult = callOnDispatcher(MoveResult.REFUSED) {
+        if (roster.isRunning()) return@callOnDispatcher MoveResult.REFUSED
+        resetSessionNow()
+        val layout = settings.teamLayout
+        val id = playerId.toInt()
+        when {
+            layout.mode.isSquads -> {
+                val squad = (team - TeamLayout.SQUAD_TEAM_BASE).takeIf { it in 1..TeamLayout.MAX_SQUADS }
+                if (team != 0 && squad == null) return@callOnDispatcher MoveResult.REFUSED
+                val squads = layout.squads.mapValues { (_, members) -> members - id }.toMutableMap()
+                if (squad != null) squads[squad] = squads[squad].orEmpty() + id
+                if (!roster.setSquads(squads)) return@callOnDispatcher MoveResult.REFUSED
+            }
+            layout.mode.hasFixedTeams -> {
+                if (team !in 1..layout.mode.teamCount) return@callOnDispatcher MoveResult.REFUSED
+                val oldTeam = layout.teamOf(id)
+                if (oldTeam == team) return@callOnDispatcher MoveResult.MOVED
+                val moved = roster.moveToTeam(playerId, team) ?: return@callOnDispatcher MoveResult.FULL
+                applyPreset(moved.playerId, team, oldTeam)
+                moved.connection?.send(command(ServerCommand.ServerReply(moved.playerId)))
+            }
+            else -> return@callOnDispatcher MoveResult.REFUSED
+        }
+        requestFullGpsUpdate()
+        sendPlayerData(SEND_ALL)
+        sendAllGameInfo(SEND_ALL)
+        events.publish(ServerEvent.PlayerDataChanged(null))
+        MoveResult.MOVED
     }
 
     /** New team sizes (already validated), and everyone renumbered. */

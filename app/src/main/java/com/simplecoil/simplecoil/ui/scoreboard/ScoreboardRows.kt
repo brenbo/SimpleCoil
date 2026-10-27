@@ -43,6 +43,11 @@ sealed interface ScoreboardRow {
         val editing: Boolean = false,
         /** Squad mode, ranked: a player alone, as a squad of one ([team] is their id). */
         val solo: Boolean = false,
+        /**
+         * A player dragged under this header joins this team: a team, a squad's team, or 0 to
+         * play alone (squad mode); null when players can't be dragged.
+         */
+        val dropTeam: Int? = null,
     ) : ScoreboardRow
 
     data class Player(
@@ -64,6 +69,8 @@ sealed interface ScoreboardRow {
         val squadAdd: Boolean? = null,
         /** Ranked by player: the colour of their team or squad beside their name ([TeamColors.NONE]: none). */
         val color: Int = TeamColors.NONE,
+        /** Can be long-pressed and dragged onto another team or squad. */
+        val draggable: Boolean = false,
     ) : ScoreboardRow
 
     /**
@@ -102,6 +109,8 @@ data class ScoreboardContext(
     val rank: ScoreboardRank = ScoreboardRank.TEAMS,
     /** The rank-by dropdown is offered (the server: a wide screen, in a game); without it, teams. */
     val rankOffered: Boolean = true,
+    /** The host or an admin between games: players drag onto other teams or squads (not in free for all). */
+    val teamsDraggable: Boolean = false,
 )
 
 /**
@@ -177,7 +186,8 @@ object ScoreboardRows {
         }
         for (team in teams.sortedWith(teamOrder)) {
             val capacity = sizes.getOrElse(team.number - 1) { 16 }
-            rows += ScoreboardRow.TeamHeader(team.number, team.members.size, capacity, team.points, canEdit, allMuted(team.members, context))
+            rows += ScoreboardRow.TeamHeader(team.number, team.members.size, capacity, team.points, canEdit, allMuted(team.members, context),
+                dropTeam = team.number.takeIf { context.teamsDraggable })
             for (p in team.members.sortedWith(playerOrder(context))) rows += playerRow(p, context)
         }
         return rows
@@ -207,16 +217,18 @@ object ScoreboardRows {
         fun addSquad(n: Int, members: List<PlayerDisplayData>) {
             val team = TeamLayout.SQUAD_TEAM_BASE + n
             rows += ScoreboardRow.TeamHeader(team, members.size, 0, total(members), context.squadsEditable,
-                allMuted(members, context), color = layout.colorOf(team), squad = n, editing = n == editing)
+                allMuted(members, context), color = layout.colorOf(team), squad = n, editing = n == editing,
+                dropTeam = team.takeIf { context.teamsDraggable })
             for (p in members.sortedWith(playerOrder(context))) rows += playerRow(p, context)
         }
         val alone = all.filter { layout.squadOf(it.playerID.toInt()) == null }
+        val aloneDrop = 0.takeIf { context.teamsDraggable }
         if (editing != null || numbers.isEmpty()) {
             // Making squads (or none yet): squads in number order, so the edited one's header
             // doesn't jump about, then everyone else together, where the + buttons are
             for ((n, members) in squads) addSquad(n, members)
             if (alone.isNotEmpty() || numbers.isEmpty()) {
-                rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, false, allMuted(alone, context))
+                rows += ScoreboardRow.TeamHeader(0, 0, 0, 0, false, allMuted(alone, context), dropTeam = aloneDrop)
                 for (p in alone.sortedWith(playerOrder(context))) rows += playerRow(p, context)
             }
             return
@@ -228,7 +240,7 @@ object ScoreboardRows {
         fun flushAlone() {
             if (run.isEmpty()) return
             rows += ScoreboardRow.TeamHeader(run.first().playerID.toInt(), run.size, 0, run.sumOf { it.points }, false, null,
-                color = TeamColors.NONE, solo = true)
+                color = TeamColors.NONE, solo = true, dropTeam = aloneDrop)
             run.forEach { rows += playerRow(it, context) }
             run.clear()
         }
@@ -265,6 +277,7 @@ object ScoreboardRows {
             muted = (idInt in context.muted).takeIf { context.voiceOn && id != context.selfId && teammate(idInt, context) },
             squadAdd = context.editingSquad?.takeIf { context.squadsEditable && context.rank == ScoreboardRank.TEAMS }?.let { context.layout.squadOf(idInt) != it },
             color = if (rank) context.layout.colorOf(context.layout.teamOf(idInt)) else TeamColors.NONE,
+            draggable = context.teamsDraggable && !rank && !context.layout.mode.isFreeForAll,
         )
     }
 

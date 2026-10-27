@@ -281,6 +281,7 @@ class ScoreboardDialog : GameDialogFragment() {
             override fun onSquadDone() = vm.onSquadDone()
             override fun onSquadHeaderClicked(squad: Int) = vm.onSquadHeaderClicked(squad)
             override fun onSquadToggle(playerId: Byte, add: Boolean) = vm.onSquadToggle(playerId, add)
+            override fun onPlayerDropped(playerId: Byte, team: Int) = vm.onPlayerDropped(playerId, team)
         })
         this.adapter = adapter
         binding.playerList.layoutManager = LinearLayoutManager(activity)

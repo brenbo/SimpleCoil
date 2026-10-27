@@ -35,6 +35,8 @@ enum class GameMessage {
     UDP_VERSION_ERROR, KICKED_BY_SERVER, INAPPROPRIATE_NAME, LOCATION_PERMISSION_REQUIRED,
     RATIOS_DURING_GAME, RATIOS_ADMIN_ONLY, RATIOS_NOT_IN_FFA,
     KICK_SENT,
+    /** An admin dragged a player onto a full team (the arg). */
+    TEAM_FULL,
     /** Generate QR without a blaster address to put in the code. */
     QR_NO_BLASTER,
 }

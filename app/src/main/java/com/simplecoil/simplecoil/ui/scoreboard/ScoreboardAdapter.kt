@@ -18,12 +18,17 @@ package com.simplecoil.simplecoil.ui.scoreboard
 
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.content.ClipData
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.ColorDrawable
+import android.view.DragEvent
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import androidx.core.widget.TextViewCompat
 import android.view.ContextThemeWrapper
 import android.widget.PopupMenu
@@ -76,6 +81,61 @@ class ScoreboardAdapter(
 
         /** Squad mode, editing a squad: [playerId] in ([add]) or out. */
         fun onSquadToggle(playerId: Byte, add: Boolean) {}
+
+        /** [playerId] was dragged onto [team]: a team, a squad's team, or 0 to play alone (squad mode). */
+        fun onPlayerDropped(playerId: Byte, team: Int) {}
+    }
+
+    // Dragging a player onto another team: long-press a player row, drop it anywhere under a team's
+    // header (that header lights up)
+
+    /** The header a dragged player would join, lit up; null when nothing is being dragged. */
+    private var dropHeader: Int? = null
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        recyclerView.setOnDragListener { _, event ->
+            val playerId = event.localState as? Byte ?: return@setOnDragListener false
+            when (event.action) {
+                DragEvent.ACTION_DRAG_LOCATION -> lightUp(dropHeaderAt(recyclerView, event.x, event.y))
+                DragEvent.ACTION_DROP -> {
+                    val header = dropHeaderAt(recyclerView, event.x, event.y)
+                    lightUp(null)
+                    val team = header?.let { (getItem(it) as ScoreboardRow.TeamHeader).dropTeam }
+                    if (team != null) listener.onPlayerDropped(playerId, team)
+                }
+                DragEvent.ACTION_DRAG_ENDED -> lightUp(null)
+            }
+            true
+        }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        recyclerView.setOnDragListener(null)
+        super.onDetachedFromRecyclerView(recyclerView)
+    }
+
+    /** The position of the header a player dropped at ([x], [y]) would join: the nearest one above, else the first below. */
+    private fun dropHeaderAt(recyclerView: RecyclerView, x: Float, y: Float): Int? {
+        val child = recyclerView.findChildViewUnder(x, y)
+        val at = child?.let { recyclerView.getChildAdapterPosition(it) }?.takeIf { it != RecyclerView.NO_POSITION }
+            ?: if (y < 0f) 0 else itemCount - 1
+        fun target(i: Int) = (getItem(i) as? ScoreboardRow.TeamHeader)?.dropTeam != null
+        return (at downTo 0).firstOrNull(::target) ?: (at until itemCount).firstOrNull(::target)
+    }
+
+    private fun lightUp(header: Int?) {
+        if (header == dropHeader) return
+        val old = dropHeader
+        dropHeader = header
+        old?.let { notifyItemChanged(it, PAYLOAD_DROP) }
+        header?.let { notifyItemChanged(it, PAYLOAD_DROP) }
+    }
+
+    private fun startDrag(view: View, playerId: Byte): Boolean {
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        return ViewCompat.startDragAndDrop(view, ClipData.newPlainText("player", playerId.toString()),
+            View.DragShadowBuilder(view), playerId, 0)
     }
 
     /** The mute buttons: heard, or muted here. */
@@ -120,6 +180,12 @@ class ScoreboardAdapter(
             is ScoreboardRow.SquadBar -> (holder as SquadBarHolder).bind(row)
             is ScoreboardRow.RankBar -> (holder as RankBarHolder).bind(row)
         }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        // Only the drop highlight changed: no need to bind it all again
+        if (payloads.isNotEmpty() && payloads.all { it == PAYLOAD_DROP } && holder is TeamHeaderHolder) holder.showDropHighlight(position == dropHeader)
+        else onBindViewHolder(holder, position)
     }
 
     private inner class RankBarHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -175,8 +241,13 @@ class ScoreboardAdapter(
         private val colorSquare: View? = view.findViewById(R.id.team_header_color_sq)
         private val mute: ImageView? = view.findViewById(R.id.team_mute_iv)
 
+        fun showDropHighlight(on: Boolean) {
+            itemView.foreground = if (on) ColorDrawable(DROP_HIGHLIGHT) else null
+        }
+
         fun bind(row: ScoreboardRow.TeamHeader) {
             val context = itemView.context
+            showDropHighlight(bindingAdapterPosition == dropHeader)
             if (row.team == 0) {
                 title.setText(R.string.scoreboard_players_header)
                 action.visibility = View.GONE
@@ -255,6 +326,8 @@ class ScoreboardAdapter(
             itemView.setOnClickListener(null)
             squadToggle?.visibility = View.GONE
             itemView.isClickable = false
+            itemView.setOnLongClickListener(null)
+            itemView.isLongClickable = false
         }
 
         fun bind(row: ScoreboardRow.Player) {
@@ -311,6 +384,10 @@ class ScoreboardAdapter(
             } else {
                 itemView.setOnClickListener { listener.onPlayerClicked(row.playerId) }
             }
+            if (row.draggable) itemView.setOnLongClickListener { startDrag(it, row.playerId) } else {
+                itemView.setOnLongClickListener(null)
+                itemView.isLongClickable = false
+            }
         }
     }
 
@@ -337,5 +414,9 @@ class ScoreboardAdapter(
         const val TYPE_PLAYER = 1
         const val TYPE_SQUAD_BAR = 2
         const val TYPE_RANK_BAR = 3
+        const val PAYLOAD_DROP = "drop"
+
+        /** The header a dragged player would join: lit up with a white wash. */
+        const val DROP_HIGHLIGHT = 0x40FFFFFF
     }
 }

@@ -61,6 +61,9 @@ object WireProtocol {
 
     /** An admin's squads, squad mode: "1:3,7;2:9" (squad number, its player ids), empty for none (3.0+). */
     const val NETMSG_ADMIN_SQUADS = "ADMIN_SQUADS"
+
+    /** An admin dragged a player onto a team: "<player id>,<team>" (a squad's team, or 0 alone in squad mode) (3.0+). */
+    const val NETMSG_ADMIN_MOVETEAM = "ADMIN_MOVETEAM"
     const val NETMSG_ADMIN_RESET = "ADMIN_RESET"
     // Server -> client: ACK + seq acknowledges every reliable message up to seq
     const val NETMSG_ACK = "ACK"

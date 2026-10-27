@@ -158,6 +158,13 @@ class ServerMessageHandler(
                 val squads = command.squads
                 if (!roster.isRunning() && squads != null && settings.teamMode.isSquads) server.setSquads(squads)
             }
+            command is ClientCommand.AdminMoveTeam -> {
+                Log.d(TAG, "TcpServer received ADMIN_MOVETEAM command: ${command.playerId} to ${command.team}")
+                val playerId = command.playerId ?: return
+                val team = command.team ?: return
+                if (server.moveToTeam(playerId, team) == GameServer.MoveResult.FULL)
+                    client.send(command(ServerCommand.Error("That team is full")))
+            }
         }
     }
 

@@ -176,6 +176,7 @@ class DialogCoordinator(
             GameMessage.RATIOS_ADMIN_ONLY -> activityToast("Only server admins can edit team ratios")
             GameMessage.RATIOS_NOT_IN_FFA -> activityToast("Team ratios are not applicable in Free For All mode")
             GameMessage.KICK_SENT -> activityToast("Kick command sent")
+            GameMessage.TEAM_FULL -> toast(appContext.getString(R.string.error_team_full, arg))
             GameMessage.QR_NO_BLASTER -> toast(appContext.getString(R.string.qr_no_blaster_toast))
         }
     }

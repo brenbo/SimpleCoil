@@ -78,6 +78,9 @@ interface ServerController {
 
     /** Squad mode: the host's squads, squad number → its players. */
     fun setSquads(squads: Map<Int, Set<Int>>): Boolean
+
+    /** The host dragged [playerId] onto [team] (a team, a squad's team, or 0 alone in squad mode). */
+    fun moveToTeam(playerId: Byte, team: Int): GameServer.MoveResult
     fun changeLimits(limits: Limits): Boolean
     fun changeStartTime(seconds: Long): Boolean
     fun changeGpsMode(mode: Int): Boolean
@@ -186,6 +189,8 @@ class TcpServerController(
     override fun changeTeamSizes(sizes: IntArray): Boolean = server?.changeTeamSizes(sizes) ?: false
 
     override fun setSquads(squads: Map<Int, Set<Int>>): Boolean = server?.setSquads(squads) ?: false
+
+    override fun moveToTeam(playerId: Byte, team: Int): GameServer.MoveResult = server?.moveToTeam(playerId, team) ?: GameServer.MoveResult.REFUSED
 
     override fun changeLimits(limits: Limits): Boolean =
         server?.changeLimits(limits.gameLimit, limits.timeLimit, limits.livesLimit, limits.scoreLimit) ?: false

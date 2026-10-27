@@ -24,6 +24,7 @@ import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_KICK
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_RESET
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_SORTTEAMS
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_STARTGAME
+import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_MOVETEAM
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_SQUADS
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ADMIN_TEAMSIZES
 import com.simplecoil.simplecoil.network.WireProtocol.NETMSG_ELIMINATED
@@ -479,6 +480,7 @@ object WireCodec {
         is ClientCommand.AdminKick -> NETMSG_ADMIN_KICK + command.playerId.argument()
         is ClientCommand.AdminTeamSizes -> NETMSG_ADMIN_TEAMSIZES + (command.sizes?.joinToString(",") ?: "")
         is ClientCommand.AdminSquads -> NETMSG_ADMIN_SQUADS + (command.squads ?: emptyMap()).entries.joinToString(";") { (n, ids) -> "$n:" + ids.sorted().joinToString(",") }
+        is ClientCommand.AdminMoveTeam -> NETMSG_ADMIN_MOVETEAM + command.playerId.argument() + "," + command.team.argument()
         is ClientCommand.Other -> command.text
     }
 
@@ -521,6 +523,9 @@ object WireCodec {
         text.startsWith(NETMSG_ADMIN_GAMEMODE) -> ClientCommand.AdminGameMode(strictInt(text.after(NETMSG_ADMIN_GAMEMODE).trim()))
         text.startsWith(NETMSG_ADMIN_KICK) -> ClientCommand.AdminKick(strictInt(text.after(NETMSG_ADMIN_KICK).trim())?.toByte())
         text.startsWith(NETMSG_ADMIN_SQUADS) -> ClientCommand.AdminSquads(squads(text.after(NETMSG_ADMIN_SQUADS).trim()))
+        text.startsWith(NETMSG_ADMIN_MOVETEAM) -> text.after(NETMSG_ADMIN_MOVETEAM).split(",").let { parts ->
+            ClientCommand.AdminMoveTeam(strictInt(parts[0].trim())?.toByte(), parts.getOrNull(1)?.let { strictInt(it.trim()) })
+        }
         text.startsWith(NETMSG_ADMIN_TEAMSIZES) -> ClientCommand.AdminTeamSizes(teamSizes(text.after(NETMSG_ADMIN_TEAMSIZES).trim()))
         else -> ClientCommand.Other(text)
     }
@@ -531,7 +536,7 @@ object WireCodec {
         ClientCommand.StartGame, ClientCommand.AdminStartGame, ClientCommand.AdminEndGame, ClientCommand.AdminReset,
         ClientCommand.AdminSortTeams, is ClientCommand.AdminGameMode, is ClientCommand.AdminKick,
         is ClientCommand.AdminTeamSizes -> true
-        is ClientCommand.AdminSquads -> true
+        is ClientCommand.AdminSquads, is ClientCommand.AdminMoveTeam -> true
         is ClientCommand.Other -> command.text.startsWith(ADMIN_PREFIX)
         else -> false
     }

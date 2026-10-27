@@ -597,6 +597,19 @@ class GameRosterTest {
     }
 
     @Test
+    fun moveToTeam_dragsAPlayerToAnOpenSlot_orNowhereWhenTheTeamIsFull() {
+        settings.setTeamSizes(intArrayOf(63, 1))
+        val (_, a) = join("Alpha", "AA")
+        assertSame(a, roster.moveToTeam(a.playerId, 2))
+        assertEquals(64.toByte(), a.playerId)
+        assertEquals(2, a.team)
+        assertNull(roster.moveToTeam(5, 1)) // nobody there
+        val (_, b) = join("Bravo", "BB")
+        assertNull(roster.moveToTeam(b.playerId, 2)) // Alpha is the whole of team 2
+        assertEquals(1, b.team)
+    }
+
+    @Test
     fun swapPlayers_tradesIdsTeamsAndNames() {
         val (_, a) = join("Alpha", "AA")
         val (_, b) = join("Bravo", "BB")

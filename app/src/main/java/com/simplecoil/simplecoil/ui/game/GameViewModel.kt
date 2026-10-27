@@ -189,7 +189,24 @@ class GameViewModel(
         rank = scoreboardRank,
         squadsEditable = squadsEditable(),
         editingSquad = editingSquad,
+        teamsDraggable = playerRepo.isAdmin && net.useNetwork && serverPhase != SessionPhase.RUNNING,
     )
+
+    /**
+     * An admin dragged [playerId] onto [team] (a squad's team, or 0 alone in squad mode): sent to
+     * the server, unless the team has no room.
+     */
+    fun onPlayerDropped(playerId: Byte, team: Int) {
+        val layout = settingsRepo.teamLayout
+        if (layout.mode.hasFixedTeams) {
+            if (layout.teamOf(playerId.toInt()) == team) return
+            if (playerRepo.findOpenPlayerIDOnTeam(team).toInt() == 0) {
+                screen?.showMessage(GameMessage.TEAM_FULL, team)
+                return
+            }
+        }
+        net.tcpClient?.sendTCPMessage(NetworkSessionGateway.command(ClientCommand.AdminMoveTeam(playerId, team)))
+    }
 
     // Squad mode, an admin between games: the scoreboard edits the server's squads, as on the
     // server. Create squad picks a free number, edited here until a player is in it.
@@ -1416,6 +1433,8 @@ class GameViewModel(
                 onListPlayers(event)
                 // The game info may have changed the squads: the team label follows
                 if (settingsRepo.teamMode.isSquads) displayCurrentTeam()
+                // The game info comes after the player data: an open scoreboard regroups by the new teams
+                refreshScoreboard()
                 // The (re)join snapshot: catch up on what was missed while away
                 if (event.gameUpdate != null) refreshScoreMatrix()
             }

@@ -33,6 +33,7 @@ import com.simplecoil.simplecoil.domain.team.TeamLayout
 import com.simplecoil.simplecoil.domain.team.TeamMode
 import com.simplecoil.simplecoil.hardware.audio.AudioSettings
 import com.simplecoil.simplecoil.network.ServerEvent
+import com.simplecoil.simplecoil.network.server.GameServer
 import com.simplecoil.simplecoil.network.imagery.RemoteSounds
 import com.simplecoil.simplecoil.network.voice.VoiceSettings
 import com.simplecoil.simplecoil.network.server.ClockState
@@ -254,6 +255,11 @@ class DedicatedServerViewModel(
         toastIfReset(controller.setSquads(squads))
     }
 
+    /** [playerId] dragged onto [team] (a squad's team, or 0 alone in squad mode); a full team says so. */
+    fun onPlayerDropped(playerId: Byte, team: Int) {
+        if (controller.moveToTeam(playerId, team) == GameServer.MoveResult.FULL) toast(R.string.error_team_full, team)
+    }
+
     fun onSortTeams() {
         toastIfReset(controller.sortTeams())
         toast(R.string.dedicated_teams_sorted)
@@ -423,6 +429,7 @@ class DedicatedServerViewModel(
             val squadsEditable = settings.teamLayout.mode.isSquads && snapshot.phase == SessionPhase.LOBBY
             val context = ScoreboardContext(settings.teamLayout, settings.gameLimit, settings.livesLimit,
                 isClient = false, selfId = 0, isAdmin = false, squadsEditable = squadsEditable, editingSquad = editingSquad,
+                teamsDraggable = snapshot.phase != SessionPhase.RUNNING,
                 // Ranking is for a game: on a wide screen during and after one; the lobby is the teams again (the choice kept)
                 rankOffered = wide && snapshot.phase != SessionPhase.LOBBY, rank = if (wide && snapshot.phase != SessionPhase.LOBBY) rank else ScoreboardRank.TEAMS)
             return ServerUiState(

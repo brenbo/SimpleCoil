@@ -89,6 +89,8 @@ class DedicatedServerViewModelTest {
         override fun sortTeams(): Boolean = resets.also { calls += "sort" }
         override fun changeTeamSizes(sizes: IntArray): Boolean = resets.also { calls += "sizes ${sizes.toList()}" }
         override fun setSquads(squads: Map<Int, Set<Int>>): Boolean = resets.also { calls += "squads $squads" }
+        override fun moveToTeam(playerId: Byte, team: Int) = moveResult.also { calls += "move $playerId to $team" }
+        var moveResult = com.simplecoil.simplecoil.network.server.GameServer.MoveResult.MOVED
         override fun changeLimits(limits: Limits): Boolean = resets.also { calls += "limits $limits" }
         override fun changeStartTime(seconds: Long): Boolean = resets.also { calls += "startTime $seconds" }
         override fun changeGpsMode(mode: Int): Boolean = resets.also { calls += "gps $mode" }

@@ -568,8 +568,17 @@ class GameRoster @JvmOverloads constructor(
      * new id, or null outside the lobby or if there is no open slot on that team.
      */
     @Synchronized
-    fun changeTeam(connection: Connection, targetTeam: Int): PlayerRecord? {
-        val record = connection.player
+    fun changeTeam(connection: Connection, targetTeam: Int): PlayerRecord? =
+        connection.player?.let { moveToTeam(it.playerId, targetTeam) }
+
+    /**
+     * [playerId] to the first open id on [targetTeam] (the player asked, or the host or an admin
+     * dragged them there). Returns the player with its new id, or null outside the lobby, with no
+     * such player, or if there is no open slot on that team.
+     */
+    @Synchronized
+    fun moveToTeam(playerId: Byte, targetTeam: Int): PlayerRecord? {
+        val record = byId[playerId]
         if (record == null || phase != SessionPhase.LOBBY) return null
         val occupied = HashSet(repo.teamIPMap.keys)
         occupied.addAll(byId.keys)

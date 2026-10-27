@@ -119,6 +119,7 @@ class DedicatedServerActivity : AppCompatActivity() {
             override fun onRankChanged(rank: ScoreboardRank) = vm.onRankChanged(rank)
             override fun onSquadHeaderClicked(squad: Int) = vm.onSquadHeaderClicked(squad)
             override fun onSquadToggle(playerId: Byte, add: Boolean) = vm.onSquadToggle(playerId, add)
+            override fun onPlayerDropped(playerId: Byte, team: Int) = vm.onPlayerDropped(playerId, team)
         })
         binding.playerList.layoutManager = LinearLayoutManager(this)
         binding.playerList.adapter = scoreboard
