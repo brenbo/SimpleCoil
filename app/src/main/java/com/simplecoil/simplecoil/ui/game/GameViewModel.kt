@@ -217,7 +217,9 @@ class GameViewModel(
     private fun squadsEditable() = playerRepo.isAdmin && net.useNetwork && serverPhase != SessionPhase.RUNNING &&
         settingsRepo.teamMode.isSquads
 
+    /** Redraws the scoreboard if it is open; never opens it (game info reaches every phone). */
     private fun refreshScoreboard() {
+        if (!scoreboardVisible) return
         latestPlayerData?.let { screen?.showScoreboard(it) }
     }
 
